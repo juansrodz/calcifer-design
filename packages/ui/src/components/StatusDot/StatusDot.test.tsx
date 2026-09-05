@@ -7,7 +7,12 @@ import * as stories from './StatusDot.stories';
 const { Registered, Loading, Loaded, Failed } = composeStories(stories);
 
 describe('StatusDot', () => {
-  it.each([['Registered', Registered], ['Loading', Loading], ['Loaded', Loaded], ['Failed', Failed]])('%s has no axe violations', async (_name, Story) => {
+  it.each([
+    ['Registered', Registered],
+    ['Loading', Loading],
+    ['Loaded', Loaded],
+    ['Failed', Failed],
+  ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
   });

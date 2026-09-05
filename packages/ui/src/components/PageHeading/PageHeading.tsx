@@ -9,7 +9,12 @@ export interface PageHeadingProps {
   focusOnMount?: boolean;
 }
 
-export function PageHeading({ children, eyebrow, level = 1, focusOnMount = false }: PageHeadingProps) {
+export function PageHeading({
+  children,
+  eyebrow,
+  level = 1,
+  focusOnMount = false,
+}: PageHeadingProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const Heading = level === 1 ? 'h1' : 'h2';
 

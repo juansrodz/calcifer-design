@@ -7,7 +7,10 @@ import * as stories from './Tag.stories';
 const { Neutral, Accent } = composeStories(stories);
 
 describe('Tag', () => {
-  it.each([['Neutral', Neutral], ['Accent', Accent]])('%s has no axe violations', async (_name, Story) => {
+  it.each([
+    ['Neutral', Neutral],
+    ['Accent', Accent],
+  ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
   });

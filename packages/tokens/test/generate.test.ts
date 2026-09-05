@@ -33,7 +33,9 @@ describe('tokensToCss', () => {
 
   it('emits dark theme under both the data-theme override and the media query', () => {
     expect(css).toContain(':root[data-theme="dark"] {');
-    expect(css).toContain('@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {');
+    expect(css).toContain(
+      '@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {',
+    );
     expect(css).toContain(`--color-surface-1: ${tokens.themes.dark.color.surface1};`);
   });
 

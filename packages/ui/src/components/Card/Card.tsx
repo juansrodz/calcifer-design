@@ -9,7 +9,13 @@ export interface CardProps {
   children: ReactNode;
 }
 
-export function Card({ as: Element = 'div', heading, headingLevel = 3, footer, children }: CardProps) {
+export function Card({
+  as: Element = 'div',
+  heading,
+  headingLevel = 3,
+  footer,
+  children,
+}: CardProps) {
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
     <Element className={styles.root}>

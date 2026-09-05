@@ -8,7 +8,10 @@ import * as stories from './Tabs.stories';
 const { Default, WithDisabled } = composeStories(stories);
 
 describe('Tabs', () => {
-  it.each([['Default', Default], ['WithDisabled', WithDisabled]])('%s has no axe violations', async (_name, Story) => {
+  it.each([
+    ['Default', Default],
+    ['WithDisabled', WithDisabled],
+  ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
   });

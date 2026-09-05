@@ -17,7 +17,9 @@ export function findWidthQueryViolations(
 
     // Reject out-of-scale widths
     if (!allowedWidths.has(widthValue)) {
-      violations.push(`found ${boundType}-width: ${widthValue}; allowed: ${[...allowedWidths].join(', ')}`);
+      violations.push(
+        `found ${boundType}-width: ${widthValue}; allowed: ${[...allowedWidths].join(', ')}`,
+      );
     }
   }
 

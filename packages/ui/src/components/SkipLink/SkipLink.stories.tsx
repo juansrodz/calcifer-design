@@ -10,7 +10,9 @@ const meta = {
       <div>
         <Story />
         <p>Press Tab to reveal the skip link.</p>
-        <main id="main" tabIndex={-1}>Main content</main>
+        <main id="main" tabIndex={-1}>
+          Main content
+        </main>
       </div>
     ),
   ],

@@ -23,7 +23,10 @@ export interface NavMenuProps {
   renderLink?: (item: NavItem, props: LinkRenderProps) => ReactElement;
 }
 
-function defaultRenderLink(item: NavItem, { children, ...linkProps }: LinkRenderProps): ReactElement {
+function defaultRenderLink(
+  item: NavItem,
+  { children, ...linkProps }: LinkRenderProps,
+): ReactElement {
   return (
     <a href={item.href} {...linkProps}>
       {children}
@@ -35,7 +38,12 @@ function isCurrent(item: NavItem, currentPath: string): boolean {
   return item.href === '/' ? currentPath === '/' : currentPath.startsWith(item.href);
 }
 
-export function NavMenu({ items, currentPath, label = 'Primary', renderLink = defaultRenderLink }: NavMenuProps) {
+export function NavMenu({
+  items,
+  currentPath,
+  label = 'Primary',
+  renderLink = defaultRenderLink,
+}: NavMenuProps) {
   const isWide = useMediaQuery(minWidth('md'));
   const [open, setOpen] = useState(false);
   const [previousPath, setPreviousPath] = useState(currentPath);

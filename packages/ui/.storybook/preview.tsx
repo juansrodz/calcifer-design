@@ -16,7 +16,11 @@ const preview: Preview = {
     viewport: {
       options: {
         mobile: { name: 'Mobile 390', styles: { width: '390px', height: '844px' }, type: 'mobile' },
-        desktop: { name: 'Desktop 1280', styles: { width: '1280px', height: '800px' }, type: 'desktop' },
+        desktop: {
+          name: 'Desktop 1280',
+          styles: { width: '1280px', height: '800px' },
+          type: 'desktop',
+        },
       },
     },
   },

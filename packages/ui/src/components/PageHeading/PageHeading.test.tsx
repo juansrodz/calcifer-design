@@ -7,7 +7,10 @@ import * as stories from './PageHeading.stories';
 const { Default, WithEyebrow, FocusOnMount } = composeStories(stories);
 
 describe('PageHeading', () => {
-  it.each([['Default', Default], ['WithEyebrow', WithEyebrow]])('%s has no axe violations', async (_name, Story) => {
+  it.each([
+    ['Default', Default],
+    ['WithEyebrow', WithEyebrow],
+  ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
   });

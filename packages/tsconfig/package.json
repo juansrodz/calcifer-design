@@ -1,1 +1,5 @@
-{ "name": "@portfolio/tsconfig", "version": "0.0.0", "private": true }
+{
+  "name": "@portfolio/tsconfig",
+  "version": "0.0.0",
+  "private": true
+}

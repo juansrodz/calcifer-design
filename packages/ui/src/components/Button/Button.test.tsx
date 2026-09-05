@@ -9,8 +9,12 @@ const { Primary, Secondary, Ghost, Disabled, Loading, Small } = composeStories(s
 
 describe('Button', () => {
   it.each([
-    ['Primary', Primary], ['Secondary', Secondary], ['Ghost', Ghost],
-    ['Disabled', Disabled], ['Loading', Loading], ['Small', Small],
+    ['Primary', Primary],
+    ['Secondary', Secondary],
+    ['Ghost', Ghost],
+    ['Disabled', Disabled],
+    ['Loading', Loading],
+    ['Small', Small],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();

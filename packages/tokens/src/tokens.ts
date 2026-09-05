@@ -149,21 +149,40 @@ export const shared = {
 
 /** Text roles on the surfaces they sit on: must meet WCAG AA 4.5:1 in every theme. */
 export const textContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
-  ['text', 'surface1'], ['text', 'surface2'], ['text', 'surface3'], ['text', 'surfaceRaised'],
-  ['textMuted', 'surface1'], ['textMuted', 'surface2'], ['textMuted', 'surface3'], ['textMuted', 'surfaceRaised'],
-  ['textSubtle', 'surface1'], ['textSubtle', 'surface2'], ['textSubtle', 'surface3'], ['textSubtle', 'surfaceRaised'],
-  ['link', 'surface1'], ['link', 'surface2'], ['link', 'surface3'], ['link', 'surfaceRaised'],
-  ['accentText', 'accent'], ['accentText', 'accentHover'],
+  ['text', 'surface1'],
+  ['text', 'surface2'],
+  ['text', 'surface3'],
+  ['text', 'surfaceRaised'],
+  ['textMuted', 'surface1'],
+  ['textMuted', 'surface2'],
+  ['textMuted', 'surface3'],
+  ['textMuted', 'surfaceRaised'],
+  ['textSubtle', 'surface1'],
+  ['textSubtle', 'surface2'],
+  ['textSubtle', 'surface3'],
+  ['textSubtle', 'surfaceRaised'],
+  ['link', 'surface1'],
+  ['link', 'surface2'],
+  ['link', 'surface3'],
+  ['link', 'surfaceRaised'],
+  ['accentText', 'accent'],
+  ['accentText', 'accentHover'],
   ['textInverse', 'surfaceInverse'],
 ];
 
 /** Non-text UI roles (fills, dots, rings) on the surfaces they sit on: WCAG 1.4.11 asks 3:1. */
 export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
-  ['accent', 'surface1'], ['accent', 'surface2'], ['accent', 'surfaceRaised'],
-  ['focus', 'surface1'], ['focus', 'surfaceRaised'],
-  ['success', 'surface1'], ['success', 'surfaceRaised'],
-  ['warning', 'surface1'], ['warning', 'surfaceRaised'],
-  ['danger', 'surface1'], ['danger', 'surfaceRaised'],
+  ['accent', 'surface1'],
+  ['accent', 'surface2'],
+  ['accent', 'surfaceRaised'],
+  ['focus', 'surface1'],
+  ['focus', 'surfaceRaised'],
+  ['success', 'surface1'],
+  ['success', 'surfaceRaised'],
+  ['warning', 'surface1'],
+  ['warning', 'surfaceRaised'],
+  ['danger', 'surface1'],
+  ['danger', 'surfaceRaised'],
 ];
 
 export const tokens = { breakpoint, themes, shared } as const;

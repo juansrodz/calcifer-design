@@ -29,7 +29,12 @@ export function Tabs({ items, label, value, defaultValue, onValueChange }: TabsP
     >
       <BaseTabs.List className={styles.list} aria-label={label}>
         {items.map((item) => (
-          <BaseTabs.Tab key={item.value} className={styles.tab} value={item.value} disabled={item.disabled}>
+          <BaseTabs.Tab
+            key={item.value}
+            className={styles.tab}
+            value={item.value}
+            disabled={item.disabled}
+          >
             {item.label}
           </BaseTabs.Tab>
         ))}

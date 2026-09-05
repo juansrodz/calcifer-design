@@ -25,7 +25,11 @@ const features = tableFeatures({
   sortedRowModel: createSortedRowModel(),
 });
 
-export type ColumnDef<Row extends RowData, Value = unknown> = TanStackColumnDef<typeof features, Row, Value>;
+export type ColumnDef<Row extends RowData, Value = unknown> = TanStackColumnDef<
+  typeof features,
+  Row,
+  Value
+>;
 export type { SortingState };
 
 /** Thin wrapper so consumers call `createColumnHelper<Row>()` exactly as they would against the v8 API. */
@@ -45,7 +49,14 @@ export interface DataTableProps<Row extends RowData> {
 
 const ariaSortByDirection = { asc: 'ascending', desc: 'descending' } as const;
 
-export function DataTable<Row extends RowData>({ caption, columns, data, getRowId, initialSort = [], stackBelow }: DataTableProps<Row>) {
+export function DataTable<Row extends RowData>({
+  caption,
+  columns,
+  data,
+  getRowId,
+  initialSort = [],
+  stackBelow,
+}: DataTableProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSort);
   const captionId = useId();
   const isWide = useMediaQuery(stackBelow ? minWidth(stackBelow) : '(min-width: 0px)');
@@ -71,7 +82,9 @@ export function DataTable<Row extends RowData>({ caption, columns, data, getRowI
       tabIndex={0}
     >
       <table className={styles.table} data-stacked={stacked ? '' : undefined}>
-        <caption id={captionId} className={styles.caption}>{caption}</caption>
+        <caption id={captionId} className={styles.caption}>
+          {caption}
+        </caption>
         <thead className={styles.head}>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -86,9 +99,17 @@ export function DataTable<Row extends RowData>({ caption, columns, data, getRowI
                     aria-sort={sortDirection ? ariaSortByDirection[sortDirection] : undefined}
                   >
                     {canSort ? (
-                      <button type="button" className={styles.sortButton} onClick={header.column.getToggleSortingHandler()}>
+                      <button
+                        type="button"
+                        className={styles.sortButton}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        <span aria-hidden="true" className={styles.sortIcon} data-direction={sortDirection || 'none'} />
+                        <span
+                          aria-hidden="true"
+                          className={styles.sortIcon}
+                          data-direction={sortDirection || 'none'}
+                        />
                       </button>
                     ) : (
                       flexRender(header.column.columnDef.header, header.getContext())

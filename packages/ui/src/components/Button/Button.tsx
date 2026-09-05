@@ -5,7 +5,10 @@ import styles from './Button.module.css';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'md' | 'sm';
 
-export interface ButtonProps extends Omit<ComponentPropsWithoutRef<typeof BaseButton>, 'className'> {
+export interface ButtonProps extends Omit<
+  ComponentPropsWithoutRef<typeof BaseButton>,
+  'className'
+> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** Shows a busy state, keeps the button focusable, and blocks activation. */
