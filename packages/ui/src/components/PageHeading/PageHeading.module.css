@@ -1,0 +1,29 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-body);
+}
+
+.heading {
+  font-size: var(--text-h1);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+  outline-offset: var(--space-2);
+}
+
+.heading[data-level='2'] {
+  font-size: var(--text-h2);
+  letter-spacing: var(--tracking-heading);
+}
+
+.heading:focus:not(:focus-visible) {
+  outline: none;
+}

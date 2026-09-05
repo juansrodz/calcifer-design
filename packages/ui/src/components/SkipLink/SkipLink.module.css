@@ -1,0 +1,20 @@
+.root {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition-property: transform;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.root:focus-visible {
+  transform: translateY(0);
+}
