@@ -174,15 +174,26 @@ export const textContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> =
 export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
   ['accent', 'surface1'],
   ['accent', 'surface2'],
+  ['accent', 'surface3'],
   ['accent', 'surfaceRaised'],
   ['focus', 'surface1'],
+  ['focus', 'surface2'],
+  ['focus', 'surface3'],
   ['focus', 'surfaceRaised'],
   ['success', 'surface1'],
+  ['success', 'surface2'],
+  ['success', 'surface3'],
   ['success', 'surfaceRaised'],
   ['warning', 'surface1'],
+  ['warning', 'surface2'],
+  ['warning', 'surface3'],
   ['warning', 'surfaceRaised'],
   ['danger', 'surface1'],
+  ['danger', 'surface2'],
+  ['danger', 'surface3'],
   ['danger', 'surfaceRaised'],
+  ['neutral', 'surface1'],
+  ['neutral', 'surface2'],
 ];
 
 export const tokens = { breakpoint, themes, shared } as const;
