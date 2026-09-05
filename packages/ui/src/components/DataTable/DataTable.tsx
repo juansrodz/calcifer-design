@@ -3,6 +3,9 @@ import {
   createSortedRowModel,
   flexRender,
   rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_datetime,
+  sortFn_text,
   tableFeatures,
   useTable,
   type ColumnDef as TanStackColumnDef,
@@ -20,9 +23,15 @@ import styles from './DataTable.module.css';
 // that is the only feature registered. Kept module-level and un-exported:
 // consumers see only the `createColumnHelper`/`ColumnDef`/`SortingState`
 // surface the brief specifies, never the `features` object itself.
+//
+// The default per-column `sortFn: 'auto'` resolves to `alphanumeric`, `text`, or
+// `datetime` by inspecting the column's values, but only if those functions are
+// registered here; otherwise it logs a dev warning and falls back to a raw `<`/`>`
+// compare, which sorts multi-digit version strings and mixed-case names wrong.
 const features = tableFeatures({
   rowSortingFeature,
   sortedRowModel: createSortedRowModel(),
+  sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text, datetime: sortFn_datetime },
 });
 
 export type ColumnDef<Row extends RowData, Value = unknown> = TanStackColumnDef<
