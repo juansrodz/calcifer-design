@@ -1,0 +1,16 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+.root[data-tone='accent'] {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}

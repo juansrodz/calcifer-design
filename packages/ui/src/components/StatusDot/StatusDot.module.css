@@ -1,0 +1,44 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text-muted);
+}
+
+.root[data-status='loading'] .dot {
+  background: var(--color-warning);
+  animation: pulse var(--motion-duration-3) var(--motion-ease) infinite alternate;
+}
+
+.root[data-status='loaded'] .dot {
+  background: var(--color-success);
+}
+
+.root[data-status='failed'] .dot {
+  background: var(--color-danger);
+}
+
+.label {
+  font-family: var(--font-mono);
+}
+
+.status {
+  color: var(--color-text-muted);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
