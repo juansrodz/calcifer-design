@@ -1,5 +1,8 @@
 .root {
   position: absolute;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-touch);
   top: var(--space-2);
   left: var(--space-2);
   z-index: 100;
