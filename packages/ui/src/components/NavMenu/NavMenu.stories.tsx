@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, userEvent, within } from 'storybook/test';
 import { NavMenu } from './NavMenu';
 
 const items = [
@@ -19,3 +20,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Desktop: Story = { globals: { viewport: { value: 'desktop' } } };
 export const Mobile: Story = { globals: { viewport: { value: 'mobile' } } };
+
+/** Tabs to the nav at desktop width and checks the first link lands there. */
+export const FocusVisible: Story = {
+  globals: { viewport: { value: 'desktop' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await expect(canvas.getByRole('link', { name: 'Home' })).toHaveFocus();
+  },
+};

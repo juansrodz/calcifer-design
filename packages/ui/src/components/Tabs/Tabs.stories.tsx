@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, userEvent, within } from 'storybook/test';
 import { Tabs } from './Tabs';
 
 const items = [
@@ -24,5 +25,14 @@ export const Default: Story = {};
 export const WithDisabled: Story = {
   args: {
     items: [...items, { value: 'admin', label: 'Admin', content: <p>Admin</p>, disabled: true }],
+  },
+};
+
+/** Tabs to the tablist and checks the active tab (roving tabindex) lands there. */
+export const FocusVisible: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await expect(canvas.getByRole('tab', { name: 'Overview' })).toHaveFocus();
   },
 };
