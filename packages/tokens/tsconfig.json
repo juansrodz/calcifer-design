@@ -1,5 +1,5 @@
 {
   "extends": "@portfolio/tsconfig/node.json",
   "compilerOptions": { "types": ["bun-types", "vitest/globals"] },
-  "include": ["src", "test"]
+  "include": ["src", "test", "vitest.config.ts"]
 }
