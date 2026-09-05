@@ -52,9 +52,15 @@ export function tokensToCss(tokens: Tokens): string {
   flatten('--elevation', tokens.themes.dark.elevation, darkLines);
   flatten('--material', tokens.themes.dark.material, darkLines);
 
-  const reducedMotionLines = Object.keys(tokens.shared.motion.duration).map(
-    (step) => `  --motion-duration-${step}: 0ms;`,
-  );
+  const reducedMotionLines = [
+    ...Object.keys(tokens.shared.motion.duration).map(
+      (step) => `  --motion-duration-${step}: 0ms;`,
+    ),
+    // Springs default to an overshooting damping ratio (0.8); reduced motion needs the
+    // critically-damped value (1) so entrances settle without any spring bounce.
+    '  --motion-spring-default-damping: 1;',
+    '  --motion-spring-momentum-damping: 1;',
+  ];
 
   return [
     '/* Generated from packages/tokens/src/tokens.ts. Do not edit. */',

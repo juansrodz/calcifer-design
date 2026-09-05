@@ -40,10 +40,16 @@ describe('tokensToCss', () => {
   });
 
   it('emits shared tokens once', () => {
-    expect(css).toContain(`--space-4: ${tokens.shared.space[4]};`);
-    expect(css).toContain(`--font-sans: ${tokens.shared.font.sans};`);
-    expect(css).toContain(`--size-touch: ${tokens.shared.size.touch};`);
-    expect(css).toContain(`--motion-duration-2: ${tokens.shared.motion.duration[2]};`);
+    const propertiesEmittedOnce = [
+      `--space-4: ${tokens.shared.space[4]};`,
+      `--font-sans: ${tokens.shared.font.sans};`,
+      `--size-touch: ${tokens.shared.size.touch};`,
+      `--motion-duration-2: ${tokens.shared.motion.duration[2]};`,
+    ];
+    for (const property of propertiesEmittedOnce) {
+      const occurrences = css.split(property).length - 1;
+      expect(occurrences).toBe(1);
+    }
   });
 
   it('zeroes motion durations under reduced motion', () => {
@@ -51,6 +57,12 @@ describe('tokensToCss', () => {
     expect(css).toContain('--motion-duration-1: 0ms;');
     expect(css).toContain('--motion-duration-3: 0ms;');
     expect(css).toContain('--motion-duration-4: 0ms;');
+  });
+
+  it('disables spring overshoot under reduced motion', () => {
+    expect(css).toContain('@media (prefers-reduced-motion: reduce) {');
+    expect(css).toContain('--motion-spring-default-damping: 1;');
+    expect(css).toContain('--motion-spring-momentum-damping: 1;');
   });
 
   it('never emits a nested object as a value', () => {
