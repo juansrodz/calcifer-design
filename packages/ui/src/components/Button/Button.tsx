@@ -23,12 +23,19 @@ export function Button({
   disabled,
   className,
   children,
+  nativeButton,
   ...rest
 }: ButtonProps) {
   const isDisabled = Boolean(disabled) || loading;
+  // Base UI's Button defaults `nativeButton` to `true`, which assumes the `render` prop
+  // (when given) still produces a native `<button>`. Most consumers use `render` to swap
+  // in a non-button element (e.g. a router `Link`, which renders an `<a>`), so default to
+  // `false` whenever `render` is supplied; an explicit `nativeButton` from the caller wins.
+  const isNativeButton = nativeButton ?? !rest.render;
   return (
     <BaseButton
       {...rest}
+      nativeButton={isNativeButton}
       className={[styles.root, className].filter(Boolean).join(' ')}
       data-variant={variant}
       data-size={size}
