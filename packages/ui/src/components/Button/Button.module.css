@@ -38,7 +38,7 @@
 
 .root[data-variant='ghost'] {
   background: transparent;
-  color: var(--color-accent);
+  color: var(--color-link);
 }
 
 @media (hover: hover) {
