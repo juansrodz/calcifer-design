@@ -14,3 +14,6 @@ export { LiveRegion } from './components/LiveRegion/LiveRegion';
 export type { LiveRegionProps } from './components/LiveRegion/LiveRegion';
 export { PageHeading } from './components/PageHeading/PageHeading';
 export type { PageHeadingProps } from './components/PageHeading/PageHeading';
+export { NavMenu } from './components/NavMenu/NavMenu';
+export type { NavMenuProps, NavItem, LinkRenderProps } from './components/NavMenu/NavMenu';
+export { useMediaQuery, minWidth } from './hooks/useMediaQuery';
