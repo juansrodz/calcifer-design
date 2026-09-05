@@ -1,5 +1,7 @@
 export { Button } from './components/Button/Button';
 export type { ButtonProps, ButtonVariant, ButtonSize } from './components/Button/Button';
+export { LinkButton } from './components/Button/LinkButton';
+export type { LinkButtonProps } from './components/Button/LinkButton';
 export { Tabs } from './components/Tabs/Tabs';
 export type { TabsProps, TabItem } from './components/Tabs/Tabs';
 export { Card } from './components/Card/Card';
