@@ -77,6 +77,10 @@ export function DataTable<Row extends RowData>({
 }: DataTableProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSort);
   const captionId = useId();
+  // `useMediaQuery` must run unconditionally on every render (rules of hooks), so when
+  // `stackBelow` is undefined it still needs a query to evaluate. `(min-width: 0px)` is
+  // an always-true sentinel deliberately outside `@portfolio/tokens`' breakpoint scale:
+  // it never matches a real breakpoint and is never emitted into any CSS.
   const isWide = useMediaQuery(stackBelow ? minWidth(stackBelow) : '(min-width: 0px)');
   const stacked = Boolean(stackBelow) && !isWide;
 
