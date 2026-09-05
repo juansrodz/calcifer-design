@@ -36,16 +36,20 @@ export function tokensToCss(tokens: Tokens): string {
   flatten('--radius', tokens.shared.radius, sharedLines);
   flatten('--motion', tokens.shared.motion, sharedLines);
   flatten('--size', tokens.shared.size, sharedLines);
+  flatten('--material', tokens.shared.material, sharedLines);
   sharedLines.push(`  --measure: ${tokens.shared.measure};`);
   sharedLines.push(`  --focus-ring-width: ${tokens.shared.focusRingWidth};`);
+  sharedLines.push(`  --focus-ring-offset: ${tokens.shared.focusRingOffset};`);
 
   const lightLines: string[] = [];
   flatten('--color', tokens.themes.light.color, lightLines);
   flatten('--elevation', tokens.themes.light.elevation, lightLines);
+  flatten('--material', tokens.themes.light.material, lightLines);
 
   const darkLines: string[] = [];
   flatten('--color', tokens.themes.dark.color, darkLines);
   flatten('--elevation', tokens.themes.dark.elevation, darkLines);
+  flatten('--material', tokens.themes.dark.material, darkLines);
 
   const reducedMotionLines = Object.keys(tokens.shared.motion.duration).map(
     (step) => `  --motion-duration-${step}: 0ms;`,
