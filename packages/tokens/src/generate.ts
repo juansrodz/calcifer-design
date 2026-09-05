@@ -3,7 +3,8 @@ import type { Tokens } from './tokens';
 export function toKebab(name: string): string {
   return name
     .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/([a-zA-Z])(\d)/g, '$1-$2')
+    .replace(/(\d)([A-Z])/g, '$1-$2')
+    .replace(/([a-zA-Z]{2,})(\d)/g, '$1-$2')
     .toLowerCase();
 }
 

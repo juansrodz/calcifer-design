@@ -13,6 +13,13 @@ describe('toKebab', () => {
   it('leaves a leading digit followed by letters alone', () => {
     expect(toKebab('2xs')).toBe('2xs');
   });
+
+  it('keeps a single-letter prefix attached to its digit', () => {
+    expect(toKebab('h1')).toBe('h1');
+    expect(toKebab('h3')).toBe('h3');
+    expect(toKebab('h2Feature')).toBe('h2-feature');
+    expect(toKebab('chartPhase1')).toBe('chart-phase-1');
+  });
 });
 
 describe('tokensToCss', () => {
@@ -62,5 +69,12 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--text-2xs: ${tokens.shared.text['2xs']};`);
     expect(css).toContain(`--leading-prose: ${tokens.shared.leading.prose};`);
     expect(css).toContain(`--focus-ring-offset: ${tokens.shared.focusRingOffset};`);
+  });
+
+  it('keeps single-letter heading prefixes intact in custom property names', () => {
+    expect(css).toContain(`--text-h1: ${tokens.shared.text.h1};`);
+    expect(css).toContain(`--text-h2: ${tokens.shared.text.h2};`);
+    expect(css).toContain(`--text-h2-feature: ${tokens.shared.text.h2Feature};`);
+    expect(css).not.toContain('--text-h-1');
   });
 });
