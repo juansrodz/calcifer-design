@@ -32,13 +32,22 @@ export type ColumnDef<Row extends RowData, Value = unknown> = TanStackColumnDef<
 >;
 export type { SortingState };
 
-/** Thin wrapper so consumers call `createColumnHelper<Row>()` exactly as they would against the v8 API. */
+/**
+ * Thin wrapper so consumers call `createColumnHelper<Row>()` exactly as they would
+ * against the v8 API.
+ *
+ * Build the resulting column array with `columnHelper.columns([...])`, not a plain
+ * array literal: under v9's feature-based typing, wrapping the array through the
+ * helper is what preserves each individual column's `TValue`, rather than widening
+ * every column to the union of all of them.
+ */
 export function createColumnHelper<Row extends RowData>() {
   return createTanStackColumnHelper<typeof features, Row>();
 }
 
 export interface DataTableProps<Row extends RowData> {
   caption: string;
+  /** Build with `columnHelper.columns([...])` (see `createColumnHelper` above), not a plain array literal. */
   columns: ColumnDef<Row, unknown>[];
   data: Row[];
   getRowId?: (row: Row) => string;
@@ -124,7 +133,8 @@ export function DataTable<Row extends RowData>({
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className={styles.row}>
               {row.getAllCells().map((cell) => {
-                const headerLabel = String(cell.column.columnDef.header ?? '');
+                const header = cell.column.columnDef.header;
+                const headerLabel = typeof header === 'string' ? header : cell.column.id;
                 return (
                   <td key={cell.id} className={styles.cell} data-label={headerLabel}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
