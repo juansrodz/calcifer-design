@@ -49,7 +49,3 @@
   transition-duration: var(--motion-duration-2);
   transition-timing-function: var(--motion-ease);
 }
-
-.panel {
-  outline: none;
-}

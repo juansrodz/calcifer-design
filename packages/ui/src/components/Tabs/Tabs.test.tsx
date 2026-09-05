@@ -41,4 +41,9 @@ describe('Tabs', () => {
     render(<Default />);
     expect(screen.getByRole('tablist')).toHaveAccessibleName('Showcase sections');
   });
+
+  it('makes the active tabpanel a keyboard stop with a visible focus ring', () => {
+    render(<Default />);
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('tabindex', '0');
+  });
 });

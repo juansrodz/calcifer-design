@@ -36,7 +36,7 @@ export function Tabs({ items, label, value, defaultValue, onValueChange }: TabsP
         <BaseTabs.Indicator className={styles.indicator} />
       </BaseTabs.List>
       {items.map((item) => (
-        <BaseTabs.Panel key={item.value} className={styles.panel} value={item.value}>
+        <BaseTabs.Panel key={item.value} value={item.value}>
           {item.content}
         </BaseTabs.Panel>
       ))}
