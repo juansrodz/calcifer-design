@@ -47,7 +47,7 @@ export function tokensToCss(tokens: Tokens): string {
   flatten('--elevation', tokens.themes.light.elevation, lightLines);
   flatten('--material', tokens.themes.light.material, lightLines);
 
-  const darkLines: string[] = [];
+  const darkLines: string[] = ['  color-scheme: dark;'];
   flatten('--color', tokens.themes.dark.color, darkLines);
   flatten('--elevation', tokens.themes.dark.elevation, darkLines);
   flatten('--material', tokens.themes.dark.material, darkLines);
@@ -66,6 +66,7 @@ export function tokensToCss(tokens: Tokens): string {
     '/* Generated from packages/tokens/src/tokens.ts. Do not edit. */',
     block(':root', [...sharedLines, ...lightLines]),
     block(':root[data-theme="dark"]', darkLines),
+    block(':root[data-theme="light"]', ['  color-scheme: light;']),
     `@media (prefers-color-scheme: dark) {\n${block(':root:not([data-theme="light"])', darkLines, '  ')}\n}`,
     `@media (prefers-reduced-motion: reduce) {\n${block(':root', reducedMotionLines, '  ')}\n}`,
     '',

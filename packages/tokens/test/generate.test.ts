@@ -39,6 +39,12 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--color-surface-1: ${tokens.themes.dark.color.surface1};`);
   });
 
+  it('follows the explicit theme override for color-scheme', () => {
+    const darkThemeBlock = css.match(/:root\[data-theme="dark"\] \{([\s\S]*?)\n\}/);
+    expect(darkThemeBlock?.[1]).toContain('color-scheme: dark;');
+    expect(css).toContain(':root[data-theme="light"] {\n  color-scheme: light;\n}');
+  });
+
   it('emits shared tokens once', () => {
     const propertiesEmittedOnce = [
       `--space-4: ${tokens.shared.space[4]};`,
