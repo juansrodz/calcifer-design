@@ -35,7 +35,18 @@ function defaultRenderLink(
 }
 
 function isCurrent(item: NavItem, currentPath: string): boolean {
-  return item.href === '/' ? currentPath === '/' : currentPath.startsWith(item.href);
+  if (item.href === '/') {
+    return currentPath === '/';
+  }
+  return currentPath === item.href || currentPath.startsWith(`${item.href}/`);
+}
+
+function linkPropsFor(item: NavItem, currentPath: string): LinkRenderProps {
+  return {
+    className: styles.link,
+    'aria-current': isCurrent(item, currentPath) ? 'page' : undefined,
+    children: item.label,
+  };
 }
 
 export function NavMenu({
@@ -62,13 +73,7 @@ export function NavMenu({
       <nav className={styles.root} aria-label={label}>
         <ul className={styles.list}>
           {items.map((item) => (
-            <li key={item.href}>
-              {renderLink(item, {
-                className: styles.link,
-                'aria-current': isCurrent(item, currentPath) ? 'page' : undefined,
-                children: item.label,
-              })}
-            </li>
+            <li key={item.href}>{renderLink(item, linkPropsFor(item, currentPath))}</li>
           ))}
         </ul>
       </nav>
@@ -88,11 +93,7 @@ export function NavMenu({
                 <Menu.Item
                   key={item.href}
                   className={styles.item}
-                  render={renderLink(item, {
-                    className: styles.link,
-                    'aria-current': isCurrent(item, currentPath) ? 'page' : undefined,
-                    children: item.label,
-                  })}
+                  render={renderLink(item, linkPropsFor(item, currentPath))}
                 />
               ))}
             </Menu.Popup>

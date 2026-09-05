@@ -69,7 +69,6 @@
   border-radius: var(--radius-md);
 }
 
-.item[data-highlighted] .link,
 .item[data-highlighted] {
   background: var(--color-surface-2);
   color: var(--color-text);

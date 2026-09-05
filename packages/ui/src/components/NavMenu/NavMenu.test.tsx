@@ -21,6 +21,19 @@ describe('NavMenu at desktop width', () => {
     expect(screen.queryByRole('button', { name: 'Open menu' })).not.toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('does not treat a sibling path that merely shares a prefix as current, but does treat a nested path as current', () => {
+    installMatchMedia(true);
+    const items = [
+      { href: '/', label: 'Home' },
+      { href: '/projects', label: 'Projects' },
+    ];
+    const { rerender } = render(<Desktop items={items} currentPath="/projects-archive" />);
+    expect(screen.getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current');
+
+    rerender(<Desktop items={items} currentPath="/projects/showcase" />);
+    expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
+  });
 });
 
 describe('NavMenu at mobile width', () => {
