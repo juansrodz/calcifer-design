@@ -17,3 +17,5 @@ export type { PageHeadingProps } from './components/PageHeading/PageHeading';
 export { NavMenu } from './components/NavMenu/NavMenu';
 export type { NavMenuProps, NavItem, LinkRenderProps } from './components/NavMenu/NavMenu';
 export { useMediaQuery, minWidth } from './hooks/useMediaQuery';
+export { DataTable, createColumnHelper } from './components/DataTable/DataTable';
+export type { DataTableProps, ColumnDef, SortingState } from './components/DataTable/DataTable';

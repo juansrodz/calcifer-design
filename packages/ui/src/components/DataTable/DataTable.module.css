@@ -1,0 +1,96 @@
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.caption {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text);
+  caption-side: top;
+}
+
+.head {
+  background: var(--color-surface-3);
+}
+
+.headerCell {
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--size-touch);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sortIcon::after {
+  content: '\2195';
+  color: var(--color-text-muted);
+}
+
+.sortIcon[data-direction='asc']::after {
+  content: '\2191';
+  color: var(--color-accent);
+}
+
+.sortIcon[data-direction='desc']::after {
+  content: '\2193';
+  color: var(--color-accent);
+}
+
+.row {
+  border-top: 1px solid var(--color-border);
+}
+
+.cell {
+  padding: var(--space-2) var(--space-4);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.table[data-stacked] .head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.table[data-stacked] .row {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+
+.table[data-stacked] .cell {
+  display: grid;
+  grid-template-columns: minmax(6rem, 30%) 1fr;
+  gap: var(--space-2);
+  padding: 0;
+}
+
+.table[data-stacked] .cell::before {
+  content: attr(data-label);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
