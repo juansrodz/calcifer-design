@@ -2,7 +2,7 @@
   position: absolute;
   width: 1px;
   height: 1px;
-  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
+  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- canonical visually-hidden pattern; no negative spacing token */
   margin: -1px;
   padding: 0;
   overflow: hidden;
