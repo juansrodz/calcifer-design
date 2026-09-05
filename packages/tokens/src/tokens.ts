@@ -100,8 +100,8 @@ export type ThemeName = keyof typeof themes;
 
 export const shared = {
   font: {
-    sans: '"Geist", -apple-system, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif',
-    mono: '"Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+    sans: '"Geist Variable", "Geist", -apple-system, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif',
+    mono: '"Geist Mono Variable", "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace',
   },
   text: {
     '2xs': '0.6875rem',
