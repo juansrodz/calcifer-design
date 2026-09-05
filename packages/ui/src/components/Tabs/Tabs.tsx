@@ -1,5 +1,5 @@
 import { Tabs as BaseTabs } from '@base-ui/react/tabs';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import styles from './Tabs.module.css';
 
 export interface TabItem {
@@ -19,12 +19,15 @@ export interface TabsProps {
 }
 
 export function Tabs({ items, label, value, defaultValue, onValueChange }: TabsProps) {
-  const initial = defaultValue ?? items[0]?.value;
+  // Frozen on mount rather than recomputed every render: Base UI's `defaultValue` is
+  // meant to be read once, and recomputing `items[0]?.value` warns in dev when `items`
+  // arrives asynchronously (starts empty, then gets its first element on a later render).
+  const [initialValue] = useState(() => defaultValue ?? items[0]?.value);
   return (
     <BaseTabs.Root
       className={styles.root}
       value={value}
-      defaultValue={initial}
+      defaultValue={initialValue}
       onValueChange={(next) => onValueChange?.(String(next))}
     >
       <BaseTabs.List className={styles.list} aria-label={label}>
