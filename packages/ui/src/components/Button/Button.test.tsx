@@ -34,6 +34,13 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it('does not call onClick when loading', async () => {
+    const onClick = vi.fn();
+    render(<Loading onClick={onClick} />);
+    await userEvent.click(screen.getByRole('button'));
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it('marks the loading state busy and keeps focusability', () => {
     render(<Loading />);
     const button = screen.getByRole('button');
