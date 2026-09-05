@@ -50,12 +50,12 @@
 
 .sortIcon[data-direction='asc']::after {
   content: '\2191';
-  color: var(--color-accent);
+  color: var(--color-link);
 }
 
 .sortIcon[data-direction='desc']::after {
   content: '\2193';
-  color: var(--color-accent);
+  color: var(--color-link);
 }
 
 .row {
