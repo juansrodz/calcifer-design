@@ -8,7 +8,8 @@
     "./base.css": "./src/styles/base.css"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "css-types": "rsbuild build",
+    "typecheck": "bun run css-types && tsc -p tsconfig.json",
     "test": "vitest run",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build"
