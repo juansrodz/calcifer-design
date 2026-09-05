@@ -9,6 +9,12 @@
   display: flex;
   gap: var(--space-1);
   overflow-x: auto;
+
+  /* `overflow-x: auto` forces `overflow-y: auto` too, which clips the focus-visible
+     outline (width + offset) on `.tab`; this padding gives it room to render.
+     `--space-1` (4px) matches `--focus-ring-width` + `--focus-ring-offset` (2px + 2px);
+     stylelint's token-only rule rejects a calc() of the two ring tokens directly. */
+  padding-block: var(--space-1);
   border-bottom: 1px solid var(--color-border);
   scrollbar-width: thin;
 }
