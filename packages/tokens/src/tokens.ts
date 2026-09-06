@@ -3,6 +3,8 @@ export const breakpoint = {
   md: '48rem',
   lg: '64rem',
   xl: '80rem',
+  /** Revised mock: "wide" tier at 1800px — wider page frame, larger gutters. */
+  '2xl': '112.5rem',
 } as const;
 
 export type BreakpointName = keyof typeof breakpoint;
@@ -115,7 +117,7 @@ export const shared = {
     h2Feature: '1.75rem',
     h2: 'clamp(1.875rem, 1.6rem + 1.25vw, 2.5rem)',
     h1: 'clamp(2.25rem, 1.75rem + 2.5vw, 3.5rem)',
-    display: 'clamp(2.75rem, 2rem + 3.5vw, 4.5rem)',
+    display: 'clamp(2.75rem, 2rem + 3.5vw, 5.5rem)',
   },
   leading: { display: '1.05', tight: '1.15', snug: '1.3', prose: '1.55', body: '1.6' },
   tracking: { display: '-0.03em', h1: '-0.025em', heading: '-0.015em', body: '0', wide: '0.08em' },
@@ -130,6 +132,8 @@ export const shared = {
     8: '4rem',
     9: '6rem',
     10: '8rem',
+    /** Page side padding at the wide tier: the mock's clamp(64px, 5vw, 128px). */
+    pageInlineWide: 'clamp(4rem, 5vw, 8rem)',
   },
   radius: { sm: '0.5rem', md: '0.625rem', lg: '0.75rem', xl: '1rem', full: '999px' },
   motion: {
@@ -141,7 +145,13 @@ export const shared = {
     springMomentumResponse: '0.35',
   },
   material: { glassBlur: 'blur(20px) saturate(1.4)' },
-  size: { touch: '44px' },
+  size: {
+    touch: '44px',
+    /** Page frame max width: the mock's 1200px column. */
+    pageMax: '75rem',
+    /** Page frame max width at the wide tier: the mock's min(1800px, 90vw). */
+    pageMaxWide: 'min(112.5rem, 90vw)',
+  },
   measure: '65ch',
   focusRingWidth: '2px',
   focusRingOffset: '2px',

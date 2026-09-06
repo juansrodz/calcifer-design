@@ -97,4 +97,12 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--text-h2-feature: ${tokens.shared.text.h2Feature};`);
     expect(css).not.toContain('--text-h-1');
   });
+
+  it('emits the page-frame tokens the shell reads at the wide tier', () => {
+    const css = tokensToCss(tokens);
+    expect(css).toContain('--size-page-max: 75rem;');
+    expect(css).toContain('--size-page-max-wide: min(112.5rem, 90vw);');
+    expect(css).toContain('--space-page-inline-wide: clamp(4rem, 5vw, 8rem);');
+    expect(css).toContain('--text-display: clamp(2.75rem, 2rem + 3.5vw, 5.5rem);');
+  });
 });

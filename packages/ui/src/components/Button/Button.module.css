@@ -13,6 +13,7 @@
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-body);
   cursor: pointer;
+  text-decoration: none;
   transition-property: background-color, color, border-color, box-shadow, transform;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);

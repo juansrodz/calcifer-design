@@ -49,6 +49,13 @@ describe('findWidthQueryViolations', () => {
   });
 });
 
+describe('breakpoint scale', () => {
+  it('includes the wide tier from the revised design (1800px)', () => {
+    expect(breakpoint['2xl']).toBe('112.5rem');
+    expect(Object.keys(breakpoint)).toEqual(['sm', 'md', 'lg', 'xl', '2xl']);
+  });
+});
+
 describe('width queries in CSS Modules use the breakpoint scale', () => {
   const files = findModuleStylesheets();
 
