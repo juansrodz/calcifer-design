@@ -11,6 +11,14 @@ export interface PreviewTarget {
 /** Mirrors `PRERENDERED_ROUTES` in apps/shell/src/content/titles.ts (the prerender test checks both agree). */
 export const PREVIEW_PRERENDERED_PATHS = ['/', '/projects', '/about', '/under-the-hood'] as const;
 
+/**
+ * The shell path served for any non-prerendered extensionless route. Written by
+ * `scripts/prerender.ts` from the untouched build template: an empty `#root` and no
+ * dehydrated state, so `entry.client.tsx` mounts fresh instead of hydrating the wrong
+ * route's markup. Task 6's nginx config mirrors this filename.
+ */
+export const SPA_FALLBACK = 'spa.html';
+
 const SHOWCASE_PREFIX = '/showcase';
 const REGISTRY_PATH = '/registry/index.json';
 
@@ -32,8 +40,9 @@ function hasExtension(pathname: string): boolean {
 /**
  * The routing rules the preview server, the nginx gateway (docker/gateway/nginx.conf) and
  * Phase 1b's CDN function all share: registry and showcase paths untouched, prerendered
- * shell paths to their own index.html, other extensionless shell paths to the SPA fallback,
- * everything else a shell static file.
+ * shell paths to their own index.html, other extensionless shell paths to `SPA_FALLBACK`
+ * (a clean, un-hydrated page distinct from the prerendered "/" page), everything else a
+ * shell static file.
  */
 export function resolvePreviewPath(pathname: string): PreviewTarget {
   if (pathname === REGISTRY_PATH) {
@@ -54,5 +63,5 @@ export function resolvePreviewPath(pathname: string): PreviewTarget {
   if (hasExtension(trimmed)) {
     return { source: 'shell', relativePath: safeRelative(trimmed) };
   }
-  return { source: 'shell', relativePath: 'index.html' };
+  return { source: 'shell', relativePath: SPA_FALLBACK };
 }

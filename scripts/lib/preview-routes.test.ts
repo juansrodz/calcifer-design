@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PREVIEW_PRERENDERED_PATHS, resolvePreviewPath } from './preview-routes';
+import { PREVIEW_PRERENDERED_PATHS, SPA_FALLBACK, resolvePreviewPath } from './preview-routes';
 
 describe('resolvePreviewPath (spec 10: the rules Phase 1b bakes into its gateway)', () => {
   it('serves the registry file at the contract path', () => {
@@ -48,13 +48,15 @@ describe('resolvePreviewPath (spec 10: the rules Phase 1b bakes into its gateway
   it('sends every other extensionless shell path to the SPA fallback', () => {
     expect(resolvePreviewPath('/projects/showcase')).toEqual({
       source: 'shell',
-      relativePath: 'index.html',
+      relativePath: SPA_FALLBACK,
     });
     expect(resolvePreviewPath('/projects/showcase/components')).toEqual({
       source: 'shell',
-      relativePath: 'index.html',
+      relativePath: SPA_FALLBACK,
     });
-    expect(resolvePreviewPath('/nope')).toEqual({ source: 'shell', relativePath: 'index.html' });
+    expect(resolvePreviewPath('/nope')).toEqual({ source: 'shell', relativePath: SPA_FALLBACK });
+    // Pinned literally too, so a rename of SPA_FALLBACK can't silently pass this test.
+    expect(resolvePreviewPath('/nope')).toEqual({ source: 'shell', relativePath: 'spa.html' });
   });
 
   it('serves shell files with an extension as they are', () => {
