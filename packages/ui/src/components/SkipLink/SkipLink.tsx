@@ -8,7 +8,11 @@ export interface SkipLinkProps {
 
 export function SkipLink({ targetId, children = 'Skip to content' }: SkipLinkProps) {
   return (
-    <a className={styles.root} href={`#${targetId}`}>
+    <a
+      className={styles.root}
+      href={`#${targetId}`}
+      onClick={() => document.getElementById(targetId)?.focus()}
+    >
       {children}
     </a>
   );

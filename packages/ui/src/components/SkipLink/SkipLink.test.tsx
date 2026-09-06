@@ -1,5 +1,6 @@
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
 import * as stories from './SkipLink.stories';
@@ -15,5 +16,11 @@ describe('SkipLink', () => {
   it('links to the target id', () => {
     render(<Default />);
     expect(screen.getByRole('link', { name: 'Skip to content' })).toHaveAttribute('href', '#main');
+  });
+
+  it('moves focus to the target when clicked', async () => {
+    render(<Default />);
+    await userEvent.click(screen.getByRole('link', { name: 'Skip to content' }));
+    expect(screen.getByRole('main')).toHaveFocus();
   });
 });
