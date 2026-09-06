@@ -84,7 +84,18 @@ export function NavMenu({
     <nav className={styles.root} aria-label={label}>
       <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
         <Menu.Trigger className={styles.trigger} aria-label={open ? 'Close menu' : 'Open menu'}>
-          <span aria-hidden="true">{open ? '✕' : '☰'}</span>
+          <svg
+            className={styles.triggerIcon}
+            viewBox="0 0 18 18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d={open ? 'M4 4l10 10M14 4L4 14' : 'M2 5h14M2 9h14M2 13h14'} />
+          </svg>
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner className={styles.positioner} side="bottom" align="end" sideOffset={8}>

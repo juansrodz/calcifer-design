@@ -5,29 +5,33 @@
 
 .list {
   display: flex;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-5);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* Plain text links, as in the mock: the current page is set in the text colour at weight
+   500, the rest sit in the muted colour; no pill behind either. */
 .link {
   display: inline-flex;
   align-items: center;
   min-height: var(--size-touch);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: 400;
   text-decoration: none;
-  transition-property: color, background-color;
+  white-space: nowrap;
+  transition-property: color;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
 }
 
 .link[aria-current='page'] {
   color: var(--color-text);
-  background: var(--color-surface-2);
+  font-weight: 500;
 }
 
 @media (hover: hover) {
@@ -42,12 +46,17 @@
   justify-content: center;
   width: var(--size-touch);
   height: var(--size-touch);
-  border: 1px solid var(--color-border);
+  padding: 0;
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--color-surface-2);
+  background: transparent;
   color: var(--color-text);
-  font-size: var(--text-lg);
   cursor: pointer;
+}
+
+.triggerIcon {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .positioner {
@@ -61,12 +70,14 @@
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-1);
+  background: var(--color-surface-raised);
   box-shadow: var(--elevation-2);
 }
 
 .item {
+  padding-inline: var(--space-3);
   border-radius: var(--radius-md);
+  font-size: var(--text-md);
 }
 
 .item[data-highlighted] {
