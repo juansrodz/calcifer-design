@@ -136,6 +136,11 @@ export const shared = {
     pageInlineWide: 'clamp(4rem, 5vw, 8rem)',
   },
   radius: { sm: '0.5rem', md: '0.625rem', lg: '0.75rem', xl: '1rem', full: '999px' },
+  /**
+   * Border widths above the hairline default: `emphasis` is the active/selected indicator
+   * (nav underline, selected tab), `strong` the accent rail down the side of a block.
+   */
+  borderWidth: { emphasis: '2px', strong: '3px' },
   motion: {
     duration: { 1: '120ms', 2: '200ms', 3: '320ms', 4: '520ms' },
     ease: 'cubic-bezier(0.2, 0, 0, 1)',

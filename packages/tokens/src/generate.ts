@@ -35,6 +35,7 @@ export function tokensToCss(tokens: Tokens): string {
   flatten('--tracking', tokens.shared.tracking, sharedLines);
   flatten('--space', tokens.shared.space, sharedLines);
   flatten('--radius', tokens.shared.radius, sharedLines);
+  flatten('--border-width', tokens.shared.borderWidth, sharedLines);
   flatten('--motion', tokens.shared.motion, sharedLines);
   flatten('--size', tokens.shared.size, sharedLines);
   flatten('--material', tokens.shared.material, sharedLines);

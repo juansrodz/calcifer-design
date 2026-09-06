@@ -91,6 +91,11 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--focus-ring-offset: ${tokens.shared.focusRingOffset};`);
   });
 
+  it('emits the border-width scale', () => {
+    expect(css).toContain(`--border-width-emphasis: ${tokens.shared.borderWidth.emphasis};`);
+    expect(css).toContain(`--border-width-strong: ${tokens.shared.borderWidth.strong};`);
+  });
+
   it('keeps single-letter heading prefixes intact in custom property names', () => {
     expect(css).toContain(`--text-h1: ${tokens.shared.text.h1};`);
     expect(css).toContain(`--text-h2: ${tokens.shared.text.h2};`);
