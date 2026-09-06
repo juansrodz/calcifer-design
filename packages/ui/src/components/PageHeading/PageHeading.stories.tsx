@@ -12,4 +12,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const WithEyebrow: Story = { args: { eyebrow: 'Fleet', children: 'Under the hood' } };
+export const Display: Story = { args: { size: 'display', children: 'Juan Sebastian Rodriguez' } };
+export const Compact: Story = { args: { size: 'compact', children: 'Under the hood' } };
 export const FocusOnMount: Story = { args: { focusOnMount: true } };

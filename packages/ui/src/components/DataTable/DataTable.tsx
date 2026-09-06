@@ -63,6 +63,10 @@ export interface DataTableProps<Row extends RowData> {
   initialSort?: SortingState;
   /** Below this breakpoint, rows render stacked with header labels. */
   stackBelow?: BreakpointName;
+  /** Drop the wrapper's own border, radius and surface when a panel already frames it. */
+  bare?: boolean;
+  /** Keep the caption for assistive tech but hide it visually (the panel shows the title). */
+  hideCaption?: boolean;
 }
 
 const ariaSortByDirection = { asc: 'ascending', desc: 'descending' } as const;
@@ -74,6 +78,8 @@ export function DataTable<Row extends RowData>({
   getRowId,
   initialSort = [],
   stackBelow,
+  bare = false,
+  hideCaption = false,
 }: DataTableProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSort);
   const captionId = useId();
@@ -96,6 +102,7 @@ export function DataTable<Row extends RowData>({
   return (
     <div
       className={styles.scroll}
+      data-bare={bare ? '' : undefined}
       role="region"
       aria-labelledby={captionId}
       // A scrollable region must be a keyboard stop (WCAG 2.1.1); "region" is not in this
@@ -104,7 +111,11 @@ export function DataTable<Row extends RowData>({
       tabIndex={0}
     >
       <table className={styles.table} data-stacked={stacked ? '' : undefined}>
-        <caption id={captionId} className={styles.caption}>
+        <caption
+          id={captionId}
+          className={styles.caption}
+          data-hidden={hideCaption ? '' : undefined}
+        >
           {caption}
         </caption>
         <thead className={styles.head}>

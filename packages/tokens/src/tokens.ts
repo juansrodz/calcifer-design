@@ -25,6 +25,8 @@ const lightColor = {
   accentHover: '#2F5FCC',
   accentText: '#FFFFFF',
   accentSoft: 'rgba(59, 111, 224, 0.14)',
+  /** The remote-boundary frame fill: a wash far fainter than accentSoft (the mock's --rbg). */
+  accentWash: 'rgba(59, 111, 224, 0.035)',
   border: 'rgba(28, 25, 23, 0.08)',
   borderStrong: 'rgba(28, 25, 23, 0.18)',
   borderAccent: 'rgba(59, 111, 224, 0.28)',
@@ -60,6 +62,7 @@ const darkColor = {
   accentHover: '#98B6F8',
   accentText: '#0B0D12',
   accentSoft: 'rgba(127, 164, 245, 0.18)',
+  accentWash: 'rgba(127, 164, 245, 0.05)',
   border: 'rgba(255, 255, 255, 0.08)',
   borderStrong: 'rgba(255, 255, 255, 0.18)',
   borderAccent: 'rgba(127, 164, 245, 0.32)',
@@ -117,7 +120,9 @@ export const shared = {
     h2Feature: '1.75rem',
     h2: 'clamp(1.875rem, 1.6rem + 1.25vw, 2.5rem)',
     h1: 'clamp(2.25rem, 1.75rem + 2.5vw, 3.5rem)',
-    display: 'clamp(2.75rem, 2rem + 3.5vw, 5.5rem)',
+    /** The mock's --d1: 44–56px on phones, 72px on desktop; `displayWide` is its 88px wide tier. */
+    display: 'clamp(2.75rem, 2rem + 3.5vw, 4.5rem)',
+    displayWide: '5.5rem',
   },
   leading: { display: '1.05', tight: '1.15', snug: '1.3', prose: '1.55', body: '1.6' },
   tracking: { display: '-0.03em', h1: '-0.025em', heading: '-0.015em', body: '0', wide: '0.08em' },
@@ -152,6 +157,9 @@ export const shared = {
   material: { glassBlur: 'blur(20px) saturate(1.4)' },
   size: {
     touch: '44px',
+    /** Sticky header height: the mock's --hh (64px desktop, 72px at the wide tier). */
+    header: '4rem',
+    headerWide: '4.5rem',
     /** Page frame max width: the mock's 1200px column. */
     pageMax: '75rem',
     /** Page frame max width at the wide tier: the mock's min(1800px, 90vw). */

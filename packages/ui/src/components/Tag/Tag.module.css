@@ -1,14 +1,17 @@
+/* The mock's 24px chip: sans 12px, a quiet surface with a hairline border. The accent tone
+   is the skills chip / provider pill (accent-soft fill, accent border, full-strength text). */
 .root {
   display: inline-flex;
   align-items: center;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid transparent;
+  min-height: 1.5rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: var(--leading-snug);
-  background: var(--color-surface-3);
-  color: var(--color-text);
+  white-space: nowrap;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
 }
 
 .root[data-tone='accent'] {

@@ -12,16 +12,43 @@
   letter-spacing: var(--tracking-wide);
 }
 
+/* `page` is the mock's --d2 title (Projects, About): 56px desktop, line-height 1.04. */
 .heading {
   font-size: var(--text-h1);
-  letter-spacing: var(--tracking-display);
-  line-height: var(--leading-tight);
+  font-weight: 600;
+  letter-spacing: var(--tracking-h1);
+  line-height: var(--leading-display);
+  text-wrap: balance;
   outline-offset: var(--space-2);
 }
 
-.heading[data-level='2'] {
+/* `display` is the landing hero name (--d1: 72px desktop, 88px wide), capped at 12ch so it
+   breaks into two lines like the mock. */
+.heading[data-size='display'] {
+  max-width: 12ch;
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+}
+
+@media (min-width: 112.5rem) {
+  .heading[data-size='display'] {
+    font-size: var(--text-display-wide);
+  }
+}
+
+/* `compact` is the mock's --h1 (40px): project pages and Under the hood. */
+.heading[data-size='compact'] {
   font-size: var(--text-h2);
   letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-tight);
+}
+
+.heading[data-level='2'] {
+  max-width: none;
+  font-size: var(--text-h2-feature);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-tight);
 }
 
 .heading:focus:not(:focus-visible) {

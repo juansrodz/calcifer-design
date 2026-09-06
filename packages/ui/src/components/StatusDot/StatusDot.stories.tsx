@@ -14,3 +14,6 @@ export const Registered: Story = {};
 export const Loading: Story = { args: { status: 'loading' } };
 export const Loaded: Story = { args: { status: 'loaded' } };
 export const Failed: Story = { args: { status: 'failed' } };
+export const TextLabel: Story = {
+  args: { status: 'loaded', label: 'Federation Showcase', labelStyle: 'text' },
+};

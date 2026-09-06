@@ -2,19 +2,22 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
   font-size: var(--text-sm);
 }
 
+/* The mock's 8px dot; loading pulses in the accent colour, the terminal states are solid. */
 .dot {
-  width: 0.625rem;
-  height: 0.625rem;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: var(--radius-full);
-  background: var(--color-text-muted);
+  background: var(--color-neutral);
 }
 
 .root[data-status='loading'] .dot {
-  background: var(--color-warning);
-  animation: pulse var(--motion-duration-3) var(--motion-ease) infinite alternate;
+  background: var(--color-accent);
+  animation: pulse var(--motion-duration-4) var(--motion-ease) infinite alternate;
 }
 
 .root[data-status='loaded'] .dot {
@@ -26,16 +29,43 @@
 }
 
 .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-mono);
 }
 
+.label[data-hidden] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- canonical visually-hidden pattern; no negative spacing token */
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.root[data-label-style='text'] .label {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+
 .status {
+  white-space: nowrap;
   color: var(--color-text-muted);
+}
+
+.root[data-label-style='text'] .status {
+  color: var(--color-text-subtle);
 }
 
 @keyframes pulse {
   from {
-    opacity: 0.4;
+    opacity: 0.35;
   }
 
   to {
