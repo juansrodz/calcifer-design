@@ -1,17 +1,29 @@
 {
-  "name": "@portfolio/tokens",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@calcifer/tokens",
+  "version": "0.0.0",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "./dist/tokens.css"
+  ],
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./tokens.css": "./dist/tokens.css"
   },
   "scripts": {
+    "build": "rslib build && bun scripts/write-css.ts",
+    "dev": "bun scripts/dev.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:dist": "vitest run --config vitest.dist.config.ts"
   },
   "devDependencies": {
-    "@portfolio/tsconfig": "workspace:*"
+    "@calcifer/tsconfig": "workspace:*",
+    "@rslib/core": "1.0.0"
   }
 }
