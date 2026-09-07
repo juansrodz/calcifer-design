@@ -2,6 +2,7 @@ import { mkdtemp, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
+  assertInternalRangesCurrent,
   isAlreadyStagedError,
   publishablePackages,
   selectUnpublished,
@@ -114,14 +115,29 @@ function tarballName(manifest: PackageManifest): string {
   return `${manifest.name.replace(/^@/, '').replace('/', '-')}-${manifest.version}.tgz`;
 }
 
-async function assertNoWorkspaceRanges(tarballPath: string): Promise<void> {
-  const packed = await run(['tar', '-xOf', tarballPath, 'package/package.json'], repoRoot);
-  const manifest = JSON.parse(packed) as Record<string, Record<string, string> | undefined>;
-  for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
-    for (const [dependency, range] of Object.entries(manifest[field] ?? {})) {
-      if (range.startsWith('workspace:') || range.startsWith('catalog:')) {
-        throw new Error(`${tarballPath}: ${field}.${dependency} is still "${range}"`);
-      }
+// Reads the packed tarball's package.json and checks every internal dependency range
+// (dependencies, peerDependencies, optionalDependencies) against the workspace versions
+// collected from the manifests this run already read: it must be a real semver range (not
+// a leftover `workspace:`/`catalog:` protocol) that is satisfied by the workspace package's
+// current version. See `assertInternalRangesCurrent` for why this matters.
+async function assertPackedInternalRangesCurrent(
+  tarballPath: string,
+  workspaceVersions: Record<string, string>,
+): Promise<void> {
+  const packedManifestJson = await run(
+    ['tar', '-xOf', tarballPath, 'package/package.json'],
+    repoRoot,
+  );
+  const packedManifest = JSON.parse(packedManifestJson) as Record<
+    string,
+    Record<string, string> | undefined
+  >;
+  for (const dependencyField of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+    try {
+      assertInternalRangesCurrent(packedManifest[dependencyField], workspaceVersions);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`${tarballPath}: ${dependencyField}.${message}`, { cause: error });
     }
   }
 }
@@ -187,7 +203,11 @@ async function publishLocally(tarballPath: string, manifest: PackageManifest): P
   console.log(`${dryRun ? 'dry-run published' : 'published'} ${manifest.name}@${manifest.version}`);
 }
 
-const candidates = publishablePackages(await readManifests());
+const manifests = await readManifests();
+const workspaceVersions: Record<string, string> = Object.fromEntries(
+  manifests.map((manifest) => [manifest.name, manifest.version]),
+);
+const candidates = publishablePackages(manifests);
 const toPublish = await selectUnpublished(candidates, isPublished);
 if (toPublish.length === 0) {
   console.log('nothing to publish: every public package version is already in the registry');
@@ -202,7 +222,7 @@ for (const manifest of toPublish) {
   const packageDirectory = path.join(repoRoot, manifest.directory);
   await run(['bun', 'pm', 'pack', '--destination', packDirectory], packageDirectory);
   const tarballPath = path.join(packDirectory, tarballName(manifest));
-  await assertNoWorkspaceRanges(tarballPath);
+  await assertPackedInternalRangesCurrent(tarballPath, workspaceVersions);
 
   if (runningOnCI) {
     await stageOnCI(tarballPath, manifest);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assertInternalRangesCurrent,
   isAlreadyStagedError,
   publishablePackages,
   selectUnpublished,
@@ -75,5 +76,49 @@ describe('isAlreadyStagedError', () => {
     expect(isAlreadyStagedError('npm error 403 Forbidden - you do not have permission')).toBe(
       false,
     );
+  });
+});
+
+describe('assertInternalRangesCurrent', () => {
+  const workspaceVersions = { '@calcifer-design/tokens': '0.1.1' };
+
+  it('passes for a caret range that includes the workspace version', () => {
+    expect(() =>
+      assertInternalRangesCurrent({ '@calcifer-design/tokens': '^0.1.1' }, workspaceVersions),
+    ).not.toThrow();
+  });
+
+  it('passes for an exact range matching the workspace version', () => {
+    expect(() =>
+      assertInternalRangesCurrent({ '@calcifer-design/tokens': '0.1.1' }, workspaceVersions),
+    ).not.toThrow();
+  });
+
+  it('throws when the packed range does not include the workspace version', () => {
+    expect(() =>
+      assertInternalRangesCurrent({ '@calcifer-design/tokens': '0.1.0' }, workspaceVersions),
+    ).toThrow(/@calcifer-design\/tokens.*0\.1\.0.*0\.1\.1/s);
+  });
+
+  it('throws when the packed range is still a workspace: protocol range', () => {
+    expect(() =>
+      assertInternalRangesCurrent({ '@calcifer-design/tokens': 'workspace:*' }, workspaceVersions),
+    ).toThrow(/workspace:/);
+  });
+
+  it('throws when the packed range is still a catalog: protocol range', () => {
+    expect(() =>
+      assertInternalRangesCurrent({ '@calcifer-design/tokens': 'catalog:' }, workspaceVersions),
+    ).toThrow(/catalog:/);
+  });
+
+  it('ignores dependencies that are not part of this workspace', () => {
+    expect(() =>
+      assertInternalRangesCurrent({ '@base-ui/react': '^1.8.0' }, workspaceVersions),
+    ).not.toThrow();
+  });
+
+  it('does nothing when there are no packed dependencies', () => {
+    expect(() => assertInternalRangesCurrent(undefined, workspaceVersions)).not.toThrow();
   });
 });

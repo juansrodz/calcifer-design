@@ -8,6 +8,7 @@
         "@changesets/cli": "^2.31.1",
         "@eslint/js": "^10.0.1",
         "@types/eslint-plugin-jsx-a11y": "^6.10.1",
+        "@types/semver": "^7.8.0",
         "bun-types": "^1.4.2",
         "eslint": "^10.10.0",
         "eslint-config-prettier": "^10.1.8",
@@ -15,6 +16,7 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "jiti": "^2.7.0",
         "prettier": "^3.9.6",
+        "semver": "^7.8.5",
         "stylelint": "^17.15.0",
         "stylelint-config-standard": "^40.0.0",
         "stylelint-declaration-strict-value": "^1.12.1",
@@ -25,7 +27,7 @@
     },
     "packages/tokens": {
       "name": "@calcifer-design/tokens",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "@calcifer-design/tsconfig": "workspace:*",
         "@rslib/core": "1.0.0",
@@ -38,7 +40,7 @@
     },
     "packages/ui": {
       "name": "@calcifer-design/ui",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@base-ui/react": "^1.8.0",
         "@calcifer-design/tokens": "workspace:*",
@@ -596,6 +598,8 @@
     "@types/react-dom": ["@types/react-dom@19.2.7", "", { "peerDependencies": { "@types/react": "^19.2.0" } }, "sha512-I8bPpDLcHBv1qiIiXDCy71Rt8eQDKJP0sMSWJphDdAcdqiJ1sGpZamavoEIRZmYzjia9LuEb2HlYdDpmoENpvQ=="],
 
     "@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
+
+    "@types/semver": ["@types/semver@7.8.0", "", {}, "sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ=="],
 
     "@typescript-eslint/eslint-plugin": ["@typescript-eslint/eslint-plugin@8.69.0", "", { "dependencies": { "@eslint-community/regexpp": "^4.12.2", "@typescript-eslint/scope-manager": "8.69.0", "@typescript-eslint/type-utils": "8.69.0", "@typescript-eslint/utils": "8.69.0", "@typescript-eslint/visitor-keys": "8.69.0", "ignore": "^7.0.5", "natural-compare": "^1.4.0", "ts-api-utils": "^2.5.0" }, "peerDependencies": { "@typescript-eslint/parser": "^8.69.0", "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0", "typescript": ">=4.8.4 <6.1.0" } }, "sha512-t5jQTKPIgVW1PE6dR6H6Qz5gm8zjMlX5/2gRaOGd9eO6V7J+tQc6iWKukEe7dY8u9HyYasQ0yfF0/FSSTEO2gA=="],
 

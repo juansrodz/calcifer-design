@@ -13,6 +13,10 @@
    `npm stage view <stage-id>` to inspect one, then `npm stage approve <stage-id>` to
    publish it (prompts for 2FA). Approving on the package's npmjs.com page works the same
    way.
+   Before staging, the publish script refuses a tarball whose internal dependency range
+   (e.g. `@calcifer-design/ui`'s dependency on `@calcifer-design/tokens`) does not include
+   that dependency's current workspace version, so a stale `bun.lock` can never make a
+   package publish naming an internal dependency version older than what actually shipped.
 4. If staging fails after the version commit, fix the cause and start a fresh run on the
    current head of `main`: Actions → ci → Run workflow (`gh workflow run ci.yml --ref main`).
    Do not use "Re-run failed jobs" on the old run: it replays the old commit, re-applies the
