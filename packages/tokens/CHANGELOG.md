@@ -1,4 +1,4 @@
-# @calcifer/tokens
+# @calcifer-design/tokens
 
 ## 0.1.0
 

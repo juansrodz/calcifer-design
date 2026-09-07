@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { breakpoint, type BreakpointName } from '@calcifer/tokens';
+import { breakpoint, type BreakpointName } from '@calcifer-design/tokens';
 
 export function minWidth(name: BreakpointName): string {
   return `(min-width: ${breakpoint[name]})`;

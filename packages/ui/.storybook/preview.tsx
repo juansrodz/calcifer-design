@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/react';
 import { useEffect } from 'react';
-import '@calcifer/tokens/tokens.css';
+import '@calcifer-design/tokens/tokens.css';
 import '../src/styles/base.css';
 
 const preview: Preview = {

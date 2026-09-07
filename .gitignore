@@ -1,0 +1,8 @@
+node_modules/
+packages/*/dist/
+.rstack/
+storybook-static/
+*.module.css.d.ts
+.DS_Store
+coverage/
+.superpowers/

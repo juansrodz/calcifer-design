@@ -18,7 +18,7 @@ async function collectCssFiles(directory: string): Promise<string[]> {
   return files;
 }
 
-describe('@calcifer/ui dist', () => {
+describe('@calcifer-design/ui dist', () => {
   it('exports the components from dist/index.js', async () => {
     const uiModule = (await import(path.join(distRoot, 'index.js'))) as Record<string, unknown>;
     for (const exportName of ['Button', 'Card', 'Tag', 'NavMenu', 'DataTable', 'PageHeading']) {

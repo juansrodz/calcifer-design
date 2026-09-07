@@ -1,5 +1,5 @@
 {
-  "extends": "@calcifer/tsconfig/node.json",
+  "extends": "@calcifer-design/tsconfig/node.json",
   "compilerOptions": { "rootDir": "src" },
   "include": ["src"]
 }

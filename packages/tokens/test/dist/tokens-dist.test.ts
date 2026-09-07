@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const distRoot = path.resolve(import.meta.dirname, '../../dist');
 
-describe('@calcifer/tokens dist', () => {
+describe('@calcifer-design/tokens dist', () => {
   it('exports the token API from dist/index.js', async () => {
     const tokensModule = (await import(path.join(distRoot, 'index.js'))) as {
       tokens: { shared: { space: Record<string, string> } };

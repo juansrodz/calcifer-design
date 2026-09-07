@@ -5,5 +5,5 @@ declare module '*.module.css' {
 
 // TypeScript 6.0's TS2882 requires a resolvable module even for plain
 // side-effect CSS imports (`.storybook/preview.tsx` imports
-// `@calcifer/tokens/tokens.css` and `../src/styles/base.css` this way).
+// `@calcifer-design/tokens/tokens.css` and `../src/styles/base.css` this way).
 declare module '*.css';

@@ -1,7 +1,17 @@
 {
-  "name": "@calcifer/tokens",
+  "name": "@calcifer-design/tokens",
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juansrodz/calcifer-design.git",
+    "directory": "packages/tokens"
+  },
+  "homepage": "https://juansrodz.github.io/calcifer-design/",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist"
   ],
@@ -23,7 +33,8 @@
     "test:dist": "vitest run --config vitest.dist.config.ts"
   },
   "devDependencies": {
-    "@calcifer/tsconfig": "workspace:*",
-    "@rslib/core": "1.0.0"
+    "@calcifer-design/tsconfig": "workspace:*",
+    "@rslib/core": "1.0.0",
+    "fast-glob": "^3.3.3"
   }
 }

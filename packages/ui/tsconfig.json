@@ -1,5 +1,5 @@
 {
-  "extends": "@calcifer/tsconfig/react.json",
+  "extends": "@calcifer-design/tsconfig/react.json",
   "compilerOptions": { "types": ["vitest/globals", "@testing-library/jest-dom"] },
   "include": [
     "src",
