@@ -55,7 +55,9 @@ async function run(command: string[], cwd: string): Promise<string> {
 
 // Used for a real publish (off CI, so npm can prompt for the one-time password or open the
 // browser for web-based 2FA) and for every dry run (so the operator sees what would ship).
-// Both streams are inherited, which is why nothing is captured or returned here.
+// Both streams are inherited, which is why nothing is captured or returned here. Do not use
+// this where the caller needs to inspect stderr on failure (it throws a plain `Error`, not a
+// `CommandFailure`) — use `run` instead.
 async function runStreaming(command: string[], cwd: string): Promise<void> {
   const child = Bun.spawn(command, { cwd, stdout: 'inherit', stderr: 'inherit' });
   const exitCode = await child.exited;
@@ -145,7 +147,7 @@ async function stageOnCI(tarballPath: string, manifest: PackageManifest): Promis
     return;
   }
   try {
-    await run(stageCommand, repoRoot);
+    console.log(await run(stageCommand, repoRoot));
     console.log(
       `staged ${manifest.name}@${manifest.version} (approve with: npm stage approve, see docs/runbooks/releasing.md)`,
     );
