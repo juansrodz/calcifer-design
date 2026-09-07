@@ -9,7 +9,12 @@
    publishing, and pushes the tags. `main` is therefore always what is on npm, one version
    commit ahead of the merge.
 3. If publishing fails after the version commit, fix the cause and push anything to `main`;
-   the job finds no pending changesets and publishes the versions still missing.
+   the job finds no pending changesets and publishes the versions still missing. Tags are
+   re-created by that next run as well, whether or not it has anything left to publish.
+4. Two merges close together: the second `release` run waits on the `release-main`
+   concurrency group, but the first run's `git push origin HEAD:main` can be rejected as
+   non-fast-forward if `main` moved after its checkout. The run fails before publishing;
+   the next run sees the same pending changesets and completes the release.
 
 ## One-time setup (done 2026-09-07; repeat only for a new package)
 

@@ -93,10 +93,21 @@ async function assertNoWorkspaceRanges(tarballPath: string): Promise<void> {
   }
 }
 
+// Re-creates the git tags Changesets expects from the current package versions. Runs after
+// publishing, and also when there is nothing to publish, so that a release whose tag push
+// failed gets its tags re-created the next time this script runs.
+async function createReleaseTags(): Promise<void> {
+  console.log(await run(['./node_modules/.bin/changeset', 'tag'], repoRoot));
+  console.log('git tags created; the workflow pushes them');
+}
+
 const candidates = publishablePackages(await readManifests());
 const toPublish = await selectUnpublished(candidates, isPublished);
 if (toPublish.length === 0) {
   console.log('nothing to publish: every public package version is already in the registry');
+  if (!dryRun) {
+    await createReleaseTags();
+  }
   process.exit(0);
 }
 
@@ -128,6 +139,5 @@ for (const manifest of toPublish) {
 }
 
 if (!dryRun) {
-  console.log(await run(['./node_modules/.bin/changeset', 'tag'], repoRoot));
-  console.log('git tags created; the workflow pushes them');
+  await createReleaseTags();
 }
