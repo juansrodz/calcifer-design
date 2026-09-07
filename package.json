@@ -29,7 +29,7 @@
     "check": "bun run lint && bun run typecheck && bun run test && bun run build && bun run test:dist && bun run storybook:build"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.1",
+    "@changesets/cli": "^3.0.2",
     "@eslint/js": "^10.0.1",
     "@types/eslint-plugin-jsx-a11y": "^6.10.1",
     "@types/semver": "^7.8.0",
