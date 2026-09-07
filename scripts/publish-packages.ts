@@ -104,6 +104,12 @@ async function isPublished(name: string, version: string): Promise<boolean> {
   throw new Error(`npm view ${name}@${version} failed:\n${stderr}`);
 }
 
+/** Extracts npm's error code (e.g. "E409") from a failed command's stderr, if present. */
+function extractNpmErrorCode(stderr: string): string | undefined {
+  const match = /code (E\d+)/i.exec(stderr);
+  return match?.[1];
+}
+
 function tarballName(manifest: PackageManifest): string {
   return `${manifest.name.replace(/^@/, '').replace('/', '-')}-${manifest.version}.tgz`;
 }
@@ -153,7 +159,11 @@ async function stageOnCI(tarballPath: string, manifest: PackageManifest): Promis
     );
   } catch (error) {
     if (error instanceof CommandFailure && isAlreadyStagedError(error.stderr)) {
-      console.log(`already staged, awaiting approval: ${manifest.name}@${manifest.version}`);
+      const npmErrorCode = extractNpmErrorCode(error.stderr);
+      const npmErrorCodeSuffix = npmErrorCode ? ` (npm ${npmErrorCode})` : '';
+      console.log(
+        `already staged, awaiting approval: ${manifest.name}@${manifest.version}${npmErrorCodeSuffix}`,
+      );
       return;
     }
     throw error;

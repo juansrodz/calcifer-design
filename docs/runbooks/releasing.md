@@ -18,8 +18,10 @@
    Do not use "Re-run failed jobs" on the old run: it replays the old commit, re-applies the
    changesets that commit still carried, and its push to `main` is rejected as
    non-fast-forward. The fresh run finds no pending changesets and stages the versions still
-   missing. A version
-   already staged from a previous run is not a failure: the job logs
+   missing. A version already staged from a previous run is not a failure: npm reports
+   `E409 … Cannot stage previously published version` for a version that is staged and
+   awaiting approval (npm's "previously published" wording covers this case too, not only
+   a version actually public on the registry); the job logs
    `already staged, awaiting approval` and continues. Tags are re-created by that next run
    as well, whether or not it has anything left to stage.
 5. Two merges close together: the second `release` run waits on the `release-main`

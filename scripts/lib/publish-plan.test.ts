@@ -62,6 +62,15 @@ describe('isAlreadyStagedError', () => {
     ).toBe(true);
   });
 
+  it('recognises npm E409 "Cannot stage previously published version" for a staged-but-unapproved version', () => {
+    expect(
+      isAlreadyStagedError(
+        'npm error code E409\n' +
+          'npm error 409 Conflict - POST https://registry.npmjs.org/-/stage/package/@calcifer-design%2ftokens - Cannot stage previously published version "0.1.1".',
+      ),
+    ).toBe(true);
+  });
+
   it('does not match an unrelated publish failure', () => {
     expect(isAlreadyStagedError('npm error 403 Forbidden - you do not have permission')).toBe(
       false,
