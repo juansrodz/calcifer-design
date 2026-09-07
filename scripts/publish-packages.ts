@@ -9,15 +9,10 @@ import { publishablePackages, selectUnpublished, type PackageManifest } from './
 // then creates the git tags Changesets expects. `--dry-run` packs and runs `npm publish
 // --dry-run` without publishing or tagging.
 const repoRoot = path.resolve(import.meta.dir, '..');
-const configuredRegistryUrl = process.env['CODEARTIFACT_REPOSITORY_URL'];
-if (!configuredRegistryUrl) {
-  throw new Error(
-    'CODEARTIFACT_REPOSITORY_URL is not set; run scripts/codeartifact-login.ts first',
-  );
-}
-// Annotated rather than inferred so that deleting the guard above is a type error, not a
-// silent `undefined` handed to npm.
-const registryUrl: string = configuredRegistryUrl;
+// npmjs by default; `NPM_REGISTRY_URL` overrides for a dry run against another registry.
+const registryUrl: string = process.env['NPM_REGISTRY_URL'] ?? 'https://registry.npmjs.org/';
+// Provenance attestations need the CI OIDC token; a manual first publish cannot produce them.
+const withProvenance = process.env['GITHUB_ACTIONS'] === 'true';
 const dryRun = process.argv.includes('--dry-run');
 
 async function run(command: string[], cwd: string): Promise<string> {
@@ -105,7 +100,7 @@ if (toPublish.length === 0) {
   process.exit(0);
 }
 
-const packDirectory = await mkdtemp(path.join(tmpdir(), 'calcifer-publish-'));
+const packDirectory = await mkdtemp(path.join(tmpdir(), 'calcifer-design-publish-'));
 for (const manifest of toPublish) {
   const packageDirectory = path.join(repoRoot, manifest.directory);
   await run(['bun', 'pm', 'pack', '--destination', packDirectory], packageDirectory);
@@ -118,8 +113,11 @@ for (const manifest of toPublish) {
     '--registry',
     registryUrl,
     '--access',
-    'restricted',
+    'public',
   ];
+  if (withProvenance) {
+    publishCommand.push('--provenance');
+  }
   if (dryRun) {
     publishCommand.push('--dry-run');
     await runStreaming(publishCommand, repoRoot);
