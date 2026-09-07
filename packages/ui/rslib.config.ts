@@ -2,7 +2,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 import { defineConfig } from '@rslib/core';
 
-// Bundleless ESM: `dist` mirrors `src`, each `X.module.css` becomes a plain `X.module.css`
+// Bundleless ESM: `dist` mirrors `src`, each `X.module.css` becomes a plain `X_module.css`
 // with the hashed class names baked in plus an `X.module.js` class map, so any bundler with
 // CSS support consumes it. `dts: true` writes the component declarations; the typed CSS
 // Modules plugin writes the gitignored `*.module.css.d.ts` that `tsc` needs. react,

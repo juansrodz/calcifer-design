@@ -9,5 +9,11 @@ export default defineConfig({
   // Rslib's declaration step treat the package root as `rootDir` and nest `dist/src/index.d.ts`
   // instead of `dist/index.d.ts`.
   source: { entry: { index: './src/index.ts' }, tsconfigPath: './tsconfig.build.json' },
-  output: { target: 'web', distPath: { root: 'dist' } },
+  // `scripts/write-css.ts` writes `dist/tokens.css` alongside Rslib's output, so Rslib's clean
+  // must keep it: in watch mode nothing would write it again until `src` changes.
+  output: {
+    target: 'web',
+    distPath: { root: 'dist' },
+    cleanDistPath: { keep: [/tokens\.css$/] },
+  },
 });
