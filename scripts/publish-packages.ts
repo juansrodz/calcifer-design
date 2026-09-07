@@ -130,6 +130,6 @@ for (const manifest of toPublish) {
 }
 
 if (!dryRun) {
-  await run(['./node_modules/.bin/changeset', 'tag'], repoRoot);
+  console.log(await run(['./node_modules/.bin/changeset', 'tag'], repoRoot));
   console.log('git tags created; the workflow pushes them');
 }
