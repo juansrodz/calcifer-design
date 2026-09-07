@@ -62,13 +62,18 @@ jobs:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
       - run: bun install --frozen-lockfile
+      # Set before any git write: the version commit below and the annotated tags
+      # `changeset tag` creates in the release step both need an identity, and Changesets
+      # does not fail when `git tag -m` is refused for lack of one.
+      - name: Git identity for the release bot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
       - name: Apply pending changesets and push the version commit to main
         run: |
           if find .changeset -name '*.md' ! -name README.md | grep -q .; then
             ./node_modules/.bin/changeset version
             bun install
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add -A
             git commit -m 'chore(release): version packages'
             git push origin HEAD:main
