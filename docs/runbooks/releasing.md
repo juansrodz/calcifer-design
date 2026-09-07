@@ -13,8 +13,12 @@
    `npm stage view <stage-id>` to inspect one, then `npm stage approve <stage-id>` to
    publish it (prompts for 2FA). Approving on the package's npmjs.com page works the same
    way.
-4. If staging fails after the version commit, fix the cause and push anything to `main`;
-   the job finds no pending changesets and stages the versions still missing. A version
+4. If staging fails after the version commit, fix the cause and start a fresh run on the
+   current head of `main`: Actions → ci → Run workflow (`gh workflow run ci.yml --ref main`).
+   Do not use "Re-run failed jobs" on the old run: it replays the old commit, re-applies the
+   changesets that commit still carried, and its push to `main` is rejected as
+   non-fast-forward. The fresh run finds no pending changesets and stages the versions still
+   missing. A version
    already staged from a previous run is not a failure: the job logs
    `already staged, awaiting approval` and continues. Tags are re-created by that next run
    as well, whether or not it has anything left to stage.
