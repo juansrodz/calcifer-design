@@ -9,12 +9,15 @@ import { publishablePackages, selectUnpublished, type PackageManifest } from './
 // then creates the git tags Changesets expects. `--dry-run` packs and runs `npm publish
 // --dry-run` without publishing or tagging.
 const repoRoot = path.resolve(import.meta.dir, '..');
-const registryUrl = process.env['CODEARTIFACT_REPOSITORY_URL'] ?? '';
-if (!registryUrl) {
+const configuredRegistryUrl = process.env['CODEARTIFACT_REPOSITORY_URL'];
+if (!configuredRegistryUrl) {
   throw new Error(
     'CODEARTIFACT_REPOSITORY_URL is not set; run scripts/codeartifact-login.ts first',
   );
 }
+// Annotated rather than inferred so that deleting the guard above is a type error, not a
+// silent `undefined` handed to npm.
+const registryUrl: string = configuredRegistryUrl;
 const dryRun = process.argv.includes('--dry-run');
 
 async function run(command: string[], cwd: string): Promise<string> {
@@ -28,6 +31,17 @@ async function run(command: string[], cwd: string): Promise<string> {
     throw new Error(`${command.join(' ')} exited ${exitCode}\n${stderr}`);
   }
   return stdout;
+}
+
+// Used for the dry-run publish only. npm writes its tarball listing to stderr (stdout carries
+// just the `+ name@version` line), so both streams are inherited to show the operator what
+// would ship; a failure here is already on screen, which is why nothing is captured.
+async function runStreaming(command: string[], cwd: string): Promise<void> {
+  const child = Bun.spawn(command, { cwd, stdout: 'inherit', stderr: 'inherit' });
+  const exitCode = await child.exited;
+  if (exitCode !== 0) {
+    throw new Error(`${command.join(' ')} exited ${exitCode} (output above)`);
+  }
 }
 
 async function readManifests(): Promise<PackageManifest[]> {
@@ -106,8 +120,12 @@ for (const manifest of toPublish) {
     '--access',
     'restricted',
   ];
-  if (dryRun) publishCommand.push('--dry-run');
-  await run(publishCommand, repoRoot);
+  if (dryRun) {
+    publishCommand.push('--dry-run');
+    await runStreaming(publishCommand, repoRoot);
+  } else {
+    await run(publishCommand, repoRoot);
+  }
   console.log(`${dryRun ? 'dry-run published' : 'published'} ${manifest.name}@${manifest.version}`);
 }
 
