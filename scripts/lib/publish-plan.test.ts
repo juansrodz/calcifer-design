@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { publishablePackages, selectUnpublished, type PackageManifest } from './publish-plan';
+import {
+  isAlreadyStagedError,
+  publishablePackages,
+  selectUnpublished,
+  type PackageManifest,
+} from './publish-plan';
 
 const manifests: PackageManifest[] = [
   {
@@ -44,5 +49,22 @@ describe('selectUnpublished', () => {
         throw new Error('registry unreachable');
       }),
     ).rejects.toThrow('registry unreachable');
+  });
+});
+
+describe('isAlreadyStagedError', () => {
+  it('recognises npm refusing to re-stage an approved-pending version', () => {
+    expect(
+      isAlreadyStagedError(
+        'npm error 409 Conflict - PUT https://registry.npmjs.org/@calcifer-design%2fui - ' +
+          '@calcifer-design/ui@0.1.0 already exists as a staged version',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not match an unrelated publish failure', () => {
+    expect(isAlreadyStagedError('npm error 403 Forbidden - you do not have permission')).toBe(
+      false,
+    );
   });
 });

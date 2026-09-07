@@ -26,3 +26,12 @@ export async function selectUnpublished(
   }
   return selected;
 }
+
+/**
+ * True when npm's stderr says a `npm stage publish` failed because the version is already
+ * staged and awaiting approval — the expected outcome of re-running a release job before a
+ * human has approved the previous run's staged version, not a real failure.
+ */
+export function isAlreadyStagedError(stderr: string): boolean {
+  return /already exists as a staged version|already staged/i.test(stderr);
+}

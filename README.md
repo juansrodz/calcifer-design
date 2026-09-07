@@ -43,5 +43,6 @@ React 19 is a peer dependency of `@calcifer-design/ui`.
 | `bun run release`         | Publish unpublished versions to npmjs (CI runs it on `main`)             |
 | `bun run check`           | lint, typecheck, test, build, dist test, Storybook build                 |
 
-Releases: every merge to `main` with a pending changeset publishes; `main` is always what is
-on npm. See `docs/runbooks/releasing.md`. Decisions and their reasons are in `AI_USAGE.md`.
+Releases: every merge to `main` with a pending changeset stages a release on npmjs, which a
+maintainer then approves with 2FA; `main` is always what is staged. See
+`docs/runbooks/releasing.md`. Decisions and their reasons are in `AI_USAGE.md`.

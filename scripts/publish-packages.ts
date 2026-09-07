@@ -1,19 +1,44 @@
 import { mkdtemp, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { publishablePackages, selectUnpublished, type PackageManifest } from './lib/publish-plan';
+import {
+  isAlreadyStagedError,
+  publishablePackages,
+  selectUnpublished,
+  type PackageManifest,
+} from './lib/publish-plan';
 
 // Publishes every public workspace package whose version the registry does not have yet.
 // Packs with `bun pm pack` (which rewrites `workspace:*` and `catalog:` ranges — `npm
-// publish` from the directory would ship them verbatim) and publishes the tarball with npm,
-// then creates the git tags Changesets expects. `--dry-run` packs and runs `npm publish
-// --dry-run` without publishing or tagging.
+// publish` from the directory would ship them verbatim), then hands the tarball to npm, and
+// finally creates the git tags Changesets expects.
+//
+// Two publish paths, depending on where this runs:
+//   - On CI (GitHub Actions), the npm trusted publisher is configured without "Allow npm
+//     publish", so this runs `npm stage publish --provenance` instead of `npm publish`: it
+//     stages the version for a human to approve with 2FA (`npm stage approve`, see
+//     docs/runbooks/releasing.md). A re-run before that approval finds the version already
+//     staged; that specific npm failure is treated as success so the job stays green while
+//     approval is pending, instead of failing every run until someone approves.
+//   - Off CI, a human with 2FA runs `npm publish` directly, with stdio inherited so npm can
+//     prompt for the one-time password or open the browser for web-based 2FA.
+// `--dry-run` packs and runs the applicable command with `--dry-run` on whichever path
+// applies, without publishing, staging, or tagging.
 const repoRoot = path.resolve(import.meta.dir, '..');
 // npmjs by default; `NPM_REGISTRY_URL` overrides for a dry run against another registry.
 const registryUrl: string = process.env['NPM_REGISTRY_URL'] ?? 'https://registry.npmjs.org/';
-// Provenance attestations need the CI OIDC token; a manual first publish cannot produce them.
-const withProvenance = process.env['GITHUB_ACTIONS'] === 'true';
+const runningOnCI = process.env['GITHUB_ACTIONS'] === 'true';
 const dryRun = process.argv.includes('--dry-run');
+
+/** A failed command's stderr, kept alongside the message so callers can inspect it. */
+class CommandFailure extends Error {
+  readonly stderr: string;
+
+  constructor(message: string, stderr: string) {
+    super(message);
+    this.stderr = stderr;
+  }
+}
 
 async function run(command: string[], cwd: string): Promise<string> {
   const child = Bun.spawn(command, { cwd, stdout: 'pipe', stderr: 'pipe' });
@@ -23,14 +48,14 @@ async function run(command: string[], cwd: string): Promise<string> {
     child.exited,
   ]);
   if (exitCode !== 0) {
-    throw new Error(`${command.join(' ')} exited ${exitCode}\n${stderr}`);
+    throw new CommandFailure(`${command.join(' ')} exited ${exitCode}\n${stderr}`, stderr);
   }
   return stdout;
 }
 
-// Used for the dry-run publish only. npm writes its tarball listing to stderr (stdout carries
-// just the `+ name@version` line), so both streams are inherited to show the operator what
-// would ship; a failure here is already on screen, which is why nothing is captured.
+// Used for a real publish (off CI, so npm can prompt for the one-time password or open the
+// browser for web-based 2FA) and for every dry run (so the operator sees what would ship).
+// Both streams are inherited, which is why nothing is captured or returned here.
 async function runStreaming(command: string[], cwd: string): Promise<void> {
   const child = Bun.spawn(command, { cwd, stdout: 'inherit', stderr: 'inherit' });
   const exitCode = await child.exited;
@@ -101,6 +126,55 @@ async function createReleaseTags(): Promise<void> {
   console.log('git tags created; the workflow pushes them');
 }
 
+async function stageOnCI(tarballPath: string, manifest: PackageManifest): Promise<void> {
+  const stageCommand = [
+    'npm',
+    'stage',
+    'publish',
+    tarballPath,
+    '--registry',
+    registryUrl,
+    '--access',
+    'public',
+    '--provenance',
+  ];
+  if (dryRun) {
+    stageCommand.push('--dry-run');
+    await runStreaming(stageCommand, repoRoot);
+    console.log(`dry-run staged ${manifest.name}@${manifest.version}`);
+    return;
+  }
+  try {
+    await run(stageCommand, repoRoot);
+    console.log(
+      `staged ${manifest.name}@${manifest.version} (approve with: npm stage approve, see docs/runbooks/releasing.md)`,
+    );
+  } catch (error) {
+    if (error instanceof CommandFailure && isAlreadyStagedError(error.stderr)) {
+      console.log(`already staged, awaiting approval: ${manifest.name}@${manifest.version}`);
+      return;
+    }
+    throw error;
+  }
+}
+
+async function publishLocally(tarballPath: string, manifest: PackageManifest): Promise<void> {
+  const publishCommand = [
+    'npm',
+    'publish',
+    tarballPath,
+    '--registry',
+    registryUrl,
+    '--access',
+    'public',
+  ];
+  if (dryRun) {
+    publishCommand.push('--dry-run');
+  }
+  await runStreaming(publishCommand, repoRoot);
+  console.log(`${dryRun ? 'dry-run published' : 'published'} ${manifest.name}@${manifest.version}`);
+}
+
 const candidates = publishablePackages(await readManifests());
 const toPublish = await selectUnpublished(candidates, isPublished);
 if (toPublish.length === 0) {
@@ -117,25 +191,12 @@ for (const manifest of toPublish) {
   await run(['bun', 'pm', 'pack', '--destination', packDirectory], packageDirectory);
   const tarballPath = path.join(packDirectory, tarballName(manifest));
   await assertNoWorkspaceRanges(tarballPath);
-  const publishCommand = [
-    'npm',
-    'publish',
-    tarballPath,
-    '--registry',
-    registryUrl,
-    '--access',
-    'public',
-  ];
-  if (withProvenance) {
-    publishCommand.push('--provenance');
-  }
-  if (dryRun) {
-    publishCommand.push('--dry-run');
-    await runStreaming(publishCommand, repoRoot);
+
+  if (runningOnCI) {
+    await stageOnCI(tarballPath, manifest);
   } else {
-    await run(publishCommand, repoRoot);
+    await publishLocally(tarballPath, manifest);
   }
-  console.log(`${dryRun ? 'dry-run published' : 'published'} ${manifest.name}@${manifest.version}`);
 }
 
 if (!dryRun) {
