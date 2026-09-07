@@ -1,5 +1,5 @@
 {
-  "name": "@portfolio/ui",
+  "name": "@calcifer/ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
-    "@portfolio/tokens": "workspace:*",
+    "@calcifer/tokens": "workspace:*",
     "@tanstack/react-table": "^9.2.4",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@portfolio/tsconfig": "workspace:*",
+    "@calcifer/tsconfig": "workspace:*",
     "@rsbuild/core": "^2.2.3",
     "@rsbuild/plugin-react": "^2.1.0",
     "@rsbuild/plugin-typed-css-modules": "^1.2.4",

@@ -1,5 +1,5 @@
 {
-  "name": "@portfolio/tokens",
+  "name": "@calcifer/tokens",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,6 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@portfolio/tsconfig": "workspace:*"
+    "@calcifer/tsconfig": "workspace:*"
   }
 }
