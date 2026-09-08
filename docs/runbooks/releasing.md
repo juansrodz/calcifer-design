@@ -64,5 +64,14 @@
 ## Record
 
 - 2026-09-07: `0.1.0` of both packages published manually by juansrodz with web-auth 2FA;
-  tags `@calcifer-design/tokens@0.1.0` and `@calcifer-design/ui@0.1.0` pushed. First
-  CI-staged release: 0.1.1 — run id and approval to be filled in.
+  tags `@calcifer-design/tokens@0.1.0` and `@calcifer-design/ui@0.1.0` pushed.
+- 2026-09-07: first CI-staged release, `tokens@0.1.1` and `ui@0.1.1`. The first two runs
+  failed `ENEEDAUTH` (the trusted-publisher form had not saved on npmjs; re-entered on both
+  packages). Approved by juansrodz with `npm stage approve`. `changeset tag` created no tags
+  on that run because the git identity step ran after the tagging branch; the tags were
+  pushed by hand and the identity step moved ahead of the branch.
+- 2026-09-07: `ui@0.1.2` (declares `@calcifer-design/tokens: ^0.1.1`; `0.1.1` had shipped
+  with an exact `0.1.0` range because `bun.lock` was stale after `changeset version`). Staged
+  by run `ae60094` on `main`, which also exercised the already-staged recovery path (npm
+  `E409`), and approved on 2026-09-08 from the CLI web-auth flow. The publish script now
+  asserts that every packed internal range satisfies the workspace version.
