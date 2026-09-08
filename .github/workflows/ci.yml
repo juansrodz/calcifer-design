@@ -73,7 +73,8 @@ jobs:
         run: |
           if find .changeset -name '*.md' ! -name README.md | grep -q .; then
             ./node_modules/.bin/changeset version
-            bun install
+            bun run lock:sync
+            bun install --frozen-lockfile
             git add -A
             git commit -m 'chore(release): version packages'
             git push origin HEAD:main

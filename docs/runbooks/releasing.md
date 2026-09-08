@@ -3,8 +3,13 @@
 ## Every release
 
 1. Open a PR with the change and a changeset (`bun run changeset`). CI fails without one.
-2. Merge it. The `release` job on `main` applies the changesets (`changeset version`),
-   commits `chore(release): version packages` back to `main`, builds, and stages every
+2. Merge it. The `release` job on `main` applies the changesets (`changeset version`), then
+   runs `bun run lock:sync` followed by `bun install --frozen-lockfile` — bun does not
+   refresh `bun.lock`'s recorded workspace versions and internal ranges on its own after a
+   workspace's `package.json` changes, so `lock:sync` rewrites just those lines before the
+   frozen-lockfile install verifies the result. A contributor who bumps a workspace version
+   by hand should run `bun run lock:sync` too. The job then commits
+   `chore(release): version packages` back to `main`, builds, and stages every
    version npmjs does not have yet with `npm stage publish --access public --provenance`
    through trusted publishing, then pushes the tags. `main` is therefore always what is
    staged, one version commit ahead of the merge — a version is public on npm only after a
@@ -64,5 +69,15 @@
 ## Record
 
 - 2026-09-07: `0.1.0` of both packages published manually by juansrodz with web-auth 2FA;
-  tags `@calcifer-design/tokens@0.1.0` and `@calcifer-design/ui@0.1.0` pushed. First
-  CI-staged release: 0.1.1 — run id and approval to be filled in.
+  tags `@calcifer-design/tokens@0.1.0` and `@calcifer-design/ui@0.1.0` pushed.
+- 2026-09-07: first CI-staged release, `tokens@0.1.1` and `ui@0.1.1`. The first two runs
+  failed `ENEEDAUTH` (the trusted-publisher form had not saved on npmjs; re-entered on both
+  packages). Approved by juansrodz with `npm stage approve`. `changeset tag` created no tags
+  on that run because the git identity step ran after the tagging branch; the tags were
+  pushed by hand and the identity step moved ahead of the branch.
+- 2026-09-07: `ui@0.1.2` (declares `@calcifer-design/tokens: ^0.1.1`; `0.1.1` had shipped
+  with an exact `0.1.0` range because `bun.lock` was stale after `changeset version`). Staged
+  by run `ae60094` on `main`, which also exercised the already-staged recovery path (npm
+  `E409`), and approved on 2026-09-08 from the CLI web-auth flow. The publish script now
+  asserts that every packed internal range satisfies the workspace version.
+- 2026-09-08: external-consumer check (spec §7): fresh directory with an `.npmrc` containing only `registry=https://registry.npmjs.org/`, `@calcifer-design/tokens ^0.1.1` and `@calcifer-design/ui ^0.1.2` — 18 packages installed, a single copy of tokens, `renderToString(<Button>Hello</Button>)` rendered `<button type="button" tabindex="0" data-variant="primary" data-size="md" class="root-kIffN"><span class="label-Ujxp1">Hello</span></button>`, and `tokens.css` resolved. Run by the final plan-5 review.
