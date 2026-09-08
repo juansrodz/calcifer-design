@@ -18,7 +18,7 @@
 
 ### Minor Changes
 
-- 59a2bf4: First published release of the design tokens, the UI components and the federation contract.
+- 59a2bf4: First published release of the design tokens and the UI components (moved from portfolio-mfe).
 
 ### Patch Changes
 

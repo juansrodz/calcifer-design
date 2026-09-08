@@ -27,3 +27,9 @@ by `bun install`, and `bun unlink` in each package here.
 `bun run storybook` serves it on port 6006; `bun run storybook:build` writes
 `packages/ui/storybook-static`, which the `pages` job deploys to
 https://juansrodz.github.io/calcifer-design/ on every push to `main`.
+
+## Versioning
+
+A package change needs a changeset (`bun run changeset`); if you bump a workspace's version
+by hand instead of through `changeset version`, also run `bun run lock:sync` so `bun.lock`'s
+recorded workspace versions and internal ranges stay in sync — see `docs/runbooks/releasing.md`.

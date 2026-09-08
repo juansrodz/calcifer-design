@@ -3,8 +3,13 @@
 ## Every release
 
 1. Open a PR with the change and a changeset (`bun run changeset`). CI fails without one.
-2. Merge it. The `release` job on `main` applies the changesets (`changeset version`),
-   commits `chore(release): version packages` back to `main`, builds, and stages every
+2. Merge it. The `release` job on `main` applies the changesets (`changeset version`), then
+   runs `bun run lock:sync` followed by `bun install --frozen-lockfile` — bun does not
+   refresh `bun.lock`'s recorded workspace versions and internal ranges on its own after a
+   workspace's `package.json` changes, so `lock:sync` rewrites just those lines before the
+   frozen-lockfile install verifies the result. A contributor who bumps a workspace version
+   by hand should run `bun run lock:sync` too. The job then commits
+   `chore(release): version packages` back to `main`, builds, and stages every
    version npmjs does not have yet with `npm stage publish --access public --provenance`
    through trusted publishing, then pushes the tags. `main` is therefore always what is
    staged, one version commit ahead of the merge — a version is public on npm only after a
@@ -75,3 +80,4 @@
   by run `ae60094` on `main`, which also exercised the already-staged recovery path (npm
   `E409`), and approved on 2026-09-08 from the CLI web-auth flow. The publish script now
   asserts that every packed internal range satisfies the workspace version.
+- 2026-09-08: external-consumer check (spec §7): fresh directory with an `.npmrc` containing only `registry=https://registry.npmjs.org/`, `@calcifer-design/tokens ^0.1.1` and `@calcifer-design/ui ^0.1.2` — 18 packages installed, a single copy of tokens, `renderToString(<Button>Hello</Button>)` rendered `<button type="button" tabindex="0" data-variant="primary" data-size="md" class="root-kIffN"><span class="label-Ujxp1">Hello</span></button>`, and `tokens.css` resolved. Run by the final plan-5 review.

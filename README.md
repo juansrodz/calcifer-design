@@ -28,20 +28,20 @@ React 19 is a peer dependency of `@calcifer-design/ui`.
 
 ## Commands
 
-| Command                   | What it does                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------- |
-| `bun install`             | Install with the isolated linker                                                                   |
-| `bun run dev`             | Rslib watchers for tokens, then ui                                                                 |
-| `bun run build`           | Build both packages into `dist`                                                                    |
-| `bun run test`            | Vitest across the packages and the publish script                                                  |
-| `bun run test:dist`       | Checks the built output; needs `build` first                                                       |
-| `bun run lint`            | ESLint, stylelint (token-only CSS values), Prettier check                                          |
-| `bun run typecheck`       | `tsc` in every workspace (ui builds first so its CSS Module types exist)                           |
-| `bun run storybook`       | Storybook on port 6006                                                                             |
-| `bun run storybook:build` | Static Storybook into `packages/ui/storybook-static`                                               |
-| `bun run changeset`       | Add a changeset (CI requires one for any package change)                                           |
-| `bun run release`         | Stage unpublished versions on npmjs from CI (`main`); publishes directly when run by hand with 2FA |
-| `bun run check`           | lint, typecheck, test, build, dist test, Storybook build                                           |
+| Command                   | What it does                                                                                                               |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `bun install`             | Install with the isolated linker                                                                                           |
+| `bun run dev`             | Rslib watchers for tokens, then ui                                                                                         |
+| `bun run build`           | Build both packages into `dist`                                                                                            |
+| `bun run test`            | Vitest across the packages and the publish script                                                                          |
+| `bun run test:dist`       | Checks the built output; needs `build` first                                                                               |
+| `bun run lint`            | ESLint, stylelint (token-only CSS values), Prettier check                                                                  |
+| `bun run typecheck`       | Builds tokens, then root `tsc`, then each workspace's own typecheck (ui builds itself first so its CSS Module types exist) |
+| `bun run storybook`       | Storybook on port 6006                                                                                                     |
+| `bun run storybook:build` | Static Storybook into `packages/ui/storybook-static`                                                                       |
+| `bun run changeset`       | Add a changeset (CI requires one for any package change)                                                                   |
+| `bun run release`         | Stage unpublished versions on npmjs from CI (`main`); publishes directly when run by hand with 2FA                         |
+| `bun run check`           | lint, typecheck, test, build, dist test, Storybook build                                                                   |
 
 Releases: every merge to `main` with a pending changeset stages a release on npmjs, which a
 maintainer then approves with 2FA; `main` is always what is staged. See
