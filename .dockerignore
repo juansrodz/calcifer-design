@@ -1,0 +1,3 @@
+*
+!docker/
+!packages/ui/storybook-static/

@@ -66,6 +66,17 @@
 3. Repository settings: Pages → Source: GitHub Actions. No branch protection that blocks
    the Actions bot from pushing to `main`.
 
+## Storybook image
+
+Every `main` run's `storybook-image` job (after `pages` succeeds) builds
+`packages/ui/storybook-static` into `docker/storybook.Dockerfile`, pushes
+`portfolio/storybook:<sha12>` to ECR under the role `portfolio-storybook-publisher`, and
+dispatches a `storybook-image` `repository_dispatch` event with `{ tag, uiVersion }` to
+`juansrodz/portfolio-mfe`, asking it to deploy that Storybook build. The variables
+(`AWS_ROLE_ARN`, `AWS_REGION`, `ECR_REGISTRY`) and the secret `PORTFOLIO_DISPATCH_TOKEN`
+(a fine-grained token scoped to `contents: write` on `juansrodz/portfolio-mfe` only,
+rotated yearly) live in this repository's settings.
+
 ## Record
 
 - 2026-09-07: `0.1.0` of both packages published manually by juansrodz with web-auth 2FA;

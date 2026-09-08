@@ -7,3 +7,14 @@ updates:
     groups:
       minor-and-patch:
         update-types: ['minor', 'patch']
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types: ['minor', 'patch']
