@@ -21,3 +21,5 @@ export type { NavMenuProps, NavItem, LinkRenderProps } from './components/NavMen
 export { useMediaQuery, minWidth } from './hooks/useMediaQuery';
 export { DataTable, createColumnHelper } from './components/DataTable/DataTable';
 export type { DataTableProps, ColumnDef, SortingState } from './components/DataTable/DataTable';
+export { Spinner } from './components/Spinner/Spinner';
+export type { SpinnerProps } from './components/Spinner/Spinner';
