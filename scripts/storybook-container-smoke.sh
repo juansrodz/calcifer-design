@@ -41,8 +41,15 @@ grep -q '^HTTP/1.1 301' <<<"$redirect_headers" || fail "/storybook should redire
 grep -qi '^location: /storybook/$' <<<"$redirect_headers" ||
   fail "the redirect should be relative (absolute_redirect off)"
 
-hashed="$(find packages/ui/storybook-static -maxdepth 1 -type f -name '*.js' |
-  grep -E '\.[0-9a-f]{8,}\.' | head -n 1 | xargs -r basename)"
+# Largest first, and `|| true` on the pipeline, for two separate reasons.
+# Largest: the smallest content-hashed bundle in a real Storybook build is 355 bytes, under
+# gzip_min_length, so picking whichever file the filesystem lists first would fail the gzip
+# assertion below for the wrong reason.
+# `|| true`: under `set -euo pipefail` a grep that matches nothing exits 1, which propagates as
+# the pipeline's status and kills the script at this assignment — before the guard on the next
+# line can print anything. The diagnostic would be dead code in exactly the case it is for.
+hashed="$(cd packages/ui/storybook-static && ls -S -- *.js 2>/dev/null |
+  grep -E '\.[0-9a-f]{8,}\.' | head -n 1 || true)"
 [ -n "$hashed" ] || fail "no content-hashed JS bundle in packages/ui/storybook-static"
 
 asset_headers="$(curl --silent --show-error --dump-header - --output /dev/null \
