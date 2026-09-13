@@ -1,0 +1,74 @@
+/**
+ * Answers what `Cache-Control` the Storybook nginx config sets for a given request path, by
+ * reading the config itself rather than by restating its rules here — a copy of the rules would
+ * agree with a broken config just as happily as with a correct one.
+ *
+ * Models the subset of nginx's location matching this config uses: an exact `location = <path>`
+ * first, then regex locations in the order written, then the longest matching prefix location.
+ * That order is only correct while no prefix location carries `^~`, which none here does.
+ */
+interface CacheLocation {
+  pattern: RegExp;
+  cacheControl: string | null;
+}
+
+function escapeForRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Locations in nginx's own matching order for this file: the exact `=` match, then regex
+ * locations as written, then prefix locations longest-first. Parsed line by line rather than
+ * with one block-shaped regular expression, because the immutable location's own pattern
+ * contains both `{` and `}` and would end any block match early.
+ */
+function parseLocations(conf: string): CacheLocation[] {
+  const exact: CacheLocation[] = [];
+  const regex: CacheLocation[] = [];
+  const prefix: CacheLocation[] = [];
+  let current: { marker: string; target: string; cacheControl: string | null } | null = null;
+
+  for (const rawLine of conf.split('\n')) {
+    const line = rawLine.trim();
+    const opening = /^location\s+(?:(=)\s+|(~)\s+)?(".*"|\S+)\s*\{$/.exec(line);
+    if (opening !== null) {
+      current = {
+        marker: opening[1] ?? opening[2] ?? '',
+        target: (opening[3] ?? '').replace(/^"|"$/g, ''),
+        cacheControl: null,
+      };
+      continue;
+    }
+    if (current === null) {
+      continue;
+    }
+    const header = /^add_header\s+Cache-Control\s+"([^"]+)"/.exec(line);
+    if (header !== null) {
+      current.cacheControl = header[1] ?? null;
+      continue;
+    }
+    if (line === '}') {
+      const { marker, target, cacheControl } = current;
+      if (marker === '~') {
+        regex.push({ pattern: new RegExp(target), cacheControl });
+      } else if (marker === '=') {
+        exact.push({ pattern: new RegExp(`^${escapeForRegExp(target)}$`), cacheControl });
+      } else {
+        prefix.push({ pattern: new RegExp(`^${escapeForRegExp(target)}`), cacheControl });
+      }
+      current = null;
+    }
+  }
+
+  prefix.sort((left, right) => right.pattern.source.length - left.pattern.source.length);
+  return [...exact, ...regex, ...prefix];
+}
+
+export function cacheControlFor(conf: string, requestPath: string): string | null {
+  for (const location of parseLocations(conf)) {
+    if (location.pattern.test(requestPath)) {
+      return location.cacheControl;
+    }
+  }
+  return null;
+}

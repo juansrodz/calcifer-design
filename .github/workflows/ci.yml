@@ -33,6 +33,10 @@ jobs:
         if: github.event_name == 'pull_request'
         run: bun run changeset:status
       - run: bun run check
+      - name: Build the Storybook image
+        run: docker build --file docker/storybook.Dockerfile --tag storybook-check:${{ github.sha }} .
+      - name: The Storybook container compresses and revalidates correctly
+        run: bash scripts/storybook-container-smoke.sh storybook-check:${{ github.sha }}
 
   release:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
