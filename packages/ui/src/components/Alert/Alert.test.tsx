@@ -6,7 +6,7 @@ import { axe } from '../../../test/axe';
 import { Alert } from './Alert';
 import * as stories from './Alert.stories';
 
-const { Info, Success, Warning, Danger, WithTitle, Dismissible, Announced } =
+const { Info, Success, Warning, Danger, WithHeading, Dismissible, Announced } =
   composeStories(stories);
 
 describe('Alert', () => {
@@ -15,7 +15,7 @@ describe('Alert', () => {
     ['Success', Success],
     ['Warning', Warning],
     ['Danger', Danger],
-    ['WithTitle', WithTitle],
+    ['WithHeading', WithHeading],
     ['Dismissible', Dismissible],
     ['Announced', Announced],
   ])('%s has no axe violations', async (_name, Story) => {
@@ -54,21 +54,21 @@ describe('Alert', () => {
     expect(screen.getByText(word)).toBeInTheDocument();
   });
 
-  it('renders the title as a heading above the body', () => {
-    render(<WithTitle />);
+  it('renders the heading above the body', () => {
+    render(<WithHeading />);
     expect(screen.getByRole('heading', { name: 'Remote unavailable' })).toBeInTheDocument();
   });
 
-  it('renders the title as an h3 by default', () => {
-    render(<Alert title="Remote unavailable">Body copy.</Alert>);
+  it('renders the heading as an h3 by default', () => {
+    render(<Alert heading="Remote unavailable">Body copy.</Alert>);
     expect(
       screen.getByRole('heading', { level: 3, name: 'Remote unavailable' }),
     ).toBeInTheDocument();
   });
 
-  it('renders the title at the requested heading level', () => {
+  it('renders the heading at the requested level', () => {
     render(
-      <Alert title="Remote unavailable" titleLevel={2}>
+      <Alert heading="Remote unavailable" headingLevel={2}>
         Body copy.
       </Alert>,
     );

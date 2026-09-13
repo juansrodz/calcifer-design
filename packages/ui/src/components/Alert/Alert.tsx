@@ -7,9 +7,9 @@ export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
 export interface AlertProps {
   tone?: AlertTone;
   /** Rendered above the body as a heading. */
-  title?: ReactNode;
-  /** The title's heading level. Match it to where the alert sits in the page's outline. */
-  titleLevel?: 2 | 3 | 4;
+  heading?: ReactNode;
+  /** The heading's level. Match it to where the alert sits in the page's outline. */
+  headingLevel?: 2 | 3 | 4;
   children: ReactNode;
   /**
    * Announce this alert to assistive technology. Off by default and deliberately so: an alert
@@ -32,7 +32,7 @@ const toneWords: Record<AlertTone, string> = {
   danger: 'Error',
 };
 
-const titleTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
+const headingTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
 
 /** Every glyph here is a 16px stroke drawing that takes its colour from the surrounding text. */
 const iconProps = {
@@ -96,8 +96,8 @@ function DismissIcon() {
 
 export function Alert({
   tone = 'info',
-  title,
-  titleLevel = 3,
+  heading,
+  headingLevel = 3,
   children,
   announce = false,
   onDismiss,
@@ -110,7 +110,7 @@ export function Alert({
   // The `?? 'h3'` is for JavaScript callers, who are not held to the `2 | 3 | 4` union:
   // an out-of-range level would otherwise resolve to `undefined` and throw in React as an
   // invalid element type. `@calcifer-design/ui` is consumed from JavaScript apps.
-  const Title = titleTags[titleLevel] ?? 'h3';
+  const Heading = headingTags[headingLevel] ?? 'h3';
   return (
     <div className={styles.root} data-tone={tone} data-testid="alert" {...liveProps}>
       <span className={styles.icon}>
@@ -118,7 +118,7 @@ export function Alert({
       </span>
       <div className={styles.body}>
         <span className={styles.toneWord}>{toneWords[tone]}</span>
-        {title !== undefined ? <Title className={styles.title}>{title}</Title> : null}
+        {heading !== undefined ? <Heading className={styles.heading}>{heading}</Heading> : null}
         <div>{children}</div>
       </div>
       {onDismiss !== undefined ? (

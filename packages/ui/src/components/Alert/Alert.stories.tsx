@@ -27,10 +27,10 @@ export const Warning: Story = {
 export const Danger: Story = {
   args: { tone: 'danger', children: 'The showcase remote failed to load.' },
 };
-export const WithTitle: Story = {
+export const WithHeading: Story = {
   args: {
     tone: 'danger',
-    title: 'Remote unavailable',
+    heading: 'Remote unavailable',
     children: 'The showcase remote failed to load.',
   },
 };

@@ -63,9 +63,9 @@ describe('ErrorBoundary', () => {
     ).toBeInTheDocument();
   });
 
-  it('forwards titleLevel to the default fallback', () => {
+  it('forwards headingLevel to the default fallback', () => {
     render(
-      <ErrorBoundary titleLevel={2}>
+      <ErrorBoundary headingLevel={2}>
         <Flaky />
       </ErrorBoundary>,
     );

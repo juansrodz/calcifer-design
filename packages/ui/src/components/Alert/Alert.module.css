@@ -70,7 +70,7 @@
   min-width: 0;
 }
 
-.title {
+.heading {
   font-size: var(--text-sm);
   font-weight: 600;
   line-height: var(--leading-snug);
