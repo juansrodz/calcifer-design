@@ -1,0 +1,47 @@
+/* A quiet surface that breathes between two opacities. Deliberately not a travelling highlight:
+   a moving gradient is expensive to paint on a long list and reads as activity the page does not
+   actually have. base.css collapses the animation under prefers-reduced-motion. */
+.root {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-3);
+  animation-name: pulse;
+  animation-duration: var(--motion-duration-4);
+  animation-timing-function: var(--motion-ease);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.root[data-variant='text'] {
+  width: 100%;
+  height: 1em;
+}
+
+.root[data-variant='block'] {
+  width: 100%;
+  height: 6rem;
+  border-radius: var(--radius-md);
+}
+
+.root[data-variant='circle'] {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.5;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

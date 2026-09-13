@@ -23,3 +23,5 @@ export { DataTable, createColumnHelper } from './components/DataTable/DataTable'
 export type { DataTableProps, ColumnDef, SortingState } from './components/DataTable/DataTable';
 export { Spinner } from './components/Spinner/Spinner';
 export type { SpinnerProps } from './components/Spinner/Spinner';
+export { Skeleton } from './components/Skeleton/Skeleton';
+export type { SkeletonProps } from './components/Skeleton/Skeleton';
