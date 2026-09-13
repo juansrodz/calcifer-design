@@ -409,7 +409,9 @@ describe('Skeleton', () => {
 
   it('applies the given dimensions to a block', () => {
     render(<Block />);
-    expect(screen.getByTestId('skeleton')).toHaveStyle({ height: '8rem' });
+    // The inline style, not the computed one: jsdom resolves 8rem to 128px, and asserting the
+    // resolved pixels would test jsdom's root font size rather than the component's own wiring.
+    expect(screen.getByTestId('skeleton').style.height).toBe('8rem');
   });
 });
 ```
