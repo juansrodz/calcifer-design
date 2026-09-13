@@ -21,3 +21,22 @@ export type { NavMenuProps, NavItem, LinkRenderProps } from './components/NavMen
 export { useMediaQuery, minWidth } from './hooks/useMediaQuery';
 export { DataTable, createColumnHelper } from './components/DataTable/DataTable';
 export type { DataTableProps, ColumnDef, SortingState } from './components/DataTable/DataTable';
+export { Spinner } from './components/Spinner/Spinner';
+export type { SpinnerProps } from './components/Spinner/Spinner';
+export { Skeleton } from './components/Skeleton/Skeleton';
+export type { SkeletonProps } from './components/Skeleton/Skeleton';
+export { IconButton } from './components/IconButton/IconButton';
+export type {
+  IconButtonProps,
+  IconButtonVariant,
+  IconButtonSize,
+} from './components/IconButton/IconButton';
+export { Alert } from './components/Alert/Alert';
+export type { AlertProps, AlertTone } from './components/Alert/Alert';
+export { Avatar } from './components/Avatar/Avatar';
+export type { AvatarProps } from './components/Avatar/Avatar';
+export { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
+export type {
+  ErrorBoundaryProps,
+  ErrorBoundaryFallbackDetails,
+} from './components/ErrorBoundary/ErrorBoundary';

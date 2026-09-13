@@ -1,0 +1,74 @@
+/* A square sibling of Button: the same variants and transitions, but sized to the touch target
+   rather than to a text label, and with no room for one. */
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-touch);
+  min-width: var(--size-touch);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition-property: background-color, color, border-color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.root[data-size='sm'] {
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+}
+
+.root[data-variant='secondary'] {
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.root[data-variant='primary'] {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+@media (hover: hover) {
+  .root[data-variant='ghost']:hover:not([data-disabled]) {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+  }
+
+  .root[data-variant='secondary']:hover:not([data-disabled]) {
+    background: var(--color-surface-2);
+  }
+
+  .root[data-variant='primary']:hover:not([data-disabled]) {
+    background: var(--color-accent-hover);
+  }
+}
+
+.root:active:not([data-disabled]) {
+  transform: scale(0.96);
+}
+
+.root[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.icon > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.root[data-size='sm'] .icon > svg {
+  width: 1rem;
+  height: 1rem;
+}
