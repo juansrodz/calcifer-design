@@ -1303,7 +1303,10 @@ export function Alert({
   onDismiss,
   dismissLabel = 'Dismiss',
 }: AlertProps) {
-  const politeness = tone === 'danger' ? 'assertive' : 'polite';
+  // Annotated, not inferred: inside the object literal below the property would widen to
+  // `string`, and React types `aria-live` as the narrow 'off' | 'assertive' | 'polite' union.
+  // (`role` widens to `string` harmlessly, because React's AriaRole admits `string & {}`.)
+  const politeness: 'assertive' | 'polite' = tone === 'danger' ? 'assertive' : 'polite';
   const liveProps = announce
     ? { role: tone === 'danger' ? 'alert' : 'status', 'aria-live': politeness }
     : {};
@@ -1632,7 +1635,12 @@ Expected: PASS, 12 tests.
 ./node_modules/.bin/prettier --write packages/ui/src/components/Avatar packages/ui/src/index.ts
 ./node_modules/.bin/eslint packages/ui/src/components/Avatar packages/ui/src/index.ts
 ./node_modules/.bin/stylelint "packages/ui/src/components/Avatar/*.css"
+bun run typecheck
 ```
+
+The typecheck is not optional and not redundant with the others: `prettier`, `eslint` and
+`stylelint` all pass happily on code `tsc` rejects, and an earlier component in this plan shipped
+a type error that only `tsc` caught.
 
 - [ ] **Step 9: Write the changeset**
 
@@ -1983,7 +1991,12 @@ Expected: PASS, 11 tests.
 ./node_modules/.bin/prettier --write packages/ui/src/components/ErrorBoundary packages/ui/src/index.ts
 ./node_modules/.bin/eslint packages/ui/src/components/ErrorBoundary packages/ui/src/index.ts
 ./node_modules/.bin/stylelint "packages/ui/src/components/ErrorBoundary/*.css"
+bun run typecheck
 ```
+
+The typecheck is not optional and not redundant with the others: `prettier`, `eslint` and
+`stylelint` all pass happily on code `tsc` rejects, and an earlier component in this plan shipped
+a type error that only `tsc` caught.
 
 - [ ] **Step 9: Write the changeset**
 
