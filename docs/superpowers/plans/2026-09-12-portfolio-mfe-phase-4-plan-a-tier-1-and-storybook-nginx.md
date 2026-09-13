@@ -2191,7 +2191,9 @@ const stableNamed = [
 describe('the Storybook nginx config', () => {
   it('serves through root, not alias', () => {
     expect(conf).toMatch(/^\s*root\s+\/usr\/share\/nginx\/html;/m);
-    expect(conf).not.toMatch(/\balias\b/);
+    // An `alias` DIRECTIVE, not the word: the comment above `root` names alias on purpose, to
+    // warn the next reader off it. A regex that forbade the word would forbid the warning.
+    expect(conf).not.toMatch(/^\s*alias\s/m);
   });
 
   it('copies the build into the storybook/ subdirectory that root then resolves', () => {
