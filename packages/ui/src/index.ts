@@ -31,3 +31,5 @@ export type {
   IconButtonVariant,
   IconButtonSize,
 } from './components/IconButton/IconButton';
+export { Alert } from './components/Alert/Alert';
+export type { AlertProps, AlertTone } from './components/Alert/Alert';
