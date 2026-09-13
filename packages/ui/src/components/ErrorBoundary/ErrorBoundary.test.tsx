@@ -63,6 +63,32 @@ describe('ErrorBoundary', () => {
     ).toBeInTheDocument();
   });
 
+  it('forwards titleLevel to the default fallback', () => {
+    render(
+      <ErrorBoundary titleLevel={2}>
+        <Flaky />
+      </ErrorBoundary>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Something went wrong' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders its children again when a custom fallback calls reset', async () => {
+    render(
+      <ErrorBoundary
+        fallback={({ error, reset }) => <button onClick={reset}>{error.message}</button>}
+      >
+        <Flaky />
+      </ErrorBoundary>,
+    );
+    shouldThrow = false;
+    await userEvent.click(
+      screen.getByRole('button', { name: 'The showcase remote failed to mount.' }),
+    );
+    expect(screen.getByText('The showcase remote mounted.')).toBeInTheDocument();
+  });
+
   it('reports the error and its component stack to onError', () => {
     const onError = vi.fn();
     render(

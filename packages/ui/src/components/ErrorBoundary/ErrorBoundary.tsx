@@ -22,6 +22,8 @@ export interface ErrorBoundaryProps {
   resetKeys?: readonly unknown[];
   /** The default fallback's heading. */
   title?: string;
+  /** The title's heading level. Match it to where the alert sits in the page's outline. */
+  titleLevel?: 2 | 3 | 4;
   /** The default fallback's retry control. */
   retryLabel?: string;
 }
@@ -69,6 +71,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       children,
       fallback,
       title = 'Something went wrong',
+      titleLevel = 3,
       retryLabel = 'Try again',
     } = this.props;
 
@@ -84,7 +87,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <div className={styles.root}>
         {/* `announce` is right here and wrong for most alerts: this one only ever appears after
             the page has already rendered, in response to something that just failed. */}
-        <Alert tone="danger" announce title={title}>
+        <Alert tone="danger" announce title={title} titleLevel={titleLevel}>
           {error.message}
         </Alert>
         <Button variant="secondary" size="sm" onClick={this.reset}>

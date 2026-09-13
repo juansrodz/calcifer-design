@@ -52,11 +52,16 @@ describe('Skeleton', () => {
     expect(container.querySelectorAll('[data-variant="text"]')).toHaveLength(0);
   });
 
-  it.each([-3, 2.5, Number.NaN])(
-    'clamps an out-of-range line count (%p) instead of throwing',
-    (lines) => {
+  it.each([
+    [-3, 0],
+    [Number.NaN, 0],
+    [2.5, 2],
+    [1e21, 100],
+  ])(
+    'truncates and caps an out-of-range line count (%p) instead of throwing',
+    (lines, expectedBarCount) => {
       const { container } = render(<Skeleton lines={lines} />);
-      expect(container.querySelectorAll('[data-variant="text"]')).toHaveLength(0);
+      expect(container.querySelectorAll('[data-variant="text"]')).toHaveLength(expectedBarCount);
     },
   );
 });

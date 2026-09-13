@@ -8,6 +8,8 @@ export interface AlertProps {
   tone?: AlertTone;
   /** Rendered above the body as a heading. */
   title?: ReactNode;
+  /** The title's heading level. Match it to where the alert sits in the page's outline. */
+  titleLevel?: 2 | 3 | 4;
   children: ReactNode;
   /**
    * Announce this alert to assistive technology. Off by default and deliberately so: an alert
@@ -88,6 +90,7 @@ function DismissIcon() {
 export function Alert({
   tone = 'info',
   title,
+  titleLevel = 3,
   children,
   announce = false,
   onDismiss,
@@ -97,6 +100,7 @@ export function Alert({
   const liveProps = announce
     ? { role: tone === 'danger' ? 'alert' : 'status', 'aria-live': politeness }
     : {};
+  const Title = titleLevel === 2 ? 'h2' : titleLevel === 4 ? 'h4' : 'h3';
   return (
     <div className={styles.root} data-tone={tone} data-testid="alert" {...liveProps}>
       <span className={styles.icon}>
@@ -104,7 +108,7 @@ export function Alert({
       </span>
       <div className={styles.body}>
         <span className={styles.toneWord}>{toneWords[tone]}</span>
-        {title === undefined ? null : <h3 className={styles.title}>{title}</h3>}
+        {title === undefined ? null : <Title className={styles.title}>{title}</Title>}
         <div>{children}</div>
       </div>
       {onDismiss === undefined ? null : (

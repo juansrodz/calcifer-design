@@ -5,7 +5,10 @@
  *
  * Models the subset of nginx's location matching this config uses: an exact `location = <path>`
  * first, then regex locations in the order written, then the longest matching prefix location.
- * That order is only correct while no prefix location carries `^~`, which none here does.
+ * That order is only correct while no prefix location carries `^~`, which none here does. A
+ * `location` line the parser cannot fit into that model — `^~`, `~*`, or an opening brace closed
+ * on the same line — is rejected with a thrown error rather than silently dropped: a location the
+ * parser cannot see is a location whose policy this module cannot vouch for.
  */
 interface CacheLocation {
   pattern: RegExp;
@@ -38,6 +41,9 @@ function parseLocations(conf: string): CacheLocation[] {
         cacheControl: null,
       };
       continue;
+    }
+    if (/^location\b/.test(line)) {
+      throw new Error(`storybook-cache-policy: unparseable location line: ${line}`);
     }
     if (current === null) {
       continue;

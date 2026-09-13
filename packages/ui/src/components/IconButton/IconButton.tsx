@@ -13,10 +13,12 @@ export interface IconButtonProps extends Omit<
   /**
    * The button's accessible name. Required: there is no visible text to fall back on.
    *
-   * `aria-label` and `aria-labelledby` are deliberately not accepted. `aria-labelledby` beats
+   * The type deliberately rejects `aria-label` and `aria-labelledby`. `aria-labelledby` beats
    * `aria-label` in the accessible-name algorithm no matter which order the props are written
    * in, so a caller passing it alongside `label` would silently replace the name this component
-   * is supposed to guarantee.
+   * is supposed to guarantee. TypeScript does not excess-property-check a JSX spread, though: an
+   * object built elsewhere and spread in as `{...props}` can still smuggle either through to the
+   * DOM, where it wins the accessible-name algorithm the same way. There is no runtime guard.
    */
   label: string;
   variant?: IconButtonVariant;

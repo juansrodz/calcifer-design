@@ -4,6 +4,8 @@
 # check job, after `bun run check` has produced packages/ui/storybook-static.
 set -euo pipefail
 
+cd "$(dirname "$0")/.."
+
 image="${1:?usage: storybook-container-smoke.sh <image-tag>}"
 base="http://127.0.0.1:18080"
 container=""
@@ -17,6 +19,9 @@ trap cleanup EXIT
 
 fail() {
   echo "storybook-container-smoke: $1" >&2
+  if [ -n "$container" ]; then
+    docker logs "$container" 2>&1 | tail -50 >&2
+  fi
   exit 1
 }
 
@@ -24,7 +29,7 @@ container="$(docker run --detach --publish 127.0.0.1:18080:8080 "$image")"
 
 ready=""
 for _attempt in $(seq 1 40); do
-  if curl --fail --silent --show-error --output /dev/null "${base}/storybook/"; then
+  if curl --fail --silent --output /dev/null "${base}/storybook/"; then
     ready=yes
     break
   fi

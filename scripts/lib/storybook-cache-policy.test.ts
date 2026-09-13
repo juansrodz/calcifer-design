@@ -76,4 +76,15 @@ describe('the Storybook nginx config', () => {
   it('claims nothing outside the storybook prefix', () => {
     expect(cacheControlFor(conf, '/index.html')).toBeNull();
   });
+
+  it('throws on a location marker it cannot model, instead of silently dropping the block', () => {
+    // `^~` is the exact directive shape of the bug this file exists to prevent: the opening
+    // regex recognises only `=` and `~`, so this line would otherwise match nothing, leave
+    // `current` null, and make the whole block vanish from the parsed model.
+    const unparseableConf =
+      'location ^~ /storybook/assets/ { add_header Cache-Control "public, max-age=31536000, immutable" always; }';
+    expect(() => cacheControlFor(unparseableConf, '/storybook/assets/anything')).toThrow(
+      /unparseable location line/,
+    );
+  });
 });

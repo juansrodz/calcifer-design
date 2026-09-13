@@ -28,9 +28,10 @@ export function Skeleton({ variant = 'text', lines = 3, width, height }: Skeleto
     );
   }
 
-  // `lines` is a plain number on a published API, and `Array()` throws RangeError for a negative,
-  // fractional or non-finite length. Clamp rather than crash a consumer's render tree.
-  const lineCount = Number.isFinite(lines) && lines >= 0 && Number.isInteger(lines) ? lines : 0;
+  // A placeholder's job is to occupy space, so a fractional count truncates rather than renders
+  // nothing. The cap is what keeps `Array()` in range — `Number.isInteger(1e21)` is true, so an
+  // integer check alone still throws — and stops a miscomputed count freezing the tab.
+  const lineCount = Number.isFinite(lines) ? Math.min(Math.max(0, Math.trunc(lines)), 100) : 0;
   const lastLineIndex = lineCount - 1;
   return (
     <span className={styles.lines} data-testid="skeleton" aria-hidden="true">

@@ -59,6 +59,24 @@ describe('Alert', () => {
     expect(screen.getByRole('heading', { name: 'Remote unavailable' })).toBeInTheDocument();
   });
 
+  it('renders the title as an h3 by default', () => {
+    render(<Alert title="Remote unavailable">Body copy.</Alert>);
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Remote unavailable' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the title at the requested heading level', () => {
+    render(
+      <Alert title="Remote unavailable" titleLevel={2}>
+        Body copy.
+      </Alert>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Remote unavailable' }),
+    ).toBeInTheDocument();
+  });
+
   it('has no dismiss control unless onDismiss is given', () => {
     render(<Info />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
