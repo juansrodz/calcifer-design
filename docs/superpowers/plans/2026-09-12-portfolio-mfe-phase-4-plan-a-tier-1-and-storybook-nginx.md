@@ -840,9 +840,16 @@ export type IconButtonSize = 'md' | 'sm';
 
 export interface IconButtonProps extends Omit<
   ComponentPropsWithoutRef<typeof BaseButton>,
-  'className'
+  'className' | 'aria-label' | 'aria-labelledby'
 > {
-  /** The button's accessible name. Required: there is no visible text to fall back on. */
+  /**
+   * The button's accessible name. Required: there is no visible text to fall back on.
+   *
+   * `aria-label` and `aria-labelledby` are deliberately not accepted. `aria-labelledby` beats
+   * `aria-label` in the accessible-name algorithm no matter which order the props are written
+   * in, so a caller passing it alongside `label` would silently replace the name this component
+   * is supposed to guarantee.
+   */
   label: string;
   variant?: IconButtonVariant;
   size?: IconButtonSize;
