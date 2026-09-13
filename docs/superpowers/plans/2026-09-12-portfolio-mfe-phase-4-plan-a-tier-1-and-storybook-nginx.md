@@ -1718,7 +1718,10 @@ Create `packages/ui/src/components/ErrorBoundary/ErrorBoundary.stories.tsx`:
 import type { Meta, StoryObj } from '@storybook/react';
 import { ErrorBoundary } from './ErrorBoundary';
 
-function FailingRemote() {
+// `: never` is load-bearing, not decoration. Without it TypeScript infers `() => void` for a
+// function whose body only throws, and `<FailingRemote />` is then TS2786 — not a valid JSX
+// component, because `void` is not assignable to ReactNode.
+function FailingRemote(): never {
   throw new Error('The showcase remote failed to mount.');
 }
 
