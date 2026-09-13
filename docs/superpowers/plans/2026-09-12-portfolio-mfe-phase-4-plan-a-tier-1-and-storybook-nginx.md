@@ -875,7 +875,7 @@ export type {
 - [ ] **Step 7: Run the tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run --project ui IconButton`
-Expected: PASS, 13 tests.
+Expected: PASS, 14 tests.
 
 - [ ] **Step 8: Lint and format the files you touched**
 
@@ -1153,7 +1153,7 @@ Create `packages/ui/src/components/Alert/Alert.module.css`:
 
 .dismiss {
   flex: none;
-  margin-block-start: calc(var(--space-1) * -1);
+  align-self: flex-start;
 }
 
 .toneWord {
@@ -1308,7 +1308,7 @@ export type { AlertProps, AlertTone } from './components/Alert/Alert';
 - [ ] **Step 7: Run the tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run --project ui Alert`
-Expected: PASS, 18 tests.
+Expected: PASS, 19 tests.
 
 If the axe run reports a heading-order violation on `WithTitle`, that is real: the story renders an `<h3>` with no `<h2>` above it in an otherwise empty document. Fix it in the story, not in the component, by wrapping the story in a decorator that supplies a page heading — do not change the component's heading level, and do not disable the rule.
 
@@ -1591,7 +1591,7 @@ export type { AvatarProps } from './components/Avatar/Avatar';
 - [ ] **Step 7: Run the tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run --project ui Avatar`
-Expected: PASS, 13 tests.
+Expected: PASS, 12 tests.
 
 - [ ] **Step 8: Lint and format the files you touched**
 
@@ -1694,20 +1694,19 @@ import * as stories from './ErrorBoundary.stories';
 
 const { Caught, Healthy, CustomFallback } = composeStories(stories);
 
-// React reports every caught error through console.error. Silencing it here keeps an expected
-// error out of the output, so a real one still stands out.
-let consoleError: ReturnType<typeof vi.spyOn>;
+let shouldThrow = true;
 
+// React reports every caught error through console.error. Silencing it here keeps an expected
+// error out of the output, so a real one still stands out. `vi.spyOn` is not held in a typed
+// variable: its overloads make the annotation fight tsc for no benefit.
 beforeEach(() => {
-  consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(console, 'error').mockImplementation(() => {});
   shouldThrow = true;
 });
 
 afterEach(() => {
-  consoleError.mockRestore();
+  vi.restoreAllMocks();
 });
-
-let shouldThrow = true;
 
 function Flaky() {
   if (shouldThrow) {
