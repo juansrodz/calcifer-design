@@ -28,15 +28,18 @@ export function Skeleton({ variant = 'text', lines = 3, width, height }: Skeleto
     );
   }
 
-  const lastLineIndex = lines - 1;
+  // `lines` is a plain number on a published API, and `Array()` throws RangeError for a negative,
+  // fractional or non-finite length. Clamp rather than crash a consumer's render tree.
+  const lineCount = Number.isFinite(lines) && lines >= 0 && Number.isInteger(lines) ? lines : 0;
+  const lastLineIndex = lineCount - 1;
   return (
     <span className={styles.lines} data-testid="skeleton" aria-hidden="true">
-      {[...Array(lines).keys()].map((lineIndex) => (
+      {[...Array(lineCount).keys()].map((lineIndex) => (
         <span
           key={lineIndex}
           className={styles.root}
           data-variant="text"
-          style={lineIndex === lastLineIndex && lines > 1 ? { ...size, width: '60%' } : size}
+          style={lineIndex === lastLineIndex && lineCount > 1 ? { ...size, width: '60%' } : size}
         />
       ))}
     </span>
