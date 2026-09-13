@@ -35,3 +35,8 @@ export { Alert } from './components/Alert/Alert';
 export type { AlertProps, AlertTone } from './components/Alert/Alert';
 export { Avatar } from './components/Avatar/Avatar';
 export type { AvatarProps } from './components/Avatar/Avatar';
+export { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
+export type {
+  ErrorBoundaryProps,
+  ErrorBoundaryFallbackDetails,
+} from './components/ErrorBoundary/ErrorBoundary';
