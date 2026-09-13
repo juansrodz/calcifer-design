@@ -4,6 +4,10 @@ import { Spinner } from './Spinner';
 const meta = {
   title: 'Primitives/Spinner',
   component: Spinner,
+  args: { size: 'md' },
+  argTypes: {
+    size: { control: 'radio', options: ['sm', 'md', 'lg'] },
+  },
 } satisfies Meta<typeof Spinner>;
 
 export default meta;

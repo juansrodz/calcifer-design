@@ -15,6 +15,14 @@ interface CacheLocation {
   cacheControl: string | null;
 }
 
+/** A `location` block whose opening line has been read but whose closing `}` has not. */
+interface OpenLocation {
+  /** `=` for an exact location, `~` for a regex one, empty for a prefix one. */
+  marker: string;
+  target: string;
+  cacheControl: string | null;
+}
+
 function escapeForRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -26,18 +34,18 @@ function escapeForRegExp(literal: string): string {
  * contains both `{` and `}` and would end any block match early.
  */
 function parseLocations(conf: string): CacheLocation[] {
-  const exact: CacheLocation[] = [];
-  const regex: CacheLocation[] = [];
-  const prefix: CacheLocation[] = [];
-  let current: { marker: string; target: string; cacheControl: string | null } | null = null;
+  const exactLocations: CacheLocation[] = [];
+  const regexLocations: CacheLocation[] = [];
+  const prefixLocations: CacheLocation[] = [];
+  let openLocation: OpenLocation | null = null;
 
   for (const rawLine of conf.split('\n')) {
     const line = rawLine.trim();
-    const opening = /^location\s+(?:(=)\s+|(~)\s+)?(".*"|\S+)\s*\{$/.exec(line);
+    const opening = /^location\s+(?:([=~])\s+)?(".*"|\S+)\s*\{$/.exec(line);
     if (opening !== null) {
-      current = {
-        marker: opening[1] ?? opening[2] ?? '',
-        target: (opening[3] ?? '').replace(/^"|"$/g, ''),
+      openLocation = {
+        marker: opening[1] ?? '',
+        target: (opening[2] ?? '').replace(/^"|"$/g, ''),
         cacheControl: null,
       };
       continue;
@@ -45,29 +53,33 @@ function parseLocations(conf: string): CacheLocation[] {
     if (/^location\b/.test(line)) {
       throw new Error(`storybook-cache-policy: unparseable location line: ${line}`);
     }
-    if (current === null) {
+    if (openLocation === null) {
       continue;
     }
     const header = /^add_header\s+Cache-Control\s+"([^"]+)"/.exec(line);
     if (header !== null) {
-      current.cacheControl = header[1] ?? null;
+      openLocation.cacheControl = header[1] ?? null;
       continue;
     }
     if (line === '}') {
-      const { marker, target, cacheControl } = current;
+      const { marker, target, cacheControl } = openLocation;
       if (marker === '~') {
-        regex.push({ pattern: new RegExp(target), cacheControl });
+        regexLocations.push({ pattern: new RegExp(target), cacheControl });
       } else if (marker === '=') {
-        exact.push({ pattern: new RegExp(`^${escapeForRegExp(target)}$`), cacheControl });
+        exactLocations.push({ pattern: new RegExp(`^${escapeForRegExp(target)}$`), cacheControl });
       } else {
-        prefix.push({ pattern: new RegExp(`^${escapeForRegExp(target)}`), cacheControl });
+        prefixLocations.push({ pattern: new RegExp(`^${escapeForRegExp(target)}`), cacheControl });
       }
-      current = null;
+      openLocation = null;
     }
   }
 
-  prefix.sort((left, right) => right.pattern.source.length - left.pattern.source.length);
-  return [...exact, ...regex, ...prefix];
+  // Longest prefix wins, as in nginx. This ranks by escaped source length rather than by the
+  // prefix itself, so an escaped metacharacter could let a shorter prefix tie a longer one.
+  // Moot while the config has one prefix location; sort on the unescaped target before a
+  // second one is added.
+  prefixLocations.sort((left, right) => right.pattern.source.length - left.pattern.source.length);
+  return [...exactLocations, ...regexLocations, ...prefixLocations];
 }
 
 export function cacheControlFor(conf: string, requestPath: string): string | null {

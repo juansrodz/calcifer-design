@@ -11,11 +11,8 @@ export interface SkeletonProps {
 }
 
 export function Skeleton({ variant = 'text', lines = 3, width, height }: SkeletonProps) {
-  const size = {
-    ...(width === undefined ? {} : { width }),
-    ...(height === undefined ? {} : { height }),
-  };
-
+  // Both branches pass `width` and `height` straight through: React skips a style property whose
+  // value is `undefined`, so an unset dimension falls through to the stylesheet.
   if (variant !== 'text') {
     return (
       <span
@@ -23,7 +20,7 @@ export function Skeleton({ variant = 'text', lines = 3, width, height }: Skeleto
         data-variant={variant}
         data-testid="skeleton"
         aria-hidden="true"
-        style={size}
+        style={{ width, height }}
       />
     );
   }
@@ -32,17 +29,19 @@ export function Skeleton({ variant = 'text', lines = 3, width, height }: Skeleto
   // nothing. The cap is what keeps `Array()` in range — `Number.isInteger(1e21)` is true, so an
   // integer check alone still throws — and stops a miscomputed count freezing the tab.
   const lineCount = Number.isFinite(lines) ? Math.min(Math.max(0, Math.trunc(lines)), 100) : 0;
-  const lastLineIndex = lineCount - 1;
   return (
     <span className={styles.lines} data-testid="skeleton" aria-hidden="true">
-      {[...Array(lineCount).keys()].map((lineIndex) => (
-        <span
-          key={lineIndex}
-          className={styles.root}
-          data-variant="text"
-          style={lineIndex === lastLineIndex && lineCount > 1 ? { ...size, width: '60%' } : size}
-        />
-      ))}
+      {[...Array(lineCount).keys()].map((lineIndex) => {
+        const isLastOfSeveral = lineCount > 1 && lineIndex === lineCount - 1;
+        return (
+          <span
+            key={lineIndex}
+            className={styles.root}
+            data-variant="text"
+            style={{ width: isLastOfSeveral ? '60%' : width, height }}
+          />
+        );
+      })}
     </span>
   );
 }

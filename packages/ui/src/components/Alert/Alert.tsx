@@ -32,19 +32,45 @@ const toneWords: Record<AlertTone, string> = {
   danger: 'Error',
 };
 
+const titleTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
+
+/** Every glyph here is a 16px stroke drawing that takes its colour from the surrounding text. */
+const iconProps = {
+  viewBox: '0 0 16 16',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.5,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+} as const;
+
+/** The marks inside the ring. `warning` is drawn as a triangle instead and never reaches here. */
+function ringMarks(tone: 'info' | 'success' | 'danger'): ReactNode {
+  switch (tone) {
+    case 'success':
+      return <path d="M5.25 8.25 7.25 10.25 10.9 6" />;
+    case 'danger':
+      return (
+        <>
+          <path d="m5.9 5.9 4.2 4.2" />
+          <path d="m10.1 5.9-4.2 4.2" />
+        </>
+      );
+    case 'info':
+      return (
+        <>
+          <path d="M8 7.25v4" />
+          <path d="M8 4.9h.01" />
+        </>
+      );
+  }
+}
+
 function ToneIcon({ tone }: { tone: AlertTone }) {
-  const shared = {
-    viewBox: '0 0 16 16',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.5,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true,
-  } as const;
   if (tone === 'warning') {
     return (
-      <svg {...shared}>
+      <svg {...iconProps}>
         <path d="M8 2.4 14.6 13.6H1.4z" />
         <path d="M8 6.4v3.2" />
         <path d="M8 11.7h.01" />
@@ -52,35 +78,16 @@ function ToneIcon({ tone }: { tone: AlertTone }) {
     );
   }
   return (
-    <svg {...shared}>
+    <svg {...iconProps}>
       <circle cx="8" cy="8" r="6.25" />
-      {tone === 'success' ? (
-        <path d="M5.25 8.25 7.25 10.25 10.9 6" />
-      ) : tone === 'danger' ? (
-        <>
-          <path d="m5.9 5.9 4.2 4.2" />
-          <path d="m10.1 5.9-4.2 4.2" />
-        </>
-      ) : (
-        <>
-          <path d="M8 7.25v4" />
-          <path d="M8 4.9h.01" />
-        </>
-      )}
+      {ringMarks(tone)}
     </svg>
   );
 }
 
 function DismissIcon() {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
+    <svg {...iconProps}>
       <path d="m4.5 4.5 7 7" />
       <path d="m11.5 4.5-7 7" />
     </svg>
@@ -98,9 +105,12 @@ export function Alert({
 }: AlertProps) {
   const politeness: 'assertive' | 'polite' = tone === 'danger' ? 'assertive' : 'polite';
   const liveProps = announce
-    ? { role: tone === 'danger' ? 'alert' : 'status', 'aria-live': politeness }
+    ? { role: politeness === 'assertive' ? 'alert' : 'status', 'aria-live': politeness }
     : {};
-  const Title = titleLevel === 2 ? 'h2' : titleLevel === 4 ? 'h4' : 'h3';
+  // The `?? 'h3'` is for JavaScript callers, who are not held to the `2 | 3 | 4` union:
+  // an out-of-range level would otherwise resolve to `undefined` and throw in React as an
+  // invalid element type. `@calcifer-design/ui` is consumed from JavaScript apps.
+  const Title = titleTags[titleLevel] ?? 'h3';
   return (
     <div className={styles.root} data-tone={tone} data-testid="alert" {...liveProps}>
       <span className={styles.icon}>
@@ -108,16 +118,16 @@ export function Alert({
       </span>
       <div className={styles.body}>
         <span className={styles.toneWord}>{toneWords[tone]}</span>
-        {title === undefined ? null : <Title className={styles.title}>{title}</Title>}
+        {title !== undefined ? <Title className={styles.title}>{title}</Title> : null}
         <div>{children}</div>
       </div>
-      {onDismiss === undefined ? null : (
+      {onDismiss !== undefined ? (
         <span className={styles.dismiss}>
           <IconButton label={dismissLabel} variant="ghost" size="sm" onClick={onDismiss}>
             <DismissIcon />
           </IconButton>
         </span>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -7,7 +7,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 image="${1:?usage: storybook-container-smoke.sh <image-tag>}"
-base="http://127.0.0.1:18080"
+host_port=18080
+base_url="http://127.0.0.1:${host_port}"
 container=""
 
 cleanup() {
@@ -25,11 +26,17 @@ fail() {
   exit 1
 }
 
-container="$(docker run --detach --publish 127.0.0.1:18080:8080 "$image")"
+# One request's response headers, with curl's CR line endings stripped so that every assertion
+# below can anchor its pattern on `$`.
+response_headers() {
+  curl --silent --show-error --dump-header - --output /dev/null "$@" | tr -d '\r'
+}
+
+container="$(docker run --detach --publish "127.0.0.1:${host_port}:8080" "$image")"
 
 ready=""
-for _attempt in $(seq 1 40); do
-  if curl --fail --silent --output /dev/null "${base}/storybook/"; then
+for _attempt in {1..40}; do
+  if curl --fail --silent --output /dev/null "${base_url}/storybook/"; then
     ready=yes
     break
   fi
@@ -37,11 +44,11 @@ for _attempt in $(seq 1 40); do
 done
 [ -n "$ready" ] || fail "the container never served /storybook/"
 
-index_headers="$(curl --silent --show-error --dump-header - --output /dev/null "${base}/storybook/" | tr -d '\r')"
+index_headers="$(response_headers "${base_url}/storybook/")"
 grep -qi '^cache-control: no-cache$' <<<"$index_headers" ||
   fail "the index should revalidate, got: $(grep -i '^cache-control' <<<"$index_headers")"
 
-redirect_headers="$(curl --silent --show-error --dump-header - --output /dev/null "${base}/storybook" | tr -d '\r')"
+redirect_headers="$(response_headers "${base_url}/storybook")"
 grep -q '^HTTP/1.1 301' <<<"$redirect_headers" || fail "/storybook should redirect to /storybook/"
 grep -qi '^location: /storybook/$' <<<"$redirect_headers" ||
   fail "the redirect should be relative (absolute_redirect off)"
@@ -53,21 +60,22 @@ grep -qi '^location: /storybook/$' <<<"$redirect_headers" ||
 # `|| true`: under `set -euo pipefail` a grep that matches nothing exits 1, which propagates as
 # the pipeline's status and kills the script at this assignment — before the guard on the next
 # line can print anything. The diagnostic would be dead code in exactly the case it is for.
-hashed="$(cd packages/ui/storybook-static && ls -S -- *.js 2>/dev/null |
+# shellcheck disable=SC2010 # `ls -S` sorts by size; no glob or loop can do that.
+hashed_bundle="$(cd packages/ui/storybook-static && ls -S -- *.js 2>/dev/null |
   grep -E '\.[0-9a-f]{8,}\.' | head -n 1 || true)"
-[ -n "$hashed" ] || fail "no content-hashed JS bundle in packages/ui/storybook-static"
+[ -n "$hashed_bundle" ] || fail "no content-hashed JS bundle in packages/ui/storybook-static"
 
-asset_headers="$(curl --silent --show-error --dump-header - --output /dev/null \
-  --header 'Accept-Encoding: gzip' "${base}/storybook/${hashed}" | tr -d '\r')"
-grep -q '^HTTP/1.1 200' <<<"$asset_headers" || fail "${hashed} was not served"
-grep -qi '^content-encoding: gzip$' <<<"$asset_headers" || fail "${hashed} was not compressed"
+asset_headers="$(response_headers --header 'Accept-Encoding: gzip' \
+  "${base_url}/storybook/${hashed_bundle}")"
+grep -q '^HTTP/1.1 200' <<<"$asset_headers" || fail "${hashed_bundle} was not served"
+grep -qi '^content-encoding: gzip$' <<<"$asset_headers" ||
+  fail "${hashed_bundle} was not compressed"
 grep -qi '^cache-control: public, max-age=31536000, immutable$' <<<"$asset_headers" ||
-  fail "${hashed} is content-hashed and should be immutable"
+  fail "${hashed_bundle} is content-hashed and should be immutable"
 
-runtime_headers="$(curl --silent --show-error --dump-header - --output /dev/null \
-  "${base}/storybook/sb-preview/runtime.js" | tr -d '\r')"
+runtime_headers="$(response_headers "${base_url}/storybook/sb-preview/runtime.js")"
 grep -q '^HTTP/1.1 200' <<<"$runtime_headers" || fail "sb-preview/runtime.js was not served"
 grep -qi '^cache-control: no-cache$' <<<"$runtime_headers" ||
   fail "sb-preview/runtime.js has a stable filename and must not be immutable"
 
-echo "storybook-container-smoke: ok (${hashed} immutable and gzipped, runtime revalidating)"
+echo "storybook-container-smoke: ok (${hashed_bundle} immutable and gzipped, runtime revalidating)"

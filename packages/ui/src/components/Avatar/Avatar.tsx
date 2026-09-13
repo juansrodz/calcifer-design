@@ -26,15 +26,15 @@ function leadingCharacters(word: string, count: number): string {
  */
 function initialsFrom(name: string): string {
   const words = name.normalize('NFC').trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
+  const firstWord = words.at(0);
+  const lastWord = words.at(-1);
+  if (firstWord === undefined || lastWord === undefined) {
     return '';
   }
   if (words.length === 1) {
-    return leadingCharacters(words[0] ?? '', 2).toUpperCase();
+    return leadingCharacters(firstWord, 2).toUpperCase();
   }
-  const first = leadingCharacters(words[0] ?? '', 1);
-  const last = leadingCharacters(words[words.length - 1] ?? '', 1);
-  return `${first}${last}`.toUpperCase();
+  return `${leadingCharacters(firstWord, 1)}${leadingCharacters(lastWord, 1)}`.toUpperCase();
 }
 
 export function Avatar({ name, src, size = 'md', shape = 'circle' }: AvatarProps) {
@@ -45,9 +45,9 @@ export function Avatar({ name, src, size = 'md', shape = 'circle' }: AvatarProps
       data-shape={shape}
       data-testid="avatar"
     >
-      {src === undefined ? null : (
+      {src !== undefined ? (
         <BaseAvatar.Image className={styles.image} src={src} alt={name} />
-      )}
+      ) : null}
       <BaseAvatar.Fallback className={styles.fallback}>
         <span aria-hidden="true">{initialsFrom(name)}</span>
         <span className={styles.name}>{name}</span>

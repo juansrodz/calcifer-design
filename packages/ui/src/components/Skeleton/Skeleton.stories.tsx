@@ -4,6 +4,10 @@ import { Skeleton } from './Skeleton';
 const meta = {
   title: 'Primitives/Skeleton',
   component: Skeleton,
+  args: { variant: 'text' },
+  argTypes: {
+    variant: { control: 'radio', options: ['text', 'block', 'circle'] },
+  },
 } satisfies Meta<typeof Skeleton>;
 
 export default meta;
