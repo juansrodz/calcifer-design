@@ -48,8 +48,23 @@ describe('Avatar', () => {
     expect(root).toHaveAttribute('data-size', 'md');
   });
 
-  it('renders nothing readable for an empty name rather than crashing', () => {
-    render(<Avatar name="" />);
-    expect(screen.getByTestId('avatar')).toBeInTheDocument();
+  it('renders no initials at all for an empty name', () => {
+    const { container } = render(<Avatar name="" />);
+    // Asserting the decorative span is genuinely empty, not merely that the root exists: an
+    // avatar that rendered the string "undefined" would satisfy the latter.
+    expect(container.querySelector('[aria-hidden="true"]')?.textContent).toBe('');
+  });
+
+  it('takes whole code points, so a name starting with an emoji is not split in half', () => {
+    render(<Avatar name="😀 Lovelace" />);
+    const initials = screen.getByText('😀L');
+    expect(initials).toBeInTheDocument();
+    // A lone surrogate renders as a broken glyph; this is the regression that guards against it.
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(initials.textContent ?? '')).toBe(false);
+  });
+
+  it('uses the first and last word, ignoring the ones between', () => {
+    render(<Avatar name="Ada King Lovelace" />);
+    expect(screen.getByText('AL')).toBeInTheDocument();
   });
 });
