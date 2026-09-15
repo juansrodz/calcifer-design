@@ -110,6 +110,8 @@ The contract's `close` also takes a **required** `toastId`, where the library's 
 
 **6. The stacking order lives in `popup.module.css` as three literals, and the scrim becomes a token.** There is no `--z-*` token and `z-index` is not a governed property, so `.layer` (50), `.dialogLayer` (60) and `.toastLayer` (70) are literals, in one file, with the reason written above them. The scrim is different: `background: rgb(0 0 0 / 40%)` is rejected by stylelint, and the only token that passes — `var(--color-surface-inverse)` at reduced opacity — inverts between themes, because `surface-inverse` is near-black in light mode and near-white in dark. Task 2 adds `--color-scrim` to `@calcifer-design/tokens` for that reason alone.
 
+**7. The sheet docks to two edges, chosen by `side`, and the end edge is the reason the sheet exists.** Added 2026-09-15 at the user's request, after the review noticed Task 4's sheet docked to the bottom only. The consumer the wbw spec names for the sheet is `ItemSidePanel`, and on that repository's `origin/main` it is a side panel, measured: `fixed inset-0 … justify-center md:justify-end` with `w-full … md:max-w-md` — full-screen on a phone, a 28rem panel on the trailing edge from the `md` breakpoint up. `side?: 'bottom' | 'end'`, default `bottom`, is the whole API: `end` is one viewport rule (pin to the trailing edge) and one skin rule (full height, `min(28rem, 100%)` wide, no rounded corners, a slide on the x axis). `start` is left out until a screen asks for it — a navigation drawer is the usual case and none of the seven wbw screens has one. Decision 3 stands: this is the same `Dialog` with a different docking edge, not Base UI's `Drawer`.
+
 ---
 
 ## What the probes measured
@@ -146,10 +148,10 @@ Every claim below was produced by running Base UI 1.8.0 in this repository's own
 | `packages/ui/src/components/Popover/Popover.module.css` | Only the heading and description type; everything else is the shared skin. |
 | `packages/ui/src/components/Popover/Popover.stories.tsx` | Sides, alignment, modal, open-on-load, a keyboard play story. |
 | `packages/ui/src/components/Popover/Popover.test.tsx` | axe over the document; focus in and out; the modal close control. |
-| `packages/ui/src/components/Dialog/Dialog.tsx` | Centred dialog and bottom sheet, header, body, footer, close control. |
-| `packages/ui/src/components/Dialog/Dialog.module.css` | The centring viewport, the header row, the scrolling body, the footer. |
-| `packages/ui/src/components/Dialog/Dialog.stories.tsx` | Trigger-opened, open-on-load, sheet, non-dismissible. |
-| `packages/ui/src/components/Dialog/Dialog.test.tsx` | axe; focus lands on Close; Escape; outside press; the sheet variant. |
+| `packages/ui/src/components/Dialog/Dialog.tsx` | Centred dialog, and a sheet docked to the bottom or the end edge; header, body, footer, close control. |
+| `packages/ui/src/components/Dialog/Dialog.module.css` | The viewport that centres or docks the popup, the header row, the scrolling body, the footer. |
+| `packages/ui/src/components/Dialog/Dialog.stories.tsx` | Trigger-opened, open-on-load, sheet, side sheet, non-dismissible. |
+| `packages/ui/src/components/Dialog/Dialog.test.tsx` | axe; focus lands on Close; Escape; outside press; the sheet variant on both edges. |
 | `packages/ui/src/components/Menu/Menu.tsx` | A list of actions on the shared skin, with separators and disabled items. |
 | `packages/ui/src/components/Menu/Menu.module.css` | The item row, its highlight and the separator. |
 | `packages/ui/src/components/Menu/Menu.stories.tsx` | Default, aligned, open-on-load, a keyboard play story. |
@@ -985,6 +987,24 @@ Create `packages/ui/src/styles/popup.module.css`:
   transform: translateY(100%);
 }
 
+/* A sheet docked to the end edge is a full-height panel — an item editor, a filter drawer. It
+   keeps the sheet's padding and gap and gives up the rounded top, because a panel that meets
+   three viewport edges has no free corner to round. `Dialog` sets `data-side` on the popup only
+   when the variant is `sheet`, so these never reach a centred dialog. The slide is on the x
+   axis and `translateX` is physical: under `dir="rtl"` the panel would slide in from the wrong
+   side. The library has no RTL story yet, and this is the first rule that would need one. */
+.surface[data-popup='sheet'][data-side='end'] {
+  width: min(28rem, 100%);
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+}
+
+.surface[data-popup='sheet'][data-side='end'][data-starting-style],
+.surface[data-popup='sheet'][data-side='end'][data-ending-style] {
+  transform: translateX(100%);
+}
+
 /* Base UI sets `data-instant` when a transition would be wrong: a second trigger taking over the
    same popup, or a dismissal that must feel immediate. Its value differs per component, so this
    matches on the attribute's presence alone. `transition-property: none` is the way to honour
@@ -1218,7 +1238,8 @@ git commit -m "feat(ui): add Popover and the shared popup skin"
 **Interfaces:**
 
 - Consumes: `popupStyles` from Task 3 (`import popupStyles from '../../styles/popup.module.css';` — the `dialogLayer`, `surface` and `scrim` classes) and `var(--color-scrim)` from Task 2.
-- Produces: `Dialog`, `DialogProps`, `DialogVariant` (`'center' | 'sheet'`). Nothing later in this plan consumes them.
+- Produces: `Dialog`, `DialogProps`, `DialogVariant` (`'center' | 'sheet'`), `SheetSide` (`'bottom' | 'end'`). Nothing later in this plan consumes them.
+- The skin already carries the end-docked sheet's rules (`.surface[data-popup='sheet'][data-side='end']`, authored in Task 3); this task sets the attribute and docks the viewport.
 
 **What is different about Dialog.** It has **no positioner** — `Dialog.Popup` sits directly under `Dialog.Portal` — so all the centring is this wrapper's CSS, on `Dialog.Viewport`, the optional positioning container Base UI added to the canonical anatomy in 1.8.0. (It is not the same concept as `Popover.Viewport`, which is a content-transition container for multi-trigger popups; do not describe them as one thing.) `modal` defaults to **`true`** here, the opposite of Popover, and the focus trap needs no close part to arm it. There is no `dismissible`, `closeOnOutsidePress` or `closeOnEscape` prop in Base UI: Escape always closes, and the only outside-press control is `disablePointerDismissal`, which this wrapper exposes the right way round as `dismissOnOutsidePress`. Measured: focus lands on the header's close control a frame after the popup mounts, an outside press closes by default and does not when `dismissOnOutsidePress={false}`, and axe over the whole document reports nothing while a modal dialog is open, because everything outside it is inert.
 
@@ -1244,6 +1265,7 @@ const meta = {
   },
   argTypes: {
     variant: { control: 'radio', options: ['center', 'sheet'] },
+    side: { control: 'radio', options: ['bottom', 'end'] },
   },
 } satisfies Meta<typeof Dialog>;
 
@@ -1253,6 +1275,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const OpenOnLoad: Story = { args: { defaultOpen: true } };
 export const Sheet: Story = { args: { variant: 'sheet', defaultOpen: true } };
+export const SideSheet: Story = { args: { variant: 'sheet', side: 'end', defaultOpen: true } };
 export const Persistent: Story = { args: { defaultOpen: true, dismissOnOutsidePress: false } };
 
 /** Opens from the keyboard and checks that focus is inside the dialog, not behind it. */
@@ -1279,13 +1302,14 @@ import { describe, expect, it } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import * as stories from './Dialog.stories';
 
-const { Default, OpenOnLoad, Sheet, Persistent } = composeStories(stories);
+const { Default, OpenOnLoad, Sheet, SideSheet, Persistent } = composeStories(stories);
 
 describe('Dialog', () => {
   it.each([
     ['Default', Default],
     ['OpenOnLoad', OpenOnLoad],
     ['Sheet', Sheet],
+    ['SideSheet', SideSheet],
     ['Persistent', Persistent],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
@@ -1363,12 +1387,25 @@ describe('Dialog', () => {
     render(<Sheet />);
     const popup = await screen.findByRole('dialog');
     expect(popup).toHaveAttribute('data-popup', 'sheet');
+    expect(popup).toHaveAttribute('data-side', 'bottom');
     expect(popup.parentElement).toHaveAttribute('data-variant', 'sheet');
+    expect(popup.parentElement).toHaveAttribute('data-side', 'bottom');
+  });
+
+  it('docks a side sheet to the end edge, on both the popup and the viewport', async () => {
+    render(<SideSheet />);
+    const popup = await screen.findByRole('dialog');
+    expect(popup).toHaveAttribute('data-popup', 'sheet');
+    expect(popup).toHaveAttribute('data-side', 'end');
+    expect(popup.parentElement).toHaveAttribute('data-side', 'end');
   });
 
   it('marks the centred variant too, so the two never share a rule by accident', async () => {
     render(<OpenOnLoad />);
-    expect(await screen.findByRole('dialog')).toHaveAttribute('data-popup', 'dialog');
+    const popup = await screen.findByRole('dialog');
+    expect(popup).toHaveAttribute('data-popup', 'dialog');
+    expect(popup).not.toHaveAttribute('data-side');
+    expect(popup.parentElement).not.toHaveAttribute('data-side');
   });
 });
 ```
@@ -1384,8 +1421,9 @@ Create `packages/ui/src/components/Dialog/Dialog.module.css`:
 
 ```css
 /* Dialog has no positioner, so the viewport is what centres the popup — or docks it to the
-   bottom edge for the sheet variant. The popup surface itself is the shared popup skin in
-   `src/styles/popup.module.css`, under `data-popup='dialog'` and `data-popup='sheet'`. */
+   bottom edge, or the end edge, for the sheet variant. The popup surface itself is the shared
+   popup skin in `src/styles/popup.module.css`, under `data-popup='dialog'`, `data-popup='sheet'`
+   and `[data-popup='sheet'][data-side='end']`. */
 .viewport {
   position: fixed;
   inset: 0;
@@ -1397,6 +1435,13 @@ Create `packages/ui/src/components/Dialog/Dialog.module.css`:
 .viewport[data-variant='sheet'] {
   place-items: end center;
   padding: 0;
+}
+
+/* The end-docked sheet: the viewport pins it to the trailing edge; its full height and its width
+   are the skin's business. This rule follows the `data-variant` one on purpose — the two have
+   equal specificity, so source order is what lets it win. */
+.viewport[data-side='end'] {
+  place-items: center end;
 }
 
 .header {
@@ -1478,6 +1523,9 @@ import styles from './Dialog.module.css';
 
 export type DialogVariant = 'center' | 'sheet';
 
+/** The edge a sheet docks to: `bottom` is the phone pattern, `end` a full-height side panel. */
+export type SheetSide = 'bottom' | 'end';
+
 export interface DialogProps {
   /**
    * The control that opens the dialog. Optional: a dialog driven by application state passes
@@ -1496,8 +1544,14 @@ export interface DialogProps {
    * that needs to close it does so through `open`/`onOpenChange`.
    */
   footer?: ReactNode;
-  /** `center` floats in the middle of the viewport; `sheet` docks to the bottom edge. */
+  /** `center` floats in the middle of the viewport; `sheet` docks to an edge — see `side`. */
   variant?: DialogVariant;
+  /**
+   * The edge a `sheet` docks to. `bottom` (the default) is the phone pattern; `end` is a
+   * full-height panel on the trailing edge, for an item editor or a filter drawer. Ignored when
+   * `variant` is `center`, and not rendered for it.
+   */
+  side?: SheetSide;
   /** The accessible name of the close control in the header. */
   closeLabel?: string;
   /**
@@ -1539,12 +1593,16 @@ export function Dialog({
   children,
   footer,
   variant = 'center',
+  side = 'bottom',
   closeLabel = 'Close',
   dismissOnOutsidePress = true,
   open,
   defaultOpen,
   onOpenChange,
 }: DialogProps) {
+  // `side` reaches the DOM only for a sheet, so the skin's `[data-side='end']` rules can never
+  // touch a centred dialog and the centred test can assert the attribute's absence.
+  const sheetSide = variant === 'sheet' ? side : undefined;
   // The `?? 'h2'` is for JavaScript callers, who are not held to the `2 | 3 | 4` union: an
   // out-of-range level would otherwise resolve to `undefined` and throw in React as an invalid
   // element type. `@calcifer-design/ui` is consumed from JavaScript apps.
@@ -1562,10 +1620,12 @@ export function Dialog({
         <BaseDialog.Viewport
           className={[popupStyles.dialogLayer, styles.viewport].join(' ')}
           data-variant={variant}
+          data-side={sheetSide}
         >
           <BaseDialog.Popup
             className={popupStyles.surface}
             data-popup={variant === 'sheet' ? 'sheet' : 'dialog'}
+            data-side={sheetSide}
           >
             <div className={styles.header}>
               <BaseDialog.Title className={styles.heading} render={<Heading />}>
@@ -1596,13 +1656,13 @@ Add to the end of `packages/ui/src/index.ts`:
 
 ```ts
 export { Dialog } from './components/Dialog/Dialog';
-export type { DialogProps, DialogVariant } from './components/Dialog/Dialog';
+export type { DialogProps, DialogVariant, SheetSide } from './components/Dialog/Dialog';
 ```
 
 - [ ] **Step 7: Run the tests to verify they pass**
 
 Run: `./node_modules/.bin/vitest run --project ui Dialog`
-Expected: PASS, 14 tests.
+Expected: PASS, 16 tests.
 
 - [ ] **Step 8: Lint, format and typecheck**
 
@@ -1622,7 +1682,7 @@ Create `.changeset/dialog.md`:
 '@calcifer-design/ui': minor
 ---
 
-Add `Dialog`: a modal surface in two variants — centred, and a sheet docked to the bottom edge — on the same popup skin as `Popover`. Escape always closes it, because Base UI treats that as non-negotiable and offers no prop to turn it off; `dismissOnOutsidePress` covers the case a caller actually needs to control. Focus moves to the header's close control on open and back to the trigger on close.
+Add `Dialog`: a modal surface in two variants — centred, and a sheet docked to the bottom edge or, with `side="end"`, a full-height panel on the trailing edge — on the same popup skin as `Popover`. Escape always closes it, because Base UI treats that as non-negotiable and offers no prop to turn it off; `dismissOnOutsidePress` covers the case a caller actually needs to control. Focus moves to the header's close control on open and back to the trigger on close.
 
 Its backdrop is `var(--color-scrim)`, new in `@calcifer-design/tokens@0.2.0`: an app that imports `tokens.css` from its own top-level dependency needs that dependency at `^0.2.0`, or the dialog opens over a fully transparent page.
 ```
@@ -4197,7 +4257,7 @@ Run against the spec after writing, before execution.
 
 **Type consistency across tasks.** `popupStyles` exports `layer`, `dialogLayer`, `toastLayer`, `surface`, `scrim` (Task 3); Task 4 uses `dialogLayer`, `surface`, `scrim`, Task 5 `layer` and `surface`, Task 6 `layer` and `surface`, Task 7 `toastLayer` only. `PopupSide` and `PopupAlign` are declared in Task 3 and imported by Tasks 5 and 6 with `import type`. `a11yStyles.visuallyHidden` is declared in Task 1 and used by Tasks 3 and 8's existing consumers. `ToastManager`, `ToastOptions` and `createToastManager` are declared in Task 7; Task 10 declares the structural subset `HostToastManager`/`HostToastOptions` that admits them (verified with `tsc --strict`: `add: (options: ToastOptions) => string` is assignable to `add: (options: HostToastOptions) => string` because `HostToastOptions` is assignable to `ToastOptions`); Task 11 assigns the real one into the optional field; Task 12 reads it and stores it. `TOOLTIP_DELAY` is declared in Task 6 and consumed in Task 12. Every `data-popup` value a stylesheet matches — `popover`, `menu`, `tooltip`, `dialog`, `sheet` — is set by a component in Tasks 3, 4, 5, 6 or 8.
 
-**Test-versus-implementation checks, made deliberately.** Popover's test asserts `data-popup="popover"`, which the component sets; the modal test asserts a close control named by `closeLabel`'s default `'Close'`, which the component renders only when `modal !== false`, and the non-modal test asserts its absence. Dialog's test asserts `data-variant` on the popup's `parentElement`, which is the `Dialog.Viewport` the component gives that attribute. Menu's test asserts one separator for the one item carrying `separatorBefore`, and `aria-disabled` on the item carrying `disabled`. Tooltip's test asserts the trigger's accessible name is the `label` the component applies as `aria-label`, and that `TooltipProvider` renders nothing, which its implementation guarantees by rendering only Base UI's provider. ToastRegion's test asserts `data-type` from `tone`, which `toBaseOptions` maps, and reaches the close control by `getByLabelText` because `closeLabel` becomes an `aria-label` on an `aria-hidden` element. **What was actually measured, and what is inference from it.** The evidence base is the spike in the library worktree: the two DOM-dump probes (`baseui-probe.test.tsx`, `baseui-probe2.test.tsx`) and a Popover suite that ran against the spike's own `Popover.tsx`. Everything in "What the probes measured" comes from those runs — including the focus-timing rule, whose one piece of direct evidence is that the spike's bare `expect(popup.contains(document.activeElement)).toBe(true)` fails today without a `waitFor` around it. The spike has **no** test files for `Dialog`, `Menu`, `Tooltip` or `ToastRegion`, `NavMenu.test.tsx` does not yet carry Task 8's assertion, and Task 3's `onOpenChange` test is new — the spike's `PopoverProps.onOpenChange` was still the one-argument `(open: boolean) => void`. Those four suites and the two new tests are written *from* the probe measurements rather than transcribed from a run, and the counts in each "Expected: PASS, N tests" line are the counts of `it` cases in that task's file, `it.each` entries included. A reviewer should treat the probe bullets as evidence and the per-component suites as the first thing execution will falsify.
+**Test-versus-implementation checks, made deliberately.** Popover's test asserts `data-popup="popover"`, which the component sets; the modal test asserts a close control named by `closeLabel`'s default `'Close'`, which the component renders only when `modal !== false`, and the non-modal test asserts its absence. Dialog's test asserts `data-variant` on the popup's `parentElement`, which is the `Dialog.Viewport` the component gives that attribute, and `data-side` on both the popup and that viewport, which the component sets from `side` only when the variant is `sheet` — so the centred test's `not.toHaveAttribute('data-side')` holds by construction. Menu's test asserts one separator for the one item carrying `separatorBefore`, and `aria-disabled` on the item carrying `disabled`. Tooltip's test asserts the trigger's accessible name is the `label` the component applies as `aria-label`, and that `TooltipProvider` renders nothing, which its implementation guarantees by rendering only Base UI's provider. ToastRegion's test asserts `data-type` from `tone`, which `toBaseOptions` maps, and reaches the close control by `getByLabelText` because `closeLabel` becomes an `aria-label` on an `aria-hidden` element. **What was actually measured, and what is inference from it.** The evidence base is the spike in the library worktree: the two DOM-dump probes (`baseui-probe.test.tsx`, `baseui-probe2.test.tsx`) and a Popover suite that ran against the spike's own `Popover.tsx`. Everything in "What the probes measured" comes from those runs — including the focus-timing rule, whose one piece of direct evidence is that the spike's bare `expect(popup.contains(document.activeElement)).toBe(true)` fails today without a `waitFor` around it. The spike has **no** test files for `Dialog`, `Menu`, `Tooltip` or `ToastRegion`, `NavMenu.test.tsx` does not yet carry Task 8's assertion, and Task 3's `onOpenChange` test is new — the spike's `PopoverProps.onOpenChange` was still the one-argument `(open: boolean) => void`. Those four suites and the two new tests are written *from* the probe measurements rather than transcribed from a run, and the counts in each "Expected: PASS, N tests" line are the counts of `it` cases in that task's file, `it.each` entries included. A reviewer should treat the probe bullets as evidence and the per-component suites as the first thing execution will falsify.
 
 **Known judgement calls, for the reviewer.** `Popover` paints a scrim for `modal={true}` and deliberately not for `modal="trap-focus"`: Base UI's backdrop is hit-testable except when the popover was opened by hover, and a full-viewport wash that swallows every outside click is the opposite of what `'trap-focus'` documents itself as doing. `HostToastManager.close` requires its id where the library's own manager does not, which is the plan's only narrowing made for authority rather than for dependencies — the alternative, a per-remote wrapper in `RemoteRoute` that tracks the ids it issued, is a mechanism the three-method contract does not otherwise need and was rejected as scope. The stacking order is three literals rather than three new tokens, because a `--z-*` scale invented for one tier is a token set nobody else can use — recorded in the stylesheet rather than in a changelog. `Dialog`'s `footer` is a plain `ReactNode` with no close callback: giving it one means either an `actionsRef` dance or a render prop, and the header's close control already covers the common case. `Tooltip` ships without a stylesheet, which is a first for this library and is exactly what "one skin" should look like. `ToastRegion` exposes `baseManager` on its public type so `ToastRegion` itself can subscribe; it is documented as not part of what a remote is given, and the contract's narrower type is what actually enforces that.
 
