@@ -16,7 +16,16 @@ export default defineConfig({
   // under `dist/src/`.
   source: {
     entry: {
-      index: ['./src/**', '!./src/**/*.test.{ts,tsx}', '!./src/**/*.stories.{ts,tsx}'],
+      // `base.css` is excluded on purpose: `output.copy` below ships it verbatim, and letting the
+      // bundleless compile emit it as well gave `dist/styles/base.css` two writers. The second
+      // did not truncate the first, so 0.2.0 shipped the processed file with 122 stale bytes of
+      // the source after its last brace -- valid to a browser, a syntax error to a minifier.
+      index: [
+        './src/**',
+        '!./src/**/*.test.{ts,tsx}',
+        '!./src/**/*.stories.{ts,tsx}',
+        '!./src/styles/base.css',
+      ],
     },
     tsconfigPath: './tsconfig.build.json',
   },
