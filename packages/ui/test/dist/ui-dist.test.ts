@@ -53,4 +53,29 @@ describe('@calcifer-design/ui dist', () => {
     const declarations = await readFile(path.join(distRoot, 'index.d.ts'), 'utf8');
     expect(declarations).toContain('Button');
   });
+
+  // 0.2.0 shipped `dist/styles/base.css` with 122 bytes of the source dangling after its last
+  // brace: the bundleless compile and `output.copy` both wrote the file, and the shorter write
+  // did not truncate the longer one. Browsers skipped the garbage; Vite's minifier refused it and
+  // every consumer's production build failed. The copy is now the only writer, so the shipped
+  // file is the source, byte for byte.
+  it('ships base.css byte for byte from src/styles', async () => {
+    const shipped = await readFile(path.join(distRoot, 'styles/base.css'), 'utf8');
+    const source = await readFile(path.resolve(distRoot, '../src/styles/base.css'), 'utf8');
+    expect(shipped).toBe(source);
+  });
+
+  it('emits stylesheets that are structurally whole', async () => {
+    const cssFiles = await collectCssFiles(distRoot);
+    expect(cssFiles.length).toBeGreaterThan(5);
+    for (const file of cssFiles) {
+      const css = await readFile(file, 'utf8');
+      const opens = css.split('{').length - 1;
+      const closes = css.split('}').length - 1;
+      expect(opens, `${path.relative(distRoot, file)} has unbalanced braces`).toBe(closes);
+      expect(css.trimEnd().endsWith('}'), `${path.relative(distRoot, file)} ends mid-rule`).toBe(
+        true,
+      );
+    }
+  });
 });
