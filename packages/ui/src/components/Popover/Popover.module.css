@@ -1,0 +1,15 @@
+/* Popover adds only what the shared popup skin cannot know: the type of its own heading and
+   description. Surface, viewport clamp, transform origin and the entry transition all come from
+   `src/styles/popup.module.css`, which Dialog, Menu and Tooltip wear too. */
+.heading {
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
+
+.description {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-prose);
+}

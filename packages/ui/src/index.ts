@@ -40,3 +40,5 @@ export type {
   ErrorBoundaryProps,
   ErrorBoundaryFallbackDetails,
 } from './components/ErrorBoundary/ErrorBoundary';
+export { Popover } from './components/Popover/Popover';
+export type { PopoverProps, PopupSide, PopupAlign } from './components/Popover/Popover';
