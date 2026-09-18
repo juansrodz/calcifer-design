@@ -59,21 +59,6 @@
   height: 1.125rem;
 }
 
-.positioner {
-  z-index: 50;
-}
-
-.popup {
-  display: flex;
-  flex-direction: column;
-  min-width: 12rem;
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
-  box-shadow: var(--elevation-2);
-}
-
 .item {
   padding-inline: var(--space-3);
   border-radius: var(--radius-md);

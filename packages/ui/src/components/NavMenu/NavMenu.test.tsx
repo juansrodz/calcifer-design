@@ -65,4 +65,13 @@ describe('NavMenu at mobile width', () => {
     rerender(<Mobile currentPath="/about" />);
     expect(screen.queryByRole('menuitem', { name: 'About' })).not.toBeInTheDocument();
   });
+
+  it('wears the tier-wide popup skin, so it cannot drift from Menu and Popover', async () => {
+    installMatchMedia(false);
+    render(<Mobile />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    const popup = await screen.findByRole('menu');
+    expect(popup).toHaveClass('surface');
+    expect(popup).toHaveAttribute('data-popup', 'menu');
+  });
 });

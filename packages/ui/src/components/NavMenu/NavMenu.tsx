@@ -1,6 +1,7 @@
 import { Menu } from '@base-ui/react/menu';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { minWidth, useMediaQuery } from '../../hooks/useMediaQuery';
+import popupStyles from '../../styles/popup.module.css';
 import styles from './NavMenu.module.css';
 
 export interface NavItem {
@@ -98,8 +99,8 @@ export function NavMenu({
           </svg>
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Positioner className={styles.positioner} side="bottom" align="end" sideOffset={8}>
-            <Menu.Popup className={styles.popup}>
+          <Menu.Positioner className={popupStyles.layer} side="bottom" align="end" sideOffset={8}>
+            <Menu.Popup className={popupStyles.surface} data-popup="menu">
               {items.map((item) => (
                 <Menu.Item
                   key={item.href}

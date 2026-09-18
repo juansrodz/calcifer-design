@@ -40,3 +40,21 @@ export type {
   ErrorBoundaryProps,
   ErrorBoundaryFallbackDetails,
 } from './components/ErrorBoundary/ErrorBoundary';
+export { Popover } from './components/Popover/Popover';
+export type { PopoverProps, PopupSide, PopupAlign } from './components/Popover/Popover';
+export { Dialog } from './components/Dialog/Dialog';
+export type { DialogProps, DialogVariant, SheetSide } from './components/Dialog/Dialog';
+export { Menu } from './components/Menu/Menu';
+export type { MenuProps, MenuItem } from './components/Menu/Menu';
+export { Tooltip } from './components/Tooltip/Tooltip';
+export type { TooltipProps } from './components/Tooltip/Tooltip';
+export { TooltipProvider, TOOLTIP_DELAY } from './components/Tooltip/TooltipProvider';
+export type { TooltipProviderProps } from './components/Tooltip/TooltipProvider';
+export { ToastRegion, createToastManager } from './components/ToastRegion/ToastRegion';
+export type {
+  ToastRegionProps,
+  ToastManager,
+  ToastOptions,
+  ToastTone,
+  ToastAction,
+} from './components/ToastRegion/ToastRegion';

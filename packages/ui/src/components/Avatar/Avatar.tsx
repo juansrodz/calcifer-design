@@ -1,4 +1,5 @@
 import { Avatar as BaseAvatar } from '@base-ui/react/avatar';
+import a11yStyles from '../../styles/a11y.module.css';
 import styles from './Avatar.module.css';
 
 export interface AvatarProps {
@@ -50,7 +51,7 @@ export function Avatar({ name, src, size = 'md', shape = 'circle' }: AvatarProps
       ) : null}
       <BaseAvatar.Fallback className={styles.fallback}>
         <span aria-hidden="true">{initialsFrom(name)}</span>
-        <span className={styles.name}>{name}</span>
+        <span className={a11yStyles.visuallyHidden}>{name}</span>
       </BaseAvatar.Fallback>
     </BaseAvatar.Root>
   );

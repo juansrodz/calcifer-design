@@ -1,0 +1,155 @@
+/* The one popup skin for Tier 2. Popover authors it; Dialog, Menu and Tooltip wear it unchanged
+   and vary only through the `data-popup` attribute set on the same element. The variants live
+   here rather than in each component's own stylesheet on purpose: two single-class rules in two
+   separately emitted stylesheets tie on specificity, and which one won would then depend on the
+   consumer's bundle order.
+
+   Base UI's positioner sets `--transform-origin`, `--available-width` and `--available-height`
+   on itself and they inherit into the popup, so the surface grows out of its anchor and clamps
+   to the viewport with no measurement of our own. Dialog has no positioner: there those custom
+   properties are undefined, the two `max-*` declarations become invalid at computed-value time
+   and fall back to `none`, and the `data-popup='dialog'` rule supplies the real limits. */
+
+/* The stacking order for the whole tier, in one place. `z-index` is not a token-governed
+   property and there is no `--z-*` token, so these are literals.
+
+   `.layer` and `.dialogLayer` now share the same z-index. Every Base UI portal is appended to
+   `document.body` when its popup opens and removed again when it closes, so with equal z-index
+   the open order decides which popup paints on top: a popup opened from inside an already-open
+   dialog is appended after it and paints above it, while a popup opened before the dialog stays
+   beneath the dialog's scrim once the dialog opens. The two class names stay distinct on
+   purpose, so the two layers can diverge again later without touching every popup. Toasts keep
+   70, above both, because a toast can report a failure that happened inside a dialog. A backdrop
+   shares its popup's layer and sits below it on DOM order alone — Base UI's anatomy always
+   renders the backdrop before the positioner. */
+.layer {
+  z-index: 50;
+}
+
+.dialogLayer {
+  z-index: 50;
+}
+
+.toastLayer {
+  z-index: 70;
+}
+
+.surface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: var(--available-width);
+  max-height: var(--available-height);
+  padding: var(--space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  box-shadow: var(--elevation-2);
+  transform-origin: var(--transform-origin);
+  transition-property: opacity, transform;
+  transition-duration: var(--motion-duration-2);
+  transition-timing-function: var(--motion-ease);
+}
+
+.surface[data-popup='popover'] {
+  gap: var(--space-3);
+  min-width: 14rem;
+  padding: var(--space-4);
+}
+
+/* `gap: 0` is the point of this variant as much as the width is. A menu's rows are adjacent so
+   the roving highlight reads as one list rather than a column of floating chips, the separator
+   supplies its own spacing where a group boundary is wanted, and it is what keeps Task 8's
+   migration from silently adding 8px between every item of the live mobile navigation. */
+.surface[data-popup='menu'] {
+  gap: 0;
+  min-width: 12rem;
+}
+
+.surface[data-popup='tooltip'] {
+  max-width: min(18rem, var(--available-width));
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.surface[data-popup='dialog'] {
+  gap: var(--space-4);
+  width: min(32rem, 100%);
+  max-width: 100%;
+  max-height: 85dvh;
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-3);
+}
+
+.surface[data-popup='sheet'] {
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  max-height: 85dvh;
+  padding: var(--space-5);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--elevation-3);
+}
+
+/* Base UI drives the entry and the exit with these two attributes. Its handbook prefers a
+   transition over an animation because a transition can be cancelled part-way, which is what a
+   popup reopened mid-close needs. base.css collapses both under prefers-reduced-motion. */
+.surface[data-starting-style],
+.surface[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+/* A sheet slides from the edge it is docked to rather than scaling out of a point. */
+.surface[data-popup='sheet'][data-starting-style],
+.surface[data-popup='sheet'][data-ending-style] {
+  opacity: 1;
+  transform: translateY(100%);
+}
+
+/* A sheet docked to the end edge is a full-height panel — an item editor, a filter drawer. It
+   keeps the sheet's padding and gap and gives up the rounded top, because a panel that meets
+   three viewport edges has no free corner to round. `Dialog` sets `data-side` on the popup only
+   when the variant is `sheet`, so these never reach a centred dialog. The slide is on the x
+   axis and `translateX` is physical: under `dir="rtl"` the panel would slide in from the wrong
+   side. The library has no RTL story yet, and this is the first rule that would need one. */
+.surface[data-popup='sheet'][data-side='end'] {
+  width: min(28rem, 100%);
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+}
+
+.surface[data-popup='sheet'][data-side='end'][data-starting-style],
+.surface[data-popup='sheet'][data-side='end'][data-ending-style] {
+  transform: translateX(100%);
+}
+
+/* Base UI sets `data-instant` when a transition would be wrong: a second trigger taking over the
+   same popup, or a dismissal that must feel immediate. Its value differs per component, so this
+   matches on the attribute's presence alone. `transition-property: none` is the way to honour
+   it — `transition-duration: 0s` is rejected by the token rule, which admits `0` but not `0s`. */
+.surface[data-instant] {
+  transition-property: none;
+}
+
+/* Base UI's backdrop renders a bare <div> with no positioning of its own, so the scrim's whole
+   geometry is here. It carries no z-index: the consumer joins it with the layer class of the
+   popup it belongs to. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  transition-property: opacity;
+  transition-duration: var(--motion-duration-2);
+  transition-timing-function: var(--motion-ease);
+}
+
+.scrim[data-starting-style],
+.scrim[data-ending-style] {
+  opacity: 0;
+}

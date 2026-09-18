@@ -34,6 +34,13 @@ describe('@calcifer-design/ui dist', () => {
       'Alert',
       'Avatar',
       'ErrorBoundary',
+      'Popover',
+      'Dialog',
+      'Menu',
+      'Tooltip',
+      'TooltipProvider',
+      'ToastRegion',
+      'createToastManager',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
@@ -76,6 +83,22 @@ describe('@calcifer-design/ui dist', () => {
       expect(css.trimEnd().endsWith('}'), `${path.relative(distRoot, file)} ends mid-rule`).toBe(
         true,
       );
+    }
+  });
+
+  it('emits each shared stylesheet once, as its own dist entry', async () => {
+    for (const name of ['a11y', 'popup']) {
+      expect((await stat(path.join(distRoot, `styles/${name}.module.js`))).isFile()).toBe(true);
+      expect((await stat(path.join(distRoot, `styles/${name}_module.css`))).isFile()).toBe(true);
+    }
+    // One copy of the rule in the whole package: the reason the shared class is imported from
+    // TSX rather than `composes`-d, which would inline it into every consuming stylesheet.
+    const popupCss = await readFile(path.join(distRoot, 'styles/popup_module.css'), 'utf8');
+    expect(popupCss).toMatch(/\.surface-[A-Za-z0-9_-]{5}\b/);
+    const componentCss = await collectCssFiles(path.join(distRoot, 'components'));
+    for (const file of componentCss) {
+      const css = await readFile(file, 'utf8');
+      expect(css, file).not.toContain('clip-path: inset(50%)');
     }
   });
 });

@@ -1,3 +1,4 @@
+import a11yStyles from '../../styles/a11y.module.css';
 import styles from './StatusDot.module.css';
 
 export type RemoteStatus = 'registered' | 'loading' | 'loaded' | 'failed';
@@ -24,6 +25,9 @@ export function StatusDot({
   labelStyle = 'mono',
   showLabel = true,
 }: StatusDotProps) {
+  const labelClassName = [styles.label, showLabel ? null : a11yStyles.visuallyHidden]
+    .filter(Boolean)
+    .join(' ');
   return (
     <span
       className={styles.root}
@@ -32,7 +36,11 @@ export function StatusDot({
       data-testid="status-dot"
     >
       <span className={styles.dot} aria-hidden="true" />
-      <span className={styles.label} data-hidden={showLabel ? undefined : ''}>
+      <span
+        className={labelClassName}
+        /* Retained as a public styling hook now that the stylesheet no longer targets it. */
+        data-hidden={showLabel ? undefined : ''}
+      >
         {label}
       </span>
       <span className={styles.status}>{status}</span>
