@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CloseIcon } from '../../icons/CloseIcon';
 import { IconButton } from '../IconButton/IconButton';
 import a11yStyles from '../../styles/a11y.module.css';
 import styles from './Alert.module.css';
@@ -86,15 +87,6 @@ function ToneIcon({ tone }: { tone: AlertTone }) {
   );
 }
 
-function DismissIcon() {
-  return (
-    <svg {...iconProps}>
-      <path d="m4.5 4.5 7 7" />
-      <path d="m11.5 4.5-7 7" />
-    </svg>
-  );
-}
-
 export function Alert({
   tone = 'info',
   heading,
@@ -125,7 +117,7 @@ export function Alert({
       {onDismiss !== undefined ? (
         <span className={styles.dismiss}>
           <IconButton label={dismissLabel} variant="ghost" size="sm" onClick={onDismiss}>
-            <DismissIcon />
+            <CloseIcon />
           </IconButton>
         </span>
       ) : null}

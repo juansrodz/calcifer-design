@@ -90,6 +90,9 @@ export function DataTable<Row extends RowData>({
   // it never matches a real breakpoint and is never emitted into any CSS.
   const isWide = useMediaQuery(stackBelow ? minWidth(stackBelow) : '(min-width: 0px)');
   const stacked = Boolean(stackBelow) && !isWide;
+  const captionClassName = [styles.caption, hideCaption ? a11yStyles.visuallyHidden : null]
+    .filter(Boolean)
+    .join(' ');
 
   const table = useTable({
     features,
@@ -114,9 +117,7 @@ export function DataTable<Row extends RowData>({
       <table className={styles.table} data-stacked={stacked ? '' : undefined}>
         <caption
           id={captionId}
-          className={[styles.caption, hideCaption ? a11yStyles.visuallyHidden : null]
-            .filter(Boolean)
-            .join(' ')}
+          className={captionClassName}
           data-hidden={hideCaption ? '' : undefined}
         >
           {caption}

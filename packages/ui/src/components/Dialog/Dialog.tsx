@@ -1,5 +1,7 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import type { ReactElement, ReactNode } from 'react';
+import { CloseIcon } from '../../icons/CloseIcon';
+import { IconButton } from '../IconButton/IconButton';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './Dialog.module.css';
 
@@ -50,23 +52,6 @@ export interface DialogProps {
 
 const headingTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
 
-function CloseIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="m4.5 4.5 7 7" />
-      <path d="m11.5 4.5-7 7" />
-    </svg>
-  );
-}
-
 export function Dialog({
   trigger,
   heading,
@@ -113,9 +98,13 @@ export function Dialog({
               <BaseDialog.Title className={styles.heading} render={<Heading />}>
                 {heading}
               </BaseDialog.Title>
-              <BaseDialog.Close className={styles.close} aria-label={closeLabel}>
-                <CloseIcon />
-              </BaseDialog.Close>
+              <BaseDialog.Close
+                render={
+                  <IconButton label={closeLabel} variant="ghost" size="sm">
+                    <CloseIcon />
+                  </IconButton>
+                }
+              />
             </div>
             {description === undefined ? null : (
               <BaseDialog.Description className={styles.description}>

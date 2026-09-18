@@ -1,5 +1,7 @@
 import { Toast as BaseToast } from '@base-ui/react/toast';
 import type { ToastManager as BaseToastManager } from '@base-ui/react/toast';
+import { CloseIcon } from '../../icons/CloseIcon';
+import { IconButton } from '../IconButton/IconButton';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './ToastRegion.module.css';
 
@@ -95,23 +97,6 @@ export interface ToastRegionProps {
   closeLabel?: string;
 }
 
-function CloseIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="m4.5 4.5 7 7" />
-      <path d="m11.5 4.5-7 7" />
-    </svg>
-  );
-}
-
 /**
  * `Toast.Title`, `Toast.Description` and `Toast.Action` each render `null` when the toast
  * carries no such field, so all four parts are rendered unconditionally and the manager's
@@ -126,9 +111,17 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
         <BaseToast.Description className={styles.description} />
       </BaseToast.Content>
       <BaseToast.Action className={styles.action} />
-      <BaseToast.Close className={styles.close} aria-label={closeLabel}>
-        <CloseIcon />
-      </BaseToast.Close>
+      {/* The library's own control, rendered through Base UI's `render` prop so the toast keeps
+          exactly one close button's worth of styling. Base UI's props merge onto it, including
+          the `aria-hidden` it sets while the stack is collapsed and unfocused; `IconButton`
+          applies `aria-label` after that merge, so `closeLabel` still names the control. */}
+      <BaseToast.Close
+        render={
+          <IconButton label={closeLabel} variant="ghost" size="sm">
+            <CloseIcon />
+          </IconButton>
+        }
+      />
     </BaseToast.Root>
   ));
 }

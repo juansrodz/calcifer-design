@@ -112,33 +112,8 @@
   cursor: pointer;
 }
 
-.close {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.close > svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
 @media (hover: hover) {
   .action:hover {
     background: var(--color-surface-2);
-  }
-
-  .close:hover {
-    background: var(--color-surface-2);
-    color: var(--color-text);
   }
 }

@@ -25,6 +25,9 @@ export function StatusDot({
   labelStyle = 'mono',
   showLabel = true,
 }: StatusDotProps) {
+  const labelClassName = [styles.label, showLabel ? null : a11yStyles.visuallyHidden]
+    .filter(Boolean)
+    .join(' ');
   return (
     <span
       className={styles.root}
@@ -34,9 +37,7 @@ export function StatusDot({
     >
       <span className={styles.dot} aria-hidden="true" />
       <span
-        className={[styles.label, showLabel ? null : a11yStyles.visuallyHidden]
-          .filter(Boolean)
-          .join(' ')}
+        className={labelClassName}
         /* Retained as a public styling hook now that the stylesheet no longer targets it. */
         data-hidden={showLabel ? undefined : ''}
       >
