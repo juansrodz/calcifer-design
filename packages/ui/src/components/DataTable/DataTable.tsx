@@ -15,6 +15,7 @@ import {
 import { useId, useState } from 'react';
 import type { BreakpointName } from '@calcifer-design/tokens';
 import { minWidth, useMediaQuery } from '../../hooks/useMediaQuery';
+import a11yStyles from '../../styles/a11y.module.css';
 import styles from './DataTable.module.css';
 
 // v9 registers row models and sorting behind an explicit feature set rather
@@ -113,12 +114,14 @@ export function DataTable<Row extends RowData>({
       <table className={styles.table} data-stacked={stacked ? '' : undefined}>
         <caption
           id={captionId}
-          className={styles.caption}
+          className={[styles.caption, hideCaption ? a11yStyles.visuallyHidden : null]
+            .filter(Boolean)
+            .join(' ')}
           data-hidden={hideCaption ? '' : undefined}
         >
           {caption}
         </caption>
-        <thead className={styles.head}>
+        <thead className={stacked ? a11yStyles.visuallyHidden : styles.head}>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => {

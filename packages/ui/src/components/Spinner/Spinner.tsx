@@ -1,3 +1,4 @@
+import a11yStyles from '../../styles/a11y.module.css';
 import styles from './Spinner.module.css';
 
 export interface SpinnerProps {
@@ -22,7 +23,7 @@ export function Spinner({ size = 'md', label }: SpinnerProps) {
   return (
     <span className={styles.wrapper} role="status">
       {ring}
-      <span className={styles.label}>{label}</span>
+      <span className={a11yStyles.visuallyHidden}>{label}</span>
     </span>
   );
 }

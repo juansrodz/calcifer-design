@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { IconButton } from '../IconButton/IconButton';
+import a11yStyles from '../../styles/a11y.module.css';
 import styles from './Alert.module.css';
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
@@ -117,7 +118,7 @@ export function Alert({
         <ToneIcon tone={tone} />
       </span>
       <div className={styles.body}>
-        <span className={styles.toneWord}>{toneWords[tone]}</span>
+        <span className={a11yStyles.visuallyHidden}>{toneWords[tone]}</span>
         {heading !== undefined ? <Heading className={styles.heading}>{heading}</Heading> : null}
         <div>{children}</div>
       </div>

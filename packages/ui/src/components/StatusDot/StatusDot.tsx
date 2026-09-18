@@ -1,3 +1,4 @@
+import a11yStyles from '../../styles/a11y.module.css';
 import styles from './StatusDot.module.css';
 
 export type RemoteStatus = 'registered' | 'loading' | 'loaded' | 'failed';
@@ -32,7 +33,12 @@ export function StatusDot({
       data-testid="status-dot"
     >
       <span className={styles.dot} aria-hidden="true" />
-      <span className={styles.label} data-hidden={showLabel ? undefined : ''}>
+      <span
+        className={[styles.label, showLabel ? null : a11yStyles.visuallyHidden]
+          .filter(Boolean)
+          .join(' ')}
+        data-hidden={showLabel ? undefined : ''}
+      >
         {label}
       </span>
       <span className={styles.status}>{status}</span>
