@@ -44,3 +44,5 @@ export { Popover } from './components/Popover/Popover';
 export type { PopoverProps, PopupSide, PopupAlign } from './components/Popover/Popover';
 export { Dialog } from './components/Dialog/Dialog';
 export type { DialogProps, DialogVariant, SheetSide } from './components/Dialog/Dialog';
+export { Menu } from './components/Menu/Menu';
+export type { MenuProps, MenuItem } from './components/Menu/Menu';
