@@ -32,6 +32,9 @@
   transition-timing-function: var(--motion-ease);
   transform: translateY(calc(var(--toast-index) * -0.5rem))
     scale(calc(1 - var(--toast-index) * 0.04));
+
+  /* Newest-first DOM order plus positioned siblings painting in tree order would put the oldest toast in front; --toast-index is Base UI's own per-toast custom property, 0 for the newest. */
+  z-index: calc(100 - var(--toast-index));
 }
 
 /* Hovered or focused, the stack fans out and Base UI supplies each toast's resting offset.
