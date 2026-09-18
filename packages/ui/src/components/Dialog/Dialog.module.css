@@ -1,0 +1,89 @@
+/* Dialog has no positioner, so the viewport is what centres the popup — or docks it to the
+   bottom edge, or the end edge, for the sheet variant. The popup surface itself is the shared
+   popup skin in `src/styles/popup.module.css`, under `data-popup='dialog'`, `data-popup='sheet'`
+   and `[data-popup='sheet'][data-side='end']`. */
+.viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+.viewport[data-variant='sheet'] {
+  place-items: end center;
+  padding: 0;
+}
+
+/* The end-docked sheet: the viewport pins it to the trailing edge; its full height and its width
+   are the skin's business. This rule follows the `data-variant` one on purpose — the two have
+   equal specificity, so source order is what lets it win. */
+.viewport[data-side='end'] {
+  place-items: center end;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.heading {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
+
+.description {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-prose);
+}
+
+/* The body is the only part that scrolls: the header and footer stay put, which is what makes a
+   long dialog usable on a short viewport. */
+.body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.close > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (hover: hover) {
+  .close:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+  }
+}
