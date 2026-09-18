@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, screen, userEvent, within } from 'storybook/test';
 import { Button } from '../Button/Button';
+import { IconButton } from '../IconButton/IconButton';
 import { Tooltip } from './Tooltip';
 import { TooltipProvider } from './TooltipProvider';
 
@@ -63,5 +64,22 @@ export const HoverOpens: Story = {
     const canvas = within(canvasElement);
     await userEvent.hover(canvas.getByRole('button', { name: 'Reload the registry' }));
     await expect(await screen.findByText('Reload the registry')).toBeInTheDocument();
+  },
+};
+
+/**
+ * `IconButton` always sets its own `aria-label` (from its required `label`), so this is the case
+ * the doc comment on `Tooltip`'s `label` prop warns about: the trigger's own `aria-label` wins
+ * over the tooltip's, and the two are kept identical here by hand.
+ */
+export const OnIconButton: Story = {
+  args: {
+    trigger: (
+      <IconButton label="Reload the registry" variant="ghost" size="sm">
+        <RefreshIcon />
+      </IconButton>
+    ),
+    label: 'Reload the registry',
+    delay: 0,
   },
 };

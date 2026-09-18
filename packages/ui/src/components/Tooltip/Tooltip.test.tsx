@@ -8,7 +8,7 @@ import { Tooltip } from './Tooltip';
 import * as stories from './Tooltip.stories';
 import { TOOLTIP_DELAY, TooltipProvider } from './TooltipProvider';
 
-const { Default, Instant, Below } = composeStories(stories);
+const { Default, Instant, Below, OnIconButton } = composeStories(stories);
 
 describe('Tooltip', () => {
   it.each([
@@ -47,6 +47,14 @@ describe('Tooltip', () => {
     await userEvent.hover(screen.getByRole('button', { name: 'Reload the registry' }));
     const tip = await screen.findByText('Reload the registry');
     expect(tip).toHaveAttribute('data-popup', 'tooltip');
+  });
+
+  it('keeps the accessible name on an IconButton trigger, which sets its own aria-label', async () => {
+    render(<OnIconButton />);
+    const trigger = screen.getByRole('button', { name: 'Reload the registry' });
+    expect(trigger).toBeInTheDocument();
+    await userEvent.hover(trigger);
+    expect(await screen.findByText('Reload the registry')).toBeInTheDocument();
   });
 });
 

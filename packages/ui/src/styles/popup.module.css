@@ -11,16 +11,23 @@
    and fall back to `none`, and the `data-popup='dialog'` rule supplies the real limits. */
 
 /* The stacking order for the whole tier, in one place. `z-index` is not a token-governed
-   property and there is no `--z-*` token, so these are literals: anchored popups sit above the
-   shell's sticky header, the dialog above them, toasts above everything, because a toast can
-   report a failure that happened inside a dialog. A backdrop shares its popup's layer and sits
-   below it on DOM order alone — Base UI's anatomy always renders the backdrop first. */
+   property and there is no `--z-*` token, so these are literals.
+
+   `.layer` and `.dialogLayer` now share the same z-index. Every Base UI portal is appended to
+   `document.body` when its popup opens and removed again when it closes, so with equal z-index
+   the open order decides which popup paints on top: a popup opened from inside an already-open
+   dialog is appended after it and paints above it, while a popup opened before the dialog stays
+   beneath the dialog's scrim once the dialog opens. The two class names stay distinct on
+   purpose, so the two layers can diverge again later without touching every popup. Toasts keep
+   70, above both, because a toast can report a failure that happened inside a dialog. A backdrop
+   shares its popup's layer and sits below it on DOM order alone — Base UI's anatomy always
+   renders the backdrop before the positioner. */
 .layer {
   z-index: 50;
 }
 
 .dialogLayer {
-  z-index: 60;
+  z-index: 50;
 }
 
 .toastLayer {
@@ -63,7 +70,7 @@
 }
 
 .surface[data-popup='tooltip'] {
-  max-width: 18rem;
+  max-width: min(18rem, var(--available-width));
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
 }

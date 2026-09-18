@@ -37,6 +37,7 @@ export function StatusDot({
         className={[styles.label, showLabel ? null : a11yStyles.visuallyHidden]
           .filter(Boolean)
           .join(' ')}
+        /* Retained as a public styling hook now that the stylesheet no longer targets it. */
         data-hidden={showLabel ? undefined : ''}
       >
         {label}

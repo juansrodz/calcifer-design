@@ -11,7 +11,11 @@ export interface ToastAction {
 }
 
 export interface ToastOptions {
-  /** The manager's data payload, spread into Base UI's `add()`, which expects `title`/`description`; kept as `title` rather than the library's `heading` convention because the cross-repository Bridge contract carries the same `title: string`. */
+  /**
+   * The manager's data payload, spread into Base UI's `add()`, which expects
+   * `title`/`description`; kept as `title` rather than the library's `heading` convention
+   * because the cross-repository Bridge contract carries the same `title: string`.
+   */
   title: string;
   description?: string;
   tone?: ToastTone;
@@ -32,8 +36,12 @@ export interface ToastOptions {
  */
 export interface ToastManager {
   add: (options: ToastOptions) => string;
+  /**
+   * Closes one toast by id. Omitting `toastId` closes every toast in the store (Base UI's
+   * `closeAll` path) — a caller that wants a no-op must pass an id.
+   */
   close: (toastId?: string) => void;
-  update: (toastId: string, options: Partial<ToastOptions>) => void;
+  update: (toastId: string, options: Omit<Partial<ToastOptions>, 'id'>) => void;
   /**
    * The Base UI manager `ToastRegion` subscribes to. Not part of the surface a remote is given —
    * the Bridge contract declares only `add`, `close` and `update`.

@@ -10,8 +10,11 @@ export interface TooltipProps {
    */
   trigger: ReactElement;
   /**
-   * The tip's text — and the trigger's accessible name, applied as `aria-label` so the two can
-   * never drift.
+   * The tip's text, applied to the trigger as `aria-label`. Base UI merges the render element's
+   * own props last, so this becomes the trigger's accessible name only when the trigger carries
+   * no `aria-label` of its own — a trigger that already has one (as `IconButton` always does,
+   * from its required `label`) keeps its own, and the two must then be kept identical by hand;
+   * nothing here enforces that.
    *
    * Base UI's tooltip puts nothing in the accessibility tree: the popup carries no
    * `role="tooltip"`, the trigger gets no `aria-describedby`, and it is disabled on touch

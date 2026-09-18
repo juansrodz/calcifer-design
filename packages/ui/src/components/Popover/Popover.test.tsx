@@ -72,12 +72,20 @@ describe('Popover', () => {
     expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
   });
 
-  it('renders a visually-hidden close control when modal, which is what arms the focus trap', async () => {
+  it('renders a visually-hidden close control when modal', async () => {
     render(<Modal defaultOpen />);
     const popup = await screen.findByRole('dialog');
     const close = screen.getByRole('button', { name: 'Close' });
     expect(popup).toContainElement(close);
     expect(close).toHaveClass('visuallyHidden');
+    expect(await axeDocument()).toHaveNoViolations();
+    expect(document.querySelector('.scrim')).not.toBeNull();
+  });
+
+  it('renders no scrim when modal is "trap-focus"', async () => {
+    render(<Default modal="trap-focus" defaultOpen />);
+    await screen.findByRole('dialog');
+    expect(document.querySelector('.scrim')).toBeNull();
   });
 
   it('closes from that control', async () => {
