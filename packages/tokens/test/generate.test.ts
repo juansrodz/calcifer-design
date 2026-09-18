@@ -83,6 +83,12 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--elevation-3: ${tokens.themes.dark.elevation[3]};`);
   });
 
+  it('emits the scrim in both themes, so a modal backdrop does not invert between them', () => {
+    expect(css).toContain(`--color-scrim: ${tokens.themes.light.color.scrim};`);
+    expect(css).toContain(`--color-scrim: ${tokens.themes.dark.color.scrim};`);
+    expect(tokens.themes.light.color.scrim).not.toBe(tokens.themes.dark.color.scrim);
+  });
+
   it('emits the extended scales', () => {
     expect(css).toContain(`--space-9: ${tokens.shared.space[9]};`);
     expect(css).toContain(`--radius-xl: ${tokens.shared.radius.xl};`);

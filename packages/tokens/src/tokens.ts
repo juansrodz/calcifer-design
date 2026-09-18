@@ -31,6 +31,8 @@ const lightColor = {
   borderStrong: 'rgba(28, 25, 23, 0.18)',
   borderAccent: 'rgba(59, 111, 224, 0.28)',
   cardBorder: 'transparent',
+  /** The scrim behind a modal dialog. Warm black at 45%, so the page reads as inert, not gone. */
+  scrim: 'rgba(28, 25, 23, 0.45)',
   focus: '#3B6FE0',
   success: '#1F8A5B',
   warning: '#B7791F',
@@ -67,6 +69,8 @@ const darkColor = {
   borderStrong: 'rgba(255, 255, 255, 0.18)',
   borderAccent: 'rgba(127, 164, 245, 0.32)',
   cardBorder: 'rgba(255, 255, 255, 0.08)',
+  /** Heavier than the light theme's: a dark surface needs more separation from a dark page. */
+  scrim: 'rgba(3, 4, 6, 0.6)',
   focus: '#7FA4F5',
   success: '#4FC38A',
   warning: '#E0B04A',
