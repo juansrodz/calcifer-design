@@ -12,10 +12,10 @@
 
 **Worktrees — this plan spans two repositories:**
 
-| Tasks | Repository | Worktree | Branch |
-| ----- | ---------- | -------- | ------ |
-| 1–9 | `calcifer-design` (the library) | `/Users/calcifer/Code/calcifer-design-worktrees/gamma` | a fresh branch off `origin/main` (currently `99de531`, the Tier 1 release commit) |
-| 10–13 | `portfolio-mfe` (the host and the contract) | `/Users/calcifer/Code/portfolio-mfe-worktrees/gamma` | `gamma/storybook-remote`, which is four spec-docs commits ahead of `main` and carries nothing else |
+| Tasks | Repository                                  | Worktree                                               | Branch                                                                                             |
+| ----- | ------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| 1–9   | `calcifer-design` (the library)             | `/Users/calcifer/Code/calcifer-design-worktrees/gamma` | a fresh branch off `origin/main` (currently `99de531`, the Tier 1 release commit)                  |
+| 10–13 | `portfolio-mfe` (the host and the contract) | `/Users/calcifer/Code/portfolio-mfe-worktrees/gamma`   | `gamma/storybook-remote`, which is four spec-docs commits ahead of `main` and carries nothing else |
 
 Do not create another worktree in either repository.
 
@@ -68,19 +68,19 @@ Copied from the spec and from both repositories' own rules. Every task's require
 
 **Commands, verified working from each worktree root** — from the library worktree today, and from the `portfolio-mfe` worktree once Task 10 Step 0's `bun install` has run:
 
-| Purpose | Command |
-| ------- | ------- |
-| One library component's tests | `./node_modules/.bin/vitest run --project ui <Name>` |
-| One library test file, with console output | `./node_modules/.bin/vitest run --project ui <Name> --silent=false --reporter=verbose` |
-| Every library unit test | `bun run test` |
-| Library lint (ESLint + Stylelint + Prettier check) | `bun run lint` |
-| Library typecheck (builds tokens and ui first) | `bun run typecheck` |
-| Format one file | `./node_modules/.bin/prettier --write <path>` |
-| Everything library CI runs | `bun run check` |
-| One portfolio app's tests | `./node_modules/.bin/vitest run --project shell <Name>` (or `--project showcase`) |
-| Portfolio typecheck | `bun run typecheck` |
-| Portfolio lint | `bun run lint` |
-| Portfolio unit tests | `bun run test` |
+| Purpose                                            | Command                                                                                |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| One library component's tests                      | `./node_modules/.bin/vitest run --project ui <Name>`                                   |
+| One library test file, with console output         | `./node_modules/.bin/vitest run --project ui <Name> --silent=false --reporter=verbose` |
+| Every library unit test                            | `bun run test`                                                                         |
+| Library lint (ESLint + Stylelint + Prettier check) | `bun run lint`                                                                         |
+| Library typecheck (builds tokens and ui first)     | `bun run typecheck`                                                                    |
+| Format one file                                    | `./node_modules/.bin/prettier --write <path>`                                          |
+| Everything library CI runs                         | `bun run check`                                                                        |
+| One portfolio app's tests                          | `./node_modules/.bin/vitest run --project shell <Name>` (or `--project showcase`)      |
+| Portfolio typecheck                                | `bun run typecheck`                                                                    |
+| Portfolio lint                                     | `bun run lint`                                                                         |
+| Portfolio unit tests                               | `bun run test`                                                                         |
 
 ---
 
@@ -139,85 +139,85 @@ Every claim below was produced by running Base UI 1.8.0 in this repository's own
 
 **Created:**
 
-| File | Responsibility |
-| ---- | -------------- |
-| `packages/ui/src/styles/a11y.module.css` | The one `.visuallyHidden` class, replacing seven copies. |
-| `packages/ui/src/styles/a11y.test.tsx` | Proves the block is declared once and that its six consumers use it. |
-| `packages/ui/src/styles/popup.module.css` | The tier's shared skin: layering, surface, clamp, origin, transition, scrim. |
-| `packages/ui/src/components/Popover/Popover.tsx` | Anchored dialog; heading, description, optional modal focus trap. |
-| `packages/ui/src/components/Popover/Popover.module.css` | Only the heading and description type; everything else is the shared skin. |
-| `packages/ui/src/components/Popover/Popover.stories.tsx` | Sides, alignment, modal, open-on-load, a keyboard play story. |
-| `packages/ui/src/components/Popover/Popover.test.tsx` | axe over the document; focus in and out; the modal close control. |
-| `packages/ui/src/components/Dialog/Dialog.tsx` | Centred dialog, and a sheet docked to the bottom or the end edge; header, body, footer, close control. |
-| `packages/ui/src/components/Dialog/Dialog.module.css` | The viewport that centres or docks the popup, the header row, the scrolling body, the footer. |
-| `packages/ui/src/components/Dialog/Dialog.stories.tsx` | Trigger-opened, open-on-load, sheet, side sheet, non-dismissible. |
-| `packages/ui/src/components/Dialog/Dialog.test.tsx` | axe; focus lands on Close; Escape; outside press; the sheet variant on both edges. |
-| `packages/ui/src/components/Menu/Menu.tsx` | A list of actions on the shared skin, with separators and disabled items. |
-| `packages/ui/src/components/Menu/Menu.module.css` | The item row, its highlight and the separator. |
-| `packages/ui/src/components/Menu/Menu.stories.tsx` | Default, aligned, open-on-load, a keyboard play story. |
-| `packages/ui/src/components/Menu/Menu.test.tsx` | axe; arrow keys; Enter selects; disabled items; Escape restores focus. |
-| `packages/ui/src/components/Tooltip/Tooltip.tsx` | A tip that is also the trigger's accessible name. |
-| `packages/ui/src/components/Tooltip/TooltipProvider.tsx` | The delay group every remote mounts, plus `TOOLTIP_DELAY`. |
-| `packages/ui/src/components/Tooltip/Tooltip.stories.tsx` | Under a provider, instant, below. |
-| `packages/ui/src/components/Tooltip/Tooltip.test.tsx` | axe; the label reaches the trigger; hover opens and closes. |
-| `packages/ui/src/components/ToastRegion/ToastRegion.tsx` | Provider + portal + viewport as one component; `createToastManager`. |
-| `packages/ui/src/components/ToastRegion/ToastRegion.module.css` | The stack, its offsets, the tone rail, the action and close controls. |
-| `packages/ui/src/components/ToastRegion/ToastRegion.stories.tsx` | A trigger that raises toasts, with the `aria-hidden-focus` exclusion. |
-| `packages/ui/src/components/ToastRegion/ToastRegion.test.tsx` | One landmark; tone; action; close; update; the orphaned-manager case. |
-| `.changeset/visually-hidden.md` … `.changeset/nav-menu-popup-skin.md` | One per task, listed in each task. |
+| File                                                                  | Responsibility                                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `packages/ui/src/styles/a11y.module.css`                              | The one `.visuallyHidden` class, replacing seven copies.                                               |
+| `packages/ui/src/styles/a11y.test.tsx`                                | Proves the block is declared once and that its six consumers use it.                                   |
+| `packages/ui/src/styles/popup.module.css`                             | The tier's shared skin: layering, surface, clamp, origin, transition, scrim.                           |
+| `packages/ui/src/components/Popover/Popover.tsx`                      | Anchored dialog; heading, description, optional modal focus trap.                                      |
+| `packages/ui/src/components/Popover/Popover.module.css`               | Only the heading and description type; everything else is the shared skin.                             |
+| `packages/ui/src/components/Popover/Popover.stories.tsx`              | Sides, alignment, modal, open-on-load, a keyboard play story.                                          |
+| `packages/ui/src/components/Popover/Popover.test.tsx`                 | axe over the document; focus in and out; the modal close control.                                      |
+| `packages/ui/src/components/Dialog/Dialog.tsx`                        | Centred dialog, and a sheet docked to the bottom or the end edge; header, body, footer, close control. |
+| `packages/ui/src/components/Dialog/Dialog.module.css`                 | The viewport that centres or docks the popup, the header row, the scrolling body, the footer.          |
+| `packages/ui/src/components/Dialog/Dialog.stories.tsx`                | Trigger-opened, open-on-load, sheet, side sheet, non-dismissible.                                      |
+| `packages/ui/src/components/Dialog/Dialog.test.tsx`                   | axe; focus lands on Close; Escape; outside press; the sheet variant on both edges.                     |
+| `packages/ui/src/components/Menu/Menu.tsx`                            | A list of actions on the shared skin, with separators and disabled items.                              |
+| `packages/ui/src/components/Menu/Menu.module.css`                     | The item row, its highlight and the separator.                                                         |
+| `packages/ui/src/components/Menu/Menu.stories.tsx`                    | Default, aligned, open-on-load, a keyboard play story.                                                 |
+| `packages/ui/src/components/Menu/Menu.test.tsx`                       | axe; arrow keys; Enter selects; disabled items; Escape restores focus.                                 |
+| `packages/ui/src/components/Tooltip/Tooltip.tsx`                      | A tip that is also the trigger's accessible name.                                                      |
+| `packages/ui/src/components/Tooltip/TooltipProvider.tsx`              | The delay group every remote mounts, plus `TOOLTIP_DELAY`.                                             |
+| `packages/ui/src/components/Tooltip/Tooltip.stories.tsx`              | Under a provider, instant, below.                                                                      |
+| `packages/ui/src/components/Tooltip/Tooltip.test.tsx`                 | axe; the label reaches the trigger; hover opens and closes.                                            |
+| `packages/ui/src/components/ToastRegion/ToastRegion.tsx`              | Provider + portal + viewport as one component; `createToastManager`.                                   |
+| `packages/ui/src/components/ToastRegion/ToastRegion.module.css`       | The stack, its offsets, the tone rail, the action and close controls.                                  |
+| `packages/ui/src/components/ToastRegion/ToastRegion.stories.tsx`      | A trigger that raises toasts, with the `aria-hidden-focus` exclusion.                                  |
+| `packages/ui/src/components/ToastRegion/ToastRegion.test.tsx`         | One landmark; tone; action; close; update; the orphaned-manager case.                                  |
+| `.changeset/visually-hidden.md` … `.changeset/nav-menu-popup-skin.md` | One per task, listed in each task.                                                                     |
 
 **Modified:**
 
-| File | Change |
-| ---- | ------ |
-| `packages/ui/src/components/LiveRegion/LiveRegion.tsx` | Uses the shared class; its stylesheet is deleted outright. |
-| `packages/ui/src/components/LiveRegion/LiveRegion.module.css` | **Deleted** — its `.root` was entirely the visually-hidden block. |
-| `packages/ui/src/components/Alert/Alert.tsx` + `.module.css` | `.toneWord` replaced by the shared class. |
-| `packages/ui/src/components/Avatar/Avatar.tsx` + `.module.css` | `.name` replaced by the shared class. |
-| `packages/ui/src/components/Spinner/Spinner.tsx` + `.module.css` | `.label` replaced by the shared class. |
-| `packages/ui/src/components/StatusDot/StatusDot.tsx` + `.module.css` | `.label[data-hidden]` replaced by the shared class. |
+| File                                                                 | Change                                                               |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `packages/ui/src/components/LiveRegion/LiveRegion.tsx`               | Uses the shared class; its stylesheet is deleted outright.           |
+| `packages/ui/src/components/LiveRegion/LiveRegion.module.css`        | **Deleted** — its `.root` was entirely the visually-hidden block.    |
+| `packages/ui/src/components/Alert/Alert.tsx` + `.module.css`         | `.toneWord` replaced by the shared class.                            |
+| `packages/ui/src/components/Avatar/Avatar.tsx` + `.module.css`       | `.name` replaced by the shared class.                                |
+| `packages/ui/src/components/Spinner/Spinner.tsx` + `.module.css`     | `.label` replaced by the shared class.                               |
+| `packages/ui/src/components/StatusDot/StatusDot.tsx` + `.module.css` | `.label[data-hidden]` replaced by the shared class.                  |
 | `packages/ui/src/components/DataTable/DataTable.tsx` + `.module.css` | Both copies replaced, including the lossy one on the stacked header. |
-| `packages/ui/src/components/NavMenu/NavMenu.tsx` + `.module.css` | Positioner and popup move to the shared skin (Task 8). |
-| `packages/ui/src/components/NavMenu/NavMenu.test.tsx` | One appended test: the popup wears the shared surface (Task 8). |
-| `packages/ui/test/axe.ts` | Gains `axeDocument()` for portalled surfaces. |
-| `packages/tokens/src/tokens.ts` | `--color-scrim` in both themes. |
-| `packages/tokens/test/generate.test.ts` | Asserts the scrim is emitted in both themes. |
-| `packages/ui/src/index.ts` | Value/type export pairs appended per component. |
-| `packages/ui/test/dist/ui-dist.test.ts` | The five new names, plus the two shared stylesheets. |
-| `README.md:27` | The component list. |
+| `packages/ui/src/components/NavMenu/NavMenu.tsx` + `.module.css`     | Positioner and popup move to the shared skin (Task 8).               |
+| `packages/ui/src/components/NavMenu/NavMenu.test.tsx`                | One appended test: the popup wears the shared surface (Task 8).      |
+| `packages/ui/test/axe.ts`                                            | Gains `axeDocument()` for portalled surfaces.                        |
+| `packages/tokens/src/tokens.ts`                                      | `--color-scrim` in both themes.                                      |
+| `packages/tokens/test/generate.test.ts`                              | Asserts the scrim is emitted in both themes.                         |
+| `packages/ui/src/index.ts`                                           | Value/type export pairs appended per component.                      |
+| `packages/ui/test/dist/ui-dist.test.ts`                              | The five new names, plus the two shared stylesheets.                 |
+| `README.md:27`                                                       | The component list.                                                  |
 
 ### Repository 2 — `portfolio-mfe` (Tasks 10–13)
 
 **Created:**
 
-| File | Responsibility |
-| ---- | -------------- |
-| `apps/shell/src/toast/host-toast.ts` | The single module-scope toast manager the host owns. |
+| File                                       | Responsibility                                                       |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| `apps/shell/src/toast/host-toast.ts`       | The single module-scope toast manager the host owns.                 |
 | `apps/shell/src/toast/host-toast.test.tsx` | One landmark in the mounted app; a toast raised through the manager. |
-| `.changeset/host-toast.md` | Minor on `@calcifer-design/contract`. |
+| `.changeset/host-toast.md`                 | Minor on `@calcifer-design/contract`.                                |
 
 **Modified:**
 
-| File | Change |
-| ---- | ------ |
-| `docs/superpowers/specs/2026-09-12-portfolio-mfe-phase-4-design-system-remote-design.md` | §12 Errata for every departure in "Decisions taken up front" (Task 10 Step 1, its own commit). |
-| `packages/contract/src/remote-app.ts` | `HostToastOptions`, `HostToastManager`, optional `hostToast` on `HostProps`. |
-| `packages/contract/src/index.ts` | Exports the two new types. |
-| `packages/contract/test/remote-app.test-d.ts` | Type tests for the manager's shape and its optionality. |
-| `apps/shell/src/routes/__root.tsx` | Mounts `<ToastRegion>` once, beside the devtools, and wraps the frame in `<TooltipProvider>`. |
-| `apps/shell/src/federation/RemoteRoute.tsx` | `hostToast` added to the `HostProps` literal. |
-| `apps/shell/src/federation/RemoteRoute.test.tsx` | The Bridge mock reports the prop; one test asserts it arrives. |
-| `apps/shell/package.json` | `@calcifer-design/ui` to `^0.3.0` **and `@calcifer-design/tokens` to `^0.2.0`**; `@base-ui/react` at `catalog:` (Task 13). |
-| `apps/showcase/src/app.tsx` | Host manager or its own; `TooltipProvider` around the tree. |
-| `apps/showcase/src/host/host-store.ts` | `toast` in `HostState`, plus `raiseToast`. |
-| `apps/showcase/src/pages/Playground.tsx` | A control that raises a toast through whichever manager is in play. |
-| `apps/showcase/src/pages/Playground.test.tsx` | One appended test: the control calls the manager in the store. |
-| `apps/showcase/src/app.test.tsx` | Federated uses the host's manager and mounts no region; standalone does both. |
-| `apps/showcase/test/render.tsx` | `resetHostStore` covers the new field. |
-| `apps/showcase/package.json` | `@calcifer-design/ui` to `^0.3.0` **and `@calcifer-design/tokens` to `^0.2.0`**; `@base-ui/react` at `catalog:` (Task 13). |
-| `package.json` | `@base-ui/react` in the workspace catalog (Task 13). |
-| `packages/build-tools/src/shared-dependencies.ts` | `strictVersion`, the Base UI range, both shared keys (Task 13). |
-| `packages/build-tools/test/shared-dependencies.test.ts` | The inverted assertion (Task 13). |
+| File                                                                                     | Change                                                                                                                     |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `docs/superpowers/specs/2026-09-12-portfolio-mfe-phase-4-design-system-remote-design.md` | §12 Errata for every departure in "Decisions taken up front" (Task 10 Step 1, its own commit).                             |
+| `packages/contract/src/remote-app.ts`                                                    | `HostToastOptions`, `HostToastManager`, optional `hostToast` on `HostProps`.                                               |
+| `packages/contract/src/index.ts`                                                         | Exports the two new types.                                                                                                 |
+| `packages/contract/test/remote-app.test-d.ts`                                            | Type tests for the manager's shape and its optionality.                                                                    |
+| `apps/shell/src/routes/__root.tsx`                                                       | Mounts `<ToastRegion>` once, beside the devtools, and wraps the frame in `<TooltipProvider>`.                              |
+| `apps/shell/src/federation/RemoteRoute.tsx`                                              | `hostToast` added to the `HostProps` literal.                                                                              |
+| `apps/shell/src/federation/RemoteRoute.test.tsx`                                         | The Bridge mock reports the prop; one test asserts it arrives.                                                             |
+| `apps/shell/package.json`                                                                | `@calcifer-design/ui` to `^0.3.0` **and `@calcifer-design/tokens` to `^0.2.0`**; `@base-ui/react` at `catalog:` (Task 13). |
+| `apps/showcase/src/app.tsx`                                                              | Host manager or its own; `TooltipProvider` around the tree.                                                                |
+| `apps/showcase/src/host/host-store.ts`                                                   | `toast` in `HostState`, plus `raiseToast`.                                                                                 |
+| `apps/showcase/src/pages/Playground.tsx`                                                 | A control that raises a toast through whichever manager is in play.                                                        |
+| `apps/showcase/src/pages/Playground.test.tsx`                                            | One appended test: the control calls the manager in the store.                                                             |
+| `apps/showcase/src/app.test.tsx`                                                         | Federated uses the host's manager and mounts no region; standalone does both.                                              |
+| `apps/showcase/test/render.tsx`                                                          | `resetHostStore` covers the new field.                                                                                     |
+| `apps/showcase/package.json`                                                             | `@calcifer-design/ui` to `^0.3.0` **and `@calcifer-design/tokens` to `^0.2.0`**; `@base-ui/react` at `catalog:` (Task 13). |
+| `package.json`                                                                           | `@base-ui/react` in the workspace catalog (Task 13).                                                                       |
+| `packages/build-tools/src/shared-dependencies.ts`                                        | `strictVersion`, the Base UI range, both shared keys (Task 13).                                                            |
+| `packages/build-tools/test/shared-dependencies.test.ts`                                  | The inverted assertion (Task 13).                                                                                          |
 
 ---
 
@@ -386,7 +386,7 @@ Create `packages/ui/src/styles/a11y.module.css`:
 
 - [ ] **Step 4: Migrate LiveRegion, and delete its stylesheet**
 
-`LiveRegion`'s `.root` was *entirely* the visually-hidden block, so the file goes. Replace `packages/ui/src/components/LiveRegion/LiveRegion.tsx` with:
+`LiveRegion`'s `.root` was _entirely_ the visually-hidden block, so the file goes. Replace `packages/ui/src/components/LiveRegion/LiveRegion.tsx` with:
 
 ```tsx
 import a11yStyles from '../../styles/a11y.module.css';
@@ -431,7 +431,7 @@ import a11yStyles from '../../styles/a11y.module.css';
 and change the tone-word span:
 
 ```tsx
-        <span className={a11yStyles.visuallyHidden}>{toneWords[tone]}</span>
+<span className={a11yStyles.visuallyHidden}>{toneWords[tone]}</span>
 ```
 
 In `packages/ui/src/components/Alert/Alert.module.css`, delete the whole `.toneWord` rule (the last rule in the file, twelve lines including its disable comment).
@@ -445,7 +445,7 @@ import a11yStyles from '../../styles/a11y.module.css';
 ```
 
 ```tsx
-        <span className={a11yStyles.visuallyHidden}>{name}</span>
+<span className={a11yStyles.visuallyHidden}>{name}</span>
 ```
 
 In `packages/ui/src/components/Avatar/Avatar.module.css`, delete the `.name` rule.
@@ -459,7 +459,7 @@ import a11yStyles from '../../styles/a11y.module.css';
 ```
 
 ```tsx
-      <span className={a11yStyles.visuallyHidden}>{label}</span>
+<span className={a11yStyles.visuallyHidden}>{label}</span>
 ```
 
 In `packages/ui/src/components/Spinner/Spinner.module.css`, delete the `.label` rule. `.wrapper` stays.
@@ -473,14 +473,12 @@ import a11yStyles from '../../styles/a11y.module.css';
 ```
 
 ```tsx
-      <span
-        className={[styles.label, showLabel ? null : a11yStyles.visuallyHidden]
-          .filter(Boolean)
-          .join(' ')}
-        data-hidden={showLabel ? undefined : ''}
-      >
-        {label}
-      </span>
+<span
+  className={[styles.label, showLabel ? null : a11yStyles.visuallyHidden].filter(Boolean).join(' ')}
+  data-hidden={showLabel ? undefined : ''}
+>
+  {label}
+</span>
 ```
 
 `data-hidden` stays as the state marker — it is the styling hook a consumer would reach for, and it costs nothing — but the hiding itself now comes from the shared class. In `packages/ui/src/components/StatusDot/StatusDot.module.css`, delete the `.label[data-hidden]` rule. The remaining `.label` rule's `overflow: hidden` and `white-space: nowrap` agree with the shared class rather than fighting it, and `min-width: 0` is inert on an absolutely-positioned box.
@@ -496,15 +494,15 @@ import a11yStyles from '../../styles/a11y.module.css';
 Change the caption to carry the shared class when hidden, keeping `data-hidden` as the state marker:
 
 ```tsx
-        <caption
-          id={captionId}
-          className={[styles.caption, hideCaption ? a11yStyles.visuallyHidden : null]
-            .filter(Boolean)
-            .join(' ')}
-          data-hidden={hideCaption ? '' : undefined}
-        >
-          {caption}
-        </caption>
+<caption
+  id={captionId}
+  className={[styles.caption, hideCaption ? a11yStyles.visuallyHidden : null]
+    .filter(Boolean)
+    .join(' ')}
+  data-hidden={hideCaption ? '' : undefined}
+>
+  {caption}
+</caption>
 ```
 
 and the header row, which is the lossy copy — the component already knows whether it is stacked, so the choice moves from a descendant selector to the className:
@@ -597,11 +595,11 @@ git commit -m "refactor(ui): one visually-hidden class for the whole library"
 In `packages/tokens/test/generate.test.ts`, append a case to the existing `describe` block, in the style of the neighbouring "emits the new colour roles and the material family":
 
 ```ts
-  it('emits the scrim in both themes, so a modal backdrop does not invert between them', () => {
-    expect(css).toContain(`--color-scrim: ${tokens.themes.light.color.scrim};`);
-    expect(css).toContain(`--color-scrim: ${tokens.themes.dark.color.scrim};`);
-    expect(tokens.themes.light.color.scrim).not.toBe(tokens.themes.dark.color.scrim);
-  });
+it('emits the scrim in both themes, so a modal backdrop does not invert between them', () => {
+  expect(css).toContain(`--color-scrim: ${tokens.themes.light.color.scrim};`);
+  expect(css).toContain(`--color-scrim: ${tokens.themes.dark.color.scrim};`);
+  expect(tokens.themes.light.color.scrim).not.toBe(tokens.themes.dark.color.scrim);
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -1977,12 +1975,7 @@ export function Menu({
   onOpenChange,
 }: MenuProps) {
   return (
-    <BaseMenu.Root
-      open={open}
-      defaultOpen={defaultOpen}
-      onOpenChange={onOpenChange}
-      modal={modal}
-    >
+    <BaseMenu.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} modal={modal}>
       <BaseMenu.Trigger render={trigger} />
       <BaseMenu.Portal>
         <BaseMenu.Positioner
@@ -2078,7 +2071,7 @@ git commit -m "feat(ui): add Menu"
 
 **Tooltip has no stylesheet of its own**, and that is the point: its whole surface is `data-popup='tooltip'` on the shared skin. The folder holds two components, as `Button`/`LinkButton` already do.
 
-**The accessibility problem this wrapper exists to solve.** Base UI's tooltip puts **nothing** in the accessibility tree: the popup carries no `role="tooltip"`, the trigger gets no `aria-describedby`, and the whole thing is disabled on touch devices (the hover hook is `mouseOnly`). Its own documentation makes the trigger's accessible name a hard requirement. So `label` is required here and is applied twice — as the tip's text and as the trigger's `aria-label` — so the two cannot drift, and the prop's doc comment says what this component is *not* for: a sentence of help belongs in a `Popover` on a hover-opening trigger, and contextual feedback belongs in a toast.
+**The accessibility problem this wrapper exists to solve.** Base UI's tooltip puts **nothing** in the accessibility tree: the popup carries no `role="tooltip"`, the trigger gets no `aria-describedby`, and the whole thing is disabled on touch devices (the hover hook is `mouseOnly`). Its own documentation makes the trigger's accessible name a hard requirement. So `label` is required here and is applied twice — as the tip's text and as the trigger's `aria-label` — so the two cannot drift, and the prop's doc comment says what this component is _not_ for: a sentence of help belongs in a `Popover` on a hover-opening trigger, and contextual feedback belongs in a toast.
 
 **What `TooltipProvider` actually is.** Two React context providers and a timer. No DOM element, no portal, no window listeners, no store — verified in `tooltip/provider/TooltipProvider.js`, which returns `<TooltipProviderContext.Provider><FloatingDelayGroup>{children}</FloatingDelayGroup></TooltipProviderContext.Provider>` and nothing else. It is also **optional**: `useTooltipProviderContext` is a bare `useContext` with no throw, and a trigger with no provider falls back to Base UI's `OPEN_DELAY = 600`. That is why `TOOLTIP_DELAY` is 600 — it is not a number this library invents, it is the one Base UI would have used anyway — and why every remote mounting its own provider is free rather than merely tolerable. It buys one thing: once a tooltip in that tree has opened, its neighbours open instantly.
 
@@ -2983,21 +2976,21 @@ git commit -m "feat(ui): add ToastRegion and the toast manager"
 
 Nothing in the public API moves, but this still ships as a **minor**: `@calcifer-design/ui` is pre-1.0, so a patch reaches every `^0.2.x` consumer silently, and a change to how a live component animates and clamps deserves a version segment that a reader notices. The release is already a minor for the five new components, so the honesty is free. Step 4 lists the full declaration delta; Step 7's changeset repeats it.
 
-Doing this *after* Popover rather than before is the whole argument of decision 1: there was nothing in `NavMenu` worth extracting, because the half of a popup skin it has is the half that is easy.
+Doing this _after_ Popover rather than before is the whole argument of decision 1: there was nothing in `NavMenu` worth extracting, because the half of a popup skin it has is the half that is easy.
 
 - [ ] **Step 1: Write the failing test**
 
 Append to the `NavMenu at mobile width` describe block in `packages/ui/src/components/NavMenu/NavMenu.test.tsx`:
 
 ```tsx
-  it('wears the tier-wide popup skin, so it cannot drift from Menu and Popover', async () => {
-    installMatchMedia(false);
-    render(<Mobile />);
-    await userEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    const popup = await screen.findByRole('menu');
-    expect(popup).toHaveClass('surface');
-    expect(popup).toHaveAttribute('data-popup', 'menu');
-  });
+it('wears the tier-wide popup skin, so it cannot drift from Menu and Popover', async () => {
+  installMatchMedia(false);
+  render(<Mobile />);
+  await userEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+  const popup = await screen.findByRole('menu');
+  expect(popup).toHaveClass('surface');
+  expect(popup).toHaveAttribute('data-popup', 'menu');
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -3027,13 +3020,13 @@ In `packages/ui/src/components/NavMenu/NavMenu.module.css`, delete the `.positio
 
 The shared surface supplies everything the deleted `.popup` did — flex column, `min-width: 12rem` through `data-popup='menu'`, `padding: var(--space-2)`, a hairline border, `--radius-lg`, `--color-surface-raised` and `--elevation-2` — and it supplies more than that, which is the part worth being precise about because this is a live component:
 
-| Added by `.surface` | Effect on the mobile nav |
-| ------------------- | ------------------------ |
-| `transition-property`/`-duration`/`-timing-function` plus the `[data-starting-style]`/`[data-ending-style]` pair | Fades and scales where it used to appear instantly. Collapsed under `prefers-reduced-motion` by `base.css`. |
-| `transform-origin: var(--transform-origin)` | The scale grows out of the trigger rather than the popup's centre. |
-| `max-width: var(--available-width)`, `max-height: var(--available-height)`, `overflow-y: auto`, `overscroll-behavior: contain` | The dropdown now clamps to the viewport and scrolls inside itself instead of overflowing the window. |
-| `color: var(--color-text)` | Explicit where it was inherited; the computed value does not move. |
-| `[data-instant] { transition-property: none }` | Base UI's own escape hatch for a dismissal that must feel immediate. |
+| Added by `.surface`                                                                                                            | Effect on the mobile nav                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `transition-property`/`-duration`/`-timing-function` plus the `[data-starting-style]`/`[data-ending-style]` pair               | Fades and scales where it used to appear instantly. Collapsed under `prefers-reduced-motion` by `base.css`. |
+| `transform-origin: var(--transform-origin)`                                                                                    | The scale grows out of the trigger rather than the popup's centre.                                          |
+| `max-width: var(--available-width)`, `max-height: var(--available-height)`, `overflow-y: auto`, `overscroll-behavior: contain` | The dropdown now clamps to the viewport and scrolls inside itself instead of overflowing the window.        |
+| `color: var(--color-text)`                                                                                                     | Explicit where it was inherited; the computed value does not move.                                          |
+| `[data-instant] { transition-property: none }`                                                                                 | Base UI's own escape hatch for a dismissal that must feel immediate.                                        |
 
 The one declaration on `.surface` that would have changed the dropdown's density — `gap: var(--space-2)`, 8px between every item — never reaches it: Task 3's `data-popup='menu'` variant sets `gap: 0` precisely so that `Menu` and `NavMenu` both keep adjacent rows. Everything in that table goes in the changeset.
 
@@ -3097,29 +3090,29 @@ This task proves the tier survives the Rslib build and reaches the published ent
 In `packages/ui/test/dist/ui-dist.test.ts`, extend the export-name list so it reads:
 
 ```ts
-    for (const exportName of [
-      'Button',
-      'Card',
-      'Tag',
-      'NavMenu',
-      'DataTable',
-      'PageHeading',
-      'Spinner',
-      'Skeleton',
-      'IconButton',
-      'Alert',
-      'Avatar',
-      'ErrorBoundary',
-      'Popover',
-      'Dialog',
-      'Menu',
-      'Tooltip',
-      'TooltipProvider',
-      'ToastRegion',
-      'createToastManager',
-    ]) {
-      expect(typeof uiModule[exportName], exportName).toBe('function');
-    }
+for (const exportName of [
+  'Button',
+  'Card',
+  'Tag',
+  'NavMenu',
+  'DataTable',
+  'PageHeading',
+  'Spinner',
+  'Skeleton',
+  'IconButton',
+  'Alert',
+  'Avatar',
+  'ErrorBoundary',
+  'Popover',
+  'Dialog',
+  'Menu',
+  'Tooltip',
+  'TooltipProvider',
+  'ToastRegion',
+  'createToastManager',
+]) {
+  expect(typeof uiModule[exportName], exportName).toBe('function');
+}
 ```
 
 Every name there is a plain function or a class, and `typeof` a class is `'function'` — which is why this list must never gain a namespace object. It is also why this tier's components are flat single functions rather than compound `Popover.Root`-style exports.
@@ -3127,21 +3120,21 @@ Every name there is a plain function or a class, and `typeof` a class is `'funct
 Then append a third test to the same describe block, after the existing `ships base.css and the declarations`:
 
 ```ts
-  it('emits each shared stylesheet once, as its own dist entry', async () => {
-    for (const name of ['a11y', 'popup']) {
-      expect((await stat(path.join(distRoot, `styles/${name}.module.js`))).isFile()).toBe(true);
-      expect((await stat(path.join(distRoot, `styles/${name}_module.css`))).isFile()).toBe(true);
-    }
-    // One copy of the rule in the whole package: the reason the shared class is imported from
-    // TSX rather than `composes`-d, which would inline it into every consuming stylesheet.
-    const popupCss = await readFile(path.join(distRoot, 'styles/popup_module.css'), 'utf8');
-    expect(popupCss).toMatch(/\.surface-[A-Za-z0-9_-]{5}\b/);
-    const componentCss = await collectCssFiles(path.join(distRoot, 'components'));
-    for (const file of componentCss) {
-      const css = await readFile(file, 'utf8');
-      expect(css, file).not.toContain('clip-path: inset(50%)');
-    }
-  });
+it('emits each shared stylesheet once, as its own dist entry', async () => {
+  for (const name of ['a11y', 'popup']) {
+    expect((await stat(path.join(distRoot, `styles/${name}.module.js`))).isFile()).toBe(true);
+    expect((await stat(path.join(distRoot, `styles/${name}_module.css`))).isFile()).toBe(true);
+  }
+  // One copy of the rule in the whole package: the reason the shared class is imported from
+  // TSX rather than `composes`-d, which would inline it into every consuming stylesheet.
+  const popupCss = await readFile(path.join(distRoot, 'styles/popup_module.css'), 'utf8');
+  expect(popupCss).toMatch(/\.surface-[A-Za-z0-9_-]{5}\b/);
+  const componentCss = await collectCssFiles(path.join(distRoot, 'components'));
+  for (const file of componentCss) {
+    const css = await readFile(file, 'utf8');
+    expect(css, file).not.toContain('clip-path: inset(50%)');
+  }
+});
 ```
 
 - [ ] **Step 2: Build and run the dist tests to verify they pass**
@@ -3193,7 +3186,7 @@ git commit -m "test(ui): cover the Tier 2 components and the shared stylesheets 
 
 This is the whole library half of the tier: nine commits, five new components, one refactor, one token. Follow the repository's usual close-out — a whole-branch code review, a simplifier pass, `bun run check`, then merge.
 
-**Then stop and wait.** Merging opens the Version Packages PR; merging *that* stages `@calcifer-design/ui@0.3.0` and `@calcifer-design/tokens@0.2.0` on npm. CI can only stage: the trusted publisher is configured without "Allow npm publish", so a human approves the release with 2FA (`npm stage approve <stage-id>`). **Nothing in Tasks 11–13 can start until *both* approvals land.** Confirm with:
+**Then stop and wait.** Merging opens the Version Packages PR; merging _that_ stages `@calcifer-design/ui@0.3.0` and `@calcifer-design/tokens@0.2.0` on npm. CI can only stage: the trusted publisher is configured without "Allow npm publish", so a human approves the release with 2FA (`npm stage approve <stage-id>`). **Nothing in Tasks 11–13 can start until _both_ approvals land.** Confirm with:
 
 ```bash
 npm view @calcifer-design/ui version
@@ -3219,7 +3212,7 @@ Tasks 10–13 run in `/Users/calcifer/Code/portfolio-mfe-worktrees/gamma`. Three
 1. **The npm release (Task 9's close-out) comes before the shell bump (Task 11), and it is two packages, not one.** The shell cannot import `ToastRegion` from a version that is not published — and `@calcifer-design/ui@0.3.0` itself depends on `@calcifer-design/tokens@^0.2.0`, so approving one without the other leaves `bun install` unable to resolve anything. Both apps also move their own `@calcifer-design/tokens` dependency to `^0.2.0`, because each imports `tokens.css` from its own copy and that is the only route by which `--color-scrim` reaches a browser. The approval is manual, so this is the one hazard a green CI run cannot see coming.
 2. **The contract commit precedes the shell commit, inside the same PR.** `const hostProps: HostProps` is an exact annotation; the new key would be an excess-property error for exactly one commit if inverted.
 3. **`hostToast` is optional forever, and remotes branch on the manager, never on `federated`.**
-4. **Task 13 lands last, and may land as its own PR.** It is the only change here with a runtime failure mode, it is trivially revertible, and per spec §5.3 it is explicitly *not* what makes toast work. That sentence exists so nobody later deletes the manager-passing in the belief that sharing solved it.
+4. **Task 13 lands last, and may land as its own PR.** It is the only change here with a runtime failure mode, it is trivially revertible, and per spec §5.3 it is explicitly _not_ what makes toast work. That sentence exists so nobody later deletes the manager-passing in the belief that sharing solved it.
 
 ---
 
@@ -3242,7 +3235,7 @@ Tasks 10–13 run in `/Users/calcifer/Code/portfolio-mfe-worktrees/gamma`. Three
   - `HostProps.hostToast?: HostToastManager`.
   - Task 11 assigns `@calcifer-design/ui`'s `ToastManager` into that field; Task 12 reads it.
 
-**Why the type is narrower than the object it will hold.** The instinct is to re-export Base UI's `ToastManager` and be done. Two reasons not to. It would give this package — deliberately kept to plumbing — a dependency on a UI library, which every remote that types itself against the contract would then inherit. And narrower is genuinely safer here, inverting the usual instinct: the contract is *the promise the live shell already keeps*, and every method it names is a method some remote may call against a shell built months ago, across a boundary where the two sides share no compilation and TypeScript can see nothing. `add`, `close`, `update` — nothing else. Not `promise()`, whose subscriber-replacement happens synchronously during emit and degrades to a silent no-op without one. Not an action button, which is host-owned UI. `title` and `description` are `string` because a `ReactNode` authored in a remote renders inside the host's React root, under the host's CSS.
+**Why the type is narrower than the object it will hold.** The instinct is to re-export Base UI's `ToastManager` and be done. Two reasons not to. It would give this package — deliberately kept to plumbing — a dependency on a UI library, which every remote that types itself against the contract would then inherit. And narrower is genuinely safer here, inverting the usual instinct: the contract is _the promise the live shell already keeps_, and every method it names is a method some remote may call against a shell built months ago, across a boundary where the two sides share no compilation and TypeScript can see nothing. `add`, `close`, `update` — nothing else. Not `promise()`, whose subscriber-replacement happens synchronously during emit and degrades to a silent no-op without one. Not an action button, which is host-owned UI. `title` and `description` are `string` because a `ReactNode` authored in a remote renders inside the host's React root, under the host's CSS.
 
 The same reasoning narrows `close`'s parameter from optional to required. Base UI's `closeToast` begins `const closeAll = toastId === undefined` and then clears every timer and every toast: a remote calling `close()` would wipe the shell's own "failed to load" notice and every other remote's toasts along with its own. Ids are global to one store, so the interface documents that and takes away the one call that abuses it.
 
@@ -3372,7 +3365,7 @@ describe('HostProps.hostToast', () => {
     expectTypeOf<keyof HostToastManager>().toEqualTypeOf<'add' | 'close' | 'update'>();
   });
 
-  it("is satisfied by the manager @calcifer-design/ui creates, which carries more than it promises", () => {
+  it('is satisfied by the manager @calcifer-design/ui creates, which carries more than it promises', () => {
     // Declared here rather than imported: this package must not depend on the UI library, and
     // the point of the test is that the structural subset above admits the real thing.
     interface UiToastOptions {
@@ -3584,37 +3577,35 @@ describe('the host toast region', () => {
 In `apps/shell/src/federation/RemoteRoute.test.tsx`, change the mock's returned element so the props the Bridge receives are observable — replace:
 
 ```tsx
-      return (
-        <div data-testid="remote-app">remote mounted with basename {String(props['basename'])}</div>
-      );
+return <div data-testid="remote-app">remote mounted with basename {String(props['basename'])}</div>;
 ```
 
 with:
 
 ```tsx
-      return (
-        <div
-          data-testid="remote-app"
-          data-host-toast={typeof (props['hostToast'] as { add?: unknown } | undefined)?.add}
-        >
-          remote mounted with basename {String(props['basename'])}
-        </div>
-      );
+return (
+  <div
+    data-testid="remote-app"
+    data-host-toast={typeof (props['hostToast'] as { add?: unknown } | undefined)?.add}
+  >
+    remote mounted with basename {String(props['basename'])}
+  </div>
+);
 ```
 
 and append a test to the `RemoteRoute` describe block:
 
 ```tsx
-  it("hands the remote the host's toast manager, which is the one channel that crosses a React root", async () => {
-    const loadModule = vi.fn(
-      async () =>
-        ({
-          default: () => ({ render: async () => undefined, destroy: () => undefined }),
-        }) as RemoteAppModule,
-    );
-    render(<RemoteRoute remote={showcase} loadModule={loadModule} />);
-    expect(await screen.findByTestId('remote-app')).toHaveAttribute('data-host-toast', 'function');
-  });
+it("hands the remote the host's toast manager, which is the one channel that crosses a React root", async () => {
+  const loadModule = vi.fn(
+    async () =>
+      ({
+        default: () => ({ render: async () => undefined, destroy: () => undefined }),
+      }) as RemoteAppModule,
+  );
+  render(<RemoteRoute remote={showcase} loadModule={loadModule} />);
+  expect(await screen.findByTestId('remote-app')).toHaveAttribute('data-host-toast', 'function');
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -3637,7 +3628,7 @@ In `apps/shell/package.json`, change **two** dependencies:
 
 then `bun install`. If the install cannot resolve either, the release has not been approved — stop and go back to Task 9's Step 7 rather than pinning a prerelease.
 
-**The tokens line is not optional and nothing downstream catches its absence.** `entry.client.tsx` imports `@calcifer-design/tokens/tokens.css` from the shell's **own** top-level dependency, and a caret on a 0.x version pins the minor, so `^0.1.1` can never resolve the 0.2.0 that defines `--color-scrim`. Changesets rewriting the range *inside* `@calcifer-design/ui` only nests a second copy of the package that nothing imports. Leave the line alone and every modal `Dialog` and modal `Popover` in the live shell renders over a fully transparent backdrop — the variable is simply undefined, the declaration is invalid at computed-value time, and `background` falls back to `transparent`. No test sees it: the library's own jsdom suites resolve tokens through `workspace:*` and do have the variable, and `bun run check` never loads a stylesheet in a browser.
+**The tokens line is not optional and nothing downstream catches its absence.** `entry.client.tsx` imports `@calcifer-design/tokens/tokens.css` from the shell's **own** top-level dependency, and a caret on a 0.x version pins the minor, so `^0.1.1` can never resolve the 0.2.0 that defines `--color-scrim`. Changesets rewriting the range _inside_ `@calcifer-design/ui` only nests a second copy of the package that nothing imports. Leave the line alone and every modal `Dialog` and modal `Popover` in the live shell renders over a fully transparent backdrop — the variable is simply undefined, the declaration is invalid at computed-value time, and `background` falls back to `transparent`. No test sees it: the library's own jsdom suites resolve tokens through `workspace:*` and do have the variable, and `bun run check` never loads a stylesheet in a browser.
 
 Verify the file that actually ships:
 
@@ -3716,12 +3707,12 @@ import { hostToastManager } from '../toast/host-toast';
 and add one line to the `hostProps` literal, which keeps its `HostProps` annotation:
 
 ```tsx
-  const hostProps: HostProps = {
-    hostMessage: `Mounted by the shell at ${remote.routeBase}`,
-    onEvent: ingestRemoteEvent,
-    hostReact: React,
-    hostToast: hostToastManager,
-  };
+const hostProps: HostProps = {
+  hostMessage: `Mounted by the shell at ${remote.routeBase}`,
+  onEvent: ingestRemoteEvent,
+  hostReact: React,
+  hostToast: hostToastManager,
+};
 ```
 
 The annotation is what makes this safe: the Bridge component's own props type is an index signature, so a typo here would otherwise reach a remote as a silently-absent prop.
@@ -3785,32 +3776,26 @@ No changeset: every app in this repository is private and versionless, so `chang
 Append to the `App` describe block in `apps/showcase/src/app.test.tsx`:
 
 ```tsx
-  it("uses the host's toast manager when the shell supplies one, and mounts no region of its own", async () => {
-    const hostToast = { add: vi.fn(() => 'toast-1'), close: vi.fn(), update: vi.fn() };
+it("uses the host's toast manager when the shell supplies one, and mounts no region of its own", async () => {
+  const hostToast = { add: vi.fn(() => 'toast-1'), close: vi.fn(), update: vi.fn() };
 
-    render(
-      <App
-        federated
-        hostReact={React}
-        hostMessage="hello"
-        onEvent={vi.fn()}
-        hostToast={hostToast}
-      />,
-    );
+  render(
+    <App federated hostReact={React} hostMessage="hello" onEvent={vi.fn()} hostToast={hostToast} />,
+  );
 
-    await waitFor(() => expect(hostStore.state.toast).toBe(hostToast));
-    expect(screen.queryByRole('region', { name: 'Notifications' })).not.toBeInTheDocument();
-  });
+  await waitFor(() => expect(hostStore.state.toast).toBe(hostToast));
+  expect(screen.queryByRole('region', { name: 'Notifications' })).not.toBeInTheDocument();
+});
 
-  it('mounts its own region when nothing supplies one, which covers standalone and an older shell alike', async () => {
-    render(<App federated hostReact={React} hostMessage="hello" onEvent={vi.fn()} />);
+it('mounts its own region when nothing supplies one, which covers standalone and an older shell alike', async () => {
+  render(<App federated hostReact={React} hostMessage="hello" onEvent={vi.fn()} />);
 
-    await waitFor(() =>
-      expect(screen.getByRole('region', { name: 'Notifications' })).toBeInTheDocument(),
-    );
-    hostStore.state.toast.add({ title: 'Ping delivered' });
-    expect(await screen.findByText('Ping delivered')).toBeInTheDocument();
-  });
+  await waitFor(() =>
+    expect(screen.getByRole('region', { name: 'Notifications' })).toBeInTheDocument(),
+  );
+  hostStore.state.toast.add({ title: 'Ping delivered' });
+  expect(await screen.findByText('Ping delivered')).toBeInTheDocument();
+});
 ```
 
 The second test passes `federated` deliberately: it is the deploy-skew case, and a version of this component that branched on `federated` instead of on the manager would fail it.
@@ -3818,18 +3803,18 @@ The second test passes `federated` deliberately: it is the deploy-skew case, and
 Append to the `Playground route` describe block in `apps/showcase/src/pages/Playground.test.tsx`:
 
 ```tsx
-  it('raises a toast through whichever manager is in play', async () => {
-    const add = vi.fn(() => 'toast-1');
-    hostStore.setState((state) => ({
-      ...state,
-      toast: { add, close: vi.fn(), update: vi.fn() },
-    }));
-    renderRoute('/playground');
-    await userEvent.click(await screen.findByRole('button', { name: 'Raise a toast' }));
-    expect(add).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Ping delivered', tone: 'success' }),
-    );
-  });
+it('raises a toast through whichever manager is in play', async () => {
+  const add = vi.fn(() => 'toast-1');
+  hostStore.setState((state) => ({
+    ...state,
+    toast: { add, close: vi.fn(), update: vi.fn() },
+  }));
+  renderRoute('/playground');
+  await userEvent.click(await screen.findByRole('button', { name: 'Raise a toast' }));
+  expect(add).toHaveBeenCalledWith(
+    expect.objectContaining({ title: 'Ping delivered', tone: 'success' }),
+  );
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -3982,23 +3967,24 @@ import { emitHostEvent, hostStore, raiseToast } from '../host/host-store';
 and replace the single "Ping the shell" button inside the message panel with both controls in a row:
 
 ```tsx
-        <div className={styles.actions}>
-          <Button variant="secondary" onClick={() => emitHostEvent('button-press', { id: 'ping' })}>
-            Ping the shell
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() =>
-              raiseToast({
-                title: 'Ping delivered',
-                description: "Raised through whichever toast region is mounted — the host's, or this app's own.",
-                tone: 'success',
-              })
-            }
-          >
-            Raise a toast
-          </Button>
-        </div>
+<div className={styles.actions}>
+  <Button variant="secondary" onClick={() => emitHostEvent('button-press', { id: 'ping' })}>
+    Ping the shell
+  </Button>
+  <Button
+    variant="secondary"
+    onClick={() =>
+      raiseToast({
+        title: 'Ping delivered',
+        description:
+          "Raised through whichever toast region is mounted — the host's, or this app's own.",
+        tone: 'success',
+      })
+    }
+  >
+    Raise a toast
+  </Button>
+</div>
 ```
 
 `styles.actions` already exists — `Playground.module.css:60` declares exactly `display: flex; flex-wrap: wrap; gap: var(--space-2)` and the form's Register/Reset row already wears it. Reuse it; do not add a second copy. `no-duplicate-selectors` is an error, not a warning, and Step 9's `stylelint "apps/showcase/src/**/*.css"` would fail this task on its own lint step. **The stylesheet is not modified by this task at all.**
@@ -4053,7 +4039,7 @@ git commit -m "feat(showcase): use the host's toast manager, or mount its own"
 
 - [ ] **Step 11: Open the pull request**
 
-Four commits — the errata, the contract, the shell, the showcase — in one PR, because `workspace:*` means there is no publish between them and splitting them would only manufacture a state where the shell supplies a field the contract does not declare. Merging it opens the Version Packages PR; merging *that* publishes `@calcifer-design/contract@0.3.0` to CodeArtifact one merge later, with no consumer waiting on it.
+Four commits — the errata, the contract, the shell, the showcase — in one PR, because `workspace:*` means there is no publish between them and splitting them would only manufacture a state where the shell supplies a field the contract does not declare. Merging it opens the Version Packages PR; merging _that_ publishes `@calcifer-design/contract@0.3.0` to CodeArtifact one merge later, with no consumer waiting on it.
 
 ---
 
@@ -4071,7 +4057,7 @@ Four commits — the errata, the contract, the shell, the showcase — in one PR
 - Consumes: nothing from the other tasks.
 - Produces: `sharedDependencies['@base-ui/react']` and `sharedDependencies['@base-ui/react/']`, both `{ singleton: true, strictVersion: true, requiredVersion: baseUiVersion }`, and `baseUiVersion` exported beside the existing `reactVersion`.
 
-**Land this last, and consider landing it as its own PR.** Spec §5.3 ends with the sentence this task exists to honour *and* the sentence that keeps it honest: sharing Base UI is a bundle-size and consistency change, and it is **explicitly not what makes toast work**. Put that in the commit body, not only in the spec, so nobody later removes the manager-passing on the belief that this subsumed it. It is also the only change in this plan with a runtime failure mode.
+**Land this last, and consider landing it as its own PR.** Spec §5.3 ends with the sentence this task exists to honour _and_ the sentence that keeps it honest: sharing Base UI is a bundle-size and consistency change, and it is **explicitly not what makes toast work**. Put that in the commit body, not only in the spec, so nobody later removes the manager-passing on the belief that this subsumed it. It is also the only change in this plan with a runtime failure mode.
 
 **Two traps, both measured in the runtime's source.** `strictVersion` is a **no-op unless `requiredVersion` is a string** — `runtime-core/dist/utils/share.js` guards on exactly that, then calls `error()` (which throws) for strict and `warn()` otherwise. And `@base-ui/react` is not currently resolvable from the shell or the workspace root at all: it lives only in bun's isolated store, reachable from `@calcifer-design/ui`'s own `node_modules`. Declaring the share without adding the dependency leaves `requiredVersion` undefined and the flag silently does nothing — which is the precise failure this change is meant to prevent. Both apps must therefore take a real dependency on it.
 
@@ -4082,31 +4068,31 @@ With `shareStrategy: 'loaded-first'` the shell's copy wins the scope, and a remo
 In `packages/build-tools/test/shared-dependencies.test.ts`, replace the `shares the libraries as non-singletons` test with:
 
 ```ts
-  it('shares the TanStack libraries as non-singletons', () => {
-    for (const name of ['@tanstack/react-router', '@tanstack/react-query']) {
-      expect(sharedDependencies[name]).toMatchObject({ singleton: false });
-    }
-  });
+it('shares the TanStack libraries as non-singletons', () => {
+  for (const name of ['@tanstack/react-router', '@tanstack/react-query']) {
+    expect(sharedDependencies[name]).toMatchObject({ singleton: false });
+  }
+});
 
-  it('shares Base UI strictly, under both the bare key and the subpath prefix', () => {
-    // Every import in the design system is a subpath (`@base-ui/react/popover`, `/dialog`,
-    // `/menu`, `/tooltip`, `/toast`), so the bare key alone matches nothing — the same reason
-    // `react-dom/` is declared beside `react-dom`.
-    for (const name of ['@base-ui/react', '@base-ui/react/']) {
-      expect(sharedDependencies[name]).toMatchObject({
-        singleton: true,
-        strictVersion: true,
-        requiredVersion: catalog['@base-ui/react'],
-      });
-    }
-  });
+it('shares Base UI strictly, under both the bare key and the subpath prefix', () => {
+  // Every import in the design system is a subpath (`@base-ui/react/popover`, `/dialog`,
+  // `/menu`, `/tooltip`, `/toast`), so the bare key alone matches nothing — the same reason
+  // `react-dom/` is declared beside `react-dom`.
+  for (const name of ['@base-ui/react', '@base-ui/react/']) {
+    expect(sharedDependencies[name]).toMatchObject({
+      singleton: true,
+      strictVersion: true,
+      requiredVersion: catalog['@base-ui/react'],
+    });
+  }
+});
 
-  it('takes the Base UI range from the catalog, so strictVersion has a string to compare', () => {
-    // `strictVersion` is a no-op when `requiredVersion` is undefined: the runtime guards on
-    // `typeof requiredVersion === 'string'` before it decides between throwing and warning.
-    expect(typeof baseUiVersion).toBe('string');
-    expect(baseUiVersion).toBe(catalog['@base-ui/react']);
-  });
+it('takes the Base UI range from the catalog, so strictVersion has a string to compare', () => {
+  // `strictVersion` is a no-op when `requiredVersion` is undefined: the runtime guards on
+  // `typeof requiredVersion === 'string'` before it decides between throwing and warning.
+  expect(typeof baseUiVersion).toBe('string');
+  expect(baseUiVersion).toBe(catalog['@base-ui/react']);
+});
 ```
 
 and extend the import at the top of that file:
@@ -4257,7 +4243,7 @@ Run against the spec after writing, before execution.
 
 **Type consistency across tasks.** `popupStyles` exports `layer`, `dialogLayer`, `toastLayer`, `surface`, `scrim` (Task 3); Task 4 uses `dialogLayer`, `surface`, `scrim`, Task 5 `layer` and `surface`, Task 6 `layer` and `surface`, Task 7 `toastLayer` only. `PopupSide` and `PopupAlign` are declared in Task 3 and imported by Tasks 5 and 6 with `import type`. `a11yStyles.visuallyHidden` is declared in Task 1 and used by Tasks 3 and 8's existing consumers. `ToastManager`, `ToastOptions` and `createToastManager` are declared in Task 7; Task 10 declares the structural subset `HostToastManager`/`HostToastOptions` that admits them (verified with `tsc --strict`: `add: (options: ToastOptions) => string` is assignable to `add: (options: HostToastOptions) => string` because `HostToastOptions` is assignable to `ToastOptions`); Task 11 assigns the real one into the optional field; Task 12 reads it and stores it. `TOOLTIP_DELAY` is declared in Task 6 and consumed in Task 12. Every `data-popup` value a stylesheet matches — `popover`, `menu`, `tooltip`, `dialog`, `sheet` — is set by a component in Tasks 3, 4, 5, 6 or 8.
 
-**Test-versus-implementation checks, made deliberately.** Popover's test asserts `data-popup="popover"`, which the component sets; the modal test asserts a close control named by `closeLabel`'s default `'Close'`, which the component renders only when `modal !== false`, and the non-modal test asserts its absence. Dialog's test asserts `data-variant` on the popup's `parentElement`, which is the `Dialog.Viewport` the component gives that attribute, and `data-side` on both the popup and that viewport, which the component sets from `side` only when the variant is `sheet` — so the centred test's `not.toHaveAttribute('data-side')` holds by construction. Menu's test asserts one separator for the one item carrying `separatorBefore`, and `aria-disabled` on the item carrying `disabled`. Tooltip's test asserts the trigger's accessible name is the `label` the component applies as `aria-label`, and that `TooltipProvider` renders nothing, which its implementation guarantees by rendering only Base UI's provider. ToastRegion's test asserts `data-type` from `tone`, which `toBaseOptions` maps, and reaches the close control by `getByLabelText` because `closeLabel` becomes an `aria-label` on an `aria-hidden` element. **What was actually measured, and what is inference from it.** The evidence base is the spike in the library worktree: the two DOM-dump probes (`baseui-probe.test.tsx`, `baseui-probe2.test.tsx`) and a Popover suite that ran against the spike's own `Popover.tsx`. Everything in "What the probes measured" comes from those runs — including the focus-timing rule, whose one piece of direct evidence is that the spike's bare `expect(popup.contains(document.activeElement)).toBe(true)` fails today without a `waitFor` around it. The spike has **no** test files for `Dialog`, `Menu`, `Tooltip` or `ToastRegion`, `NavMenu.test.tsx` does not yet carry Task 8's assertion, and Task 3's `onOpenChange` test is new — the spike's `PopoverProps.onOpenChange` was still the one-argument `(open: boolean) => void`. Those four suites and the two new tests are written *from* the probe measurements rather than transcribed from a run, and the counts in each "Expected: PASS, N tests" line are the counts of `it` cases in that task's file, `it.each` entries included. A reviewer should treat the probe bullets as evidence and the per-component suites as the first thing execution will falsify.
+**Test-versus-implementation checks, made deliberately.** Popover's test asserts `data-popup="popover"`, which the component sets; the modal test asserts a close control named by `closeLabel`'s default `'Close'`, which the component renders only when `modal !== false`, and the non-modal test asserts its absence. Dialog's test asserts `data-variant` on the popup's `parentElement`, which is the `Dialog.Viewport` the component gives that attribute, and `data-side` on both the popup and that viewport, which the component sets from `side` only when the variant is `sheet` — so the centred test's `not.toHaveAttribute('data-side')` holds by construction. Menu's test asserts one separator for the one item carrying `separatorBefore`, and `aria-disabled` on the item carrying `disabled`. Tooltip's test asserts the trigger's accessible name is the `label` the component applies as `aria-label`, and that `TooltipProvider` renders nothing, which its implementation guarantees by rendering only Base UI's provider. ToastRegion's test asserts `data-type` from `tone`, which `toBaseOptions` maps, and reaches the close control by `getByLabelText` because `closeLabel` becomes an `aria-label` on an `aria-hidden` element. **What was actually measured, and what is inference from it.** The evidence base is the spike in the library worktree: the two DOM-dump probes (`baseui-probe.test.tsx`, `baseui-probe2.test.tsx`) and a Popover suite that ran against the spike's own `Popover.tsx`. Everything in "What the probes measured" comes from those runs — including the focus-timing rule, whose one piece of direct evidence is that the spike's bare `expect(popup.contains(document.activeElement)).toBe(true)` fails today without a `waitFor` around it. The spike has **no** test files for `Dialog`, `Menu`, `Tooltip` or `ToastRegion`, `NavMenu.test.tsx` does not yet carry Task 8's assertion, and Task 3's `onOpenChange` test is new — the spike's `PopoverProps.onOpenChange` was still the one-argument `(open: boolean) => void`. Those four suites and the two new tests are written _from_ the probe measurements rather than transcribed from a run, and the counts in each "Expected: PASS, N tests" line are the counts of `it` cases in that task's file, `it.each` entries included. A reviewer should treat the probe bullets as evidence and the per-component suites as the first thing execution will falsify.
 
 **Known judgement calls, for the reviewer.** `Popover` paints a scrim for `modal={true}` and deliberately not for `modal="trap-focus"`: Base UI's backdrop is hit-testable except when the popover was opened by hover, and a full-viewport wash that swallows every outside click is the opposite of what `'trap-focus'` documents itself as doing. `HostToastManager.close` requires its id where the library's own manager does not, which is the plan's only narrowing made for authority rather than for dependencies — the alternative, a per-remote wrapper in `RemoteRoute` that tracks the ids it issued, is a mechanism the three-method contract does not otherwise need and was rejected as scope. The stacking order is three literals rather than three new tokens, because a `--z-*` scale invented for one tier is a token set nobody else can use — recorded in the stylesheet rather than in a changelog. `Dialog`'s `footer` is a plain `ReactNode` with no close callback: giving it one means either an `actionsRef` dance or a render prop, and the header's close control already covers the common case. `Tooltip` ships without a stylesheet, which is a first for this library and is exactly what "one skin" should look like. `ToastRegion` exposes `baseManager` on its public type so `ToastRegion` itself can subscribe; it is documented as not part of what a remote is given, and the contract's narrower type is what actually enforces that.
 
