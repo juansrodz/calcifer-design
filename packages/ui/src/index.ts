@@ -50,3 +50,11 @@ export { Tooltip } from './components/Tooltip/Tooltip';
 export type { TooltipProps } from './components/Tooltip/Tooltip';
 export { TooltipProvider, TOOLTIP_DELAY } from './components/Tooltip/TooltipProvider';
 export type { TooltipProviderProps } from './components/Tooltip/TooltipProvider';
+export { ToastRegion, createToastManager } from './components/ToastRegion/ToastRegion';
+export type {
+  ToastRegionProps,
+  ToastManager,
+  ToastOptions,
+  ToastTone,
+  ToastAction,
+} from './components/ToastRegion/ToastRegion';

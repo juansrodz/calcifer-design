@@ -1,0 +1,141 @@
+/* Toast is the one Tier 2 component that does not wear the popup skin: it is a stack, not an
+   anchored surface, and Base UI drives it through five custom properties of its own
+   (--toast-index, --toast-offset-y, --toast-height, --toast-swipe-movement-x/y). It takes
+   exactly one thing from `popup.module.css` — `.toastLayer` — so the tier's stacking order
+   stays in one file. */
+.viewport {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  left: auto;
+  width: min(22rem, calc(100vw - var(--space-6)));
+}
+
+.toast {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-inline-start: var(--border-width-strong) solid var(--color-neutral);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  box-shadow: var(--elevation-2);
+  transition-property: transform, opacity;
+  transition-duration: var(--motion-duration-3);
+  transition-timing-function: var(--motion-ease);
+  transform: translateY(calc(var(--toast-index) * -0.5rem))
+    scale(calc(1 - var(--toast-index) * 0.04));
+}
+
+/* Hovered or focused, the stack fans out and Base UI supplies each toast's resting offset.
+   `--toast-offset-y` is a *positive* running sum of the heights of the toasts in front of this
+   one (`toast/store.js`: `offsetY += toast.height || 0`), so a bottom-docked stack has to negate
+   it — a bare `translateY(var(--toast-offset-y))` pushes every toast but the newest down past
+   the bottom edge of the window, which is what Base UI's own bottom-anchored example negates it
+   for. The `--toast-index * --space-2` term is the gap between fanned toasts, matching the
+   0.5rem peek the collapsed state uses. jsdom has no layout, so no test can catch this: check it
+   in the story. */
+.toast[data-expanded] {
+  transform: translateY(calc((var(--toast-offset-y) + var(--toast-index) * var(--space-2)) * -1));
+}
+
+/* Over the viewport's limit: still mounted and inert, so its dismiss timer keeps its place. */
+.toast[data-limited] {
+  opacity: 0;
+}
+
+.toast[data-starting-style] {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+.toast[data-ending-style] {
+  opacity: 0;
+}
+
+.toast[data-type='info'] {
+  border-inline-start-color: var(--color-accent);
+}
+
+.toast[data-type='success'] {
+  border-inline-start-color: var(--color-success);
+}
+
+.toast[data-type='warning'] {
+  border-inline-start-color: var(--color-warning);
+}
+
+.toast[data-type='danger'] {
+  border-inline-start-color: var(--color-danger);
+}
+
+.content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.heading {
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
+
+.description {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-prose);
+}
+
+.action {
+  flex: none;
+  align-self: center;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.close > svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+@media (hover: hover) {
+  .action:hover {
+    background: var(--color-surface-2);
+  }
+
+  .close:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+  }
+}
