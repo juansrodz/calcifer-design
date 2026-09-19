@@ -108,13 +108,13 @@ describe('@calcifer-design/ui dist', () => {
       const css = await readFile(file, 'utf8');
       expect(css, file).not.toContain('clip-path: inset(50%)');
     }
-    // One copy of the control box in the whole package: `TextInput`'s input and `Select`'s
-    // trigger wear the same emitted rule rather than each shipping its own. Scoped to `Select`
-    // alone (ruling R1): `Checkbox` and `RadioGroup` legitimately restate the input surface
-    // colour on their own boxes, so the claim only holds for Select's own stylesheet, which
-    // inherits the field skin instead of restating it.
-    const selectCss = await collectCssFiles(path.join(distRoot, 'components', 'Select'));
-    for (const file of selectCss) {
+    // One copy of the control surface in the whole package, and it is the shared stylesheet's:
+    // `TextInput`'s input, `Select`'s trigger, `Checkbox`'s box and `RadioGroup`'s dot all wear
+    // an emitted rule from `field.module.css` rather than restating the input surface in their
+    // own. Ruling R1 had to scope this to `components/Select` while the box and the dot each
+    // declared the colour themselves; the shared `.controlBox` is what makes the whole-package
+    // claim true, so the loop is back over every component stylesheet.
+    for (const file of componentCss) {
       const css = await readFile(file, 'utf8');
       expect(css, file).not.toContain('var(--color-surface-input)');
     }

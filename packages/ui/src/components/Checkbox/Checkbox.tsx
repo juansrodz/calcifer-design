@@ -2,6 +2,7 @@ import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { MinusIcon } from '../../icons/MinusIcon';
+import fieldStyles from '../../styles/field.module.css';
 import { InlineField, type FieldFrameProps } from '../Field/Field';
 import styles from './Checkbox.module.css';
 
@@ -48,7 +49,7 @@ export function Checkbox({
       disabled={disabled}
     >
       <BaseCheckbox.Root
-        className={styles.box}
+        className={[fieldStyles.controlBox, styles.box].join(' ')}
         checked={checked}
         defaultChecked={defaultChecked}
         indeterminate={indeterminate}

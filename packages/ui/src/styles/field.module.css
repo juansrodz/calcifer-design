@@ -156,3 +156,47 @@
   cursor: not-allowed;
   opacity: 0.55;
 }
+
+/* The small control surface a checkbox's box and a radio's dot share: the same input
+   background, the same strong border, the same accent fill once checked, the same danger
+   border when the field is invalid and the same dimming when it is disabled. `.control` above
+   is the same idea at a text field's size; this is it at a control's own. A component
+   stylesheet adds only what this rule does not declare — the size, the radius, and the colour
+   of whatever sits inside the box.
+
+   `Switch`'s `.track` is deliberately not one of these: it rests on `--color-surface-3` rather
+   than `--color-surface-input` and has no invalid state by design, and a `.track[data-invalid]`
+   override would tie on specificity with `.controlBox[data-invalid]` across two separately
+   emitted stylesheets — the hazard this file's header exists to avoid. */
+.controlBox {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-input);
+  cursor: pointer;
+  transition-property: background-color, border-color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* `data-indeterminate` is a checkbox's alone; a radio is never in that state, and the grouped
+   selector is how the two stay one rule rather than two that could drift apart. */
+.controlBox[data-checked],
+.controlBox[data-indeterminate] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+/* Measured on a checkbox under an invalid field. Inferred for a radio, where
+   `RadioRootState extends FieldRootState` gives it the same shape; if that proves wrong the
+   error message below the group is still the signal, and nothing else depends on it. */
+.controlBox[data-invalid] {
+  border-color: var(--color-danger-border);
+}
+
+.controlBox[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

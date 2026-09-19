@@ -1,36 +1,14 @@
-/* Checkbox adds the box and the mark inside it; the row, the label type, the description and
-   the error are `field.module.css`. Base UI renders the real <input> hidden beside the box with
-   inline styles of its own, so there is nothing here that hides anything. */
+/* Checkbox adds the box's size, its corner and the colour of the mark inside it; the surface
+   under all three — the border, the input background, the checked fill, the invalid border and
+   the disabled dimming — is `field.module.css`'s `.controlBox`, which the radio's dot wears
+   too. The row, the label type, the description and the error are that file's as well. Base UI
+   renders the real <input> hidden beside the box with inline styles of its own, so there is
+   nothing here that hides anything. */
 .box {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
   width: 1.25rem;
   height: 1.25rem;
-  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-input);
   color: var(--color-accent-text);
-  cursor: pointer;
-  transition-property: background-color, border-color;
-  transition-duration: var(--motion-duration-1);
-  transition-timing-function: var(--motion-ease);
-}
-
-.box[data-checked],
-.box[data-indeterminate] {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-}
-
-.box[data-invalid] {
-  border-color: var(--color-danger-border);
-}
-
-.box[data-disabled] {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .indicator {

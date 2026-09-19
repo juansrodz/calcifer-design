@@ -92,7 +92,10 @@ export function RadioGroup({
           // label and hidden input share one id — the other half of the measurement above.
           <BaseField.Item key={option.value} disabled={option.disabled}>
             <BaseField.Label className={fieldStyles.optionLabel}>
-              <BaseRadio.Root className={styles.dot} value={option.value}>
+              <BaseRadio.Root
+                className={[fieldStyles.controlBox, styles.dot].join(' ')}
+                value={option.value}
+              >
                 <BaseRadio.Indicator className={styles.mark} />
               </BaseRadio.Root>
               {option.label}
