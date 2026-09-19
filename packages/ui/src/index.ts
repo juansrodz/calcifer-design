@@ -64,3 +64,5 @@ export { TextInput } from './components/TextInput/TextInput';
 export type { TextInputProps, TextInputType } from './components/TextInput/TextInput';
 export { Select } from './components/Select/Select';
 export type { SelectProps, SelectOption } from './components/Select/Select';
+export { Checkbox } from './components/Checkbox/Checkbox';
+export type { CheckboxProps } from './components/Checkbox/Checkbox';
