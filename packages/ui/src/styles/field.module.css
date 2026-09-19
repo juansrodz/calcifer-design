@@ -11,32 +11,25 @@
    something about the control declares only properties this rule does not — see
    `Select.module.css`'s `.trigger`. */
 
-.frame {
+.frame,
+.inlineFrame {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
 /* A checkbox and a switch put their label beside the control, not above it, so the frame is a
-   column of rows rather than a column of blocks and the gap is tighter. */
+   column of rows rather than a column of blocks and the gap is tighter. One declaration apart
+   from the frame above, which is why they are one rule and this is an override. */
 .inlineFrame {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-1);
 }
 
-.label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-text);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  line-height: var(--leading-snug);
-}
-
-/* A radio group's name is not a <label>: it is a plain element the group points at with
-   `aria-labelledby`, because a <label> would steal every radio's accessible name. Same type. */
+/* Two names for one type. A radio group's name is not a <label> — it is a plain element the
+   group points at with `aria-labelledby`, because a <label> would steal every radio's
+   accessible name — but it is the same type on the page, so it is the same rule here, and
+   `RadioGroup` keeps a class that says what its element is. */
+.label,
 .legend {
   display: flex;
   align-items: center;
