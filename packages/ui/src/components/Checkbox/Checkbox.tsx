@@ -1,10 +1,8 @@
 import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
-import { Field as BaseField } from '@base-ui/react/field';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { MinusIcon } from '../../icons/MinusIcon';
-import fieldStyles from '../../styles/field.module.css';
-import { FieldMessages } from '../Field/Field';
+import { InlineField } from '../Field/Field';
 import styles from './Checkbox.module.css';
 
 export interface CheckboxProps {
@@ -54,32 +52,27 @@ export function Checkbox({
   disabled = false,
 }: CheckboxProps) {
   return (
-    <BaseField.Root
-      className={fieldStyles.inlineFrame}
+    <InlineField
+      label={label}
       name={name}
+      description={description}
+      error={error}
+      required={required}
       disabled={disabled}
-      invalid={error !== undefined}
     >
-      {/* The label wraps the control and the text: that is the whole difference between this
-          frame and `Field`'s, and it is why a checkbox is not composed inside `Field`. */}
-      <BaseField.Label className={fieldStyles.optionLabel}>
-        <BaseCheckbox.Root
-          className={styles.box}
-          checked={checked}
-          defaultChecked={defaultChecked}
-          indeterminate={indeterminate}
-          // One argument out, whatever Base UI passes in — see the prop's doc.
-          onCheckedChange={(nextChecked) => onCheckedChange?.(nextChecked)}
-          required={required}
-        >
-          <BaseCheckbox.Indicator className={styles.indicator}>
-            {indeterminate ? <MinusIcon /> : <CheckIcon />}
-          </BaseCheckbox.Indicator>
-        </BaseCheckbox.Root>
-        {label}
-        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
-      </BaseField.Label>
-      <FieldMessages description={description} error={error} />
-    </BaseField.Root>
+      <BaseCheckbox.Root
+        className={styles.box}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        indeterminate={indeterminate}
+        // One argument out, whatever Base UI passes in — see the prop's doc.
+        onCheckedChange={(nextChecked) => onCheckedChange?.(nextChecked)}
+        required={required}
+      >
+        <BaseCheckbox.Indicator className={styles.indicator}>
+          {indeterminate ? <MinusIcon /> : <CheckIcon />}
+        </BaseCheckbox.Indicator>
+      </BaseCheckbox.Root>
+    </InlineField>
   );
 }

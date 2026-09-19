@@ -1,8 +1,6 @@
-import { Field as BaseField } from '@base-ui/react/field';
 import { Switch as BaseSwitch } from '@base-ui/react/switch';
 import type { ReactNode } from 'react';
-import fieldStyles from '../../styles/field.module.css';
-import { FieldMessages } from '../Field/Field';
+import { InlineField } from '../Field/Field';
 import styles from './Switch.module.css';
 
 export interface SwitchProps {
@@ -49,27 +47,24 @@ export function Switch({
   disabled = false,
 }: SwitchProps) {
   return (
-    <BaseField.Root
-      className={fieldStyles.inlineFrame}
+    <InlineField
+      label={label}
       name={name}
+      description={description}
+      error={error}
+      required={required}
       disabled={disabled}
-      invalid={error !== undefined}
     >
-      <BaseField.Label className={fieldStyles.optionLabel}>
-        <BaseSwitch.Root
-          className={styles.track}
-          checked={checked}
-          defaultChecked={defaultChecked}
-          // One argument out, whatever Base UI passes in — see the prop's doc.
-          onCheckedChange={(nextChecked) => onCheckedChange?.(nextChecked)}
-          required={required}
-        >
-          <BaseSwitch.Thumb className={styles.thumb} />
-        </BaseSwitch.Root>
-        {label}
-        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
-      </BaseField.Label>
-      <FieldMessages description={description} error={error} />
-    </BaseField.Root>
+      <BaseSwitch.Root
+        className={styles.track}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        // One argument out, whatever Base UI passes in — see the prop's doc.
+        onCheckedChange={(nextChecked) => onCheckedChange?.(nextChecked)}
+        required={required}
+      >
+        <BaseSwitch.Thumb className={styles.thumb} />
+      </BaseSwitch.Root>
+    </InlineField>
   );
 }

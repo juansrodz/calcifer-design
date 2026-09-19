@@ -136,3 +136,53 @@ export function Field({
     </BaseField.Root>
   );
 }
+
+export interface InlineFieldProps {
+  /** The text beside the control, and the control's accessible name. */
+  label: string;
+  /** Identifies the field when a form is submitted. */
+  name?: string;
+  /** Sits under the row and joins the control's `aria-describedby`. */
+  description?: ReactNode;
+  /** The validation message. Its presence — not its content — is the error state. */
+  error?: string;
+  /** Draws the required mark. The control itself still takes its own `required`. */
+  required?: boolean;
+  disabled?: boolean;
+  /** The control that sits at the head of the row: a `Checkbox.Root`, a `Switch.Root`. */
+  children: ReactNode;
+}
+
+/**
+ * The frame `Checkbox` and `Switch` share: a row whose label wraps the control and the text,
+ * with the description and the error beneath it. That is the whole difference between this
+ * frame and `Field`'s — the label sits beside the control rather than above it — and it is why
+ * neither of those two is composed inside `Field`. Exported, but deliberately absent from
+ * `src/index.ts`, on the same terms as `FieldMessages` and `useFieldRequired` above: a
+ * consumer composes a `Checkbox` or a `Switch`, not the frame under them.
+ */
+export function InlineField({
+  label,
+  name,
+  description,
+  error,
+  required = false,
+  disabled = false,
+  children,
+}: InlineFieldProps) {
+  return (
+    <BaseField.Root
+      className={fieldStyles.inlineFrame}
+      name={name}
+      disabled={disabled}
+      invalid={error !== undefined}
+    >
+      <BaseField.Label className={fieldStyles.optionLabel}>
+        {children}
+        {label}
+        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
+      </BaseField.Label>
+      <FieldMessages description={description} error={error} />
+    </BaseField.Root>
+  );
+}
