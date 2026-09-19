@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
+import fieldStyles from '../../styles/field.module.css';
 import { Select } from './Select';
 import * as stories from './Select.stories';
 
@@ -126,6 +127,20 @@ describe('Select', () => {
     expect(drinks).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(drinks);
     expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it('marks the trigger required in the accessibility tree and draws the required mark', () => {
+    const { container: requiredContainer } = render(<Required />);
+    expect(screen.getByRole('combobox', { name: 'Category' })).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
+    const requiredMark = requiredContainer.querySelector(`.${fieldStyles.required}`);
+    expect(requiredMark).toBeInTheDocument();
+    expect(requiredMark).toHaveAttribute('aria-hidden', 'true');
+
+    const { container: defaultContainer } = render(<Default />);
+    expect(defaultContainer.querySelector(`.${fieldStyles.required}`)).not.toBeInTheDocument();
   });
 
   it('marks the trigger invalid and describes it with the error', () => {

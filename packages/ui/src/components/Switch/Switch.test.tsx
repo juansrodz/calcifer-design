@@ -7,13 +7,14 @@ import fieldStyles from '../../styles/field.module.css';
 import { Switch } from './Switch';
 import * as stories from './Switch.stories';
 
-const { Default, On, Described, Disabled, WithError } = composeStories(stories);
+const { Default, On, Described, Required, Disabled, WithError } = composeStories(stories);
 
 describe('Switch', () => {
   it.each([
     ['Default', Default],
     ['On', On],
     ['Described', Described],
+    ['Required', Required],
     ['Disabled', Disabled],
     ['WithError', WithError],
   ])('%s has no axe violations', async (_name, Story) => {
@@ -69,8 +70,12 @@ describe('Switch', () => {
     expect(screen.queryByText('Turn this on to continue.')).not.toBeInTheDocument();
   });
 
-  it('shows the required mark when required', () => {
-    const { container: requiredContainer } = render(<WithError />);
+  it('marks itself required in the accessibility tree and draws the required mark', () => {
+    const { container: requiredContainer } = render(<Required />);
+    expect(screen.getByRole('switch', { name: 'Email me when someone joins' })).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
     const requiredMark = requiredContainer.querySelector(`.${fieldStyles.required}`);
     expect(requiredMark).toBeInTheDocument();
     expect(requiredMark).toHaveAttribute('aria-hidden', 'true');

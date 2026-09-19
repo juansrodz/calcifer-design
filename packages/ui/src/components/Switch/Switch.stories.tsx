@@ -16,6 +16,7 @@ export const On: Story = { args: { defaultChecked: true } };
 export const Described: Story = {
   args: { description: 'One message per event, never a digest.' },
 };
+export const Required: Story = { args: { required: true } };
 export const Disabled: Story = { args: { disabled: true, defaultChecked: true } };
 export const WithError: Story = { args: { required: true, error: 'Turn this on to continue.' } };
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultChecked: true } };

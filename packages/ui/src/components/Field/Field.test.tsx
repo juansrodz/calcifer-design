@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { axeDocument } from '../../../test/axe';
+import fieldStyles from '../../styles/field.module.css';
 import { TextInput } from '../TextInput/TextInput';
 import { Field } from './Field';
 import * as stories from './Field.stories';
@@ -55,10 +56,16 @@ describe('Field', () => {
   });
 
   it('marks the control required without putting an asterisk in its accessible name', () => {
-    render(<Required />);
+    const { container: requiredContainer } = render(<Required />);
     const control = screen.getByLabelText('Email');
     expect(control).toBeRequired();
     expect(control).toHaveAccessibleName('Email');
+    const requiredMark = requiredContainer.querySelector(`.${fieldStyles.required}`);
+    expect(requiredMark).toBeInTheDocument();
+    expect(requiredMark).toHaveAttribute('aria-hidden', 'true');
+
+    const { container: defaultContainer } = render(<Default />);
+    expect(defaultContainer.querySelector(`.${fieldStyles.required}`)).not.toBeInTheDocument();
   });
 
   it('disables the control and says so on the frame, so the skin can dim it', () => {

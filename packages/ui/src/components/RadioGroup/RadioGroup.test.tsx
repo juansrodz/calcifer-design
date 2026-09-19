@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
+import fieldStyles from '../../styles/field.module.css';
 import { RadioGroup } from './RadioGroup';
 import * as stories from './RadioGroup.stories';
 
@@ -76,6 +77,23 @@ describe('RadioGroup', () => {
     expect(screen.getByRole('radio', { name: 'Anyone with the link' })).toHaveFocus();
     await userEvent.tab();
     expect(screen.getByRole('radio', { name: 'Anyone with the address' })).not.toHaveFocus();
+  });
+
+  it('marks itself required in the accessibility tree and draws the required mark', () => {
+    const { container: requiredContainer } = render(<Required />);
+    expect(screen.getByRole('radiogroup')).toHaveAttribute('aria-required', 'true');
+    const requiredMark = requiredContainer.querySelector(`.${fieldStyles.required}`);
+    expect(requiredMark).toBeInTheDocument();
+    expect(requiredMark).toHaveAttribute('aria-hidden', 'true');
+
+    const { container: defaultContainer } = render(<Default />);
+    expect(defaultContainer.querySelector(`.${fieldStyles.required}`)).not.toBeInTheDocument();
+  });
+
+  it('marks the group name disabled, so the skin dims it with every other label', () => {
+    const { container } = render(<Disabled />);
+    // The name is a hand-rolled span, not a Base UI part, so nothing else would write this.
+    expect(container.querySelector(`.${fieldStyles.legend}`)).toHaveAttribute('data-disabled');
   });
 
   it('marks a disabled option and does not select it', async () => {

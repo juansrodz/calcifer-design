@@ -66,7 +66,11 @@ export function RadioGroup({
           up named after the group and sharing an id with its siblings. A plain element the
           group points at with `aria-labelledby` keeps the group named and leaves each option's
           own name alone. */}
-      <span className={fieldStyles.legend} id={labelId}>
+      {/* Base UI writes `data-disabled` on the parts it owns; this span is hand-rolled, so the
+          skin's `.legend[data-disabled]` rule only fires because the attribute is written here.
+          Without it a disabled form dims five labels and leaves the radio group's at full
+          contrast. The boolean idiom is the library's: `'' : undefined`. */}
+      <span className={fieldStyles.legend} id={labelId} data-disabled={disabled ? '' : undefined}>
         {label}
         {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
       </span>
