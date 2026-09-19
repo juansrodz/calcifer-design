@@ -32,6 +32,13 @@ describe('Select', () => {
     expect(screen.getByLabelText('Category')).toHaveAttribute('role', 'combobox');
   });
 
+  it('names the trigger from a plain span, never a native label pointing at a button', () => {
+    render(<Default />);
+    // Guards `nativeLabel={false} render={<span />}`: without them Base UI renders a
+    // `<label for>`, which makes a click on the label open the select.
+    expect(screen.getByText('Category').tagName).toBe('SPAN');
+  });
+
   it('shows the placeholder until something is chosen, then the option label', () => {
     const { rerender } = render(<Default />);
     expect(screen.getByRole('combobox', { name: 'Category' })).toHaveTextContent('Select…');
@@ -78,6 +85,32 @@ describe('Select', () => {
     await waitFor(() => expect(screen.getByRole('option', { name: 'Desserts' })).toHaveFocus());
   });
 
+  it('moves the highlight to the first and the last option with Home and End', async () => {
+    // The local options, all enabled: measured, Base UI's End highlights the last option even
+    // when that option is disabled, so the story's `Drinks` would make "last" ambiguous. A
+    // disabled option still cannot be chosen — the test below asserts that.
+    render(<Select label="Category" name="category" options={options} />);
+    const trigger = screen.getByRole('combobox', { name: 'Category' });
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Mains' })).toHaveFocus());
+    await userEvent.keyboard('{End}');
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Desserts' })).toHaveFocus());
+    await userEvent.keyboard('{Home}');
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Mains' })).toHaveFocus());
+  });
+
+  it('closes on Escape and gives the focus back to the trigger', async () => {
+    render(<Default />);
+    const trigger = screen.getByRole('combobox', { name: 'Category' });
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    await screen.findByRole('listbox');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+  });
+
   it('marks a disabled option in the accessibility tree and does not choose it', async () => {
     const onValueChange = vi.fn();
     render(
@@ -95,10 +128,14 @@ describe('Select', () => {
     expect(onValueChange).not.toHaveBeenCalled();
   });
 
-  it('sets aria-invalid on the trigger itself, because Base UI does not', () => {
+  it('marks the trigger invalid and describes it with the error', () => {
     render(<WithError />);
     const trigger = screen.getByRole('combobox', { name: 'Category' });
+    // Base UI 1.8.0 puts both of these on the trigger from `Field.Root invalid`; what this
+    // asserts is our own `error` → `invalid` plumbing, which is the only thing between the
+    // `error` prop and the attribute. Setting `invalid={false}` on `Field.Root` fails it.
     expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    expect(trigger).toHaveAttribute('data-invalid');
     expect(trigger).toHaveAccessibleDescription('Choose a category.');
   });
 

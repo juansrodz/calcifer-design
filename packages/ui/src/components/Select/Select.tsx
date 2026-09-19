@@ -59,11 +59,15 @@ export function Select({
   onValueChange,
   side = 'bottom',
   align = 'start',
-  sideOffset = 6,
+  sideOffset = 8,
 }: SelectProps) {
-  const invalid = error !== undefined;
   return (
-    <BaseField.Root className={fieldStyles.frame} name={name} disabled={disabled} invalid={invalid}>
+    <BaseField.Root
+      className={fieldStyles.frame}
+      name={name}
+      disabled={disabled}
+      invalid={error !== undefined}
+    >
       {/* `nativeLabel={false}` with a `<span>`: Base UI names `<Select.Trigger>` as the case
           this prop exists for. A native `<label for>` pointing at a button makes the button
           hover when the label is hovered and makes a click on the label fire it. The
@@ -82,12 +86,7 @@ export function Select({
         onValueChange={onValueChange}
         required={required}
       >
-        <BaseSelect.Trigger
-          className={[fieldStyles.control, styles.trigger].join(' ')}
-          // Measured: `Field.Root invalid` gives this button `data-invalid` and no
-          // `aria-invalid`, where an `Input` in the same position gets both.
-          aria-invalid={invalid ? true : undefined}
-        >
+        <BaseSelect.Trigger className={[fieldStyles.control, styles.trigger].join(' ')}>
           <BaseSelect.Value className={styles.value} placeholder={placeholder} />
           <BaseSelect.Icon className={styles.icon}>
             <ChevronDownIcon />
