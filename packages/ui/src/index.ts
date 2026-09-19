@@ -62,3 +62,5 @@ export { Field } from './components/Field/Field';
 export type { FieldProps } from './components/Field/Field';
 export { TextInput } from './components/TextInput/TextInput';
 export type { TextInputProps, TextInputType } from './components/TextInput/TextInput';
+export { Select } from './components/Select/Select';
+export type { SelectProps, SelectOption } from './components/Select/Select';
