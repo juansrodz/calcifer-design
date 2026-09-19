@@ -95,12 +95,14 @@
   box-shadow: var(--elevation-3);
 }
 
-/* A select's list is adjacent rows, like a menu's — so `gap: 0` for the same reason. Its width
-   is its trigger's rather than a fixed dropdown width, which is the one thing that makes it a
-   separate variant: `SelectPositioner` publishes `--anchor-width` on itself (confirmed in
-   `select/positioner/SelectPositionerCssVars.js`) and it inherits into the popup. The `max()`
-   floor matters in jsdom and in any environment with no layout, where the custom property
-   resolves to `0px`. */
+/* A select's width is its trigger's rather than a fixed dropdown width, and that is the one
+   thing that makes it a separate variant: `SelectPositioner` publishes `--anchor-width` on
+   itself (confirmed in `select/positioner/SelectPositionerCssVars.js`) and it inherits into
+   the popup. The `max()` floor matters in jsdom and in any environment with no layout, where
+   the custom property resolves to `0px`. `gap: 0` is defensive, not load-bearing: unlike a
+   menu's, a select's rows are not this surface's children — its only child is `Select.List`
+   (asserted in `Select.test.tsx`) — so the gap applies to nothing until Base UI's scroll
+   arrows, which are `List`'s siblings, are added. */
 .surface[data-popup='select'] {
   gap: 0;
   min-width: max(var(--anchor-width), 10rem);

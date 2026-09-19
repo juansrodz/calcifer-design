@@ -26,12 +26,18 @@
 .icon {
   display: inline-flex;
   flex: none;
-  width: 1rem;
-  height: 1rem;
   color: var(--color-text-muted);
   transition-property: transform;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
+}
+
+/* The library sizes an icon through its `> svg` child, not through the wrapper —
+   `IconButton.module.css` and `Alert.module.css` do the same — which is what the icon's own
+   doc comment means by "it declares no size; the control that holds it sizes it". */
+.icon > svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .icon[data-popup-open] {
@@ -65,7 +71,10 @@
 .indicator {
   display: inline-flex;
   flex: none;
+  color: var(--color-accent);
+}
+
+.indicator > svg {
   width: 1rem;
   height: 1rem;
-  color: var(--color-accent);
 }

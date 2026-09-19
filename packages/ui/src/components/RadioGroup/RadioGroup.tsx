@@ -33,6 +33,13 @@ export interface RadioGroupProps {
    * which no consumer can read without a cast.
    */
   onValueChange?: (value: string) => void;
+  /**
+   * Draws the required mark and puts `required` on the control. Base UI carries it on the
+   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
+   * shape a browser refuses to report a validation message on, so the native bubble blocks the
+   * submit silently instead. A form driven by a form library must carry `noValidate` on the
+   * `<form>`, as `Field`'s own `required` documents and the composed example does.
+   */
   required?: boolean;
   disabled?: boolean;
   /** `horizontal` wraps the options along a row; the arrow keys work on both axes either way. */

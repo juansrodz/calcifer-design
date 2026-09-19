@@ -27,6 +27,13 @@ export interface SelectProps {
   description?: ReactNode;
   /** The validation message. Its presence is the error state — see `Field`. */
   error?: string;
+  /**
+   * Draws the required mark and puts `required` on the control. Base UI carries it on the
+   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
+   * shape a browser refuses to report a validation message on, so the native bubble blocks the
+   * submit silently instead. A form driven by a form library must carry `noValidate` on the
+   * `<form>`, as `Field`'s own `required` documents and the composed example does.
+   */
   required?: boolean;
   disabled?: boolean;
   /** Shown on the trigger while nothing is chosen. */

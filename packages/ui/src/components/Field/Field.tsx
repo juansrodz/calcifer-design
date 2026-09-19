@@ -46,13 +46,17 @@ export interface FieldMessagesProps {
  * nodes to carry.
  */
 export function FieldMessages({ description, descriptionId, error, errorId }: FieldMessagesProps) {
+  // `ReactNode` includes `null` and `false`, and `description={isTouched && 'text'}` is the
+  // commonest conditional-render idiom in React. Testing for `undefined` alone rendered an
+  // empty description node for both and joined it to the control's `aria-describedby`.
+  const hasDescription = description !== undefined && description !== null && description !== false;
   return (
     <>
-      {description === undefined ? null : (
+      {hasDescription ? (
         <BaseField.Description id={descriptionId} className={fieldStyles.description}>
           {description}
         </BaseField.Description>
-      )}
+      ) : null}
       {/* Conditional, and it has to be. `Field.Error match` means "always show", so a version
           of this that rendered it unconditionally would put an empty error node in every
           field's `aria-describedby`. Measured. */}
@@ -65,6 +69,13 @@ export function FieldMessages({ description, descriptionId, error, errorId }: Fi
   );
 }
 
+/*
+ * No control in Tier 3 takes a `ref`. §8 bars `forwardRef`, and React 19 would let a plain
+ * `ref` prop ride through `TextInput`'s rest spread without one — but `TextInput` is the only
+ * one of the six with a rest spread, so adding it there alone would trade one inconsistency
+ * for another, and adding it to all six is a design decision rather than a cleanup. Recorded
+ * here so the next reader knows it was decided, not missed.
+ */
 export interface FieldProps {
   /** The visible label, and the control's accessible name. */
   label: string;

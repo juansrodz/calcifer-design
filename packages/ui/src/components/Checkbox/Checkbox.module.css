@@ -35,6 +35,11 @@
 
 .indicator {
   display: inline-flex;
+}
+
+/* The `> svg` child carries the size, as `IconButton.module.css` and `Alert.module.css` do:
+   `CheckIcon` and `MinusIcon` declare none of their own. */
+.indicator > svg {
   width: 0.875rem;
   height: 0.875rem;
 }

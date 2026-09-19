@@ -68,7 +68,13 @@
 }
 
 /* The row a checkbox, a radio or a switch shares with its text. The gap is the control's
-   breathing room, and `cursor: pointer` is on the whole row because the whole row is a label. */
+   breathing room, and `cursor: pointer` is on the whole row because the whole row is a label.
+
+   Deliberately no `min-height` floor, unlike `.control`'s 44px: an inline row is about 21px
+   tall, and WCAG 2.5.8 is met here through the spacing exception rather than through size —
+   `.options` sets a `--space-2` gap, so consecutive 24px targets never overlap. A floor would
+   put a tall empty band beside a one-line label; this is the line to revisit if that trade
+   ever changes. */
 .optionLabel {
   display: flex;
   align-items: center;

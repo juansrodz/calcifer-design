@@ -42,6 +42,9 @@ describe('a whole Tier 3 form', () => {
       'true',
     );
     expect(onSubmitValues).not.toHaveBeenCalled();
+    // The state most likely to break: two describers, `aria-invalid` on a `Field` and a
+    // `Select` at once, and a required mark on both. Axe'd in composition, not per component.
+    expect(await axeDocument()).toHaveNoViolations();
   });
 
   it('clears the error as the value becomes valid, with no work from the caller', async () => {

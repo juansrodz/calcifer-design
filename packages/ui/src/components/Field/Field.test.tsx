@@ -38,6 +38,23 @@ describe('Field', () => {
     );
   });
 
+  it('renders no describer for a description React conditionally rendered away', () => {
+    // `description={condition && 'text'}` passes `false`, not `undefined`. Before the guard
+    // that reached `aria-describedby` as an empty node.
+    const conditional = false;
+    const { container } = render(
+      <Field
+        label="Email"
+        name="email"
+        description={conditional && 'We only use it to sign you in.'}
+      >
+        <TextInput type="email" />
+      </Field>,
+    );
+    expect(container.querySelector(`.${fieldStyles.description}`)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).not.toHaveAttribute('aria-describedby');
+  });
+
   it('renders no error node and marks nothing invalid when no error is given', () => {
     render(<Described />);
     const control = screen.getByLabelText('Email');
@@ -101,8 +118,10 @@ describe('Field', () => {
     );
     await userEvent.tab();
     expect(screen.getByLabelText('Email')).toHaveFocus();
-    // A disabled control is not in the tab order at all, so the next tab leaves the form.
+    // A disabled control is not in the tab order at all, so the next tab leaves the form
+    // entirely. Asserting where the focus went — rather than where it did not — is what makes
+    // deleting the tab above fail this test.
     await userEvent.tab();
-    expect(screen.getByLabelText('Locked')).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
   });
 });

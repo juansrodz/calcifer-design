@@ -7,13 +7,14 @@ import { Field } from '../Field/Field';
 import { TextInput } from './TextInput';
 import * as stories from './TextInput.stories';
 
-const { Default, Email, Password, ReadOnly } = composeStories(stories);
+const { Default, Email, Password, Date: DateInput, ReadOnly } = composeStories(stories);
 
 describe('TextInput', () => {
   it.each([
     ['Default', Default],
     ['Email', Email],
     ['Password', Password],
+    ['Date', DateInput],
     ['ReadOnly', ReadOnly],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);

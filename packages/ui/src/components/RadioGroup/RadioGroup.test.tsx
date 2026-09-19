@@ -75,8 +75,10 @@ describe('RadioGroup', () => {
     render(<Default />);
     await userEvent.tab();
     expect(screen.getByRole('radio', { name: 'Anyone with the link' })).toHaveFocus();
+    // One tab stop, so the second tab leaves the group altogether. Asserting where the focus
+    // went — rather than where it did not — is what makes deleting the tab above fail this.
     await userEvent.tab();
-    expect(screen.getByRole('radio', { name: 'Anyone with the address' })).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
   });
 
   it('marks itself required in the accessibility tree and draws the required mark', () => {
