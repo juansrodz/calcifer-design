@@ -2,18 +2,14 @@ import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { MinusIcon } from '../../icons/MinusIcon';
-import { InlineField } from '../Field/Field';
+import { InlineField, type FieldFrameProps } from '../Field/Field';
 import styles from './Checkbox.module.css';
 
-export interface CheckboxProps {
+export interface CheckboxProps extends FieldFrameProps {
   /** The text beside the box, and the checkbox's accessible name. */
   label: string;
-  /** Identifies the field when a form is submitted. */
-  name?: string;
   /** Sits under the row and joins the checkbox's `aria-describedby`. */
   description?: ReactNode;
-  /** The validation message. Its presence is the error state — see `Field`. */
-  error?: string;
   /** Controlled. Pair it with `onCheckedChange`; use `defaultChecked` for an uncontrolled box. */
   checked?: boolean;
   defaultChecked?: boolean;
@@ -28,15 +24,6 @@ export interface CheckboxProps {
    * consumer can read without a cast.
    */
   onCheckedChange?: (checked: boolean) => void;
-  /**
-   * Draws the required mark and puts `required` on the control. Base UI carries it on the
-   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
-   * shape a browser refuses to report a validation message on, so the native bubble blocks the
-   * submit silently instead. A form driven by a form library must carry `noValidate` on the
-   * `<form>`, as `Field`'s own `required` documents and the composed example does.
-   */
-  required?: boolean;
-  disabled?: boolean;
 }
 
 export function Checkbox({

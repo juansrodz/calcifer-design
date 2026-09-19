@@ -3,7 +3,7 @@ import { Radio as BaseRadio } from '@base-ui/react/radio';
 import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId, type ReactNode } from 'react';
 import fieldStyles from '../../styles/field.module.css';
-import { FieldMessages, RequiredMark } from '../Field/Field';
+import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
 import styles from './RadioGroup.module.css';
 
 export interface RadioOption {
@@ -14,16 +14,12 @@ export interface RadioOption {
   disabled?: boolean;
 }
 
-export interface RadioGroupProps {
+export interface RadioGroupProps extends FieldFrameProps {
   /** Names the group. Rendered as a plain element, not a `<label>` — see the note below. */
   label: string;
   options: RadioOption[];
-  /** Identifies the field when a form is submitted. */
-  name?: string;
   /** Sits under the options and joins the group's `aria-describedby`. */
   description?: ReactNode;
-  /** The validation message. Its presence is the error state — see `Field`. */
-  error?: string;
   /** Controlled. Pair it with `onValueChange`; use `defaultValue` for an uncontrolled group. */
   value?: string;
   defaultValue?: string;
@@ -40,15 +36,6 @@ export interface RadioGroupProps {
    * arrow keys fires it too — a form library counts that as touched either way.
    */
   onBlur?: () => void;
-  /**
-   * Draws the required mark and puts `required` on the control. Base UI carries it on the
-   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
-   * shape a browser refuses to report a validation message on, so the native bubble blocks the
-   * submit silently instead. A form driven by a form library must carry `noValidate` on the
-   * `<form>`, as `Field`'s own `required` documents and the composed example does.
-   */
-  required?: boolean;
-  disabled?: boolean;
   /** `horizontal` wraps the options along a row; the arrow keys work on both axes either way. */
   orientation?: 'vertical' | 'horizontal';
 }

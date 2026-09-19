@@ -86,20 +86,18 @@ export function RequiredMark({ when }: RequiredMarkProps) {
   return when ? <span className={fieldStyles.required} aria-hidden="true" /> : null;
 }
 
-/*
- * No control in Tier 3 takes a `ref`. §8 bars `forwardRef`, and React 19 would let a plain
- * `ref` prop ride through `TextInput`'s rest spread without one — but `TextInput` is the only
- * one of the six with a rest spread, so adding it there alone would trade one inconsistency
- * for another, and adding it to all six is a design decision rather than a cleanup. Recorded
- * here so the next reader knows it was decided, not missed.
+/**
+ * The prop set every Tier 3 field frame takes. `Field`, `Select`, `Checkbox`, `RadioGroup`,
+ * `Switch` and the `InlineField` below all extend it and restate only the members their own
+ * anatomy rewords — a checkbox's label sits beside its box, a radio group's description sits
+ * under its options, and `Field` is the one frame whose control is a real `<input>`, so its
+ * `required` behaves differently on submit. `TextInput` is the tier's exception: it has no
+ * frame of its own and reads `name`, `disabled` and `required` off the one around it.
  */
-export interface FieldProps {
+export interface FieldFrameProps {
   /** The visible label, and the control's accessible name. */
   label: string;
-  /**
-   * Identifies the field when a form is submitted. It takes precedence over any `name` the
-   * control carries, which is why no control in this tier has one.
-   */
+  /** Identifies the field when a form is submitted. */
   name?: string;
   /** Sits under the control and joins the control's `aria-describedby`. */
   description?: ReactNode;
@@ -111,12 +109,37 @@ export interface FieldProps {
    */
   error?: string;
   /**
-   * Draws the required mark and puts `required` on the control. Note that a native `required`
-   * also arms the browser's own validation bubble on submit; a form driven by TanStack Form or
-   * any other library should carry `noValidate` on the `<form>`, as such forms normally do.
+   * Draws the required mark and puts `required` on the control. Base UI carries it on the
+   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
+   * shape a browser refuses to report a validation message on, so the native bubble blocks the
+   * submit silently instead. A form driven by a form library must carry `noValidate` on the
+   * `<form>`, as `Field`'s own `required` documents and the composed example does.
    */
   required?: boolean;
   disabled?: boolean;
+}
+
+/*
+ * No control in Tier 3 takes a `ref`. §8 bars `forwardRef`, and React 19 would let a plain
+ * `ref` prop ride through `TextInput`'s rest spread without one — but `TextInput` is the only
+ * one of the six with a rest spread, so adding it there alone would trade one inconsistency
+ * for another, and adding it to all six is a design decision rather than a cleanup. Recorded
+ * here so the next reader knows it was decided, not missed.
+ */
+export interface FieldProps extends FieldFrameProps {
+  /**
+   * Identifies the field when a form is submitted. It takes precedence over any `name` the
+   * control carries, which is why no control in this tier has one.
+   */
+  name?: string;
+  /**
+   * Draws the required mark and puts `required` on the control. Note that a native `required`
+   * also arms the browser's own validation bubble on submit; a form driven by TanStack Form or
+   * any other library should carry `noValidate` on the `<form>`, as such forms normally do.
+   * `Field`'s control is a real `<input>`, so the browser reports the message rather than
+   * blocking the submit in silence, which is what the other four frames' `required` documents.
+   */
+  required?: boolean;
   /**
    * The control. `TextInput` is the one this tier ships for it; anything else Base UI's field
    * context reaches works too, and `TextInput`'s `render` prop is how a caller's own element —
@@ -154,18 +177,13 @@ export function Field({
   );
 }
 
-export interface InlineFieldProps {
+export interface InlineFieldProps extends FieldFrameProps {
   /** The text beside the control, and the control's accessible name. */
   label: string;
-  /** Identifies the field when a form is submitted. */
-  name?: string;
   /** Sits under the row and joins the control's `aria-describedby`. */
   description?: ReactNode;
-  /** The validation message. Its presence — not its content — is the error state. */
-  error?: string;
-  /** Draws the required mark. The control itself still takes its own `required`. */
+  /** Draws the required mark. The control in the row still takes its own `required`. */
   required?: boolean;
-  disabled?: boolean;
   /** The control that sits at the head of the row: a `Checkbox.Root`, a `Switch.Root`. */
   children: ReactNode;
 }

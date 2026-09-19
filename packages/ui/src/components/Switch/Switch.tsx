@@ -1,13 +1,11 @@
 import { Switch as BaseSwitch } from '@base-ui/react/switch';
 import type { ReactNode } from 'react';
-import { InlineField } from '../Field/Field';
+import { InlineField, type FieldFrameProps } from '../Field/Field';
 import styles from './Switch.module.css';
 
-export interface SwitchProps {
+export interface SwitchProps extends FieldFrameProps {
   /** The text beside the track, and the switch's accessible name. */
   label: string;
-  /** Identifies the field when a form is submitted. */
-  name?: string;
   /** Sits under the row and joins the switch's `aria-describedby`. */
   description?: ReactNode;
   /**
@@ -24,15 +22,6 @@ export interface SwitchProps {
    * consumer can read without a cast.
    */
   onCheckedChange?: (checked: boolean) => void;
-  /**
-   * Draws the required mark and puts `required` on the control. Base UI carries it on the
-   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
-   * shape a browser refuses to report a validation message on, so the native bubble blocks the
-   * submit silently instead. A form driven by a form library must carry `noValidate` on the
-   * `<form>`, as `Field`'s own `required` documents and the composed example does.
-   */
-  required?: boolean;
-  disabled?: boolean;
 }
 
 export function Switch({

@@ -5,7 +5,7 @@ import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
-import { FieldMessages, RequiredMark } from '../Field/Field';
+import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
 import type { PopupAlign, PopupSide } from '../Popover/Popover';
 import styles from './Select.module.css';
 
@@ -17,25 +17,12 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps {
+export interface SelectProps extends FieldFrameProps {
   /** The visible label, and the trigger's accessible name. */
   label: string;
   options: SelectOption[];
-  /** Identifies the field when a form is submitted. */
-  name?: string;
   /** Sits under the trigger and joins its `aria-describedby`. */
   description?: ReactNode;
-  /** The validation message. Its presence is the error state — see `Field`. */
-  error?: string;
-  /**
-   * Draws the required mark and puts `required` on the control. Base UI carries it on the
-   * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
-   * shape a browser refuses to report a validation message on, so the native bubble blocks the
-   * submit silently instead. A form driven by a form library must carry `noValidate` on the
-   * `<form>`, as `Field`'s own `required` documents and the composed example does.
-   */
-  required?: boolean;
-  disabled?: boolean;
   /** Shown on the trigger while nothing is chosen. */
   placeholder?: string;
   /**
