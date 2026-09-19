@@ -37,6 +37,8 @@ describe('Switch', () => {
     await userEvent.keyboard('{Enter}');
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(onCheckedChange).toHaveBeenCalledTimes(2);
+    expect(onCheckedChange).toHaveBeenNthCalledWith(1, true);
+    expect(onCheckedChange).toHaveBeenNthCalledWith(2, false);
   });
 
   it('toggles by clicking the label text, because the whole row is the label', async () => {

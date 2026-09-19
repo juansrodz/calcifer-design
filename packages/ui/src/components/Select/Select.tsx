@@ -37,8 +37,12 @@ export interface SelectProps {
    */
   value?: string | null;
   defaultValue?: string | null;
-  /** Base UI calls this as `(value, eventDetails)`; the second argument is passed through. */
-  onValueChange?: (value: string | null, eventDetails: unknown) => void;
+  /**
+   * The chosen value, or `null` once the select has been cleared. One argument, as on every
+   * other control in the tier: Base UI calls its own callback `(value, eventDetails)` and this
+   * wrapper drops the second, which no consumer can read without a cast.
+   */
+  onValueChange?: (value: string | null) => void;
   side?: PopupSide;
   align?: PopupAlign;
   /** Gap between the trigger and the popup, in pixels. */
@@ -83,7 +87,8 @@ export function Select({
         items={options}
         value={value}
         defaultValue={defaultValue}
-        onValueChange={onValueChange}
+        // One argument out, whatever Base UI passes in — see the prop's doc.
+        onValueChange={(value) => onValueChange?.(value)}
         required={required}
       >
         <BaseSelect.Trigger className={[fieldStyles.control, styles.trigger].join(' ')}>

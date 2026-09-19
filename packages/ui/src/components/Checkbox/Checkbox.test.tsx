@@ -44,7 +44,7 @@ describe('Checkbox', () => {
     checkboxElement.focus();
     await userEvent.keyboard(' ');
     expect(checkboxElement).toHaveAttribute('aria-checked', 'true');
-    expect(onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
+    expect(onCheckedChange).toHaveBeenCalledWith(true);
   });
 
   it('ticks by clicking the label text, because the whole row is the label', async () => {

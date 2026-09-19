@@ -20,8 +20,12 @@ export interface SwitchProps {
   /** Controlled. Pair it with `onCheckedChange`; use `defaultChecked` for an uncontrolled one. */
   checked?: boolean;
   defaultChecked?: boolean;
-  /** Base UI calls this as `(checked, eventDetails)`; the second argument is passed through. */
-  onCheckedChange?: (checked: boolean, eventDetails: unknown) => void;
+  /**
+   * The new checked state. One argument, as on every other control in the tier: Base UI calls
+   * its own callback `(checked, eventDetails)` and this wrapper drops the second, which no
+   * consumer can read without a cast.
+   */
+  onCheckedChange?: (checked: boolean) => void;
   required?: boolean;
   disabled?: boolean;
 }
@@ -49,7 +53,8 @@ export function Switch({
           className={styles.track}
           checked={checked}
           defaultChecked={defaultChecked}
-          onCheckedChange={onCheckedChange}
+          // One argument out, whatever Base UI passes in — see the prop's doc.
+          onCheckedChange={(checked) => onCheckedChange?.(checked)}
           required={required}
         >
           <BaseSwitch.Thumb className={styles.thumb} />

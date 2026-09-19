@@ -27,8 +27,12 @@ export interface RadioGroupProps {
   /** Controlled. Pair it with `onValueChange`; use `defaultValue` for an uncontrolled group. */
   value?: string;
   defaultValue?: string;
-  /** Base UI calls this as `(value, eventDetails)`; the second argument is passed through. */
-  onValueChange?: (value: string, eventDetails: unknown) => void;
+  /**
+   * The newly chosen option's value. One argument, as on every other control in the tier:
+   * Base UI calls its own callback `(value, eventDetails)` and this wrapper drops the second,
+   * which no consumer can read without a cast.
+   */
+  onValueChange?: (value: string) => void;
   required?: boolean;
   disabled?: boolean;
   /** `horizontal` wraps the options along a row; the arrow keys work on both axes either way. */
@@ -72,7 +76,8 @@ export function RadioGroup({
         aria-labelledby={labelId}
         value={value}
         defaultValue={defaultValue}
-        onValueChange={onValueChange}
+        // One argument out, whatever Base UI passes in — see the prop's doc.
+        onValueChange={(value) => onValueChange?.(value)}
         required={required}
       >
         {options.map((option) => (

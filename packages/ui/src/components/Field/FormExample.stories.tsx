@@ -23,8 +23,9 @@ interface FormFieldApi<Value> {
 
 /**
  * The adapter, in full. This is the claim Decision 7 rests on: because `error` is a string and
- * the controls report their value directly, connecting a form library to a Tier 3 field is a
- * projection with no state of its own.
+ * the controls report their value directly — one argument, the same on all five — connecting a
+ * form library to a Tier 3 field is a projection with no state of its own, and every control
+ * below is a spread with no lambda of its own.
  *
  * An error is shown only once the field has been touched, which is a form-library convention
  * rather than a library one — `Field` shows whatever `error` it is given.
@@ -32,18 +33,26 @@ interface FormFieldApi<Value> {
 function adaptFormField<Value>(fieldApi: FormFieldApi<Value>) {
   const firstError = fieldApi.state.meta.isTouched ? fieldApi.state.meta.errors[0] : undefined;
   return {
+    /** For the frame: `Field`'s props, or the frame each of the other four owns itself. */
     fieldProps: { name: fieldApi.name, error: firstError },
+    /** For a control that reports a value: `TextInput`, `Select`, `RadioGroup`. */
     controlProps: {
       value: fieldApi.state.value,
       onValueChange: fieldApi.handleChange,
       onBlur: fieldApi.handleBlur,
+    },
+    /** For a control that reports a checked state instead: `Checkbox`, `Switch`. */
+    checkedProps: {
+      checked: fieldApi.state.value,
+      onCheckedChange: fieldApi.handleChange,
     },
   };
 }
 
 type ExampleValues = {
   email: string;
-  category: string;
+  /** `null`, not `''`: `Select` speaks `string | null`, and nothing chosen is the null state. */
+  category: string | null;
   portion: string;
   notes: string;
   bringing: boolean;
@@ -52,7 +61,7 @@ type ExampleValues = {
 
 const initialValues: ExampleValues = {
   email: '',
-  category: '',
+  category: null,
   portion: 'medium',
   notes: '',
   bringing: false,
@@ -68,7 +77,7 @@ function useExampleForm() {
     if (name === 'email' && !values.email.includes('@')) {
       return ['Enter an email address.'];
     }
-    if (name === 'category' && values.category === '') {
+    if (name === 'category' && values.category === null) {
       return ['Choose a category.'];
     }
     return [];
@@ -108,6 +117,8 @@ function ExampleForm({ onSubmitValues }: ExampleFormProps) {
   const category = adaptFormField(form.field('category'));
   const portion = adaptFormField(form.field('portion'));
   const notes = adaptFormField(form.field('notes'));
+  const bringing = adaptFormField(form.field('bringing'));
+  const notify = adaptFormField(form.field('notify'));
 
   return (
     // `noValidate`, because `required` on a control also arms the browser's own validation
@@ -138,8 +149,7 @@ function ExampleForm({ onSubmitValues }: ExampleFormProps) {
           { value: 'desserts', label: 'Desserts' },
         ]}
         {...category.fieldProps}
-        value={category.controlProps.value}
-        onValueChange={(value) => form.field('category').handleChange(value ?? '')}
+        {...category.controlProps}
       />
 
       <RadioGroup
@@ -151,27 +161,20 @@ function ExampleForm({ onSubmitValues }: ExampleFormProps) {
           { value: 'large', label: 'Large' },
         ]}
         {...portion.fieldProps}
-        value={portion.controlProps.value}
-        onValueChange={(value) => form.field('portion').handleChange(value)}
+        {...portion.controlProps}
       />
 
       <Field label="Notes" {...notes.fieldProps}>
         <TextInput render={<textarea rows={3} />} {...notes.controlProps} />
       </Field>
 
-      <Checkbox
-        label="I am bringing a dish"
-        name="bringing"
-        checked={form.values.bringing}
-        onCheckedChange={(checked) => form.field('bringing').handleChange(checked)}
-      />
+      <Checkbox label="I am bringing a dish" {...bringing.fieldProps} {...bringing.checkedProps} />
 
       <Switch
         label="Email me when someone joins"
-        name="notify"
         description="One message per event, never a digest."
-        checked={form.values.notify}
-        onCheckedChange={(checked) => form.field('notify').handleChange(checked)}
+        {...notify.fieldProps}
+        {...notify.checkedProps}
       />
 
       <Button type="submit">Save</Button>

@@ -53,7 +53,7 @@ describe('RadioGroup', () => {
     await waitFor(() =>
       expect(screen.getByRole('radio', { name: 'Invited people only' })).toBeChecked(),
     );
-    expect(onValueChange).toHaveBeenLastCalledWith('invited', expect.anything());
+    expect(onValueChange).toHaveBeenLastCalledWith('invited');
   });
 
   it('selects by clicking the option text, because each option is its own label', async () => {
@@ -67,7 +67,7 @@ describe('RadioGroup', () => {
       />,
     );
     await userEvent.click(screen.getByText('Invited people only'));
-    expect(onValueChange).toHaveBeenCalledWith('invited', expect.anything());
+    expect(onValueChange).toHaveBeenCalledWith('invited');
   });
 
   it('puts one tab stop on the group, not one per radio', async () => {

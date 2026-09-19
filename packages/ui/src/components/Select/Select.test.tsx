@@ -70,7 +70,7 @@ describe('Select', () => {
     // the key back to the trigger, which closes the popup and selects nothing.
     await waitFor(() => expect(mains).toHaveFocus());
     await userEvent.keyboard('{ArrowDown}{Enter}');
-    await waitFor(() => expect(onValueChange).toHaveBeenCalledWith('sides', expect.anything()));
+    await waitFor(() => expect(onValueChange).toHaveBeenCalledWith('sides'));
     await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
     expect(trigger).toHaveFocus();
   });

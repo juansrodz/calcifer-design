@@ -24,8 +24,12 @@ export interface CheckboxProps {
    * "select all" state above a list of boxes.
    */
   indeterminate?: boolean;
-  /** Base UI calls this as `(checked, eventDetails)`; the second argument is passed through. */
-  onCheckedChange?: (checked: boolean, eventDetails: unknown) => void;
+  /**
+   * The new checked state. One argument, as on every other control in the tier: Base UI calls
+   * its own callback `(checked, eventDetails)` and this wrapper drops the second, which no
+   * consumer can read without a cast.
+   */
+  onCheckedChange?: (checked: boolean) => void;
   required?: boolean;
   disabled?: boolean;
 }
@@ -57,7 +61,8 @@ export function Checkbox({
           checked={checked}
           defaultChecked={defaultChecked}
           indeterminate={indeterminate}
-          onCheckedChange={onCheckedChange}
+          // One argument out, whatever Base UI passes in — see the prop's doc.
+          onCheckedChange={(checked) => onCheckedChange?.(checked)}
           required={required}
         >
           <BaseCheckbox.Indicator className={styles.indicator}>
