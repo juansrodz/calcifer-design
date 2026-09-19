@@ -101,8 +101,9 @@ export function Select({
         items={options}
         value={value}
         defaultValue={defaultValue}
-        // One argument out, whatever Base UI passes in — see the prop's doc.
-        onValueChange={(value) => onValueChange?.(value)}
+        // One argument out, whatever Base UI passes in — see the prop's doc. The wrapper is
+        // unconditional on all four controls in the tier, so Base UI always sees a handler.
+        onValueChange={(nextValue) => onValueChange?.(nextValue)}
         required={required}
       >
         <BaseSelect.Trigger

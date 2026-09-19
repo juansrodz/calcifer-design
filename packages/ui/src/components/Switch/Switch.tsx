@@ -61,7 +61,7 @@ export function Switch({
           checked={checked}
           defaultChecked={defaultChecked}
           // One argument out, whatever Base UI passes in — see the prop's doc.
-          onCheckedChange={(checked) => onCheckedChange?.(checked)}
+          onCheckedChange={(nextChecked) => onCheckedChange?.(nextChecked)}
           required={required}
         >
           <BaseSwitch.Thumb className={styles.thumb} />

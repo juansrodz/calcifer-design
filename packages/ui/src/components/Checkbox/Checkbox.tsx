@@ -69,7 +69,7 @@ export function Checkbox({
           defaultChecked={defaultChecked}
           indeterminate={indeterminate}
           // One argument out, whatever Base UI passes in — see the prop's doc.
-          onCheckedChange={(checked) => onCheckedChange?.(checked)}
+          onCheckedChange={(nextChecked) => onCheckedChange?.(nextChecked)}
           required={required}
         >
           <BaseCheckbox.Indicator className={styles.indicator}>

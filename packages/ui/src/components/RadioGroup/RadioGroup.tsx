@@ -96,7 +96,7 @@ export function RadioGroup({
         value={value}
         defaultValue={defaultValue}
         // One argument out, whatever Base UI passes in — see the prop's doc.
-        onValueChange={(value) => onValueChange?.(value)}
+        onValueChange={(nextValue) => onValueChange?.(nextValue)}
         onBlur={onBlur}
         required={required}
       >
