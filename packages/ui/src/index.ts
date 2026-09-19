@@ -58,3 +58,7 @@ export type {
   ToastTone,
   ToastAction,
 } from './components/ToastRegion/ToastRegion';
+export { Field } from './components/Field/Field';
+export type { FieldProps } from './components/Field/Field';
+export { TextInput } from './components/TextInput/TextInput';
+export type { TextInputProps, TextInputType } from './components/TextInput/TextInput';

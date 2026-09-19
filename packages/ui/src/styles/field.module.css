@@ -1,0 +1,152 @@
+/* The one field skin for Tier 3. `Field` authors it; `Select`, `Checkbox`, `RadioGroup` and
+   `Switch` wear it unchanged, and vary it only through the data attributes Base UI already
+   sets on the parts — `data-invalid`, `data-disabled`, `data-checked`, `data-indeterminate`.
+   The variants live here rather than in each component's own stylesheet for the reason
+   `popup.module.css` records: two single-class rules in two separately emitted stylesheets tie
+   on specificity, and which one won would then depend on the consumer's bundle order.
+
+   `.control` is the load-bearing member. `TextInput`'s <input>, `Select`'s trigger <button>
+   and a consumer's own <textarea> rendered through `TextInput`'s `render` prop all wear it, so
+   three different elements read as one control. A component stylesheet that also needs to say
+   something about the control declares only properties this rule does not — see
+   `Select.module.css`'s `.trigger`. */
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* A checkbox and a switch put their label beside the control, not above it, so the frame is a
+   column of rows rather than a column of blocks and the gap is tighter. */
+.inlineFrame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+}
+
+/* A radio group's name is not a <label>: it is a plain element the group points at with
+   `aria-labelledby`, because a <label> would steal every radio's accessible name. Same type. */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+}
+
+.label[data-disabled],
+.legend[data-disabled] {
+  color: var(--color-text-muted);
+}
+
+/* Decorative: `aria-hidden` in the markup, because the control's own `required` attribute is
+   what carries the requirement into the accessibility tree, and an asterisk read aloud after
+   every label is noise. The mark itself is generated content rather than a text child: a text
+   child would sit inside `Field.Label`'s rendered `<label>` and, `aria-hidden` or not, would
+   join that label's raw text content — which is exactly what Testing Library's `getByLabelText`
+   matches against, unlike the ARIA accessible-name algorithm `toHaveAccessibleName` uses.
+   Generated content is invisible to both, so `.required` stays an empty, childless span. */
+.required {
+  color: var(--color-danger);
+}
+
+.required::after {
+  content: '*';
+}
+
+/* The row a checkbox, a radio or a switch shares with its text. The gap is the control's
+   breathing room, and `cursor: pointer` is on the whole row because the whole row is a label. */
+.optionLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+  cursor: pointer;
+}
+
+.optionLabel[data-disabled] {
+  cursor: not-allowed;
+  color: var(--color-text-muted);
+}
+
+/* The list a radio group's options sit in. `RadioGroup` writes `data-orientation` on the same
+   element, and the attribute makes the horizontal rule more specific than the base one, so the
+   two can never depend on source order. */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.options[data-orientation='horizontal'] {
+  /* `flex-flow` because Stylelint's `declaration-block-no-redundant-longhand-properties` rejects
+     the `flex-direction` + `flex-wrap` longhand pair the spec wrote this as; neither longhand is
+     token-governed, so the shorthand is exempt from the token rule that would otherwise bar it. */
+  flex-flow: row wrap;
+  gap: var(--space-4);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-prose);
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-input);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+  transition-property: border-color, background-color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.control::placeholder {
+  color: var(--color-text-subtle);
+}
+
+/* base.css already draws the ring on every `:focus-visible`; this adds the border the ring
+   sits against, so a focused field reads as focused and not merely outlined. */
+.control:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.control[data-invalid] {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-surface);
+}
+
+.control[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
