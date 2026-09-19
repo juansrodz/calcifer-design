@@ -69,6 +69,23 @@ export function FieldMessages({ description, descriptionId, error, errorId }: Fi
   );
 }
 
+export interface RequiredMarkProps {
+  /** Draws the mark when true. Every frame passes its own `required` prop straight in. */
+  when: boolean;
+}
+
+/**
+ * The required mark every Tier 3 frame draws after its label. Childless and `aria-hidden` on
+ * purpose: the control's own `required` attribute is what carries the requirement into the
+ * accessibility tree, and the asterisk is generated content, because a text child would join
+ * the label's raw text content — which is what Testing Library's `getByLabelText` matches
+ * against. `field.module.css`'s `.required` has the long version. One line written five times
+ * before this, and written wrong in two of them. Internal, like `FieldMessages`.
+ */
+export function RequiredMark({ when }: RequiredMarkProps) {
+  return when ? <span className={fieldStyles.required} aria-hidden="true" /> : null;
+}
+
 /*
  * No control in Tier 3 takes a `ref`. §8 bars `forwardRef`, and React 19 would let a plain
  * `ref` prop ride through `TextInput`'s rest spread without one — but `TextInput` is the only
@@ -129,7 +146,7 @@ export function Field({
     >
       <BaseField.Label className={fieldStyles.label}>
         {label}
-        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
+        <RequiredMark when={required} />
       </BaseField.Label>
       <FieldRequiredContext.Provider value={required}>{children}</FieldRequiredContext.Provider>
       <FieldMessages description={description} error={error} />
@@ -180,7 +197,7 @@ export function InlineField({
       <BaseField.Label className={fieldStyles.optionLabel}>
         {children}
         {label}
-        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
+        <RequiredMark when={required} />
       </BaseField.Label>
       <FieldMessages description={description} error={error} />
     </BaseField.Root>

@@ -3,7 +3,7 @@ import { Radio as BaseRadio } from '@base-ui/react/radio';
 import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId, type ReactNode } from 'react';
 import fieldStyles from '../../styles/field.module.css';
-import { FieldMessages } from '../Field/Field';
+import { FieldMessages, RequiredMark } from '../Field/Field';
 import styles from './RadioGroup.module.css';
 
 export interface RadioOption {
@@ -87,7 +87,7 @@ export function RadioGroup({
           contrast. The boolean idiom is the library's: `'' : undefined`. */}
       <span className={fieldStyles.legend} id={labelId} data-disabled={disabled ? '' : undefined}>
         {label}
-        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
+        <RequiredMark when={required} />
       </span>
       <BaseRadioGroup<string>
         className={fieldStyles.options}

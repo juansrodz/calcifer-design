@@ -5,7 +5,7 @@ import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
-import { FieldMessages } from '../Field/Field';
+import { FieldMessages, RequiredMark } from '../Field/Field';
 import type { PopupAlign, PopupSide } from '../Popover/Popover';
 import styles from './Select.module.css';
 
@@ -92,7 +92,7 @@ export function Select({
           association survives — `getByLabelText` still finds the combobox. */}
       <BaseField.Label className={fieldStyles.label} nativeLabel={false} render={<span />}>
         {label}
-        {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
+        <RequiredMark when={required} />
       </BaseField.Label>
       {/* `items` is what makes the trigger show "Sides" rather than "sides": Base UI resolves
           the chosen value to its label through this list. The explicit `<string>` pins the
