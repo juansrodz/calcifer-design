@@ -41,7 +41,18 @@ function adaptFormField<Value>(fieldApi: FormFieldApi<Value>) {
       onValueChange: fieldApi.handleChange,
       onBlur: fieldApi.handleBlur,
     },
-    /** For a control that reports a checked state instead: `Checkbox`, `Switch`. */
+  };
+}
+
+/**
+ * The same projection for the two controls that report a checked state rather than a value:
+ * `Checkbox` and `Switch`. It is a second, narrower entry point rather than a third group of
+ * props on the one above because only a boolean field has a checked state — computing one for
+ * `email` or `category` would be computing something no control can read.
+ */
+function adaptCheckedFormField(fieldApi: FormFieldApi<boolean>) {
+  return {
+    fieldProps: adaptFormField(fieldApi).fieldProps,
     checkedProps: {
       checked: fieldApi.state.value,
       onCheckedChange: fieldApi.handleChange,
@@ -117,8 +128,8 @@ function ExampleForm({ onSubmitValues }: ExampleFormProps) {
   const category = adaptFormField(form.field('category'));
   const portion = adaptFormField(form.field('portion'));
   const notes = adaptFormField(form.field('notes'));
-  const bringing = adaptFormField(form.field('bringing'));
-  const notify = adaptFormField(form.field('notify'));
+  const bringing = adaptCheckedFormField(form.field('bringing'));
+  const notify = adaptCheckedFormField(form.field('notify'));
 
   return (
     // `noValidate`, because `required` on a control also arms the browser's own validation
