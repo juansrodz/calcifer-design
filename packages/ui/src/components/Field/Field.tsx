@@ -19,7 +19,7 @@ export function useFieldRequired(): boolean {
   return useContext(FieldRequiredContext);
 }
 
-interface FieldMessagesProps {
+export interface FieldMessagesProps {
   /** Sits under the control and joins the control's `aria-describedby`. */
   description: ReactNode;
   /**
@@ -27,23 +27,25 @@ interface FieldMessagesProps {
    * component's own frame passes an id of its own when something else needs to point at the
    * same node.
    */
-  descriptionId: string | undefined;
+  descriptionId?: string;
   /** The validation message. Its presence — not its content — is the error state. */
   error: string | undefined;
   /** The error node's own id, on the same terms as `descriptionId`. */
-  errorId: string | undefined;
+  errorId?: string;
 }
 
 /**
- * The description/error block every Tier 3 field frame renders: a description that always
- * shows and an error that only shows once one is given. Internal — not exported from the
- * barrel. `Field` is the first of six components that render this exact pair; `Select`,
+ * The description/error block every Tier 3 field frame renders: a description that shows
+ * whenever one is given, and an error that only shows once one is given. Exported, but
+ * deliberately absent from `src/index.ts` — not part of the barrel, exactly as
+ * `useFieldRequired` above and `icons/CloseIcon` are reachable across modules without being
+ * published. `Field` is the first of six components that render this exact pair; `Select`,
  * `Checkbox`, `RadioGroup` and `Switch` import it from here in later tasks, each supplying its
  * own frame's `description` and `error` and, where its frame does not already sit inside a
  * `Field.Root` whose context wires `aria-describedby` on its own, the ids that frame needs the
  * nodes to carry.
  */
-function FieldMessages({ description, descriptionId, error, errorId }: FieldMessagesProps) {
+export function FieldMessages({ description, descriptionId, error, errorId }: FieldMessagesProps) {
   return (
     <>
       {description === undefined ? null : (
@@ -119,12 +121,7 @@ export function Field({
         {required ? <span className={fieldStyles.required} aria-hidden="true" /> : null}
       </BaseField.Label>
       <FieldRequiredContext.Provider value={required}>{children}</FieldRequiredContext.Provider>
-      <FieldMessages
-        description={description}
-        descriptionId={undefined}
-        error={error}
-        errorId={undefined}
-      />
+      <FieldMessages description={description} error={error} />
     </BaseField.Root>
   );
 }
