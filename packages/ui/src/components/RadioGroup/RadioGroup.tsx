@@ -34,6 +34,13 @@ export interface RadioGroupProps {
    */
   onValueChange?: (value: string) => void;
   /**
+   * Called when the focus leaves a radio. A form library marks a field touched on blur, and the
+   * adapter in `FormExample` spreads one `onBlur` onto every control; without this prop the
+   * group silently dropped it. React's blur bubbles, so moving between the options with the
+   * arrow keys fires it too — a form library counts that as touched either way.
+   */
+  onBlur?: () => void;
+  /**
    * Draws the required mark and puts `required` on the control. Base UI carries it on the
    * visually hidden, `aria-hidden`, `tabindex="-1"` companion input it submits with — the exact
    * shape a browser refuses to report a validation message on, so the native bubble blocks the
@@ -55,6 +62,7 @@ export function RadioGroup({
   value,
   defaultValue,
   onValueChange,
+  onBlur,
   required = false,
   disabled = false,
   orientation = 'vertical',
@@ -89,6 +97,7 @@ export function RadioGroup({
         defaultValue={defaultValue}
         // One argument out, whatever Base UI passes in — see the prop's doc.
         onValueChange={(value) => onValueChange?.(value)}
+        onBlur={onBlur}
         required={required}
       >
         {options.map((option) => (

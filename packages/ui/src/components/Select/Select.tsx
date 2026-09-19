@@ -50,6 +50,12 @@ export interface SelectProps {
    * wrapper drops the second, which no consumer can read without a cast.
    */
   onValueChange?: (value: string | null) => void;
+  /**
+   * Called when the focus leaves the trigger — including when the popup opens and takes it.
+   * A form library marks a field touched on blur, and the adapter in `FormExample` spreads one
+   * `onBlur` onto every control; without this prop the select silently dropped it.
+   */
+  onBlur?: () => void;
   side?: PopupSide;
   align?: PopupAlign;
   /** Gap between the trigger and the popup, in pixels. */
@@ -68,6 +74,7 @@ export function Select({
   value,
   defaultValue,
   onValueChange,
+  onBlur,
   side = 'bottom',
   align = 'start',
   sideOffset = 8,
@@ -98,7 +105,10 @@ export function Select({
         onValueChange={(value) => onValueChange?.(value)}
         required={required}
       >
-        <BaseSelect.Trigger className={[fieldStyles.control, styles.trigger].join(' ')}>
+        <BaseSelect.Trigger
+          className={[fieldStyles.control, styles.trigger].join(' ')}
+          onBlur={onBlur}
+        >
           <BaseSelect.Value className={styles.value} placeholder={placeholder} />
           <BaseSelect.Icon className={styles.icon}>
             <ChevronDownIcon />

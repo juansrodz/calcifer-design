@@ -81,6 +81,22 @@ describe('RadioGroup', () => {
     expect(document.body).toHaveFocus();
   });
 
+  it('reports the focus leaving the group, so a form library can mark the field touched', async () => {
+    const onBlur = vi.fn();
+    render(
+      <RadioGroup
+        label="Who can see this event"
+        name="visibility"
+        options={options}
+        defaultValue="link"
+        onBlur={onBlur}
+      />,
+    );
+    screen.getByRole('radio', { name: 'Anyone with the link' }).focus();
+    await userEvent.tab();
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
   it('marks itself required in the accessibility tree and draws the required mark', () => {
     const { container: requiredContainer } = render(<Required />);
     expect(screen.getByRole('radiogroup')).toHaveAttribute('aria-required', 'true');

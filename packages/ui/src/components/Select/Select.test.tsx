@@ -76,6 +76,14 @@ describe('Select', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('reports the focus leaving the trigger, so a form library can mark the field touched', async () => {
+    const onBlur = vi.fn();
+    render(<Select label="Category" name="category" options={options} onBlur={onBlur} />);
+    screen.getByRole('combobox', { name: 'Category' }).focus();
+    await userEvent.tab();
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
   it('jumps to an option by typing its first letters', async () => {
     render(<Select label="Category" name="category" options={options} />);
     const trigger = screen.getByRole('combobox', { name: 'Category' });
