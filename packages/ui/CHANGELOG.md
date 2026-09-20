@@ -1,5 +1,22 @@
 # @calcifer-design/ui
 
+## 0.4.0
+
+### Minor Changes
+
+- b99f36a: Add `Checkbox`: an inline field whose label wraps the box and the text on one row, with a mixed (`aria-checked="mixed"`) state for the "select all" case, a required marking, and the same `description`/`error` props as the rest of Tier 3.
+- a4297a3: Add `Field` and `TextInput`, the first two Tier 3 form components, on a new shared field skin (`src/styles/field.module.css`). `Field` supplies the label, the required mark, the description and the error message, and wires all four into the control's accessible name and description through Base UI's `Field`. `TextInput` is the native input on that skin; its `render` prop puts any other element — a `<textarea>`, a date or file input — into the same wiring, which is how a consumer builds a control the library does not ship.
+
+  The error is a prop, not a validation engine: `error` present means invalid, so Zod, TanStack Form or anything else stays the single source of truth for what is wrong.
+
+- ae4d493: Add `RadioGroup`: a named group of radio options with arrow-key navigation, a vertical or horizontal layout, and the tier's `description`/`error` props. The group's name is a plain element the group points at rather than a `<label>`, and each option is scoped by a `Field.Item` — without both, Base UI names every radio after the group and gives them one shared id.
+- 0465fe1: Add `Select`: a labelled, described, validatable select built on Base UI's `Select`, wearing the Tier 3 field skin on its trigger and the Tier 2 popup skin on its list. Options are an array of `{ value, label, disabled? }` and values are strings, because that is what a form submits. Keyboard navigation, typeahead, collision-aware positioning and `aria-invalid` on the trigger all come from Base UI; what this wrapper adds is the field skin, the popup variant and one prop shape.
+- c2dc15c: Add `Switch`: an inline on/off field with `role="switch"`, toggled by space and by enter, with the tier's `description` and `error` props. Tier 3 is complete with it — `Field`, `TextInput`, `Select`, `Checkbox`, `RadioGroup` and `Switch`.
+
+### Patch Changes
+
+- 312b008: Add a Storybook example that composes all six Tier 3 components into one form, with the field adapter a form library such as TanStack Form needs — about twenty lines, and not one lambda at a call site, because `error` is a string prop and every control reports its value directly. The example and its test ship in the repository only; neither reaches `dist`.
+
 ## 0.3.0
 
 ### Minor Changes
