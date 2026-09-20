@@ -41,6 +41,12 @@ describe('@calcifer-design/ui dist', () => {
       'TooltipProvider',
       'ToastRegion',
       'createToastManager',
+      'Field',
+      'TextInput',
+      'Select',
+      'Checkbox',
+      'RadioGroup',
+      'Switch',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
@@ -87,7 +93,7 @@ describe('@calcifer-design/ui dist', () => {
   });
 
   it('emits each shared stylesheet once, as its own dist entry', async () => {
-    for (const name of ['a11y', 'popup']) {
+    for (const name of ['a11y', 'popup', 'field']) {
       expect((await stat(path.join(distRoot, `styles/${name}.module.js`))).isFile()).toBe(true);
       expect((await stat(path.join(distRoot, `styles/${name}_module.css`))).isFile()).toBe(true);
     }
@@ -95,10 +101,22 @@ describe('@calcifer-design/ui dist', () => {
     // TSX rather than `composes`-d, which would inline it into every consuming stylesheet.
     const popupCss = await readFile(path.join(distRoot, 'styles/popup_module.css'), 'utf8');
     expect(popupCss).toMatch(/\.surface-[A-Za-z0-9_-]{5}\b/);
+    const fieldCss = await readFile(path.join(distRoot, 'styles/field_module.css'), 'utf8');
+    expect(fieldCss).toMatch(/\.control-[A-Za-z0-9_-]{5}\b/);
     const componentCss = await collectCssFiles(path.join(distRoot, 'components'));
     for (const file of componentCss) {
       const css = await readFile(file, 'utf8');
       expect(css, file).not.toContain('clip-path: inset(50%)');
+    }
+    // One copy of the control surface in the whole package, and it is the shared stylesheet's:
+    // `TextInput`'s input, `Select`'s trigger, `Checkbox`'s box and `RadioGroup`'s dot all wear
+    // an emitted rule from `field.module.css` rather than restating the input surface in their
+    // own. Ruling R1 had to scope this to `components/Select` while the box and the dot each
+    // declared the colour themselves; the shared `.controlBox` is what makes the whole-package
+    // claim true, so the loop is back over every component stylesheet.
+    for (const file of componentCss) {
+      const css = await readFile(file, 'utf8');
+      expect(css, file).not.toContain('var(--color-surface-input)');
     }
   });
 });

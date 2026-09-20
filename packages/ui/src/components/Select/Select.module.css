@@ -1,0 +1,80 @@
+/* Select adds only what the two shared skins cannot know: the trigger's value row, its chevron
+   and the option row. The control box is `field.module.css`'s `.control`; the popup surface,
+   the viewport clamp and the entry transition are `popup.module.css` under
+   `data-popup='select'`. Every declaration in `.trigger` is one `.control` does not make, so
+   the two class names on the same element can never tie on specificity and leave the winner to
+   the consumer's bundle order. */
+.trigger {
+  justify-content: space-between;
+  gap: var(--space-3);
+  text-align: start;
+  cursor: pointer;
+}
+
+.value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.value[data-placeholder] {
+  color: var(--color-text-subtle);
+}
+
+/* `data-popup-open`, not `data-open` — measured. `data-open` is what the popup carries; the
+   icon carries `data-popup-open`, and a rotation written against the other one never fires. */
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+  transition-property: transform;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* The library sizes an icon through its `> svg` child, not through the wrapper —
+   `IconButton.module.css` and `Alert.module.css` do the same — which is what the icon's own
+   doc comment means by "it declares no size; the control that holds it sizes it". */
+.icon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.icon[data-popup-open] {
+  transform: rotate(180deg);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--size-touch);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Base UI's roving highlight, not `:hover`: it follows the keyboard as well as the pointer. */
+.option[data-highlighted] {
+  background: var(--color-surface-2);
+}
+
+.option[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.indicator {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-accent);
+}
+
+.indicator > svg {
+  width: 1rem;
+  height: 1rem;
+}

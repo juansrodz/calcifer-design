@@ -95,6 +95,20 @@
   box-shadow: var(--elevation-3);
 }
 
+/* A select's width is its trigger's rather than a fixed dropdown width, and that is the one
+   thing that makes it a separate variant: `SelectPositioner` publishes `--anchor-width` on
+   itself (confirmed in `select/positioner/SelectPositionerCssVars.js`) and it inherits into
+   the popup. The `max()` floor matters in jsdom and in any environment with no layout, where
+   the custom property resolves to `0px`. `gap: 0` is defensive, not load-bearing: unlike a
+   menu's, a select's rows are not this surface's children — its only child is `Select.List`
+   (asserted in `Select.test.tsx`) — so the gap applies to nothing until Base UI's scroll
+   arrows, which are `List`'s siblings, are added. */
+.surface[data-popup='select'] {
+  gap: 0;
+  min-width: max(var(--anchor-width), 10rem);
+  padding: var(--space-1);
+}
+
 /* Base UI drives the entry and the exit with these two attributes. Its handbook prefers a
    transition over an animation because a transition can be cancelled part-way, which is what a
    popup reopened mid-close needs. base.css collapses both under prefers-reduced-motion. */

@@ -1,0 +1,16 @@
+/* RadioGroup adds the dot's size and its round corner — the surface under it is
+   `field.module.css`'s `.controlBox`, shared with the checkbox's box — and the mark inside it.
+   The group's name, the option row, the option list's direction, the description and the error
+   are all `field.module.css` too. */
+.dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-full);
+}
+
+.mark {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-text);
+}

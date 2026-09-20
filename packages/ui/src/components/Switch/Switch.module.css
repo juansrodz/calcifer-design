@@ -1,0 +1,45 @@
+/* Switch adds the track and the thumb; the row, the label type, the description and the error
+   are `field.module.css`. There is deliberately no `[data-invalid]` rule — a switch's state is
+   binary and visible, so the message below it is the error signal. */
+.track {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: 2.5rem;
+  height: 1.5rem;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  cursor: pointer;
+  transition-property: background-color, border-color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.track[data-checked] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.track[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-raised);
+  box-shadow: var(--elevation-1);
+  transition-property: transform;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* The travel is the track's inner width minus the thumb: 2.5rem − 2×1px border − 2×space-1
+   padding − 1rem thumb. base.css collapses the transition under prefers-reduced-motion. */
+.thumb[data-checked] {
+  transform: translateX(0.875rem);
+}
