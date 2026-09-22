@@ -5,6 +5,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RsbuildPlugin } from '@rsbuild/core';
 
+// See shared-dependencies.ts for why this is fileURLToPath and not new URL(...) (the jsdom test
+// environment).
 const thisModuleDirectory = dirname(fileURLToPath(import.meta.url));
 
 /** Where `@module-federation/observability-plugin` writes its file, relative to the app root. */
@@ -70,8 +72,10 @@ export function mergeBuildInfo(
 /**
  * After a production build, copies the observability plugin's build-info.json into the dist
  * root with the `build` stamp merged in, so the portfolio's card for this remote shows the
- * library version and the commit it was built from, the way every other card does. A missing
- * source file is a warning here and a failure in `test/dist`, which is what CI runs.
+ * library version and the commit it was built from, the way every other card does. Only a
+ * missing or unparsable source file is tolerated (a warning here, a failure in `test/dist`,
+ * which is what CI runs) — once that file is read, a failure to write into this app's own dist
+ * output is a real build failure and propagates.
  */
 export function pluginBuildInfo(): RsbuildPlugin {
   return {
@@ -80,20 +84,16 @@ export function pluginBuildInfo(): RsbuildPlugin {
       api.onAfterBuild(async () => {
         const sourcePath = resolve(api.context.rootPath, OBSERVABILITY_BUILD_INFO);
         const distRoot = api.context.distPath;
+        let observability: Record<string, unknown>;
         try {
-          const observability = JSON.parse(await readFile(sourcePath, 'utf8')) as Record<
-            string,
-            unknown
-          >;
-          await mkdir(distRoot, { recursive: true });
-          const merged = mergeBuildInfo(observability, buildStamp(process.env, gitReader));
-          await writeFile(
-            join(distRoot, 'build-info.json'),
-            `${JSON.stringify(merged, null, 2)}\n`,
-          );
+          observability = JSON.parse(await readFile(sourcePath, 'utf8')) as Record<string, unknown>;
         } catch (error) {
           api.logger.warn(`build-info.json was not written into ${distRoot}: ${String(error)}`);
+          return;
         }
+        await mkdir(distRoot, { recursive: true });
+        const merged = mergeBuildInfo(observability, buildStamp(process.env, gitReader));
+        await writeFile(join(distRoot, 'build-info.json'), `${JSON.stringify(merged, null, 2)}\n`);
       });
     },
   };
