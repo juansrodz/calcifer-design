@@ -1,5 +1,14 @@
-import { Alert, Button } from '@calcifer-design/ui';
-import { useId, useState, type FormEvent } from 'react';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Field,
+  RadioGroup,
+  Select,
+  Switch,
+  TextInput,
+} from '@calcifer-design/ui';
+import { useState, type FormEvent } from 'react';
 import type { HostToastManager } from '../../host/toast';
 import styles from '../../styles/docs.module.css';
 
@@ -7,20 +16,39 @@ export interface FormCompositionProps {
   hostToast?: HostToastManager;
 }
 
-const tiers = ['Tier 1 — foundations', 'Tier 2 — floating surfaces', 'Tier 4 — page furniture'];
+const tiers = [
+  { value: 'tier-1', label: 'Tier 1 — foundations' },
+  { value: 'tier-2', label: 'Tier 2 — floating surfaces' },
+  { value: 'tier-3', label: 'Tier 3 — forms' },
+  { value: 'tier-4', label: 'Tier 4 — page furniture' },
+];
+
+const priorities = [
+  { value: 'low', label: 'Low' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'High' },
+];
 
 export function FormComposition({ hostToast }: FormCompositionProps) {
-  const nameId = useId();
-  const tierId = useId();
-  const reasonId = useId();
+  const [componentName, setComponentName] = useState('');
+  const [tier, setTier] = useState<string | null>(tiers[0]?.value ?? null);
+  const [priority, setPriority] = useState('normal');
+  const [reason, setReason] = useState('');
+  const [notify, setNotify] = useState(true);
+  const [blocker, setBlocker] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [receipt, setReceipt] = useState<string | undefined>(undefined);
+
+  const trimmedName = componentName.trim();
+  const nameError = attempted && trimmedName === '' ? 'Name the component.' : undefined;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fields = new FormData(event.currentTarget);
-    const componentName =
-      String(fields.get('componentName') ?? '').trim() || 'an unnamed component';
-    const message = `${componentName} was filed against the backlog.`;
+    setAttempted(true);
+    if (trimmedName === '') {
+      return;
+    }
+    const message = `${trimmedName} was filed against the backlog${blocker ? ' as a blocker' : ''}.`;
     if (hostToast) {
       // The host owns the region this lands in; this remote only calls the manager (spec §5.3).
       hostToast.add({ title: 'Request filed', description: message, tone: 'success' });
@@ -33,36 +61,47 @@ export function FormComposition({ hostToast }: FormCompositionProps) {
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <p className={styles.note} data-testid="tier-3-slot">
-        The three fields below are this page’s own markup, not library components. Tier 3 — Plan C’s
-        Field, TextInput, Select, Checkbox, RadioGroup and Switch — is in the library, and this slot
-        is where they land.
+        Every field below is the library&rsquo;s Tier 3 — Plan C&rsquo;s{' '}
+        <code className={styles.code}>Field</code>, <code className={styles.code}>TextInput</code>,{' '}
+        <code className={styles.code}>Select</code>, <code className={styles.code}>RadioGroup</code>
+        , <code className={styles.code}>Checkbox</code> and{' '}
+        <code className={styles.code}>Switch</code> — composed with the button, the alert and the
+        toast the page already used.
       </p>
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={nameId}>
-          Component name
-        </label>
-        <input className={styles.input} id={nameId} name="componentName" type="text" />
-      </div>
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={tierId}>
-          Tier
-        </label>
-        <select className={styles.input} id={tierId} name="tier" defaultValue={tiers[0]}>
-          {tiers.map((tier) => (
-            <option key={tier} value={tier}>
-              {tier}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={reasonId}>
-          Why it is needed
-        </label>
-        <textarea className={styles.input} id={reasonId} name="reason" rows={3} />
-      </div>
+      <Field label="Component name" name="componentName" required error={nameError}>
+        <TextInput value={componentName} onValueChange={setComponentName} placeholder="Combobox" />
+      </Field>
+      <Select label="Tier" name="tier" options={tiers} value={tier} onValueChange={setTier} />
+      <RadioGroup
+        label="Priority"
+        name="priority"
+        orientation="horizontal"
+        options={priorities}
+        value={priority}
+        onValueChange={setPriority}
+      />
+      <Field
+        label="Why it is needed"
+        name="reason"
+        description="One sentence is enough; the backlog links back to the request."
+      >
+        <TextInput value={reason} onValueChange={setReason} />
+      </Field>
+      <Checkbox
+        label="Notify me when it ships"
+        name="notify"
+        checked={notify}
+        onCheckedChange={setNotify}
+      />
+      <Switch
+        label="File it as a blocker"
+        name="blocker"
+        description="Blockers go to the top of the backlog."
+        checked={blocker}
+        onCheckedChange={setBlocker}
+      />
       <div>
         <Button type="submit">File the request</Button>
       </div>

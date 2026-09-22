@@ -216,33 +216,6 @@
   gap: var(--space-3);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.label {
-  color: var(--color-text);
-  font-size: var(--text-sm);
-}
-
-.input {
-  padding-block: var(--space-2);
-  padding-inline: var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-input);
-  color: var(--color-text);
-  font-size: var(--text-md);
-  font-family: var(--font-sans);
-}
-
-.input:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-focus);
-  outline-offset: var(--focus-ring-offset);
-}
-
 /* Mirrors packages/ui's own ErrorBoundary.module.css .root, which this page can't import
    directly (it's internal to the library, not part of its public API): the alert, then the
    retry control under it, both left-aligned and only as wide as they need to be. */

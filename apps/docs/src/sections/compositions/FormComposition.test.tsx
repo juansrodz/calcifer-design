@@ -1,47 +1,64 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { HostToastManager } from '../../host/toast';
+import { axe } from '../../../test/axe';
 import { FormComposition } from './FormComposition';
 
-function stubHostToast(): HostToastManager {
+function stubHostToast() {
   return { add: vi.fn(() => 'toast-1'), close: vi.fn(), update: vi.fn() };
 }
 
+function fileRequest(componentName: string) {
+  fireEvent.change(screen.getByRole('textbox', { name: /component name/i }), {
+    target: { value: componentName },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /file the request/i }));
+}
+
 describe('FormComposition', () => {
-  it('names the slot Tier 3 fills, so replacing it is a test failure and not a memory', () => {
+  it('composes the form from the library’s Tier 3 components and says so', () => {
     render(<FormComposition />);
+    expect(screen.getByRole('textbox', { name: /component name/i })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: /tier/i })).toBeVisible();
+    expect(screen.getByRole('radiogroup', { name: /priority/i })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: /why it is needed/i })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: /notify me/i })).toBeVisible();
+    expect(screen.getByRole('switch', { name: /blocker/i })).toBeVisible();
     expect(screen.getByTestId('tier-3-slot')).toHaveTextContent(/Tier 3/);
     expect(screen.getByTestId('tier-3-slot')).toHaveTextContent(/Plan C/);
   });
 
-  it('labels every field, which is the part a native form still has to get right', () => {
-    render(<FormComposition />);
-    expect(screen.getByLabelText('Component name')).toBeVisible();
-    expect(screen.getByLabelText('Tier')).toBeVisible();
-    expect(screen.getByLabelText('Why it is needed')).toBeVisible();
-  });
-
-  it('raises a toast through the host manager when there is one', async () => {
+  it('refuses to file an unnamed component and says why', () => {
     const hostToast = stubHostToast();
-    const user = userEvent.setup();
     render(<FormComposition hostToast={hostToast} />);
-    await user.type(screen.getByLabelText('Component name'), 'Breadcrumb');
-    await user.click(screen.getByRole('button', { name: 'File the request' }));
-    expect(hostToast.add).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Request filed', tone: 'success' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /file the request/i }));
+    expect(screen.getByText('Name the component.')).toBeVisible();
+    expect(hostToast.add).not.toHaveBeenCalled();
     expect(screen.queryByTestId('alert')).toBeNull();
   });
 
-  it('falls back to an inline alert when no manager reached this remote', async () => {
-    const user = userEvent.setup();
+  it('files through the host toast manager when one is present', () => {
+    const hostToast = stubHostToast();
+    render(<FormComposition hostToast={hostToast} />);
+    fileRequest('Combobox');
+    expect(hostToast.add).toHaveBeenCalledWith({
+      title: 'Request filed',
+      description: 'Combobox was filed against the backlog.',
+      tone: 'success',
+    });
+    expect(screen.queryByTestId('alert')).toBeNull();
+  });
+
+  it('shows the receipt inline when no host is listening', () => {
     render(<FormComposition />);
-    await user.type(screen.getByLabelText('Component name'), 'Breadcrumb');
-    await user.click(screen.getByRole('button', { name: 'File the request' }));
-    // `role="status"`, not `role="alert"`: Alert derives its politeness from its tone, and only
-    // `danger` is assertive (Alert.tsx:99). A success receipt does not interrupt.
-    const receipt = await screen.findByRole('status');
-    expect(receipt).toHaveTextContent('Breadcrumb');
+    fileRequest('Combobox');
+    expect(screen.getByTestId('alert')).toHaveTextContent(
+      'Combobox was filed against the backlog.',
+    );
+    expect(screen.getByRole('status')).toBeVisible();
+  });
+
+  it('has no axe violations at rest', async () => {
+    const { container } = render(<FormComposition />);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
