@@ -1,0 +1,256 @@
+/* Mounted inside the shell's remote frame, which pads only 4px, so the tabs and the content
+   carry their own insets — the same 24px the showcase remote uses. Standalone, the frame below
+   pads nothing and its heading takes the same inset, so the two line up. */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-block: var(--space-5);
+  padding-inline: var(--space-5);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sectionHeading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-h2-feature);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-heading);
+}
+
+.lede {
+  max-width: var(--measure);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+  line-height: var(--leading-prose);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.panel {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.note {
+  max-width: var(--measure);
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: var(--text-sm);
+  line-height: var(--leading-prose);
+}
+
+.code {
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.standalone {
+  max-width: var(--size-page-max);
+  margin-inline: auto;
+  padding-block: var(--space-6);
+}
+
+/* The standalone heading sits on the same inset as the app's tabs and content (`.root`). */
+.standaloneHeading {
+  padding-inline: var(--space-5);
+}
+
+.subHeading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-h3);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-heading);
+}
+
+.ramps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 48rem) {
+  .ramps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ramp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rampHeading {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+/* The two token lists — the colour ramp's swatches and the spacing scale's rows — are the
+   same bare vertical list; only the row inside them differs. */
+.swatches,
+.spaceList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swatch {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatchChip {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.swatchName {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+}
+
+.swatchValue {
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono);
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.caption {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  text-align: start;
+}
+
+.table th,
+.table td {
+  padding-block: var(--space-2);
+  padding-inline: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-align: start;
+}
+
+.table thead th {
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.pairCell {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* One column on a phone: the scale runs to --space-9 (6rem) and --space-10 (8rem), and a bar
+   that wide does not fit beside a fixed name and value column at 390px — it would overflow the
+   row, the section and the shell's main column, giving the page a horizontal scroll. The bar
+   takes its own row there, capped at the row's width; the name/value/bar triple returns once
+   there is room for it. */
+.spaceRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.spaceBar {
+  grid-column: 1 / -1;
+  max-width: 100%;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-soft);
+}
+
+@media (min-width: 48rem) {
+  .spaceRow {
+    grid-template-columns: 12rem 5rem minmax(0, 1fr);
+  }
+
+  .spaceBar {
+    grid-column: auto;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Mirrors packages/ui's own ErrorBoundary.module.css .root, which this page can't import
+   directly (it's internal to the library, not part of its public API): the alert, then the
+   retry control under it, both left-aligned and only as wide as they need to be. */
+.fallback {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.link {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}

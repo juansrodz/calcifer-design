@@ -5,7 +5,8 @@
   "packageManager": "bun@1.3.6",
   "workspaces": {
     "packages": [
-      "packages/*"
+      "packages/*",
+      "apps/*"
     ],
     "catalog": {
       "react": "^19.2.0",
@@ -16,6 +17,7 @@
   },
   "scripts": {
     "build": "bun run --filter @calcifer-design/tokens build && bun run --filter @calcifer-design/ui build",
+    "build:docs": "bun run --filter @calcifer-design/docs build",
     "dev": "bun scripts/dev.ts",
     "lint": "eslint . && stylelint \"**/*.css\" --ignore-path .gitignore --allow-empty-input && prettier --check .",
     "typecheck": "bun run --filter @calcifer-design/tokens build && tsc -p tsconfig.json --noEmit && bun run --filter '*' typecheck",

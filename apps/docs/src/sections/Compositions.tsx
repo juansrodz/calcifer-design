@@ -1,0 +1,191 @@
+import {
+  Alert,
+  Avatar,
+  Button,
+  Dialog,
+  ErrorBoundary,
+  IconButton,
+  Menu,
+  Popover,
+  Skeleton,
+  Spinner,
+  Tooltip,
+  TooltipProvider,
+} from '@calcifer-design/ui';
+import type { ErrorBoundaryFallbackDetails } from '@calcifer-design/ui';
+import { useState } from 'react';
+import type { HostToastManager } from '../host/toast';
+import { FormComposition } from './compositions/FormComposition';
+import styles from '../styles/docs.module.css';
+
+export interface CompositionsProps {
+  hostToast?: HostToastManager;
+}
+
+interface PreviewProps {
+  broken: boolean;
+}
+
+/** Throws on demand, so the boundary beside it has something real to catch. */
+function Preview({ broken }: PreviewProps) {
+  if (broken) {
+    throw new Error('The preview renderer failed while laying out the entry.');
+  }
+  return <p data-testid="preview">Nothing is wrong here.</p>;
+}
+
+interface CrashedFallbackProps extends ErrorBoundaryFallbackDetails {
+  /** Clears the condition that threw, so the retried render doesn't throw straight back. */
+  onRetry: () => void;
+}
+
+/**
+ * The boundary's fallback while `Preview` has thrown — the same copy, tone and layout the
+ * library's own default fallback would have rendered. It exists as a custom `fallback` only so
+ * its retry button can run `onRetry` (clearing `broken` and `crashed` in `Compositions`) before
+ * calling the boundary's own `reset()`, so the retried render never throws again.
+ */
+function CrashedFallback({ error, reset, onRetry }: CrashedFallbackProps) {
+  return (
+    <div className={styles.fallback}>
+      {/* h4: this fallback renders under the "A component that throws" h3, and Alert's own
+          default heading level is 3, which would read as a sibling section of it. */}
+      <Alert tone="danger" announce heading="This preview crashed" headingLevel={4}>
+        {error.message}
+      </Alert>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => {
+          onRetry();
+          reset();
+        }}
+      >
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+export function Compositions({ hostToast }: CompositionsProps) {
+  const [lastAction, setLastAction] = useState('none yet');
+  const [broken, setBroken] = useState(false);
+  const [crashed, setCrashed] = useState(false);
+
+  function retryPreview() {
+    setBroken(false);
+    setCrashed(false);
+  }
+
+  return (
+    // Every remote mounts its own TooltipProvider: it renders no DOM, no portal and no
+    // listeners, so nesting one inside the host's is free, and it keeps grouped instant-open
+    // working inside this tree (spec §5.3).
+    <TooltipProvider>
+      <section className={styles.section} aria-labelledby="compositions-heading">
+        <h2 className={styles.sectionHeading} id="compositions-heading">
+          Components, in composition
+        </h2>
+        <p className={styles.lede}>
+          Every control below is the published library, wired together the way a screen would wire
+          it — not one isolated control per row. That view exists, is exhaustive, and is better: it
+          is Storybook, linked from the Inventory tab.
+        </p>
+
+        <div className={styles.panel}>
+          <div className={styles.toolbar}>
+            <Dialog
+              heading="Edit the entry"
+              description="A dialog with a scrolling body, a pinned footer, and a popover opened from inside it."
+              trigger={<Button variant="secondary">Edit the entry</Button>}
+              footer={<Button>Save</Button>}
+            >
+              <p>
+                Anchored popups and dialogs share one stacking level (
+                <code className={styles.code}>z-index: 50</code>
+                ), so the surface that opened last paints on top — which is why the popover below
+                appears above this dialog rather than behind it. Toasts sit above both, at 70.
+              </p>
+              <Popover
+                heading="Slugs"
+                trigger={<Button variant="ghost">What is a slug?</Button>}
+                description="The URL-safe part of a title."
+              >
+                <p>A slug is generated from the title and can be edited until the entry is live.</p>
+              </Popover>
+            </Dialog>
+
+            <Menu
+              trigger={<Button variant="ghost">Entry actions</Button>}
+              items={[
+                { id: 'duplicate', label: 'Duplicate', onSelect: () => setLastAction('Duplicate') },
+                { id: 'archive', label: 'Archive', onSelect: () => setLastAction('Archive') },
+                {
+                  id: 'delete',
+                  label: 'Delete',
+                  separatorBefore: true,
+                  onSelect: () => setLastAction('Delete'),
+                },
+              ]}
+            />
+
+            <Tooltip
+              label="Copy the entry id"
+              trigger={
+                <IconButton label="Copy the entry id" onClick={() => setLastAction('Copy')}>
+                  <span aria-hidden="true">⧉</span>
+                </IconButton>
+              }
+            />
+          </div>
+          <p className={styles.note} data-testid="last-action" aria-live="polite">
+            Last action: {lastAction}
+          </p>
+        </div>
+
+        <h3 className={styles.subHeading}>A form, and what happens after it</h3>
+        <div className={styles.panel}>
+          <FormComposition hostToast={hostToast} />
+        </div>
+
+        <h3 className={styles.subHeading}>The states a screen actually spends its time in</h3>
+        <div className={styles.grid}>
+          <div className={styles.panel}>
+            <Spinner label="Loading the entry" />
+            <Skeleton lines={3} />
+          </div>
+          <div className={styles.panel}>
+            {/* h4 for the same reason as the fallback above: the enclosing h3 is "The states a
+                screen actually spends its time in". */}
+            <Alert tone="warning" heading="Behind the published version" headingLevel={4}>
+              An example: the registry declares one version while npm already publishes a newer one.
+            </Alert>
+            <div className={styles.toolbar}>
+              <Avatar name="Juan Sebastian Rodriguez" />
+              <Avatar name="Christian Ocampo" shape="square" />
+            </div>
+          </div>
+        </div>
+
+        <h3 className={styles.subHeading}>A component that throws</h3>
+        <div className={styles.panel}>
+          <ErrorBoundary
+            // Marks the demo crashed the instant the error is caught, which disables "Break the
+            // preview" below for as long as the fallback is showing. Without this, a second
+            // press while already crashed would set `broken` back to `true` with nothing on
+            // screen to throw it — the fallback, not `children`, is what's rendered while an
+            // error is caught — leaving it armed to crash again on the *next* "Try again"
+            // instead of recovering.
+            onError={() => setCrashed(true)}
+            fallback={(details) => <CrashedFallback {...details} onRetry={retryPreview} />}
+          >
+            <Preview broken={broken} />
+          </ErrorBoundary>
+          <Button variant="secondary" onClick={() => setBroken(true)} disabled={crashed}>
+            Break the preview
+          </Button>
+        </div>
+      </section>
+    </TooltipProvider>
+  );
+}

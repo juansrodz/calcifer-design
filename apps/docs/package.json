@@ -1,0 +1,40 @@
+{
+  "name": "@calcifer-design/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "css-types": "rsbuild build",
+    "typecheck": "bun run css-types && tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@calcifer-design/tokens": "workspace:*",
+    "@calcifer-design/ui": "workspace:*",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@module-federation/bridge-react": "^2.9.0",
+    "@module-federation/enhanced": "^2.9.0",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@calcifer-design/tsconfig": "workspace:*",
+    "@module-federation/observability-plugin": "^2.6.0",
+    "@module-federation/rsbuild-plugin": "^2.9.0",
+    "@rsbuild/core": "^2.2.3",
+    "@rsbuild/plugin-react": "^2.1.0",
+    "@rsbuild/plugin-typed-css-modules": "^1.2.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^26.4.1",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "jsdom": "^30.0.1",
+    "vitest": "^5.0.0",
+    "vitest-axe": "1.0.0-pre.5"
+  }
+}
