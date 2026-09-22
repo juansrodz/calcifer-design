@@ -1,17 +1,14 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { UserEvent } from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
+import { stubHostToast } from '../../../test/host-toast';
 import { FormComposition } from './FormComposition';
 
-function stubHostToast() {
-  return { add: vi.fn(() => 'toast-1'), close: vi.fn(), update: vi.fn() };
-}
-
-function fileRequest(componentName: string) {
-  fireEvent.change(screen.getByRole('textbox', { name: /component name/i }), {
-    target: { value: componentName },
-  });
-  fireEvent.click(screen.getByRole('button', { name: /file the request/i }));
+async function fileRequest(user: UserEvent, componentName: string) {
+  await user.type(screen.getByRole('textbox', { name: /component name/i }), componentName);
+  await user.click(screen.getByRole('button', { name: /file the request/i }));
 }
 
 describe('FormComposition', () => {
@@ -23,23 +20,24 @@ describe('FormComposition', () => {
     expect(screen.getByRole('textbox', { name: /why it is needed/i })).toBeVisible();
     expect(screen.getByRole('checkbox', { name: /notify me/i })).toBeVisible();
     expect(screen.getByRole('switch', { name: /blocker/i })).toBeVisible();
-    expect(screen.getByTestId('tier-3-slot')).toHaveTextContent(/Tier 3/);
-    expect(screen.getByTestId('tier-3-slot')).toHaveTextContent(/Plan C/);
+    expect(screen.getByTestId('form-note')).toHaveTextContent(/Tier 3/);
   });
 
-  it('refuses to file an unnamed component and says why', () => {
+  it('refuses to file an unnamed component and says why', async () => {
+    const user = userEvent.setup();
     const hostToast = stubHostToast();
     render(<FormComposition hostToast={hostToast} />);
-    fireEvent.click(screen.getByRole('button', { name: /file the request/i }));
+    await user.click(screen.getByRole('button', { name: /file the request/i }));
     expect(screen.getByText('Name the component.')).toBeVisible();
     expect(hostToast.add).not.toHaveBeenCalled();
     expect(screen.queryByTestId('alert')).toBeNull();
   });
 
-  it('files through the host toast manager when one is present', () => {
+  it('files through the host toast manager when one is present', async () => {
+    const user = userEvent.setup();
     const hostToast = stubHostToast();
     render(<FormComposition hostToast={hostToast} />);
-    fileRequest('Combobox');
+    await fileRequest(user, 'Combobox');
     expect(hostToast.add).toHaveBeenCalledWith({
       title: 'Request filed',
       description: 'Combobox was filed against the backlog.',
@@ -48,12 +46,28 @@ describe('FormComposition', () => {
     expect(screen.queryByTestId('alert')).toBeNull();
   });
 
-  it('shows the receipt inline when no host is listening', () => {
+  it('carries the blocker switch into the message the host is handed', async () => {
+    const user = userEvent.setup();
+    const hostToast = stubHostToast();
+    render(<FormComposition hostToast={hostToast} />);
+    await user.click(screen.getByRole('switch', { name: /blocker/i }));
+    await fileRequest(user, 'Combobox');
+    expect(hostToast.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: 'Combobox was filed against the backlog as a blocker.',
+      }),
+    );
+  });
+
+  it('shows the receipt inline when no host is listening', async () => {
+    const user = userEvent.setup();
     render(<FormComposition />);
-    fileRequest('Combobox');
+    await fileRequest(user, 'Combobox');
     expect(screen.getByTestId('alert')).toHaveTextContent(
       'Combobox was filed against the backlog.',
     );
+    // `role="status"`, not `role="alert"`: Alert derives its politeness from its tone, and only
+    // `danger` is assertive. A success receipt is announced without interrupting.
     expect(screen.getByRole('status')).toBeVisible();
   });
 

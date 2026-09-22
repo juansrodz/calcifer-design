@@ -20,8 +20,9 @@ describe('sharedDependencies', () => {
 
   it('shares exactly what this app has in its graph and nothing it does not', () => {
     // The portfolio's own map also lists @tanstack/react-router and @tanstack/react-query,
-    // which showcase uses and this app does not (no router, no query client — see Decision 2).
-    // A shared entry for a package that is never imported buys nothing and hides the real list.
+    // which showcase uses and this app does not: this app has no router and no query client
+    // (spec §6.3). A shared entry for a package that is never imported buys nothing and hides
+    // the real list.
     expect(Object.keys(sharedDependencies)).toEqual([
       'react',
       'react-dom',

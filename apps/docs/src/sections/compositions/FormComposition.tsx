@@ -56,15 +56,18 @@ export function FormComposition({ hostToast }: FormCompositionProps) {
       return;
     }
     // No manager reached this remote — standalone against an old shell, or a host that passes
-    // none. An inline alert is the honest fallback; a second toast region is not.
+    // none. An inline alert is the honest fallback; a second toast region is not. It announces
+    // as `role="status"`, not `role="alert"`: Alert derives its politeness from its tone and
+    // only `danger` is assertive (packages/ui/src/components/Alert/Alert.tsx), so a success
+    // receipt is read out without interrupting whatever the visitor was doing.
     setReceipt(message);
   }
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
-      <p className={styles.note} data-testid="tier-3-slot">
-        Every field below is the library&rsquo;s Tier 3 — Plan C&rsquo;s{' '}
-        <code className={styles.code}>Field</code>, <code className={styles.code}>TextInput</code>,{' '}
+      <p className={styles.note} data-testid="form-note">
+        Every field below is the library&rsquo;s Tier 3 — <code className={styles.code}>Field</code>
+        , <code className={styles.code}>TextInput</code>,{' '}
         <code className={styles.code}>Select</code>, <code className={styles.code}>RadioGroup</code>
         , <code className={styles.code}>Checkbox</code> and{' '}
         <code className={styles.code}>Switch</code> — composed with the button, the alert and the

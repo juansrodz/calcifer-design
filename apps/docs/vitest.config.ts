@@ -1,18 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 
-// The same source rsbuild.config.ts defines DOCS_VERSION from, so a version bump needs neither
-// this file nor the tests that assert the version edited alongside it.
-const packageJson = JSON.parse(
-  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
-) as {
-  version: string;
-};
+// The library's own manifest — the same file `src/build-info-plugin.ts` and
+// `src/shared-dependencies.ts` read for the values rsbuild.config.ts defines from them. Read
+// here rather than imported so this config stays loadable by a Vite config loader that does not
+// bundle TypeScript; either way a library release needs no edit in this file, and none in the
+// tests that render the values.
+const uiPackageJson = JSON.parse(
+  readFileSync(new URL('../../packages/ui/package.json', import.meta.url), 'utf8'),
+) as { version: string; dependencies: Record<string, string> };
 
 export default defineConfig({
   define: {
-    DOCS_VERSION: JSON.stringify(packageJson.version),
-    // Tests exercise the production value; the dev fallback is Task 5's own test.
+    DOCS_VERSION: JSON.stringify(uiPackageJson.version),
+    BASE_UI_VERSION: JSON.stringify(uiPackageJson.dependencies['@base-ui/react']),
+    // Tests exercise the production value; the dev fallback is src/dev/proxy.test.ts.
     STORYBOOK_BASE_URL: JSON.stringify('/storybook'),
   },
   test: {

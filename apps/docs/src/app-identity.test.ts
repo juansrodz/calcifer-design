@@ -14,8 +14,9 @@ describe('the remote identity', () => {
 
   it('exposes the one key every portfolio remote publishes', () => {
     // Mirrors EXPOSED_APP_KEY in @calcifer-design/contract, which this repository cannot
-    // install (CodeArtifact; see the plan's Decision 1). The value is four characters and has
-    // been stable since the first remote; the registry test in portfolio-mfe is the other half.
+    // install (it is on CodeArtifact and this workspace installs only from npmjs; spec §4). The
+    // value is four characters and has been stable since the first remote; the registry test in
+    // portfolio-mfe is the other half.
     expect(EXPOSED_APP_KEY).toBe('./app');
   });
 

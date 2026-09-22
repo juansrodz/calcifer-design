@@ -2,7 +2,7 @@
  * The host's toast manager, exactly as the Bridge props contract declares it in
  * `@calcifer-design/contract` (portfolio-mfe, `packages/contract/src/remote-app.ts`), mirrored
  * here because this repository installs only from npmjs and that package is on CodeArtifact
- * (spec §4, and the plan's Decision 1). `src/host/toast.test.ts` assigns a real
+ * (spec §4). `src/host/toast.test.ts` assigns a real
  * `createToastManager()` result to it, so the compiler is what keeps the mirror honest.
  *
  * Three methods and no more. The contract is the promise the *live* shell keeps: a remote

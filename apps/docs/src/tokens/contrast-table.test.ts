@@ -20,11 +20,18 @@ describe('isHexColor', () => {
   });
 });
 
+describe('THEME_NAMES', () => {
+  it('is every theme the tokens package exports, not a list this app keeps in step by hand', () => {
+    // A third theme in @calcifer-design/tokens would otherwise be missing from the ramps and
+    // from every contrast row while `Record<ThemeName, number>` went on claiming it was there.
+    expect(THEME_NAMES).toEqual(Object.keys(themes));
+  });
+});
+
 describe('contrastPairRows', () => {
   it('renders one row per declared pair, in both themes', () => {
     const rows = contrastPairRows();
     expect(rows).toHaveLength(textContrastPairs.length + uiContrastPairs.length);
-    expect(rows).toHaveLength(41);
     for (const row of rows) {
       expect(Object.keys(row.ratios).sort()).toEqual(['dark', 'light']);
     }

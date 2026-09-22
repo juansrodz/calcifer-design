@@ -1,12 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from '../test/axe';
+import { stubHostToast } from '../test/host-toast';
 import { DocsApp } from './app';
-import type { HostToastManager } from './host/toast';
-
-function stubHostToast(): HostToastManager {
-  return { add: () => 'toast-1', close: () => undefined, update: () => undefined };
-}
 
 describe('DocsApp', () => {
   it('renders the overview without a host', async () => {

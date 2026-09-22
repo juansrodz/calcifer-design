@@ -190,17 +190,34 @@
   list-style: none;
 }
 
+/* One column on a phone: the scale runs to --space-9 (6rem) and --space-10 (8rem), and a bar
+   that wide does not fit beside a fixed name and value column at 390px — it would overflow the
+   row, the section and the shell's main column, giving the page a horizontal scroll. The bar
+   takes its own row there, capped at the row's width; the name/value/bar triple returns once
+   there is room for it. */
 .spaceRow {
   display: grid;
-  grid-template-columns: 12rem 5rem minmax(0, 1fr);
+  grid-template-columns: 1fr;
   align-items: center;
   gap: var(--space-2);
 }
 
 .spaceBar {
+  grid-column: 1 / -1;
+  max-width: 100%;
   height: 0.5rem;
   border-radius: var(--radius-full);
   background: var(--color-accent-soft);
+}
+
+@media (min-width: 48rem) {
+  .spaceRow {
+    grid-template-columns: 12rem 5rem minmax(0, 1fr);
+  }
+
+  .spaceBar {
+    grid-column: auto;
+  }
 }
 
 .toolbar {

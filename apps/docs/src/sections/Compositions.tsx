@@ -48,7 +48,9 @@ interface CrashedFallbackProps extends ErrorBoundaryFallbackDetails {
 function CrashedFallback({ error, reset, onRetry }: CrashedFallbackProps) {
   return (
     <div className={styles.fallback}>
-      <Alert tone="danger" announce heading="This preview crashed">
+      {/* h4: this fallback renders under the "A component that throws" h3, and Alert's own
+          default heading level is 3, which would read as a sibling section of it. */}
+      <Alert tone="danger" announce heading="This preview crashed" headingLevel={4}>
         {error.message}
       </Alert>
       <Button
@@ -153,7 +155,9 @@ export function Compositions({ hostToast }: CompositionsProps) {
             <Skeleton lines={3} />
           </div>
           <div className={styles.panel}>
-            <Alert tone="warning" heading="Behind the published version">
+            {/* h4 for the same reason as the fallback above: the enclosing h3 is "The states a
+                screen actually spends its time in". */}
+            <Alert tone="warning" heading="Behind the published version" headingLevel={4}>
               An example: the registry declares one version while npm already publishes a newer one.
             </Alert>
             <div className={styles.toolbar}>

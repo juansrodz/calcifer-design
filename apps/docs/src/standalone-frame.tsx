@@ -14,6 +14,8 @@ export interface StandaloneFrameProps {
 export function StandaloneFrame({ children }: StandaloneFrameProps) {
   return (
     <main className={styles.standalone} id="main">
+      {/* DOCS_VERSION is the library's version, not this private app's, so this eyebrow reads
+          the same number as the portfolio's card for this remote and dist/build-info.json. */}
       <PageHeading level={1} eyebrow={`Standalone · v${DOCS_VERSION}`} size="compact">
         Calcifer Design
       </PageHeading>

@@ -53,6 +53,9 @@ describe('Inventory', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('/storybook/index.json');
     expect(alert).toHaveTextContent('404');
+    // NODE_ENV is 'test' here, which is the branch a contributor sees: the remedy is shown. It
+    // is gated out of a production build, where the command means nothing to a visitor.
+    expect(alert).toHaveTextContent('bun run storybook');
   });
 
   it('shows a placeholder while the request is in flight', async () => {

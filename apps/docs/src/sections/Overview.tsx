@@ -9,7 +9,7 @@ export interface OverviewProps {
 const decisions = [
   {
     heading: 'Base UI supplies behaviour, never appearance',
-    body: 'Focus management, ARIA wiring, keyboard contracts and collision-aware positioning come from Base UI 1.8.0. Every pixel is this library: CSS Modules over design tokens, one shared popup skin for the whole overlay tier.',
+    body: `Focus management, ARIA wiring, keyboard contracts and collision-aware positioning come from Base UI ${BASE_UI_VERSION}. Every pixel is this library: CSS Modules over design tokens, one shared popup skin for the whole overlay tier.`,
   },
   {
     heading: 'Tokens are the only source of colour, type and space',
@@ -33,9 +33,9 @@ export function Overview({ hasHostToast }: OverviewProps) {
       </h2>
       <p className={styles.lede}>
         <code className={styles.code}>@calcifer-design/ui</code> is the library behind this
-        portfolio, its showcase remote and two games. It is published to npm, versioned with
-        Changesets, and consumed by four applications — and until this page existed, a visitor could
-        see every one of them and none of it.
+        portfolio, its showcase remote, the games and the potluck app. It is published to npm,
+        versioned with Changesets, and consumed by every one of them — and until this page existed,
+        a visitor could see them all and none of it.
       </p>
       <div className={styles.grid}>
         {decisions.map((decision) => (

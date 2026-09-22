@@ -77,6 +77,12 @@ export const sharedDependencies: Record<string, SharedDependencyConfig> = {
   // exactly as `react-dom/` covers `react-dom/client`; `strictVersion` makes a major drift fail
   // loudly, in the remote's own error boundary, instead of producing two Base UI copies whose
   // floating-UI state does not agree.
+  //
+  // Sharing is negotiated per subpath, not once for the package: only the subpaths the shell
+  // itself loads (button, use-render, menu, toast, tooltip) are deduplicated with the host. The
+  // rest — dialog, popover, tabs, avatar and the form subpaths — come from this remote's own
+  // copy. That is why Dialog and Popover on this page always share one Base UI instance, and why
+  // "one Base UI" is not what the shared list buys.
   '@base-ui/react': { singleton: true, strictVersion: true, requiredVersion: baseUiVersion },
   '@base-ui/react/': { singleton: true, strictVersion: true, requiredVersion: baseUiVersion },
 };

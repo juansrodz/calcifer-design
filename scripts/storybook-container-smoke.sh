@@ -14,7 +14,11 @@ image="${1:?usage: storybook-container-smoke.sh <image-tag>}"
 host_port=18080
 base_url="http://127.0.0.1:${host_port}"
 container=""
-trap cleanup EXIT INT TERM
+# `cleanup` only removes the container; on a signal the script must also stop, which a bare
+# `trap cleanup INT TERM` does not do — the handler returns and execution resumes at the next
+# statement. 130 is the conventional status for a script ended by a signal.
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT TERM
 
 container="$(docker run --detach --publish "127.0.0.1:${host_port}:8080" "$image")"
 

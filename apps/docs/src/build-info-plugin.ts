@@ -16,7 +16,12 @@ export interface BuildStamp {
   commit: string | null;
   ref: string | null;
   builtAt: string;
-  /** The library version this app documents — the docs app has no version of its own. */
+  /**
+   * The `@calcifer-design/ui` version this app documents. The app is private and never
+   * published, so it takes the library's number rather than claiming one of its own — the same
+   * value `DOCS_VERSION` is defined from, which is what makes the standalone eyebrow, the
+   * portfolio's card for this remote and this stamp agree.
+   */
   version: string;
 }
 

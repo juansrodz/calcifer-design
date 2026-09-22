@@ -1,19 +1,13 @@
-import { readFileSync } from 'node:fs';
 import { ObservabilityBuildPlugin } from '@module-federation/observability-plugin/build';
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 import { federationConfig } from './module-federation.config';
-import { pluginBuildInfo } from './src/build-info-plugin';
+import { pluginBuildInfo, uiVersion } from './src/build-info-plugin';
 import { DEV_PORTS, devProxy } from './src/dev/proxy';
 import { pluginHtmlLang } from './src/html-lang-plugin';
-
-const packageJson = JSON.parse(
-  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
-) as {
-  version: string;
-};
+import { baseUiVersion } from './src/shared-dependencies';
 
 // `env` is Rsbuild's own notion of the build mode ('production' for `rsbuild build`), which is
 // right even when NODE_ENV is unset at config-load time.
@@ -28,7 +22,12 @@ export default defineConfig(({ env }) => ({
   source: {
     entry: { index: './src/index.tsx' },
     define: {
-      DOCS_VERSION: JSON.stringify(packageJson.version),
+      // The library's version, not this private app's: the same number the build stamp carries
+      // and the portfolio's card for this remote displays, so the three cannot disagree.
+      DOCS_VERSION: JSON.stringify(uiVersion),
+      // The range the library actually depends on, so the Overview's claim about Base UI is read
+      // from packages/ui/package.json instead of typed into the copy and left there.
+      BASE_UI_VERSION: JSON.stringify(baseUiVersion),
       STORYBOOK_BASE_URL: JSON.stringify(process.env['STORYBOOK_BASE_URL'] ?? '/storybook'),
     },
   },

@@ -22,7 +22,11 @@ export function Inventory() {
     const url = storybookIndexUrl();
     async function load() {
       try {
-        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        // The default cache mode on purpose: nginx serves this index `no-cache` with an ETag
+        // (docker/design.nginx.conf), so the browser revalidates and usually gets a 304. An
+        // inactive Tabs panel unmounts, so every return to this tab refetches; `no-store` would
+        // make each of those a full download of the whole index.
+        const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`${url} responded ${response.status}`);
         }
@@ -66,9 +70,16 @@ export function Inventory() {
 
       {state.status === 'failed' ? (
         <Alert tone="danger" announce heading="The inventory could not be read">
-          {state.message}. This page fetches the Storybook index from its own origin; in local
-          development that path is proxied to the Storybook dev server, so it needs{' '}
-          <code className={styles.code}>bun run storybook</code> to be running.
+          {state.message}. This page fetches the Storybook index from its own origin.
+          {/* The remedy is a command only a contributor can run. A live visitor gets the failure
+              and the URL it failed on; nothing here asks them to start a dev server. */}
+          {process.env.NODE_ENV === 'production' ? null : (
+            <>
+              {' '}
+              In local development that path is proxied to the Storybook dev server, so it needs{' '}
+              <code className={styles.code}>bun run storybook</code> to be running.
+            </>
+          )}
         </Alert>
       ) : null}
 
@@ -92,11 +103,7 @@ export function Inventory() {
                   <tr key={storyGroup.title}>
                     <td>{storyGroup.group}</td>
                     <th scope="row" className={styles.pairCell}>
-                      <a
-                        className={styles.link}
-                        href={storybookStoryUrl(storyGroup.firstStoryId)}
-                        rel="noreferrer"
-                      >
+                      <a className={styles.link} href={storybookStoryUrl(storyGroup.firstStoryId)}>
                         {storyGroup.name}
                       </a>
                     </th>
