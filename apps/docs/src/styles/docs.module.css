@@ -242,3 +242,12 @@
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
 }
+
+/* Mirrors packages/ui's own ErrorBoundary.module.css .root, which this page can't import
+   directly (it's internal to the library, not part of its public API): the alert, then the
+   retry control under it, both left-aligned and only as wide as they need to be. */
+.fallback {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}

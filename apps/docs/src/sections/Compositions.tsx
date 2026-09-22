@@ -36,6 +36,7 @@ function Preview({ broken }: PreviewProps) {
 export function Compositions({ hostToast }: CompositionsProps) {
   const [lastAction, setLastAction] = useState('none yet');
   const [broken, setBroken] = useState(false);
+  const [crashed, setCrashed] = useState(false);
 
   return (
     // Every remote mounts its own TooltipProvider: it renders no DOM, no portal and no
@@ -49,7 +50,7 @@ export function Compositions({ hostToast }: CompositionsProps) {
         <p className={styles.lede}>
           Every control below is the published library, wired together the way a screen would wire
           it — not one isolated control per row. That view exists, is exhaustive, and is better: it
-          is Storybook, linked from the inventory further down.
+          is Storybook, linked from the Inventory tab.
         </p>
 
         <div className={styles.panel}>
@@ -98,7 +99,7 @@ export function Compositions({ hostToast }: CompositionsProps) {
               }
             />
           </div>
-          <p className={styles.note} data-testid="last-action">
+          <p className={styles.note} data-testid="last-action" aria-live="polite">
             Last action: {lastAction}
           </p>
         </div>
@@ -115,7 +116,7 @@ export function Compositions({ hostToast }: CompositionsProps) {
             <Skeleton lines={3} />
           </div>
           <div className={styles.panel}>
-            <Alert tone="warning" heading="Two versions behind">
+            <Alert tone="warning" heading="Behind the published version">
               An example: the registry declares one version while npm already publishes a newer one.
             </Alert>
             <div className={styles.toolbar}>
@@ -128,21 +129,37 @@ export function Compositions({ hostToast }: CompositionsProps) {
         <h3 className={styles.subHeading}>A component that throws</h3>
         <div className={styles.panel}>
           <ErrorBoundary
-            heading="This preview crashed"
-            retryLabel="Try again"
-            // Flips `broken` back the instant the error is caught, invisibly, since the fallback
-            // (not `children`) is what's on screen until "Try again" is pressed. `resetKeys` is
-            // deliberately not wired to `broken`: doing so would auto-reset the boundary the
-            // moment this fires, self-healing before the fallback ever renders (verified — that
-            // combination raced ErrorBoundary's own `componentDidUpdate` reset-key check ahead of
-            // the retry click). `reset()` from the "Try again" button, at that point, re-renders
-            // `Preview` with `broken` already `false`, so the retry succeeds instead of throwing
-            // straight back into the fallback.
-            onError={() => setBroken(false)}
+            // Marks the demo crashed the instant the error is caught, which disables "Break the
+            // preview" below for as long as the fallback is showing. Without this, a second
+            // press while already crashed would set `broken` back to `true` with nothing on
+            // screen to throw it — the fallback, not `children`, is what's rendered while an
+            // error is caught — leaving it armed to crash again on the *next* "Try again"
+            // instead of recovering. A custom `fallback` replaces the default heading/retryLabel
+            // props because its retry button must clear both `broken` and `crashed` before
+            // calling the boundary's own `reset()`, so the retried render never throws again.
+            onError={() => setCrashed(true)}
+            fallback={({ error, reset }) => (
+              <div className={styles.fallback}>
+                <Alert tone="danger" announce heading="This preview crashed">
+                  {error.message}
+                </Alert>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setBroken(false);
+                    setCrashed(false);
+                    reset();
+                  }}
+                >
+                  Try again
+                </Button>
+              </div>
+            )}
           >
             <Preview broken={broken} />
           </ErrorBoundary>
-          <Button variant="secondary" onClick={() => setBroken(true)}>
+          <Button variant="secondary" onClick={() => setBroken(true)} disabled={crashed}>
             Break the preview
           </Button>
         </div>
