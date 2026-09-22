@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@calcifer-design/tsconfig": "workspace:*",
-    "@rslib/core": "1.0.0",
+    "@rslib/core": "1.0.1",
     "fast-glob": "^3.3.3"
   }
 }
