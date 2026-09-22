@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       'packages/*/dist/**',
+      'apps/*/dist/**',
       '**/.rstack/**',
       '**/storybook-static/**',
       '**/*.module.css.d.ts',

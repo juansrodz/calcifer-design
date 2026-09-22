@@ -1,0 +1,5 @@
+{
+  "extends": "@calcifer-design/tsconfig/react.json",
+  "compilerOptions": { "noEmit": true, "types": ["vitest/globals", "@testing-library/jest-dom"] },
+  "include": ["src", "test", "rsbuild.config.ts", "module-federation.config.ts", "vitest.config.ts"]
+}
