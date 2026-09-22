@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Runs the built docs image and checks the headers docker/design.nginx.conf is meant to set.
+# Not part of `bun run check`, which must pass without a Docker daemon; CI runs it in the check
+# job, after `bun run build:docs` has produced apps/docs/dist.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+# shellcheck source=scripts/lib/container-smoke.sh
+source "$(dirname "$0")/lib/container-smoke.sh"
+
+script_label="design-container-smoke"
+image="${1:?usage: design-container-smoke.sh <image-tag>}"
+host_port=18081
+base_url="http://127.0.0.1:${host_port}"
+container=""
+trap cleanup EXIT
+
+container="$(docker run --detach --publish "127.0.0.1:${host_port}:8080" "$image")"
+
+wait_until_ready "/design/"
+
+index_headers="$(response_headers "${base_url}/design/")"
+grep -qi '^cache-control: no-cache$' <<<"$index_headers" ||
+  fail "the index should revalidate, got: $(grep -i '^cache-control' <<<"$index_headers")"
+
+redirect_headers="$(response_headers "${base_url}/design")"
+grep -q '^HTTP/1.1 301' <<<"$redirect_headers" || fail "/design should redirect to /design/"
+grep -qi '^location: /design/$' <<<"$redirect_headers" ||
+  fail "the redirect should be relative (absolute_redirect off)"
+
+# The one file the shell fetches by name. It must be served, and it must never be pinned: a
+# stale manifest points the shell at chunk filenames this build no longer contains.
+manifest_headers="$(response_headers "${base_url}/design/mf-manifest.json")"
+grep -q '^HTTP/1.1 200' <<<"$manifest_headers" || fail "mf-manifest.json was not served"
+grep -qi '^cache-control: no-cache$' <<<"$manifest_headers" ||
+  fail "mf-manifest.json must revalidate, got: $(grep -i '^cache-control' <<<"$manifest_headers")"
+
+# Same policy, same reason: the portfolio's cards read this for the version and commit they
+# display, and a cached copy would go on showing a build the image has already moved past.
+build_info_headers="$(response_headers "${base_url}/design/build-info.json")"
+grep -q '^HTTP/1.1 200' <<<"$build_info_headers" || fail "build-info.json was not served"
+grep -qi '^cache-control: no-cache$' <<<"$build_info_headers" ||
+  fail "build-info.json must revalidate, got: $(grep -i '^cache-control' <<<"$build_info_headers")"
+
+hashed_bundle="$(find_hashed_bundle apps/docs/dist/static/js)"
+[ -n "$hashed_bundle" ] || fail "no content-hashed JS bundle in apps/docs/dist/static/js"
+
+asset_headers="$(response_headers --header 'Accept-Encoding: gzip' \
+  "${base_url}/design/static/js/${hashed_bundle}")"
+grep -q '^HTTP/1.1 200' <<<"$asset_headers" || fail "${hashed_bundle} was not served"
+grep -qi '^content-encoding: gzip$' <<<"$asset_headers" ||
+  fail "${hashed_bundle} was not compressed"
+grep -qi '^cache-control: public, max-age=31536000, immutable$' <<<"$asset_headers" ||
+  fail "${hashed_bundle} is content-hashed and should be immutable"
+
+echo "design-container-smoke: ok (${hashed_bundle} immutable and gzipped, manifest revalidating)"
