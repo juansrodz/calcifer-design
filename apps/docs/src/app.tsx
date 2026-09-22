@@ -1,4 +1,6 @@
+import { Tabs } from '@calcifer-design/ui';
 import { Overview } from './sections/Overview';
+import { TokenGallery } from './sections/TokenGallery';
 import type { HostToastManager } from './host/toast';
 import styles from './styles/docs.module.css';
 
@@ -14,9 +16,17 @@ export interface DocsAppProps {
 }
 
 export function DocsApp({ hostToast }: DocsAppProps) {
+  const sections = [
+    {
+      value: 'overview',
+      label: 'Overview',
+      content: <Overview hasHostToast={hostToast !== undefined} />,
+    },
+    { value: 'tokens', label: 'Tokens', content: <TokenGallery /> },
+  ];
   return (
     <div className={styles.root}>
-      <Overview hasHostToast={hostToast !== undefined} />
+      <Tabs items={sections} label="Documentation sections" />
     </div>
   );
 }
