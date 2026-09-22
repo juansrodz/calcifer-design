@@ -1,6 +1,6 @@
 import { createModuleFederationConfig } from '@module-federation/rsbuild-plugin';
 import { DESIGN_REMOTE_NAME, EXPOSED_APP_KEY } from './src/app-identity';
-import { sharedDependencies } from './src/shared-dependencies';
+import { sharedDependencies } from './build/shared-dependencies';
 
 export const federationConfig = createModuleFederationConfig({
   name: DESIGN_REMOTE_NAME,

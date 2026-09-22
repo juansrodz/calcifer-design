@@ -8,6 +8,6 @@ declare const DOCS_VERSION: string;
 declare const BASE_UI_VERSION: string;
 /**
  * Where the Storybook build is served from, relative to this app's origin. `/storybook` live
- * and in a production build; `src/dev/proxy.ts` is what makes that path exist in dev too.
+ * and in a production build; `build/dev-proxy.ts` is what makes that path exist in dev too.
  */
 declare const STORYBOOK_BASE_URL: string;

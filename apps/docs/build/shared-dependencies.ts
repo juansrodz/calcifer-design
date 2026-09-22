@@ -2,15 +2,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// This module's own directory, resolved via `fileURLToPath` rather than a
-// `new URL(literal, import.meta.url)` expression: that expression reads as an asset reference
-// to a bundler (and Vite's dev/test pipeline acts on exactly that reading — under a
-// client-consumer environment, which this project's `environment: 'jsdom'` is, it rewrites the
-// expression into a browser URL, which breaks `readFileSync` on the result), when what both
-// reads below actually are is a plain Node.js file lookup relative to this file on disk.
-// `path.resolve` from this directory says that directly, and behaves the same whether the
-// caller is `vitest run --project docs`, `bun run --filter @calcifer-design/docs build`, or
-// `module-federation.config.ts` loading this module directly — none of which is a bundler.
+// Both reads below are plain Node.js file lookups relative to this file on disk, so this is
+// the directory they resolve from.
 const thisModuleDirectory = dirname(fileURLToPath(import.meta.url));
 
 interface RootPackageJson {
@@ -19,7 +12,7 @@ interface RootPackageJson {
 }
 
 function readCatalogReactVersion(): string {
-  // ../../../package.json from apps/docs/src/ is the workspace root, the single place this
+  // ../../../package.json from apps/docs/build/ is the workspace root, the single place this
   // repository pins React (`"react": "catalog:"` in every package). Hard-coding the range here
   // would let the two drift apart silently, which is the failure mode Module Federation
   // reports as a version mismatch at runtime, in the browser, inside someone else's shell.
@@ -41,7 +34,7 @@ interface UiPackageJson {
 }
 
 function readUiPackageBaseUiVersion(): string {
-  // ../../../packages/ui/package.json from apps/docs/src/ — the root workspace catalog has no
+  // ../../../packages/ui/package.json from apps/docs/build/ — the root workspace catalog has no
   // Base UI entry (only React does), so the range this app negotiates on has to be read from
   // the one package that actually declares the dependency. Hard-coding it here risks the same
   // silent drift readCatalogReactVersion above is written to avoid.

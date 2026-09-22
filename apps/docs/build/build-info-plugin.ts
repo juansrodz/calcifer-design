@@ -5,8 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RsbuildPlugin } from '@rsbuild/core';
 
-// See shared-dependencies.ts for why this is fileURLToPath and not new URL(...) (the jsdom test
-// environment).
+// The directory `readUiVersion` resolves the library's manifest from, on disk.
 const thisModuleDirectory = dirname(fileURLToPath(import.meta.url));
 
 /** Where `@module-federation/observability-plugin` writes its file, relative to the app root. */

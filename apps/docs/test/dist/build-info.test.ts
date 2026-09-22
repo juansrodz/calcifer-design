@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { uiVersion } from '../../src/build-info-plugin';
+import { uiVersion } from '../../build/build-info-plugin';
 
 const thisDirectory = dirname(fileURLToPath(import.meta.url));
 const distRoot = resolve(thisDirectory, '../../dist');

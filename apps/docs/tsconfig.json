@@ -2,10 +2,19 @@
   "extends": "@calcifer-design/tsconfig/react.json",
   "compilerOptions": {
     "noEmit": true,
-    // `node` for the one `process.env.NODE_ENV` read in `src/`, which Rsbuild defines at build
-    // time: without it the Module Federation DTS pass, which compiles only the exposed browser
-    // files, cannot find `process`. `@types/node` is already a devDependency of this app.
+    // `node` for `build/`, which is Node-only by design, and for the one `process.env.NODE_ENV`
+    // read in `src/`, which Rsbuild defines at build time: without it the Module Federation DTS
+    // pass, which compiles only the exposed browser files, cannot find `process`. `@types/node`
+    // is already a devDependency of this app.
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
-  "include": ["src", "test", "rsbuild.config.ts", "module-federation.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "build",
+    "rsbuild.config.ts",
+    "module-federation.config.ts",
+    "vitest.config.ts",
+    "vitest.build.config.ts"
+  ]
 }

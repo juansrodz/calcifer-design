@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 
-// The library's own manifest — the same file `src/build-info-plugin.ts` and
-// `src/shared-dependencies.ts` read for the values rsbuild.config.ts defines from them. Read
+// The library's own manifest — the same file `build/build-info-plugin.ts` and
+// `build/shared-dependencies.ts` read for the values rsbuild.config.ts defines from them. Read
 // here rather than imported so this config stays loadable by a Vite config loader that does not
 // bundle TypeScript; either way a library release needs no edit in this file, and none in the
 // tests that render the values.
@@ -14,7 +14,7 @@ export default defineConfig({
   define: {
     DOCS_VERSION: JSON.stringify(uiPackageJson.version),
     BASE_UI_VERSION: JSON.stringify(uiPackageJson.dependencies['@base-ui/react']),
-    // Tests exercise the production value; the dev fallback is src/dev/proxy.test.ts.
+    // Tests exercise the production value; the dev fallback is build/dev-proxy.test.ts.
     STORYBOOK_BASE_URL: JSON.stringify('/storybook'),
   },
   test: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEV_PORTS, devProxy } from './proxy';
+import { DEV_PORTS, devProxy } from './dev-proxy';
 
 describe('devProxy', () => {
   it('sends /storybook to the Storybook dev server, which serves its index at the root', () => {

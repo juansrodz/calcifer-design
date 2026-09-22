@@ -26,6 +26,29 @@ React 19 is a peer dependency of `@calcifer-design/ui`.
 | `@calcifer-design/tokens` | `tokens` object, `tokensToCss`, `contrastRatio`, `breakpoint`; ships `tokens.css`                                                                                                                                                                                                                                                                                                                                          |
 | `@calcifer-design/ui`     | `Button`, `Tabs`, `Card`, `Tag`, `StatusDot`, `SkipLink`, `LiveRegion`, `PageHeading`, `NavMenu`, `DataTable`, `Spinner`, `Skeleton`, `IconButton`, `Alert`, `Avatar`, `ErrorBoundary`, `Popover`, `Dialog`, `Menu`, `Tooltip`, `TooltipProvider`, `ToastRegion`, `createToastManager`, `Field`, `TextInput`, `Select`, `Checkbox`, `RadioGroup`, `Switch`, `TOOLTIP_DELAY`, `useMediaQuery`, `minWidth`; ships `base.css` |
 
+## The docs app
+
+`apps/docs` is the library's front door: one page — Overview, Tokens, Compositions, Inventory —
+that documents the decisions, renders the token ramps and contrast table from the tokens
+package's runtime exports, and composes real components rather than listing them. It is a
+private workspace, never published, and it ships as a Module Federation remote named `design`
+that the portfolio's shell mounts at `/projects/design`; it also runs on its own.
+
+| Command                                      | What it does                           |
+| -------------------------------------------- | -------------------------------------- |
+| `bun run --filter @calcifer-design/docs dev` | The app on its own, on port 3002       |
+| `bun run build:docs`                         | Production build into `apps/docs/dist` |
+
+The Inventory tab reads Storybook's own `index.json` same-origin, so in local development it
+needs `bun run storybook` (port 6006) running beside it — the dev server proxies `/storybook`
+there. Live, the two are separate pods behind one Ingress and the path is real.
+
+The image is `docker/design.Dockerfile` (nginx serving `apps/docs/dist`), and
+`scripts/design-container-smoke.sh <image-tag>` runs it and checks the cache headers the
+shell depends on: a revalidating `mf-manifest.json` and `build-info.json`, immutable hashed
+assets. It needs Docker and a prior `bun run build:docs`, which is why it is not part of
+`bun run check`.
+
 ## Commands
 
 | Command                   | What it does                                                                                                               |

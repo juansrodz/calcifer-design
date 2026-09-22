@@ -4,10 +4,10 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 import { federationConfig } from './module-federation.config';
-import { pluginBuildInfo, uiVersion } from './src/build-info-plugin';
-import { DEV_PORTS, devProxy } from './src/dev/proxy';
-import { pluginHtmlLang } from './src/html-lang-plugin';
-import { baseUiVersion } from './src/shared-dependencies';
+import { pluginBuildInfo, uiVersion } from './build/build-info-plugin';
+import { DEV_PORTS, devProxy } from './build/dev-proxy';
+import { pluginHtmlLang } from './build/html-lang-plugin';
+import { baseUiVersion } from './build/shared-dependencies';
 
 // `env` is Rsbuild's own notion of the build mode ('production' for `rsbuild build`), which is
 // right even when NODE_ENV is unset at config-load time.
