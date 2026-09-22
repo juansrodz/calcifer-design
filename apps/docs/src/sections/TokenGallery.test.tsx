@@ -23,8 +23,11 @@ describe('TokenGallery', () => {
   it('lists the type scale and the breakpoints as data, not as prose', () => {
     render(<TokenGallery />);
     expect(screen.getByRole('table', { name: /type scale/i })).toBeVisible();
+    expect(screen.getByText('--text-h2-feature')).toBeVisible();
     expect(screen.getByRole('table', { name: /breakpoints/i })).toBeVisible();
-    expect(screen.getByText('112.5rem')).toBeVisible();
+    expect(
+      within(screen.getByRole('table', { name: /breakpoint/i })).getByText('112.5rem'),
+    ).toBeVisible();
   });
 
   it('has no axe violations', async () => {
