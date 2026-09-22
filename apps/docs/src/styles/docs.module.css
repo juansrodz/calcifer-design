@@ -1,8 +1,12 @@
+/* Mounted inside the shell's remote frame, which pads only 4px, so the tabs and the content
+   carry their own insets — the same 24px the showcase remote uses. Standalone, the frame below
+   pads nothing and its heading takes the same inset, so the two line up. */
 .root {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
   padding-block: var(--space-5);
+  padding-inline: var(--space-5);
 }
 
 .section {
@@ -67,7 +71,11 @@
   max-width: var(--size-page-max);
   margin-inline: auto;
   padding-block: var(--space-6);
-  padding-inline: var(--space-4);
+}
+
+/* The standalone heading sits on the same inset as the app's tabs and content (`.root`). */
+.standaloneHeading {
+  padding-inline: var(--space-5);
 }
 
 .subHeading {
