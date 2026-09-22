@@ -4,6 +4,7 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 import { federationConfig } from './module-federation.config';
+import { DEV_PORTS, devProxy } from './src/dev/proxy';
 import { pluginHtmlLang } from './src/html-lang-plugin';
 
 const packageJson = JSON.parse(
@@ -25,7 +26,7 @@ export default defineConfig(({ env }) => ({
     entry: { index: './src/index.tsx' },
     define: {
       DOCS_VERSION: JSON.stringify(packageJson.version),
-      STORYBOOK_BASE_URL: JSON.stringify('/storybook'),
+      STORYBOOK_BASE_URL: JSON.stringify(process.env['STORYBOOK_BASE_URL'] ?? '/storybook'),
     },
   },
   html: {
@@ -41,5 +42,9 @@ export default defineConfig(({ env }) => ({
   // Federated, a dev bundle's second react-refresh runtime remounts the *host's* React tree
   // when the remote entry loads; live reload still covers standalone dev.
   dev: { assetPrefix: true, hmr: false },
-  server: { port: 3002, cors: { origin: ['http://localhost:3000'] } },
+  server: {
+    port: DEV_PORTS.docs,
+    cors: { origin: ['http://localhost:3000'] },
+    proxy: devProxy(),
+  },
 }));

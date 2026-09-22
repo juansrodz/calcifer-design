@@ -251,3 +251,14 @@
   gap: var(--space-3);
   justify-items: start;
 }
+
+.link {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}

@@ -1,5 +1,6 @@
 import { Tabs } from '@calcifer-design/ui';
 import { Compositions } from './sections/Compositions';
+import { Inventory } from './sections/Inventory';
 import { Overview } from './sections/Overview';
 import { TokenGallery } from './sections/TokenGallery';
 import type { HostToastManager } from './host/toast';
@@ -29,6 +30,7 @@ export function DocsApp({ hostToast }: DocsAppProps) {
       label: 'Compositions',
       content: <Compositions hostToast={hostToast} />,
     },
+    { value: 'inventory', label: 'Inventory', content: <Inventory /> },
   ];
   return (
     <div className={styles.root}>
