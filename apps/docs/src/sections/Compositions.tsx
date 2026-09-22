@@ -12,6 +12,7 @@ import {
   Tooltip,
   TooltipProvider,
 } from '@calcifer-design/ui';
+import type { ErrorBoundaryFallbackDetails } from '@calcifer-design/ui';
 import { useState } from 'react';
 import type { HostToastManager } from '../host/toast';
 import { FormComposition } from './compositions/FormComposition';
@@ -33,10 +34,46 @@ function Preview({ broken }: PreviewProps) {
   return <p data-testid="preview">Nothing is wrong here.</p>;
 }
 
+interface CrashedFallbackProps extends ErrorBoundaryFallbackDetails {
+  /** Clears the condition that threw, so the retried render doesn't throw straight back. */
+  onRetry: () => void;
+}
+
+/**
+ * The boundary's fallback while `Preview` has thrown — the same copy, tone and layout the
+ * library's own default fallback would have rendered. It exists as a custom `fallback` only so
+ * its retry button can run `onRetry` (clearing `broken` and `crashed` in `Compositions`) before
+ * calling the boundary's own `reset()`, so the retried render never throws again.
+ */
+function CrashedFallback({ error, reset, onRetry }: CrashedFallbackProps) {
+  return (
+    <div className={styles.fallback}>
+      <Alert tone="danger" announce heading="This preview crashed">
+        {error.message}
+      </Alert>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => {
+          onRetry();
+          reset();
+        }}
+      >
+        Try again
+      </Button>
+    </div>
+  );
+}
+
 export function Compositions({ hostToast }: CompositionsProps) {
   const [lastAction, setLastAction] = useState('none yet');
   const [broken, setBroken] = useState(false);
   const [crashed, setCrashed] = useState(false);
+
+  function retryPreview() {
+    setBroken(false);
+    setCrashed(false);
+  }
 
   return (
     // Every remote mounts its own TooltipProvider: it renders no DOM, no portal and no
@@ -134,28 +171,9 @@ export function Compositions({ hostToast }: CompositionsProps) {
             // press while already crashed would set `broken` back to `true` with nothing on
             // screen to throw it — the fallback, not `children`, is what's rendered while an
             // error is caught — leaving it armed to crash again on the *next* "Try again"
-            // instead of recovering. A custom `fallback` replaces the default heading/retryLabel
-            // props because its retry button must clear both `broken` and `crashed` before
-            // calling the boundary's own `reset()`, so the retried render never throws again.
+            // instead of recovering.
             onError={() => setCrashed(true)}
-            fallback={({ error, reset }) => (
-              <div className={styles.fallback}>
-                <Alert tone="danger" announce heading="This preview crashed">
-                  {error.message}
-                </Alert>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setBroken(false);
-                    setCrashed(false);
-                    reset();
-                  }}
-                >
-                  Try again
-                </Button>
-              </div>
-            )}
+            fallback={(details) => <CrashedFallback {...details} onRetry={retryPreview} />}
           >
             <Preview broken={broken} />
           </ErrorBoundary>
