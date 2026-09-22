@@ -4,16 +4,17 @@
 # job, after `bun run build:docs` has produced apps/docs/dist.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${script_directory}/.."
 # shellcheck source=scripts/lib/container-smoke.sh
-source "$(dirname "$0")/lib/container-smoke.sh"
+source "${script_directory}/lib/container-smoke.sh"
 
 script_label="design-container-smoke"
 image="${1:?usage: design-container-smoke.sh <image-tag>}"
 host_port=18081
 base_url="http://127.0.0.1:${host_port}"
 container=""
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 container="$(docker run --detach --publish "127.0.0.1:${host_port}:8080" "$image")"
 
@@ -53,4 +54,4 @@ grep -qi '^content-encoding: gzip$' <<<"$asset_headers" ||
 grep -qi '^cache-control: public, max-age=31536000, immutable$' <<<"$asset_headers" ||
   fail "${hashed_bundle} is content-hashed and should be immutable"
 
-echo "design-container-smoke: ok (${hashed_bundle} immutable and gzipped, manifest revalidating)"
+echo "design-container-smoke: ok (${hashed_bundle} immutable and gzipped, manifest and build stamp revalidating)"

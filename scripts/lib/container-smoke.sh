@@ -10,10 +10,12 @@ fi
 
 set -euo pipefail
 
-# Force-removes the container the caller started, ignoring errors: this runs from an EXIT trap,
-# where the container may already be gone, and from `fail`, where it always still exists.
+# Force-removes the container the caller started, ignoring errors: this runs from the
+# EXIT/INT/TERM trap, where the container may already be gone, and from `fail`, where it always
+# still exists. `${container:-}` so a thin script that forgot to set `container` before the trap
+# fires is skipped here, not an "unbound variable" that hides whatever actually went wrong.
 cleanup() {
-  if [ -n "$container" ]; then
+  if [ -n "${container:-}" ]; then
     docker rm --force "$container" >/dev/null 2>&1 || true
   fi
 }
@@ -21,10 +23,11 @@ cleanup() {
 # Reports a failure under the caller's own label, dumps the container's log tail for context,
 # and exits. Only safe to call where `exit` reaches the whole script — never from inside a
 # `$(...)` capture, where it would just end that subshell and let the script carry on.
+# `${script_label:-container-smoke}` so a thin script that forgot to set `script_label` still
+# gets a real, attributed error instead of `fail` dying on an unbound variable while reporting one.
 fail() {
-  # shellcheck disable=SC2154 # script_label is set by the script that sources this file.
-  echo "${script_label}: $1" >&2
-  if [ -n "$container" ]; then
+  echo "${script_label:-container-smoke}: $1" >&2
+  if [ -n "${container:-}" ]; then
     docker logs "$container" 2>&1 | tail -50 >&2
   fi
   exit 1
@@ -57,12 +60,13 @@ wait_until_ready() {
 # Echoes the largest content-hashed *.js file directly under `$1`, or nothing if there is none.
 # Largest first: the smallest content-hashed bundle can be under gzip_min_length, which would
 # fail a caller's gzip assertion for the wrong reason. The trailing `|| true` matters: under
-# `pipefail` a `grep` that matches nothing exits 1, and — because callers capture this function
-# with `$(...)` — a `fail` call in here could only ever kill that subshell, not the script. So
-# this stays quiet on a miss and leaves the emptiness check, and the `fail`, to the caller.
-# shellcheck disable=SC2010 # `ls -S` sorts by size; no glob or loop can do that.
+# `pipefail` a `grep` that matches nothing exits 1, which would otherwise be this whole
+# subshell's exit status. The emptiness check is the caller's job, not this function's: that way
+# the failure does not depend on `errexit` propagating correctly out of a `$(...)` capture, and
+# the message stays beside the caller, which is what knows which directory it asked about.
 find_hashed_bundle() {
   local bundle_directory="$1"
-  cd "$bundle_directory" && ls -S -- *.js 2>/dev/null |
-    grep -E '\.[0-9a-f]{8,}\.' | head -n 1 || true
+  # shellcheck disable=SC2010 # `ls -S` sorts by size; no glob or loop can do that.
+  (cd "$bundle_directory" && ls -S -- *.js 2>/dev/null |
+    grep -E '\.[0-9a-f]{8,}\.' | head -n 1) || true
 }

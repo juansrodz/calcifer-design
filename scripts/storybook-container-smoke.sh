@@ -4,16 +4,17 @@
 # check job, after `bun run check` has produced packages/ui/storybook-static.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${script_directory}/.."
 # shellcheck source=scripts/lib/container-smoke.sh
-source "$(dirname "$0")/lib/container-smoke.sh"
+source "${script_directory}/lib/container-smoke.sh"
 
 script_label="storybook-container-smoke"
 image="${1:?usage: storybook-container-smoke.sh <image-tag>}"
 host_port=18080
 base_url="http://127.0.0.1:${host_port}"
 container=""
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 container="$(docker run --detach --publish "127.0.0.1:${host_port}:8080" "$image")"
 
