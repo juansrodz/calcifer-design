@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
+import { ObservabilityBuildPlugin } from '@module-federation/observability-plugin/build';
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 import { federationConfig } from './module-federation.config';
+import { pluginBuildInfo } from './src/build-info-plugin';
 import { DEV_PORTS, devProxy } from './src/dev/proxy';
 import { pluginHtmlLang } from './src/html-lang-plugin';
 
@@ -21,6 +23,7 @@ export default defineConfig(({ env }) => ({
     pluginTypedCSSModules(),
     pluginModuleFederation(federationConfig),
     pluginHtmlLang(),
+    pluginBuildInfo(),
   ],
   source: {
     entry: { index: './src/index.tsx' },
@@ -46,5 +49,10 @@ export default defineConfig(({ env }) => ({
     port: DEV_PORTS.docs,
     cors: { origin: ['http://localhost:3000'] },
     proxy: devProxy(),
+  },
+  tools: {
+    rspack: {
+      plugins: [new ObservabilityBuildPlugin({ moduleFederation: federationConfig })],
+    },
   },
 }));

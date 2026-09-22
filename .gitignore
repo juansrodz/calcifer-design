@@ -1,6 +1,7 @@
 node_modules/
 packages/*/dist/
 apps/*/dist/
+.mf/
 .rstack/
 storybook-static/
 *.module.css.d.ts
