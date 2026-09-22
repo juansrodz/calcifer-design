@@ -9,7 +9,8 @@ import {
 // Shaped exactly like packages/ui/storybook-static/index.json, which is v5: every field below
 // is present in the real file, and no other field is used here.
 const index = {
-  ['v']: 5,
+  // eslint-disable-next-line id-length -- Storybook's index schema names its version field "v"
+  v: 5,
   entries: {
     'overlays-dialog--center': {
       type: 'story',
@@ -48,10 +49,14 @@ describe('parseStorybookIndex', () => {
 
   it('refuses anything else, by name, rather than rendering undefined', () => {
     expect(() => parseStorybookIndex(null)).toThrow(/not a Storybook index/);
-    expect(() => parseStorybookIndex({ ['v']: 5 })).toThrow(/not a Storybook index/);
-    expect(() => parseStorybookIndex({ ['v']: 5, entries: { bad: { id: 'bad' } } })).toThrow(
+    // eslint-disable-next-line id-length -- Storybook's index schema names its version field "v"
+    expect(() => parseStorybookIndex({ v: 5 })).toThrow(/not a Storybook index/);
+    // eslint-disable-next-line id-length -- Storybook's index schema names its version field "v"
+    expect(() => parseStorybookIndex({ v: 5, entries: { bad: { id: 'bad' } } })).toThrow(
       /entry "bad"/,
     );
+    // eslint-disable-next-line id-length -- Storybook's index schema names its version field "v"
+    expect(() => parseStorybookIndex({ v: 5, entries: [] })).toThrow(/not a Storybook index/);
   });
 });
 
@@ -77,7 +82,8 @@ describe('summarizeInventory', () => {
 
   it('ignores an entry that is not a story, because only stories have a deep link', () => {
     const withDocs = {
-      ['v']: 5,
+      // eslint-disable-next-line id-length -- Storybook's index schema names its version field "v"
+      v: 5,
       entries: {
         ...index.entries,
         'primitives-alert--docs': {

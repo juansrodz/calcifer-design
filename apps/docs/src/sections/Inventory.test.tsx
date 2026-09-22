@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { axe } from '../../test/axe';
 import { Inventory } from './Inventory';
 
 const index = {
-  ['v']: 5,
+  // eslint-disable-next-line id-length -- Storybook's index schema names its version field "v"
+  v: 5,
   entries: {
     'overlays-dialog--center': {
       type: 'story',
@@ -25,7 +27,7 @@ const index = {
 function stubFetch(response: Response) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(() => Promise.resolve(response)),
+    vi.fn(() => Promise.resolve(response.clone())),
   );
 }
 
@@ -60,5 +62,19 @@ describe('Inventory', () => {
     // Let the request settle before the test ends, so the state update it causes lands inside
     // React's act() rather than after the test has returned.
     expect(await screen.findByText('2 story groups')).toBeVisible();
+  });
+
+  it('has no axe violations once the table is loaded', async () => {
+    stubFetch(new Response(JSON.stringify(index), { status: 200 }));
+    const { container } = render(<Inventory />);
+    expect(await screen.findByText('2 story groups')).toBeVisible();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('has no axe violations in the failure state', async () => {
+    stubFetch(new Response('', { status: 404 }));
+    const { container } = render(<Inventory />);
+    await screen.findByRole('alert');
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

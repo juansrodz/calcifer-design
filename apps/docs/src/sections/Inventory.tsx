@@ -26,7 +26,11 @@ export function Inventory() {
         if (!response.ok) {
           throw new Error(`${url} responded ${response.status}`);
         }
-        const index = parseStorybookIndex(await response.json());
+        const payload = await response.json();
+        if (controller.signal.aborted) {
+          return;
+        }
+        const index = parseStorybookIndex(payload);
         setState({ status: 'ready', groups: summarizeInventory(index) });
       } catch (error) {
         if (controller.signal.aborted) {
@@ -78,7 +82,7 @@ export function Inventory() {
               <caption className={styles.caption}>Every story group in the library</caption>
               <thead>
                 <tr>
-                  <th scope="col">Group</th>
+                  <th scope="col">Category</th>
                   <th scope="col">Story group</th>
                   <th scope="col">Stories</th>
                 </tr>
