@@ -105,7 +105,10 @@
   text-transform: uppercase;
 }
 
-.swatches {
+/* The two token lists — the colour ramp's swatches and the spacing scale's rows — are the
+   same bare vertical list; only the row inside them differs. */
+.swatches,
+.spaceList {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -179,15 +182,6 @@
   font-family: var(--font-mono);
   font-weight: 400;
   white-space: nowrap;
-}
-
-.spaceList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 /* One column on a phone: the scale runs to --space-9 (6rem) and --space-10 (8rem), and a bar

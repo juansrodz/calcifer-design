@@ -28,10 +28,7 @@ index_headers="$(response_headers "${base_url}/design/")"
 grep -qi '^cache-control: no-cache$' <<<"$index_headers" ||
   fail "the index should revalidate, got: $(grep -i '^cache-control' <<<"$index_headers")"
 
-redirect_headers="$(response_headers "${base_url}/design")"
-grep -q '^HTTP/1.1 301' <<<"$redirect_headers" || fail "/design should redirect to /design/"
-grep -qi '^location: /design/$' <<<"$redirect_headers" ||
-  fail "the redirect should be relative (absolute_redirect off)"
+assert_prefix_redirect "/design"
 
 # The one file the shell fetches by name. It must be served, and it must never be pinned: a
 # stale manifest points the shell at chunk filenames this build no longer contains.
@@ -50,12 +47,6 @@ grep -qi '^cache-control: no-cache$' <<<"$build_info_headers" ||
 hashed_bundle="$(find_hashed_bundle apps/docs/dist/static/js)"
 [ -n "$hashed_bundle" ] || fail "no content-hashed JS bundle in apps/docs/dist/static/js"
 
-asset_headers="$(response_headers --header 'Accept-Encoding: gzip' \
-  "${base_url}/design/static/js/${hashed_bundle}")"
-grep -q '^HTTP/1.1 200' <<<"$asset_headers" || fail "${hashed_bundle} was not served"
-grep -qi '^content-encoding: gzip$' <<<"$asset_headers" ||
-  fail "${hashed_bundle} was not compressed"
-grep -qi '^cache-control: public, max-age=31536000, immutable$' <<<"$asset_headers" ||
-  fail "${hashed_bundle} is content-hashed and should be immutable"
+assert_immutable_gzipped_asset "/design/static/js/${hashed_bundle}"
 
 echo "design-container-smoke: ok (${hashed_bundle} immutable and gzipped, manifest and build stamp revalidating)"

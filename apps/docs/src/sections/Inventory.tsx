@@ -14,6 +14,47 @@ type InventoryState =
   | { status: 'ready'; groups: InventoryGroup[] }
   | { status: 'failed'; message: string };
 
+interface StoryGroupTableProps {
+  groups: InventoryGroup[];
+}
+
+/** The loaded inventory: the counts, and a row per story group linking into Storybook. */
+function StoryGroupTable({ groups }: StoryGroupTableProps) {
+  const storyTotal = groups.reduce((total, storyGroup) => total + storyGroup.storyCount, 0);
+  return (
+    <>
+      <p className={styles.note}>
+        <strong>{groups.length} story groups</strong>, {storyTotal} stories.
+      </p>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <caption className={styles.caption}>Every story group in the library</caption>
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              <th scope="col">Story group</th>
+              <th scope="col">Stories</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((storyGroup) => (
+              <tr key={storyGroup.title}>
+                <td>{storyGroup.group}</td>
+                <th scope="row" className={styles.pairCell}>
+                  <a className={styles.link} href={storybookStoryUrl(storyGroup.firstStoryId)}>
+                    {storyGroup.name}
+                  </a>
+                </th>
+                <td>{storyGroup.storyCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 export function Inventory() {
   const [state, setState] = useState<InventoryState>({ status: 'loading' });
 
@@ -23,9 +64,10 @@ export function Inventory() {
     async function load() {
       try {
         // The default cache mode on purpose: nginx serves this index `no-cache` with an ETag
-        // (docker/design.nginx.conf), so the browser revalidates and usually gets a 304. An
-        // inactive Tabs panel unmounts, so every return to this tab refetches; `no-store` would
-        // make each of those a full download of the whole index.
+        // (docker/storybook.nginx.conf — Storybook is its own pod, behind the same Ingress), so
+        // the browser revalidates and usually gets a 304. An inactive Tabs panel unmounts, so
+        // every return to this tab refetches; `no-store` would make each of those a full download
+        // of the whole index.
         const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`${url} responded ${response.status}`);
@@ -49,11 +91,6 @@ export function Inventory() {
     void load();
     return () => controller.abort();
   }, []);
-
-  const storyTotal =
-    state.status === 'ready'
-      ? state.groups.reduce((total, storyGroup) => total + storyGroup.storyCount, 0)
-      : 0;
 
   return (
     <section className={styles.section} aria-labelledby="inventory-heading">
@@ -83,38 +120,7 @@ export function Inventory() {
         </Alert>
       ) : null}
 
-      {state.status === 'ready' ? (
-        <>
-          <p className={styles.note}>
-            <strong>{state.groups.length} story groups</strong>, {storyTotal} stories.
-          </p>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <caption className={styles.caption}>Every story group in the library</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Category</th>
-                  <th scope="col">Story group</th>
-                  <th scope="col">Stories</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.groups.map((storyGroup) => (
-                  <tr key={storyGroup.title}>
-                    <td>{storyGroup.group}</td>
-                    <th scope="row" className={styles.pairCell}>
-                      <a className={styles.link} href={storybookStoryUrl(storyGroup.firstStoryId)}>
-                        {storyGroup.name}
-                      </a>
-                    </th>
-                    <td>{storyGroup.storyCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : null}
+      {state.status === 'ready' ? <StoryGroupTable groups={state.groups} /> : null}
     </section>
   );
 }

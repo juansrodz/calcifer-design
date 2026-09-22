@@ -57,6 +57,21 @@ wait_until_ready() {
   [ -n "$ready" ] || fail "the container never served ${ready_path}"
 }
 
+# Asserts that the prefix without its trailing slash redirects to the slashed form, and that the
+# Location it sends is relative: that is `absolute_redirect off` in the nginx config, without
+# which nginx answers with the container's own hostname and port. Both images serve their build
+# under a prefix, so both make this check. Called as a plain statement (never `$(...)`), so
+# `fail`'s `exit` here does end the whole script.
+assert_prefix_redirect() {
+  local prefix="$1"
+  local headers
+  # shellcheck disable=SC2154 # base_url is set by the script that sources this file.
+  headers="$(response_headers "${base_url}${prefix}")"
+  grep -q '^HTTP/1.1 301' <<<"$headers" || fail "${prefix} should redirect to ${prefix}/"
+  grep -qi "^location: ${prefix}/\$" <<<"$headers" ||
+    fail "the redirect should be relative (absolute_redirect off)"
+}
+
 # Echoes the largest content-hashed *.js file directly under `$1`, or nothing if there is none.
 # Largest first: the smallest content-hashed bundle can be under gzip_min_length, which would
 # fail a caller's gzip assertion for the wrong reason. The trailing `|| true` matters: under
@@ -69,4 +84,20 @@ find_hashed_bundle() {
   # shellcheck disable=SC2010 # `ls -S` sorts by size; no glob or loop can do that.
   (cd "$bundle_directory" && ls -S -- *.js 2>/dev/null |
     grep -E '\.[0-9a-f]{8,}\.' | head -n 1) || true
+}
+
+# Asserts one content-hashed asset is served, compressed, and cacheable for a year — the three
+# headers a filename that changes whenever its bytes do has earned. Takes the URL path under
+# `base_url`; the messages name the file itself, which is what `find_hashed_bundle` returned.
+# Called as a plain statement, for the same reason as the assertions above.
+assert_immutable_gzipped_asset() {
+  local asset_path="$1"
+  local asset_name="${asset_path##*/}"
+  local headers
+  # shellcheck disable=SC2154 # base_url is set by the script that sources this file.
+  headers="$(response_headers --header 'Accept-Encoding: gzip' "${base_url}${asset_path}")"
+  grep -q '^HTTP/1.1 200' <<<"$headers" || fail "${asset_name} was not served"
+  grep -qi '^content-encoding: gzip$' <<<"$headers" || fail "${asset_name} was not compressed"
+  grep -qi '^cache-control: public, max-age=31536000, immutable$' <<<"$headers" ||
+    fail "${asset_name} is content-hashed and should be immutable"
 }

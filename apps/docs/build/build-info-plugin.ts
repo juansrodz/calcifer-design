@@ -5,8 +5,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RsbuildPlugin } from '@rsbuild/core';
 
-// The directory `readUiVersion` resolves the library's manifest from, on disk.
-const thisModuleDirectory = dirname(fileURLToPath(import.meta.url));
+// `readUiVersion` reads the library's manifest straight off disk, relative to this file rather
+// than to a working directory — `fileURLToPath` because a file URL is not a path any Node fs
+// call accepts. `apps/docs/build/` is three levels under the workspace root.
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 /** Where `@module-federation/observability-plugin` writes its file, relative to the app root. */
 export const OBSERVABILITY_BUILD_INFO = join('.mf', 'observability', 'build-info.json');
@@ -40,7 +42,7 @@ export const gitReader: GitReader = (gitArguments) => {
 
 function readUiVersion(): string {
   const uiPackageJson = JSON.parse(
-    readFileSync(resolve(thisModuleDirectory, '../../../packages/ui/package.json'), 'utf8'),
+    readFileSync(resolve(workspaceRoot, 'packages/ui/package.json'), 'utf8'),
   ) as { version?: unknown };
   if (typeof uiPackageJson.version !== 'string') {
     throw new Error('packages/ui/package.json has no version.');

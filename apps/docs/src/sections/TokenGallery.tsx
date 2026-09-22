@@ -1,12 +1,35 @@
 import { breakpoint, shared, toKebab, type ThemeName } from '@calcifer-design/tokens';
 import { Tag } from '@calcifer-design/ui';
-import {
-  contrastPairRows,
-  swatchRows,
-  THEME_NAMES,
-  type SwatchRow,
-} from '../tokens/contrast-table';
+import type { ReactNode } from 'react';
+import { contrastPairRows, swatchRows, THEME_NAMES } from '../tokens/contrast-table';
 import styles from '../styles/docs.module.css';
+
+interface TokenTableProps {
+  caption: string;
+  columns: readonly string[];
+  children: ReactNode;
+}
+
+/** This page's table shell: one scroll container, a visible caption, one header row. */
+function TokenTable({ caption, columns, children }: TokenTableProps) {
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <caption className={styles.caption}>{caption}</caption>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}
 
 interface RampProps {
   themeName: ThemeName;
@@ -17,7 +40,7 @@ function Ramp({ themeName }: RampProps) {
     <div className={styles.ramp}>
       <h4 className={styles.rampHeading}>{themeName}</h4>
       <ul className={styles.swatches}>
-        {swatchRows(themeName).map((swatch: SwatchRow) => (
+        {swatchRows(themeName).map((swatch) => (
           <li className={styles.swatch} key={`${themeName}-${swatch.name}`} data-testid="swatch">
             {/* The literal token value, not a var(): this renders the dark ramp faithfully on a
                 light page and the light ramp on a dark one, which is the whole point. */}
@@ -61,62 +84,38 @@ export function TokenGallery() {
         tests with: 4.5:1 for text (WCAG 1.4.3), 3:1 for non-text UI (1.4.11), in every theme.{' '}
         {rows.length} declared pairs.
       </p>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <caption className={styles.caption}>Contrast of every declared token pair</caption>
-          <thead>
-            <tr>
-              <th scope="col">Pair</th>
-              <th scope="col">Kind</th>
-              <th scope="col">Light</th>
-              <th scope="col">Dark</th>
-              <th scope="col">Needs</th>
-              <th scope="col">Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.kind}-${row.foreground}-${row.background}`}>
-                <th scope="row" className={styles.pairCell}>
-                  {row.foreground} on {row.background}
-                </th>
-                <td>{row.kind}</td>
-                <td>{row.ratios.light.toFixed(2)}</td>
-                <td>{row.ratios.dark.toFixed(2)}</td>
-                <td>{row.threshold.toFixed(1)}</td>
-                <td>
-                  <Tag tone={row.passes ? 'accent' : 'neutral'}>{row.passes ? 'Pass' : 'Fail'}</Tag>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <TokenTable
+        caption="Contrast of every declared token pair"
+        columns={['Pair', 'Kind', 'Light', 'Dark', 'Needs', 'Result']}
+      >
+        {rows.map((row) => (
+          <tr key={`${row.kind}-${row.foreground}-${row.background}`}>
+            <th scope="row" className={styles.pairCell}>
+              {row.foreground} on {row.background}
+            </th>
+            <td>{row.kind}</td>
+            <td>{row.ratios.light.toFixed(2)}</td>
+            <td>{row.ratios.dark.toFixed(2)}</td>
+            <td>{row.threshold.toFixed(1)}</td>
+            <td>
+              <Tag tone={row.passes ? 'accent' : 'neutral'}>{row.passes ? 'Pass' : 'Fail'}</Tag>
+            </td>
+          </tr>
+        ))}
+      </TokenTable>
 
       <h3 className={styles.subHeading}>Type scale</h3>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <caption className={styles.caption}>The type scale</caption>
-          <thead>
-            <tr>
-              <th scope="col">Token</th>
-              <th scope="col">Value</th>
-              <th scope="col">Sample</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(shared.text).map(([name, value]) => (
-              <tr key={name}>
-                <th scope="row" className={styles.pairCell}>
-                  --text-{toKebab(name)}
-                </th>
-                <td className={styles.swatchValue}>{value}</td>
-                <td style={{ fontSize: value }}>Portfolio</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <TokenTable caption="The type scale" columns={['Token', 'Value', 'Sample']}>
+        {Object.entries(shared.text).map(([name, value]) => (
+          <tr key={name}>
+            <th scope="row" className={styles.pairCell}>
+              --text-{toKebab(name)}
+            </th>
+            <td className={styles.swatchValue}>{value}</td>
+            <td style={{ fontSize: value }}>Portfolio</td>
+          </tr>
+        ))}
+      </TokenTable>
 
       <h3 className={styles.subHeading}>Spacing</h3>
       <ul className={styles.spaceList}>
@@ -130,27 +129,16 @@ export function TokenGallery() {
       </ul>
 
       <h3 className={styles.subHeading}>Breakpoints</h3>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <caption className={styles.caption}>Breakpoints</caption>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">min-width</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(breakpoint).map(([name, value]) => (
-              <tr key={name}>
-                <th scope="row" className={styles.pairCell}>
-                  {name}
-                </th>
-                <td className={styles.swatchValue}>{value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <TokenTable caption="Breakpoints" columns={['Name', 'min-width']}>
+        {Object.entries(breakpoint).map(([name, value]) => (
+          <tr key={name}>
+            <th scope="row" className={styles.pairCell}>
+              {name}
+            </th>
+            <td className={styles.swatchValue}>{value}</td>
+          </tr>
+        ))}
+      </TokenTable>
     </section>
   );
 }

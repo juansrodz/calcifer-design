@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Both reads below are plain Node.js file lookups relative to this file on disk, so this is
-// the directory they resolve from.
-const thisModuleDirectory = dirname(fileURLToPath(import.meta.url));
+// Both manifests below are read straight off disk, relative to this file rather than to a
+// working directory — `fileURLToPath` because a file URL is not a path any Node fs call accepts.
+// `apps/docs/build/` is three levels under the workspace root.
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 interface RootPackageJson {
   catalog?: Record<string, string>;
@@ -12,12 +13,12 @@ interface RootPackageJson {
 }
 
 function readCatalogReactVersion(): string {
-  // ../../../package.json from apps/docs/build/ is the workspace root, the single place this
-  // repository pins React (`"react": "catalog:"` in every package). Hard-coding the range here
-  // would let the two drift apart silently, which is the failure mode Module Federation
-  // reports as a version mismatch at runtime, in the browser, inside someone else's shell.
+  // The root manifest is the single place this repository pins React (`"react": "catalog:"` in
+  // every package). Hard-coding the range here would let the two drift apart silently, which is
+  // the failure mode Module Federation reports as a version mismatch at runtime, in the browser,
+  // inside someone else's shell.
   const rootPackageJson = JSON.parse(
-    readFileSync(resolve(thisModuleDirectory, '../../../package.json'), 'utf8'),
+    readFileSync(resolve(workspaceRoot, 'package.json'), 'utf8'),
   ) as RootPackageJson;
   const catalog = rootPackageJson.workspaces?.catalog ?? rootPackageJson.catalog;
   const version = catalog?.['react'];
@@ -34,12 +35,12 @@ interface UiPackageJson {
 }
 
 function readUiPackageBaseUiVersion(): string {
-  // ../../../packages/ui/package.json from apps/docs/build/ — the root workspace catalog has no
-  // Base UI entry (only React does), so the range this app negotiates on has to be read from
-  // the one package that actually declares the dependency. Hard-coding it here risks the same
-  // silent drift readCatalogReactVersion above is written to avoid.
+  // The root workspace catalog has no Base UI entry (only React does), so the range this app
+  // negotiates on has to be read from the one package that actually declares the dependency.
+  // Hard-coding it here risks the same silent drift readCatalogReactVersion above is written to
+  // avoid.
   const uiPackageJson = JSON.parse(
-    readFileSync(resolve(thisModuleDirectory, '../../../packages/ui/package.json'), 'utf8'),
+    readFileSync(resolve(workspaceRoot, 'packages/ui/package.json'), 'utf8'),
   ) as UiPackageJson;
   const version = uiPackageJson.dependencies?.['@base-ui/react'];
   if (!version) {

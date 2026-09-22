@@ -3,9 +3,12 @@
   "compilerOptions": {
     "noEmit": true,
     // `node` for `build/`, which is Node-only by design, and for the one `process.env.NODE_ENV`
-    // read in `src/`, which Rsbuild defines at build time: without it the Module Federation DTS
-    // pass, which compiles only the exposed browser files, cannot find `process`. `@types/node`
-    // is already a devDependency of this app.
+    // read in `src/`, which Rsbuild defines at build time. The main program would see
+    // `@types/node` anyway — `vitest/globals` references it, which is why the shell app compiles
+    // `process.env` with no `node` entry of its own — so this entry exists for the Module
+    // Federation DTS pass alone: it copies `types` verbatim into a program of the exposed files
+    // only, where nothing else pulls the Node types in and `process` would be unresolved.
+    // `@types/node` is already a devDependency of this app.
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
   "include": [

@@ -31,13 +31,22 @@ function stubFetch(response: Response) {
   );
 }
 
+/** The two answers this component has to render: the index Storybook builds, and no index. */
+function stubIndexFound() {
+  stubFetch(new Response(JSON.stringify(index), { status: 200 }));
+}
+
+function stubIndexMissing() {
+  stubFetch(new Response('', { status: 404 }));
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('Inventory', () => {
   it('reads the index same-origin and reports what the library actually ships', async () => {
-    stubFetch(new Response(JSON.stringify(index), { status: 200 }));
+    stubIndexFound();
     render(<Inventory />);
     expect(await screen.findByText('2 story groups')).toBeVisible();
     expect(screen.getByRole('link', { name: /Dialog/ })).toHaveAttribute(
@@ -48,7 +57,7 @@ describe('Inventory', () => {
   });
 
   it('says what it tried to fetch when the index is not there, instead of rendering nothing', async () => {
-    stubFetch(new Response('', { status: 404 }));
+    stubIndexMissing();
     render(<Inventory />);
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('/storybook/index.json');
@@ -59,7 +68,7 @@ describe('Inventory', () => {
   });
 
   it('shows a placeholder while the request is in flight', async () => {
-    stubFetch(new Response(JSON.stringify(index), { status: 200 }));
+    stubIndexFound();
     render(<Inventory />);
     expect(screen.getByTestId('skeleton')).toBeVisible();
     // Let the request settle before the test ends, so the state update it causes lands inside
@@ -68,14 +77,14 @@ describe('Inventory', () => {
   });
 
   it('has no axe violations once the table is loaded', async () => {
-    stubFetch(new Response(JSON.stringify(index), { status: 200 }));
+    stubIndexFound();
     const { container } = render(<Inventory />);
     expect(await screen.findByText('2 story groups')).toBeVisible();
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it('has no axe violations in the failure state', async () => {
-    stubFetch(new Response('', { status: 404 }));
+    stubIndexMissing();
     const { container } = render(<Inventory />);
     await screen.findByRole('alert');
     expect(await axe(container)).toHaveNoViolations();

@@ -37,6 +37,24 @@ export interface ContrastPairRow {
   passes: boolean;
 }
 
+/** The pair measured in every theme, or null as soon as one theme's value is not plain hex. */
+function ratiosInEveryTheme(
+  foreground: ColorName,
+  background: ColorName,
+): Record<ThemeName, number> | null {
+  const ratios = {} as Record<ThemeName, number>;
+  for (const themeName of THEME_NAMES) {
+    const palette = themes[themeName].color;
+    const foregroundValue = palette[foreground];
+    const backgroundValue = palette[background];
+    if (!isHexColor(foregroundValue) || !isHexColor(backgroundValue)) {
+      return null;
+    }
+    ratios[themeName] = contrastRatio(foregroundValue, backgroundValue);
+  }
+  return ratios;
+}
+
 export function contrastRowsFor(
   kind: ContrastKind,
   pairs: ReadonlyArray<readonly [ColorName, ColorName]>,
@@ -44,19 +62,9 @@ export function contrastRowsFor(
   const threshold = CONTRAST_THRESHOLD[kind];
   const rows: ContrastPairRow[] = [];
   for (const [foreground, background] of pairs) {
-    const ratios = {} as Record<ThemeName, number>;
-    let measurable = true;
-    for (const themeName of THEME_NAMES) {
-      const palette = themes[themeName].color;
-      const foregroundValue = palette[foreground];
-      const backgroundValue = palette[background];
-      if (!isHexColor(foregroundValue) || !isHexColor(backgroundValue)) {
-        measurable = false;
-        break;
-      }
-      ratios[themeName] = contrastRatio(foregroundValue, backgroundValue);
-    }
-    if (!measurable) {
+    const ratios = ratiosInEveryTheme(foreground, background);
+    // An unmeasurable pair is dropped, not printed as NaN (see `isHexColor` above).
+    if (ratios === null) {
       continue;
     }
     rows.push({
