@@ -1,0 +1,189 @@
+/* The trigger is `field.module.css`'s `.control` and the popup its `popup.module.css` surface; this
+   says what they do not, and declares nothing either of them does except where a selector's
+   attribute out-ranks them. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.trigger {
+  flex: 1;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  text-align: start;
+  cursor: pointer;
+}
+
+.value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.value[data-placeholder] {
+  color: var(--color-text-muted);
+}
+
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.icon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Seven touch-sized columns and the popup's padding. `max-width` on the surface still wins on a
+   screen narrower than this, and the fixed table layout then shares what is left. */
+.popup {
+  width: 22rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.month {
+  flex: 1;
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+  text-align: center;
+}
+
+/* One chevron, turned to point along the line of reading. */
+.previous svg {
+  transform: rotate(90deg);
+}
+
+.next svg {
+  transform: rotate(-90deg);
+}
+
+[dir='rtl'] .previous svg {
+  transform: rotate(-90deg);
+}
+
+[dir='rtl'] .next svg {
+  transform: rotate(90deg);
+}
+
+.previous[aria-disabled='true'],
+.next[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Room for the header row and six weeks, so a four or five-week month does not move the buttons
+   out from under a pointer when the popup is placed above its trigger. */
+.gridSlot {
+  min-height: calc(7 * var(--size-touch));
+}
+
+.grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.weekday {
+  height: var(--size-touch);
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: center;
+}
+
+.day {
+  height: var(--size-touch);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  text-align: center;
+  cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .day:hover:not([aria-disabled='true'], [aria-selected='true']) {
+    background: var(--color-surface-2);
+  }
+}
+
+/* A border as well as the weight: `aria-current` is announced, and this is its sighted twin. It
+   survives forced colours on its own, since a border's colour is mapped rather than dropped. */
+.day[aria-current='date'] {
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.day[aria-selected='true'] {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+/* The line is what says "not this one" beyond dimming, which alone can read as a weekend. */
+.day[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+/* Forced colours erase the accent fill and so the selection; system colours survive, as in
+   `Segmented.module.css`, where `forced-color-adjust: none` is explained. */
+@media (forced-colors: active) {
+  .day[aria-selected='true'] {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .day[aria-disabled='true'] {
+    opacity: 1;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    color: GrayText;
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* A quiet text button, which is all a way out of a calendar needs to be. */
+.close {
+  min-height: var(--size-touch);
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-link);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .close:hover {
+    background: var(--color-surface-2);
+  }
+}

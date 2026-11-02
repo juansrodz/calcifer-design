@@ -99,3 +99,5 @@ export { TimePicker } from './components/TimePicker/TimePicker';
 export type { TimePickerProps } from './components/TimePicker/TimePicker';
 export { Form } from './components/Form/Form';
 export type { FormProps } from './components/Form/Form';
+export { DatePicker } from './components/DatePicker/DatePicker';
+export type { DatePickerProps, DatePickerLabels } from './components/DatePicker/DatePicker';
