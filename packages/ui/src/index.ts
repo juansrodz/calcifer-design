@@ -74,3 +74,5 @@ export { ViewField } from './components/ViewField/ViewField';
 export type { ViewFieldProps, ViewFieldLayout } from './components/ViewField/ViewField';
 export { Descriptions } from './components/Descriptions/Descriptions';
 export type { DescriptionsProps, DescriptionsItem } from './components/Descriptions/Descriptions';
+export { PageShell } from './components/PageShell/PageShell';
+export type { PageShellProps } from './components/PageShell/PageShell';

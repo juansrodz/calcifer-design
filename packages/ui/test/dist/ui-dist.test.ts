@@ -49,6 +49,7 @@ describe('@calcifer-design/ui dist', () => {
       'Switch',
       'ViewField',
       'Descriptions',
+      'PageShell',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
