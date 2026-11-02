@@ -51,6 +51,7 @@ describe('@calcifer-design/ui dist', () => {
       'Descriptions',
       'PageShell',
       'Segmented',
+      'Breadcrumb',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

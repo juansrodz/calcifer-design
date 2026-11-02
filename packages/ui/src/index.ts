@@ -78,3 +78,5 @@ export { PageShell } from './components/PageShell/PageShell';
 export type { PageShellProps } from './components/PageShell/PageShell';
 export { Segmented } from './components/Segmented/Segmented';
 export type { SegmentedProps, SegmentedOption } from './components/Segmented/Segmented';
+export { Breadcrumb } from './components/Breadcrumb/Breadcrumb';
+export type { BreadcrumbProps, BreadcrumbItem } from './components/Breadcrumb/Breadcrumb';
