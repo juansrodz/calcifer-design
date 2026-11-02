@@ -67,6 +67,7 @@
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
     background: Highlight;
     color: HighlightText;
+    outline-color: CanvasText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
 }

@@ -116,6 +116,26 @@ describe('DatePicker', () => {
   });
 
   describe('the dialog and its grid', () => {
+    it('says it is modal, since focus cannot leave it', async () => {
+      renderPicker();
+      expect(await openCalendar()).toHaveAttribute('aria-modal', 'true');
+    });
+
+    it('closes with a library Button, and it joins the focus cycle', async () => {
+      renderPicker({ defaultValue: '2026-03-08' });
+      await openCalendar();
+      await waitFor(() => expect(focusedDate()).toBe('2026-03-08'));
+      const close = screen.getByRole('button', { name: 'Close' });
+      expect(close).toHaveAttribute('data-variant', 'ghost');
+      expect(close).toHaveAttribute('data-size', 'sm');
+      expect(close).toHaveAttribute('type', 'button');
+      await userEvent.tab();
+      expect(close).toHaveFocus();
+      await userEvent.click(close);
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(trigger()).toHaveFocus();
+    });
+
     it('is a dialog named by the field, holding a grid named by the month', async () => {
       renderPicker({ defaultValue: '2026-03-08', locale: 'en-US' });
       const dialog = await openCalendar();
@@ -499,6 +519,36 @@ describe('DatePicker', () => {
   });
 
   describe('locale and weekStartsOn', () => {
+    describe('the direction the chevrons follow', () => {
+      afterEach(() => {
+        document.documentElement.removeAttribute('dir');
+      });
+
+      /** The month heading's parent, which carries what the stylesheet turns the chevrons by. */
+      const header = () =>
+        screen.getByRole('button', { name: 'Previous month' }).parentElement as HTMLElement;
+
+      it('is left to right for locale="en" on a right-to-left page', async () => {
+        document.documentElement.dir = 'rtl';
+        renderPicker({ locale: 'en' });
+        await openCalendar();
+        expect(header()).toHaveAttribute('data-direction', 'ltr');
+      });
+
+      it('is right to left for locale="ar" on a left-to-right page', async () => {
+        renderPicker({ locale: 'ar' });
+        await openCalendar();
+        expect(header()).toHaveAttribute('data-direction', 'rtl');
+      });
+
+      it("is the page's own with no locale", async () => {
+        document.documentElement.dir = 'rtl';
+        renderPicker();
+        await openCalendar();
+        expect(header()).toHaveAttribute('data-direction', 'rtl');
+      });
+    });
+
     it('draws a Gregorian month in a locale whose default calendar is another', async () => {
       renderPicker({ defaultValue: '2026-03-08', locale: 'fa-IR' });
       expect(trigger(/۸ مارس ۲۰۲۶/)).toBeVisible();

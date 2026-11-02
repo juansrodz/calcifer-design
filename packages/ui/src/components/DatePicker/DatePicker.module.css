@@ -68,11 +68,11 @@
   transform: rotate(-90deg);
 }
 
-[dir='rtl'] .previous svg {
+.header[data-direction='rtl'] .previous svg {
   transform: rotate(-90deg);
 }
 
-[dir='rtl'] .next svg {
+.header[data-direction='rtl'] .next svg {
   transform: rotate(90deg);
 }
 
@@ -153,6 +153,7 @@
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
     background: Highlight;
     color: HighlightText;
+    outline-color: CanvasText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
 
@@ -167,23 +168,4 @@
 .footer {
   display: flex;
   justify-content: flex-end;
-}
-
-/* A quiet text button, which is all a way out of a calendar needs to be. */
-.close {
-  min-height: var(--size-touch);
-  padding-inline: var(--space-3);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-link);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-@media (hover: hover) {
-  .close:hover {
-    background: var(--color-surface-2);
-  }
 }

@@ -6,6 +6,7 @@ import { CalendarIcon } from '../../icons/CalendarIcon';
 import { CloseIcon } from '../../icons/CloseIcon';
 import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
+import { Button } from '../Button/Button';
 import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
 import { useFormValue } from '../Form/FormContext';
 import { IconButton } from '../IconButton/IconButton';
@@ -83,7 +84,8 @@ export interface DatePickerProps extends FieldFrameProps {
   isDateDisabled?: (date: string) => boolean;
   /**
    * A BCP 47 tag for the month and day names, the digits and the calendar's direction. Left out,
-   * the browser's own; a tag it cannot read counts as left out.
+   * the browser's own; a tag it cannot read counts as left out. That default can differ between a
+   * server's render and the browser's, which passing `locale` avoids.
    */
   locale?: string;
   /** The first column, 0 for Sunday to 6 for Saturday. Left out, what `locale` says. */
@@ -236,6 +238,7 @@ export function DatePicker({
                 className={[popupStyles.surface, styles.popup].join(' ')}
                 data-popup="popover"
                 aria-label={label}
+                aria-modal="true"
                 dir={resolvedLocale === undefined ? undefined : directionOf(resolvedLocale)}
                 // Tab order and the opening focus agree: the grid's one tab stop, per `Calendar`.
                 initialFocus={() => gridRef.current?.querySelector('[tabindex="0"]') ?? true}
@@ -258,7 +261,9 @@ export function DatePicker({
                 {/* Visible, not visually hidden as `Popover`'s is: it sits in this dialog's tab
                     order, and Base UI only arms the focus trap when one is present. */}
                 <div className={styles.footer}>
-                  <BasePopover.Close className={styles.close}>{words.close}</BasePopover.Close>
+                  <BasePopover.Close render={<Button variant="ghost" size="sm" />}>
+                    {words.close}
+                  </BasePopover.Close>
                 </div>
               </BasePopover.Popup>
             </BasePopover.Positioner>

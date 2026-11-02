@@ -65,6 +65,7 @@ export function Calendar({
   const monthId = useId();
   const [today] = useState(() => todayIn(new Date()));
   const gridHasFocus = useRef(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const isUnavailable = (date: string) => isDateUnavailable(date, { min, max, isDateDisabled });
   const isReachable = (date: string) =>
@@ -130,6 +131,17 @@ export function Calendar({
     }
   }, [activeDate, gridRef]);
 
+  // Read from the page, because `locale` may be left out and an ancestor's `dir` may be overruled
+  // by the dialog's own. Not `:dir(rtl)` in the stylesheet: a bundler targeting older browsers,
+  // this library's own Storybook build included, rewrites that to `:lang(...)`, which reads the
+  // page's language and misses a `locale` set here. Written straight to the node, so that opening
+  // the calendar costs no second render and shows no frame of the chevrons pointing the wrong way.
+  useLayoutEffect(() => {
+    if (headerRef.current !== null) {
+      headerRef.current.dataset.direction = getComputedStyle(headerRef.current).direction;
+    }
+  });
+
   const formatters = useMemo(
     () => ({
       month: dateFormatter(locale, { month: 'long', year: 'numeric' }),
@@ -177,7 +189,7 @@ export function Calendar({
 
   return (
     <>
-      <div className={styles.header}>
+      <div ref={headerRef} className={styles.header}>
         {/* `aria-disabled`, not `disabled`: a button that disables itself under the user's press
             would drop focus out of the dialog. */}
         <IconButton
