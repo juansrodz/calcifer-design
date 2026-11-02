@@ -1,5 +1,4 @@
-/* A read-only pair, in the type of `field.module.css`'s label and a control's value so a view of
-   a record lines up with the form that edits it. The browser's `<dl>` and `<dd>` margins go. */
+/* The label and the value wear `pair.module.css`. The browser's `<dl>` margin goes. */
 .root {
   margin: 0;
 }
@@ -20,22 +19,4 @@
   flex-flow: row wrap;
   align-items: baseline;
   gap: var(--space-1) var(--space-3);
-}
-
-.label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--leading-snug);
-}
-
-.value {
-  min-width: 0;
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--text-md);
-  line-height: var(--leading-snug);
-}
-
-.value[data-empty] {
-  color: var(--color-text-muted);
 }

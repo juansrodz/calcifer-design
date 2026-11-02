@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import pairStyles from '../../styles/pair.module.css';
 import styles from './ViewField.module.css';
 
 /** Shown for a value with nothing to show. Internal, shared with `Descriptions`. */
@@ -41,8 +42,8 @@ export function ViewField({
   return (
     <dl className={styles.root}>
       <div className={styles.group} data-layout={layout}>
-        <dt className={styles.label}>{label}</dt>
-        <dd className={styles.value} data-empty={isEmpty ? '' : undefined}>
+        <dt className={pairStyles.label}>{label}</dt>
+        <dd className={pairStyles.value} data-empty={isEmpty ? '' : undefined}>
           {isEmpty ? emptyText : children}
         </dd>
       </div>

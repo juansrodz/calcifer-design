@@ -29,23 +29,6 @@
   overflow-wrap: anywhere;
 }
 
-.label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--leading-snug);
-}
-
-.value {
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--text-md);
-  line-height: var(--leading-snug);
-}
-
-.value[data-empty] {
-  color: var(--color-text-muted);
-}
-
 /* Inside the query for the reason `Descriptions.tsx` records against an inline `grid-column`. */
 @media (min-width: 40rem) {
   .list[data-columns='2'] {

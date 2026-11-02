@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import pairStyles from '../../styles/pair.module.css';
 import { DEFAULT_EMPTY_TEXT, isEmptyValue } from '../ViewField/ViewField';
 import styles from './Descriptions.module.css';
 
@@ -56,8 +57,8 @@ export function Descriptions({
           const span = Math.min(item.span ?? 1, columns);
           return (
             <div key={item.id} className={styles.group} data-span={span > 1 ? span : undefined}>
-              <dt className={styles.label}>{item.label}</dt>
-              <dd className={styles.value} data-empty={isEmpty ? '' : undefined}>
+              <dt className={pairStyles.label}>{item.label}</dt>
+              <dd className={pairStyles.value} data-empty={isEmpty ? '' : undefined}>
                 {isEmpty ? emptyText : item.value}
               </dd>
             </div>

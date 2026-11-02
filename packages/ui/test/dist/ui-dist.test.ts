@@ -103,7 +103,7 @@ describe('@calcifer-design/ui dist', () => {
   });
 
   it('emits each shared stylesheet once, as its own dist entry', async () => {
-    for (const name of ['a11y', 'popup', 'field']) {
+    for (const name of ['a11y', 'popup', 'field', 'pair']) {
       expect((await stat(path.join(distRoot, `styles/${name}.module.js`))).isFile()).toBe(true);
       expect((await stat(path.join(distRoot, `styles/${name}_module.css`))).isFile()).toBe(true);
     }
