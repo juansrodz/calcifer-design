@@ -57,6 +57,7 @@ describe('@calcifer-design/ui dist', () => {
       'ToolbarGroup',
       'ToolbarSeparator',
       'Steps',
+      'TextArea',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
