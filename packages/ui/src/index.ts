@@ -95,3 +95,5 @@ export { Steps } from './components/Steps/Steps';
 export type { StepsProps, StepsItem, StepStatus } from './components/Steps/Steps';
 export { TextArea } from './components/TextArea/TextArea';
 export type { TextAreaProps } from './components/TextArea/TextArea';
+export { TimePicker } from './components/TimePicker/TimePicker';
+export type { TimePickerProps } from './components/TimePicker/TimePicker';
