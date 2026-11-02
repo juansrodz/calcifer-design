@@ -69,8 +69,9 @@ export interface TreeSelectProps extends FieldFrameProps {
  * does. Submits the node's `id` through a hidden input.
  *
  * The trigger is the frame's `Field.Control`, as `DatePicker`'s is, and for its reasons. The popup
- * does not trap focus, as `DatePicker`'s dialog does: there is one tab stop in it, so Tab means
- * leaving, and Base UI closes it as focus goes.
+ * does not trap focus, as `DatePicker`'s dialog does: there is one tab stop in it, so Tab closes it
+ * and moves on. Shift+Tab goes to the trigger and leaves it open, and Escape or a second Shift+Tab
+ * closes it from there.
  */
 export function TreeSelect({
   label,

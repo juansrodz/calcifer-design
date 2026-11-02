@@ -177,6 +177,62 @@ describe('TreeSelect', () => {
     });
   });
 
+  describe('a value on a disabled node, which is the app’s to set', () => {
+    it('shows on the trigger', () => {
+      renderSelect({ defaultValue: 'legal' });
+      expect(trigger('Team Legal')).toBeVisible();
+    });
+
+    it('shows when controlled as well', () => {
+      renderSelect({ value: 'legal' });
+      expect(trigger('Team Legal')).toBeVisible();
+    });
+
+    it('submits through the hidden input', () => {
+      renderSelect({ defaultValue: 'legal' });
+      expect(hiddenValue()).toBe('legal');
+    });
+
+    it('is selected in the tree', async () => {
+      renderSelect({ defaultValue: 'legal' });
+      await openTree();
+      await waitFor(() => expect(node('Legal')).toHaveFocus());
+      expect(node('Legal')).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('reaches Form as the value, and Form accepts it', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <Form aria-label="Budget" onSubmit={onSubmit}>
+          <TreeSelect label="Team" name="team" items={items} defaultValue="legal" />
+          <button type="submit">Save</button>
+        </Form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({ team: 'legal' });
+    });
+
+    it('satisfies required in Form', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <Form aria-label="Budget" onSubmit={onSubmit}>
+          <TreeSelect label="Team" name="team" items={items} required value="legal" />
+          <button type="submit">Save</button>
+        </Form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({ team: 'legal' });
+      expect(screen.queryByText('Choose an option.')).toBeNull();
+    });
+
+    it('can be cleared', async () => {
+      const onValueChange = vi.fn();
+      renderSelect({ defaultValue: 'legal', clearable: true, onValueChange });
+      await userEvent.click(screen.getByRole('button', { name: 'Clear Team' }));
+      expect(onValueChange).toHaveBeenCalledWith(null);
+    });
+  });
+
   describe('opening', () => {
     it('moves focus to the chosen node, opening the branches around it', async () => {
       renderSelect({ defaultValue: 'web' });
@@ -295,18 +351,59 @@ describe('TreeSelect', () => {
       expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
     });
 
-    it('closes when Tab leaves the tree, and focus does not fall to the page', async () => {
-      render(
-        <>
-          <TreeSelect label="Team" items={items} />
-          <button type="button">After</button>
-        </>,
-      );
-      await openTree();
-      await waitFor(() => expect(node('Engineering')).toHaveFocus());
-      await userEvent.tab();
-      await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
-      expect(document.body).not.toHaveFocus();
+    describe('the Tab key, since nothing traps it', () => {
+      function renderBetween() {
+        render(
+          <>
+            <button type="button">Before</button>
+            <TreeSelect label="Team" items={items} />
+            <button type="button">After</button>
+          </>,
+        );
+      }
+
+      async function openOnFirstNode() {
+        await openTree();
+        await waitFor(() => expect(node('Engineering')).toHaveFocus());
+      }
+
+      it('closes and moves on to what follows with Tab', async () => {
+        renderBetween();
+        await openOnFirstNode();
+        await userEvent.tab();
+        await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+        expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+      });
+
+      it('goes to the trigger with Shift+Tab, and leaves the popup open', async () => {
+        renderBetween();
+        await openOnFirstNode();
+        await userEvent.tab({ shift: true });
+        await expectFocusBack(trigger());
+        expect(screen.getByRole('tree')).toBeVisible();
+      });
+
+      // Where focus goes from there is the browser's to work out, past focus guards jsdom cannot
+      // tab through: it lands on what comes before the trigger in real Chromium.
+      it('closes with a second Shift+Tab', async () => {
+        renderBetween();
+        await openOnFirstNode();
+        await userEvent.tab({ shift: true });
+        await expectFocusBack(trigger());
+        await userEvent.tab({ shift: true });
+        await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+        expect(trigger()).not.toHaveFocus();
+      });
+
+      it('closes with Escape after Shift+Tab, with focus on the trigger', async () => {
+        renderBetween();
+        await openOnFirstNode();
+        await userEvent.tab({ shift: true });
+        await expectFocusBack(trigger());
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+        await expectFocusBack(trigger());
+      });
     });
   });
 
