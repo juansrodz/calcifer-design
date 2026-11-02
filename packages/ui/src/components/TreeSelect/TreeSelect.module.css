@@ -1,46 +1,13 @@
-/* The trigger is `field.module.css`'s `.control` and the popup its `popup.module.css` surface; this
-   says what they do not, and declares nothing either of them does except where a selector's
-   attribute out-ranks them. */
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.trigger {
-  flex: 1;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-width: 0;
-  text-align: start;
-  cursor: pointer;
-}
-
-.value {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.value[data-placeholder] {
-  color: var(--color-text-muted);
-}
-
-.icon {
-  display: inline-flex;
-  flex: none;
-  color: var(--color-text-muted);
+/* The trigger's frame is `PickerField`'s and the popup its `popup.module.css` surface; this says what
+   they do not, and declares nothing either of them does except where a selector's attribute
+   out-ranks them. */
+.chevron {
   transition-property: transform;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
 }
 
-.icon > svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.trigger[data-popup-open] .icon {
+[data-popup-open] .chevron {
   transform: rotate(180deg);
 }
 
