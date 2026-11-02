@@ -1,0 +1,23 @@
+/* `min()` is what keeps a column wider than a phone from overflowing it: the track's floor can never
+   pass 100% of the list. Skeletons and cards share the grid, so nothing moves when one replaces
+   the other. */
+.list {
+  --card-list-track: minmax(min(var(--card-list-min-column, 16rem), 100%), 1fr);
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--card-list-track));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  min-width: 0;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-prose);
+}

@@ -118,3 +118,7 @@ export type {
   FilterBarFilter,
   FilterBarLabels,
 } from './components/FilterBar/FilterBar';
+export { CardList } from './components/CardList/CardList';
+export type { CardListProps } from './components/CardList/CardList';
+export { Timeline } from './components/Timeline/Timeline';
+export type { TimelineProps, TimelineItem, TimelineTone } from './components/Timeline/Timeline';

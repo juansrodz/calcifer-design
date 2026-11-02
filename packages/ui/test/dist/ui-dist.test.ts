@@ -65,6 +65,8 @@ describe('@calcifer-design/ui dist', () => {
       'Tree',
       'TreeSelect',
       'FilterBar',
+      'CardList',
+      'Timeline',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
