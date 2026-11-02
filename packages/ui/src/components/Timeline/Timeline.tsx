@@ -96,6 +96,15 @@ function formatTimestamp(source: string, locale: string | undefined): FormattedT
       };
 }
 
+function Timestamp({ source, locale }: { source: string; locale: string | undefined }) {
+  const formatted = formatTimestamp(source, locale);
+  return formatted === null ? (
+    <span>{source}</span>
+  ) : (
+    <time dateTime={formatted.dateTime}>{formatted.text}</time>
+  );
+}
+
 /**
  * `description: condition && text` leaves `false` or `''` when there is nothing to say, and either
  * would draw an empty block. `0` is a value.
@@ -121,32 +130,25 @@ export function Timeline({ items, locale, 'aria-label': ariaLabel, toneLabels }:
     // `role="list"` is not redundant: WebKit drops list semantics for `list-style: none` outside a
     // `nav`, and this list is what tells a screen reader how many entries there are.
     <ol role="list" className={styles.list} aria-label={ariaLabel}>
-      {items.map((item) => {
-        const formatted = item.timestamp ? formatTimestamp(item.timestamp, resolvedLocale) : null;
-        return (
-          <li key={item.id} className={styles.item} data-tone={item.tone ?? 'neutral'}>
-            <span className={styles.marker} data-marker="" aria-hidden="true" />
-            <div className={styles.body}>
-              <div className={styles.title}>{item.title}</div>
-              {item.timestamp || item.tone ? (
-                <div className={styles.meta}>
-                  {formatted === null ? (
-                    item.timestamp ? (
-                      <span>{item.timestamp}</span>
-                    ) : null
-                  ) : (
-                    <time dateTime={formatted.dateTime}>{formatted.text}</time>
-                  )}
-                  {item.tone ? <span className={styles.tone}>{words[item.tone]}</span> : null}
-                </div>
-              ) : null}
-              {hasDescription(item.description) ? (
-                <div className={styles.description}>{item.description}</div>
-              ) : null}
-            </div>
-          </li>
-        );
-      })}
+      {items.map((item) => (
+        <li key={item.id} className={styles.item} data-tone={item.tone ?? 'neutral'}>
+          <span className={styles.marker} data-marker="" aria-hidden="true" />
+          <div className={styles.body}>
+            <div className={styles.title}>{item.title}</div>
+            {item.timestamp || item.tone ? (
+              <div className={styles.meta}>
+                {item.timestamp ? (
+                  <Timestamp source={item.timestamp} locale={resolvedLocale} />
+                ) : null}
+                {item.tone ? <span className={styles.tone}>{words[item.tone]}</span> : null}
+              </div>
+            ) : null}
+            {hasDescription(item.description) ? (
+              <div className={styles.description}>{item.description}</div>
+            ) : null}
+          </div>
+        </li>
+      ))}
     </ol>
   );
 }
