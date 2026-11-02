@@ -57,9 +57,13 @@
   color: var(--color-accent-text);
 }
 
-/* Forced colours replace the accent fill and so erase the chosen option; system colours survive. */
+/* Forced colours replace the accent fill and so erase the chosen option; system colours survive.
+   `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate behind the
+   text, and `HighlightText` on that can be unreadable: measured white on white. */
 @media (forced-colors: active) {
   .option[data-pressed] {
+    forced-color-adjust: none;
+
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
     background: Highlight;
     color: HighlightText;
