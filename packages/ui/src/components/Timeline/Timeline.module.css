@@ -1,7 +1,7 @@
 /* The same rail `Steps` draws, in logical properties so it stays on the right side in a right-to-left
-   page. The tints have no success token, so that one is mixed from its colour at the strength the
-   accent tint has. Text on a tint is always `--color-text`: a tone's own colour on its own tint
-   falls short of 4.5:1. */
+   page. The tints have no success token, so that one is mixed from its colour at 14% in both themes,
+   the accent tint's strength in light; the accent tint itself is 18% in dark. Text on a tint is
+   always `--color-text`: a tone's own colour on its own tint falls short of 4.5:1. */
 .list {
   display: flex;
   flex-direction: column;
