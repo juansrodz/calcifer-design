@@ -10,7 +10,6 @@ import { Button } from '../Button/Button';
 import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
 import { useFormValue } from '../Form/FormContext';
 import { IconButton } from '../IconButton/IconButton';
-import type { PopupAlign, PopupSide } from '../Popover/Popover';
 import { Calendar } from './Calendar';
 import {
   dateFormatter,
@@ -96,10 +95,6 @@ export interface DatePickerProps extends FieldFrameProps {
   placeholder?: string;
   /** The words the control says itself, for an app that is not in English. */
   labels?: Partial<DatePickerLabels>;
-  side?: PopupSide;
-  align?: PopupAlign;
-  /** Gap between the trigger and the calendar, in pixels. */
-  sideOffset?: number;
 }
 
 /**
@@ -129,9 +124,6 @@ export function DatePicker({
   clearable = false,
   placeholder = 'Choose a date',
   labels,
-  side = 'bottom',
-  align = 'start',
-  sideOffset = 8,
 }: DatePickerProps) {
   const labelId = useId();
   const valueId = useId();
@@ -224,12 +216,7 @@ export function DatePicker({
             </span>
           </BasePopover.Trigger>
           <BasePopover.Portal>
-            <BasePopover.Positioner
-              className={popupStyles.layer}
-              side={side}
-              align={align}
-              sideOffset={sideOffset}
-            >
+            <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
               <BasePopover.Popup
                 className={[popupStyles.surface, styles.popup].join(' ')}
                 data-popup="popover"

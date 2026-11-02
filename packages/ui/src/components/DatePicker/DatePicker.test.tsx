@@ -99,6 +99,14 @@ describe('DatePicker', () => {
       expect(onBlur).toHaveBeenCalled();
     });
 
+    it('takes no placement props, and opens below its trigger', async () => {
+      // @ts-expect-error `side` is not part of the public API.
+      renderPicker({ side: 'top' });
+      await openCalendar();
+      expect(screen.getByRole('dialog')).toHaveAttribute('data-side', 'bottom');
+      expect(screen.getByRole('dialog')).toHaveAttribute('data-align', 'start');
+    });
+
     it('does not open when disabled', async () => {
       renderPicker({ disabled: true });
       expect(trigger()).toBeDisabled();
