@@ -49,6 +49,23 @@ export function parseIsoDate(value: string | null | undefined): string | null {
   return fromInstant(toInstant(value)) === value ? value : null;
 }
 
+/** What makes a date impossible to choose. Bounds are real dates or `null`, as `parseIsoDate` gives. */
+export interface DateAvailability {
+  min: string | null;
+  max: string | null;
+  isDateDisabled: ((date: string) => boolean) | undefined;
+}
+
+/** The one test of a date against the bounds, for the grid and for validating a chosen value. */
+export function isDateUnavailable(
+  date: string,
+  { min, max, isDateDisabled }: DateAvailability,
+): boolean {
+  return (
+    (min !== null && date < min) || (max !== null && date > max) || Boolean(isDateDisabled?.(date))
+  );
+}
+
 /** The date on the user's own calendar at `now`. */
 export function todayIn(now: Date): string {
   return formatFields(now.getFullYear(), now.getMonth() + 1, now.getDate());
@@ -64,8 +81,9 @@ export function firstOfMonth(date: string): string {
 
 export function lastOfMonth(date: string): string {
   const instant = toInstant(firstOfMonth(date));
-  instant.setUTCMonth(instant.getUTCMonth() + 1);
-  return addDays(fromInstant(instant), -1);
+  // Day 0 of the next month, in one step: the first of it can lie past `LATEST_DATE`.
+  instant.setUTCMonth(instant.getUTCMonth() + 1, 0);
+  return fromInstant(instant);
 }
 
 /** Moves whole months, and lands on the last day when the target month is too short. */
@@ -94,29 +112,36 @@ export function endOfWeek(date: string, weekStartsOn: number): string {
 /** The month holding `date` as rows of seven, with `null` for the cells outside the month. */
 export function weeksOfMonth(date: string, weekStartsOn: number): (string | null)[][] {
   const first = firstOfMonth(date);
-  const last = lastOfMonth(date);
-  const weeks: (string | null)[][] = [];
-  for (
-    let weekStart = startOfWeek(first, weekStartsOn);
-    weekStart <= last;
-    weekStart = addDays(weekStart, 7)
-  ) {
-    weeks.push(
-      Array.from({ length: 7 }, (_unused, offset) => {
-        const day = addDays(weekStart, offset);
-        return day >= first && day <= last ? day : null;
-      }),
-    );
-  }
-  return weeks;
+  const dayCount = Number(lastOfMonth(date).slice(8, 10));
+  const leadingCells = (weekdayOf(first) - weekStartsOn + 7) % 7;
+  const weekCount = Math.ceil((leadingCells + dayCount) / 7);
+  // Counted from the first of the month, not stepped through with `addDays`, which stops at the
+  // ends of the supported range and would repeat its last date instead of leaving the month.
+  return Array.from({ length: weekCount }, (_unusedWeek, week) =>
+    Array.from({ length: 7 }, (_unusedDay, column) => {
+      const day = week * 7 + column - leadingCells + 1;
+      return day >= 1 && day <= dayCount
+        ? `${first.slice(0, 8)}${String(day).padStart(2, '0')}`
+        : null;
+    }),
+  );
 }
 
-/** A `DateTimeFormat` for calendar dates. Keep it the only way a date here becomes text. */
+/**
+ * A `DateTimeFormat` for calendar dates. Keep it the only way a date here becomes text. Always the
+ * Gregorian calendar, because that is what the arithmetic above lays out: a locale's own calendar,
+ * Persian for `fa-IR` or one named in the tag as `en-US-u-ca-hebrew`, would label those cells with
+ * the wrong month. The language and the digits stay the locale's.
+ */
 export function dateFormatter(
   locale: string | undefined,
   options: Intl.DateTimeFormatOptions,
 ): { format: (date: string) => string } {
-  const formatter = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' });
+  const formatter = new Intl.DateTimeFormat(locale, {
+    ...options,
+    calendar: 'gregory',
+    timeZone: 'UTC',
+  });
   return { format: (date) => formatter.format(toInstant(date)) };
 }
 

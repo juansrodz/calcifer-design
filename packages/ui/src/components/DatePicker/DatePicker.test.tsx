@@ -1,7 +1,7 @@
 import { composeStories } from '@storybook/react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import { Form } from '../Form/Form';
@@ -499,6 +499,27 @@ describe('DatePicker', () => {
   });
 
   describe('locale and weekStartsOn', () => {
+    it('draws a Gregorian month in a locale whose default calendar is another', async () => {
+      renderPicker({ defaultValue: '2026-03-08', locale: 'fa-IR' });
+      expect(trigger(/۸ مارس ۲۰۲۶/)).toBeVisible();
+      await openCalendar();
+      expect(screen.getByRole('grid', { name: 'مارس ۲۰۲۶' })).toBeVisible();
+      // In the Persian calendar the eighth of March is the seventeenth of Esfand.
+      const chosen = screen.getByRole('gridcell', { selected: true });
+      expect(chosen).toHaveTextContent(/^۸$/);
+      expect(chosen).toHaveAttribute('data-date', '2026-03-08');
+      expect(document.querySelector('[data-date="2026-03-31"]')).toHaveTextContent(/^۳۱$/);
+      expect(document.querySelector('[data-date="2026-03-01"]')).toHaveTextContent(/^۱$/);
+    });
+
+    it('draws a Gregorian month when the tag itself asks for another calendar', async () => {
+      renderPicker({ defaultValue: '2026-03-08', locale: 'en-US-u-ca-hebrew' });
+      expect(trigger('Event date Mar 8, 2026')).toBeVisible();
+      await openCalendar();
+      expect(screen.getByRole('grid', { name: 'March 2026' })).toBeVisible();
+      expect(screen.getByRole('gridcell', { selected: true })).toHaveTextContent(/^8$/);
+    });
+
     it('starts the week where it is told, whatever the locale says', async () => {
       renderPicker({ locale: 'en-US', weekStartsOn: 3 });
       await openCalendar();
@@ -691,7 +712,7 @@ describe('DatePicker', () => {
     });
 
     it('does not submit the form it sits in from opening, moving or choosing', async () => {
-      const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
+      const onSubmit = vi.fn((event: FormEvent) => event.preventDefault());
       render(
         <form onSubmit={onSubmit}>
           <DatePicker label="Event date" name="eventDate" defaultValue="2026-03-08" />
@@ -799,6 +820,109 @@ describe('DatePicker', () => {
       await waitFor(() => expect(screen.queryByText('Choose a date.')).toBeNull());
       await userEvent.click(screen.getByRole('button', { name: 'Save' }));
       expect(onSubmit).toHaveBeenCalledWith({ eventDate: '2026-03-16' });
+    });
+
+    /** An end date whose `min` is a start date someone can move past it. */
+    function StartAndEnd({ onSubmit }: { onSubmit: (values: object) => void }) {
+      const [start, setStart] = useState('2026-03-01');
+      return (
+        <Form onSubmit={onSubmit}>
+          <button type="button" onClick={() => setStart('2026-03-20')}>
+            Move the start late
+          </button>
+          <button type="button" onClick={() => setStart('2026-03-01')}>
+            Move the start back
+          </button>
+          <DatePicker
+            label="End date"
+            name="endDate"
+            defaultValue="2026-03-10"
+            min={start}
+            locale="en-US"
+          />
+          {save}
+        </Form>
+      );
+    }
+
+    it('blocks a chosen date that min has moved past, shows it still, and says why', async () => {
+      const onSubmit = vi.fn();
+      render(<StartAndEnd onSubmit={onSubmit} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Move the start late' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(screen.getByText('Choose an available date.')).toBeVisible();
+      const button = screen.getByRole('button', { name: 'End date Mar 10, 2026' });
+      expect(button).toHaveFocus();
+      expect(button).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('submits again once min moves back behind the date', async () => {
+      const onSubmit = vi.fn();
+      render(<StartAndEnd onSubmit={onSubmit} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Move the start late' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Move the start back' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({ endDate: '2026-03-10' });
+      expect(screen.queryByText('Choose an available date.')).toBeNull();
+    });
+
+    it.each([
+      ['max', { max: '2026-03-07' }],
+      ['isDateDisabled', { isDateDisabled: (date: string) => date === '2026-03-08' }],
+    ])('blocks a chosen date refused by %s, in the words of labels', async (_label, bounds) => {
+      const onSubmit = vi.fn();
+      render(
+        <Form onSubmit={onSubmit}>
+          <DatePicker
+            label="Event date"
+            name="eventDate"
+            defaultValue="2026-03-08"
+            labels={{ unavailableMessage: 'Elige otra fecha.' }}
+            {...bounds}
+          />
+          {save}
+        </Form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(screen.getByText('Elige otra fecha.')).toBeVisible();
+    });
+
+    it('lets an available date and an empty optional picker through', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <Form onSubmit={onSubmit}>
+          <DatePicker
+            label="Event date"
+            name="eventDate"
+            defaultValue="2026-03-08"
+            min="2026-03-08"
+          />
+          <DatePicker label="Other date" name="otherDate" min="2026-03-08" />
+          {save}
+        </Form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({ eventDate: '2026-03-08', otherDate: null });
+    });
+
+    it('does not block a plain form, which has no Base UI validation to run', async () => {
+      const onSubmit = vi.fn((event: FormEvent) => event.preventDefault());
+      render(
+        <form onSubmit={onSubmit}>
+          <DatePicker
+            label="Event date"
+            name="eventDate"
+            defaultValue="2026-03-08"
+            min="2026-04-01"
+          />
+          {save}
+        </form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalled();
     });
   });
 

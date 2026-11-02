@@ -13,6 +13,7 @@ import { Calendar } from './Calendar';
 import {
   dateFormatter,
   directionOf,
+  isDateUnavailable,
   parseIsoDate,
   usableLocale,
   weekStartOf,
@@ -29,6 +30,8 @@ export interface DatePickerLabels {
   required: string;
   /** Shown when `Form` submits a `required` picker with nothing chosen. */
   requiredMessage: string;
+  /** Shown when `Form` submits a date that `min`, `max` or `isDateDisabled` refuses. */
+  unavailableMessage: string;
   /** The clear button's name. Defaults to "Clear" and the field's own label. */
   clear: string;
 }
@@ -39,6 +42,7 @@ const DEFAULT_LABELS: Omit<DatePickerLabels, 'clear'> = {
   close: 'Close',
   required: 'required',
   requiredMessage: 'Choose a date.',
+  unavailableMessage: 'Choose an available date.',
 };
 
 export interface DatePickerProps extends FieldFrameProps {
@@ -55,7 +59,10 @@ export interface DatePickerProps extends FieldFrameProps {
   /**
    * Controlled: `YYYY-MM-DD`, or `null` for nothing chosen. A string that does not name a real date
    * (`''`, `2026-02-30`) reads as nothing chosen, and nothing is reported for it. A real date
-   * outside `min` and `max` or refused by `isDateDisabled` is still shown: it is the app's value.
+   * outside `min` and `max` or refused by `isDateDisabled` is still shown, because it is the app's
+   * value, and `Form` refuses to submit it, with `labels.unavailableMessage` on the frame. That
+   * covers a default value too, and a date a moved `min` has overtaken. A plain `<form>` is not
+   * blocked, for the reason `required` gives.
    */
   value?: string | null;
   defaultValue?: string | null;
@@ -133,6 +140,8 @@ export function DatePicker({
   const words = { ...DEFAULT_LABELS, clear: `Clear ${label}`, ...labels };
   const resolvedLocale = usableLocale(locale);
   const firstWeekday = weekStartsOn ?? weekStartOf(resolvedLocale);
+  const earliest = parseIsoDate(min);
+  const latest = parseIsoDate(max);
 
   useFormValue(disabled ? undefined : name, chosen);
 
@@ -149,7 +158,14 @@ export function DatePicker({
       name={name}
       disabled={disabled}
       invalid={error !== undefined}
-      validate={() => (required && chosen === null ? words.requiredMessage : null)}
+      validate={() => {
+        if (chosen === null) {
+          return required ? words.requiredMessage : null;
+        }
+        return isDateUnavailable(chosen, { min: earliest, max: latest, isDateDisabled })
+          ? words.unavailableMessage
+          : null;
+      }}
     >
       {/* `nativeLabel={false}` with a `<span>`, as `Select` does for its button. */}
       <BaseField.Label
@@ -215,8 +231,8 @@ export function DatePicker({
                 <Calendar
                   gridRef={gridRef}
                   chosen={chosen}
-                  min={parseIsoDate(min)}
-                  max={parseIsoDate(max)}
+                  min={earliest}
+                  max={latest}
                   isDateDisabled={isDateDisabled}
                   locale={resolvedLocale}
                   weekStartsOn={firstWeekday}

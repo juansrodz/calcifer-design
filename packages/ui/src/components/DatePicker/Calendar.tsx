@@ -15,6 +15,7 @@ import {
   dateFormatter,
   endOfWeek,
   firstOfMonth,
+  isDateUnavailable,
   lastOfMonth,
   startOfWeek,
   todayIn,
@@ -65,8 +66,7 @@ export function Calendar({
   const [today] = useState(() => todayIn(new Date()));
   const gridHasFocus = useRef(false);
 
-  const isUnavailable = (date: string) =>
-    (min !== null && date < min) || (max !== null && date > max) || Boolean(isDateDisabled?.(date));
+  const isUnavailable = (date: string) => isDateUnavailable(date, { min, max, isDateDisabled });
   const isReachable = (date: string) =>
     (min === null || monthOf(date) >= monthOf(min)) &&
     (max === null || monthOf(date) <= monthOf(max));

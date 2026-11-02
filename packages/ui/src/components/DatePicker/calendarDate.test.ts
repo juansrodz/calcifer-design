@@ -153,6 +153,61 @@ describe.each(zones)('in %s', (zone) => {
   });
 });
 
+describe('the ends of the supported range', () => {
+  it('keeps the last day of the last month', () => {
+    expect(lastOfMonth('9999-12-15')).toBe('9999-12-31');
+    expect(addMonths('9999-12-31', 0)).toBe('9999-12-31');
+  });
+
+  it('keeps the last days of every other month', () => {
+    expect(lastOfMonth('2026-12-15')).toBe('2026-12-31');
+    expect(lastOfMonth('2024-02-01')).toBe('2024-02-29');
+    expect(lastOfMonth('0000-01-15')).toBe('0000-01-31');
+  });
+
+  it.each(['9999-12-15', '0000-01-15'])(
+    'lays out the month of %s with each of its days once, on its weekday',
+    (date) => {
+      const weeks = weeksOfMonth(date, 0);
+      const days = weeks.flat().filter((day) => day !== null);
+      expect(days).toHaveLength(31);
+      expect(new Set(days).size).toBe(31);
+      expect(days[0]).toBe(firstOfMonth(date));
+      expect(days[30]).toBe(lastOfMonth(date));
+      weeks.forEach((week) => {
+        expect(week).toHaveLength(7);
+        week.forEach((day, column) => {
+          if (day !== null) {
+            expect(weekdayOf(day)).toBe(column);
+          }
+        });
+      });
+    },
+  );
+});
+
+describe('dateFormatter', () => {
+  const sameMonthIn = (locale: string, options: Intl.DateTimeFormatOptions) =>
+    dateFormatter(locale, options).format('2026-03-08');
+
+  it('uses the Gregorian calendar for the Persian locale, and its digits', () => {
+    expect(sameMonthIn('fa-IR', { month: 'long', year: 'numeric' })).toBe('مارس ۲۰۲۶');
+    expect(sameMonthIn('fa-IR', { day: 'numeric' })).toBe('۸');
+  });
+
+  it('overrules a calendar named in the tag', () => {
+    expect(sameMonthIn('en-US-u-ca-hebrew', { dateStyle: 'medium' })).toBe('Mar 8, 2026');
+    expect(sameMonthIn('en-US-u-ca-hebrew', { day: 'numeric' })).toBe('8');
+  });
+
+  it.each(['th-TH', 'ar-SA'])('uses the Gregorian year for %s', (locale) => {
+    const inWesternDigits = dateFormatter(`${locale}-u-nu-latn`, { year: 'numeric' }).format(
+      '2026-03-08',
+    );
+    expect(inWesternDigits).toContain('2026');
+  });
+});
+
 describe('locales', () => {
   it('reads direction from the script', () => {
     expect(directionOf('ar')).toBe('rtl');
