@@ -61,6 +61,7 @@ describe('@calcifer-design/ui dist', () => {
       'TimePicker',
       'Form',
       'DatePicker',
+      'Upload',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

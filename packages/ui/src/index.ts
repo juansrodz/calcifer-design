@@ -101,3 +101,10 @@ export { Form } from './components/Form/Form';
 export type { FormProps } from './components/Form/Form';
 export { DatePicker } from './components/DatePicker/DatePicker';
 export type { DatePickerProps, DatePickerLabels } from './components/DatePicker/DatePicker';
+export { Upload } from './components/Upload/Upload';
+export type {
+  UploadProps,
+  UploadLabels,
+  UploadRejection,
+  UploadRejectionReason,
+} from './components/Upload/Upload';

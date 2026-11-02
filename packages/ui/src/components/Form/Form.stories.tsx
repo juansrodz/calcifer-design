@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Checkbox } from '../Checkbox/Checkbox';
+import { DatePicker } from '../DatePicker/DatePicker';
 import { Field } from '../Field/Field';
 import { RadioGroup } from '../RadioGroup/RadioGroup';
 import { Select } from '../Select/Select';
@@ -9,6 +10,7 @@ import { Switch } from '../Switch/Switch';
 import { TextArea } from '../TextArea/TextArea';
 import { TextInput } from '../TextInput/TextInput';
 import { TimePicker } from '../TimePicker/TimePicker';
+import { Upload } from '../Upload/Upload';
 import { Form, type FormProps } from './Form';
 
 function ExampleForm(props: Omit<FormProps, 'children'>) {
@@ -24,6 +26,8 @@ function ExampleForm(props: Omit<FormProps, 'children'>) {
         <Field label="Arrival" name="arrival">
           <TimePicker />
         </Field>
+        <DatePicker label="Event date" name="eventDate" required clearable />
+        <Upload label="Menu" name="menu" accept=".pdf,image/*" multiple />
         <Select
           label="Category"
           name="category"
@@ -69,6 +73,8 @@ export const WithErrors: Story = {
       email: 'That address is already taken.',
       notes: 'Keep it under 200 characters.',
       arrival: 'The doors close at nine.',
+      eventDate: 'Nobody is free that day.',
+      menu: 'Attach the menu as a PDF.',
       category: 'Choose a category that is still open.',
       portion: 'Small portions have run out.',
       bringing: 'Someone has to bring something.',
