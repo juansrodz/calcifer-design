@@ -1,8 +1,8 @@
 import { composeStories } from '@storybook/react';
-import { createEvent, fireEvent, render, screen } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import { Form } from '../Form/Form';
 import { Upload, type UploadProps } from './Upload';
@@ -100,6 +100,53 @@ describe('Upload', () => {
       await userEvent.upload(input(), pdf);
       await userEvent.upload(input(), pdf);
       expect(onReject).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('the input in a browser that can build a FileList', () => {
+    /**
+     * jsdom has no `DataTransfer` and takes no other kind of `files`, so both are stand-ins, put in
+     * after the first render so that mounting does not reach jsdom's own setter. What the stand-in
+     * holds last is what the input holds, which a test can push to as the browser's picker would.
+     */
+    function renderWithFileList(props: Partial<UploadProps> = {}) {
+      const view = renderUpload({ multiple: true, ...props });
+      const held: File[][] = [];
+      Object.defineProperty(input(), 'files', {
+        configurable: true,
+        get: () => held.at(-1) ?? [],
+        set: (files: File[]) => held.push(files),
+      });
+      class StubTransfer {
+        files: File[] = [];
+        items = { add: (file: File) => void this.files.push(file) };
+      }
+      vi.stubGlobal('DataTransfer', StubTransfer);
+      return { ...view, held };
+    }
+
+    const rerenderWith = (files: File[]) => (
+      <Upload label="Attachments" name="attachments" multiple files={files} />
+    );
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('holds the list, as it grows and as it shrinks', () => {
+      const { held, rerender } = renderWithFileList({ files: [] });
+      rerender(rerenderWith([pdf, png]));
+      expect(held.at(-1)).toEqual([pdf, png]);
+      rerender(rerenderWith([png]));
+      expect(held.at(-1)).toEqual([png]);
+    });
+
+    it('goes back to the list when a parent refuses what the picker just put in it', () => {
+      const files = [pdf];
+      const { held } = renderWithFileList({ files });
+      held.push([png]);
+      fireEvent.change(input());
+      expect(held.at(-1)).toEqual(files);
     });
   });
 
@@ -247,6 +294,52 @@ describe('Upload', () => {
     });
   });
 
+  it.each(['*/*', '.pdf, */*'])('takes any file at all with accept="%s"', (accept) => {
+    const onReject = vi.fn();
+    renderUpload({ accept, multiple: true, onReject });
+    fireEvent.drop(zone(), { dataTransfer: dataTransfer([png, untyped]) });
+    expect(onReject).not.toHaveBeenCalled();
+    expect(fileNames()).toEqual(['photo.png', 'data.CSV']);
+  });
+
+  describe('the same file again', () => {
+    it('with multiple, turns it away, says so, and tells onReject', async () => {
+      const onFilesChange = vi.fn();
+      const onReject = vi.fn();
+      renderUpload({ multiple: true, defaultFiles: [pdf], onFilesChange, onReject });
+      await userEvent.upload(input(), pdf);
+      expect(onFilesChange).not.toHaveBeenCalled();
+      expect(onReject).toHaveBeenCalledWith([{ file: pdf, reason: 'duplicate' }]);
+      const message = 'report.pdf was not added: it is already in the list.';
+      expect(screen.getByText(message, { selector: 'p' })).toBeVisible();
+      expect(announced()).toBe(message);
+      expect(fileNames()).toEqual(['report.pdf']);
+    });
+
+    it('with multiple, turns away a second copy within one drop', () => {
+      const onFilesChange = vi.fn();
+      const onReject = vi.fn();
+      renderUpload({ multiple: true, onFilesChange, onReject });
+      fireEvent.drop(zone(), { dataTransfer: dataTransfer([pdf, pdf]) });
+      expect(onFilesChange).toHaveBeenCalledWith([pdf]);
+      expect(onReject).toHaveBeenCalledWith([{ file: pdf, reason: 'duplicate' }]);
+    });
+
+    it('without multiple, is no change at all, and nothing is said', async () => {
+      const onFilesChange = vi.fn();
+      const onReject = vi.fn();
+      renderUpload({ onFilesChange, onReject });
+      await userEvent.upload(input(), pdf);
+      expect(onFilesChange).toHaveBeenCalledTimes(1);
+      const status = screen.getByRole('status').textContent;
+      await userEvent.upload(input(), pdf);
+      expect(onFilesChange).toHaveBeenCalledTimes(1);
+      expect(onReject).not.toHaveBeenCalled();
+      expect(screen.getByRole('status').textContent).toBe(status);
+      expect(fileNames()).toEqual(['report.pdf']);
+    });
+  });
+
   describe('dropping', () => {
     it('marks the zone while something is over it, and cancels the browser default', () => {
       renderUpload();
@@ -361,6 +454,103 @@ describe('Upload', () => {
       const first = screen.getByRole('status').textContent;
       fireEvent.drop(zone(), { dataTransfer: dataTransfer([text]) });
       expect(screen.getByRole('status').textContent).not.toBe(first);
+    });
+
+    it('says nothing on mount, even with files already listed', () => {
+      renderUpload({ multiple: true, defaultFiles: [pdf, png] });
+      expect(announced()).toBe('');
+    });
+
+    it('says what left and what joined when one file replaces another', async () => {
+      renderUpload({ defaultFiles: [pdf] });
+      await userEvent.upload(input(), png);
+      expect(announced()).toBe('Added photo.png. Removed report.pdf.');
+    });
+
+    describe('with a parent that holds the list', () => {
+      /** Holds `files` still, as a parent refusing every change does. */
+      function refusing(props: Partial<UploadProps> = {}) {
+        const onFilesChange = vi.fn();
+        renderUpload({ multiple: true, files: [pdf], onFilesChange, ...props });
+        return onFilesChange;
+      }
+
+      it('says nothing for an addition the parent refused', async () => {
+        const onFilesChange = refusing();
+        await userEvent.upload(input(), png);
+        expect(onFilesChange).toHaveBeenCalledWith([pdf, png]);
+        expect(fileNames()).toEqual(['report.pdf']);
+        expect(announced()).toBe('');
+      });
+
+      it('says nothing for a removal the parent refused', async () => {
+        const onFilesChange = refusing();
+        await userEvent.click(screen.getByRole('button', { name: 'Remove report.pdf' }));
+        expect(onFilesChange).toHaveBeenCalledWith([]);
+        expect(fileNames()).toEqual(['report.pdf']);
+        expect(announced()).toBe('');
+      });
+
+      it('still says at once what it turned away itself, with the addition refused', () => {
+        refusing({ accept: '.pdf,.png' });
+        fireEvent.drop(zone(), { dataTransfer: dataTransfer([png, text]) });
+        expect(announced()).toBe('notes.txt was not added: that type of file is not allowed.');
+      });
+
+      it('says the addition, once the parent makes it, and nothing it said already', async () => {
+        function Late() {
+          const [files, setFiles] = useState<File[]>([]);
+          return (
+            <Upload
+              label="Attachments"
+              name="attachments"
+              multiple
+              accept=".pdf,.png"
+              files={files}
+              onFilesChange={(nextFiles) => {
+                setTimeout(() => setFiles(nextFiles));
+              }}
+            />
+          );
+        }
+        render(<Late />);
+        fireEvent.drop(zone(), { dataTransfer: dataTransfer([png, text]) });
+        expect(announced()).toBe('notes.txt was not added: that type of file is not allowed.');
+        await waitFor(() => expect(announced()).toBe('Added photo.png.'));
+      });
+
+      it('joins an accepted addition to what it turned away in one announcement', () => {
+        function Accepting() {
+          const [files, setFiles] = useState<File[]>([]);
+          return (
+            <Upload
+              label="Attachments"
+              name="attachments"
+              multiple
+              accept=".pdf"
+              files={files}
+              onFilesChange={setFiles}
+            />
+          );
+        }
+        render(<Accepting />);
+        fireEvent.drop(zone(), { dataTransfer: dataTransfer([pdf, text]) });
+        expect(announced()).toBe(
+          'Added report.pdf. notes.txt was not added: that type of file is not allowed.',
+        );
+      });
+
+      it('says a change the parent makes on its own, and nothing for a new array of the same', () => {
+        const { rerender } = render(
+          <Upload label="Attachments" name="attachments" multiple files={[pdf]} />,
+        );
+        rerender(<Upload label="Attachments" name="attachments" multiple files={[pdf]} />);
+        expect(announced()).toBe('');
+        rerender(<Upload label="Attachments" name="attachments" multiple files={[pdf, png]} />);
+        expect(announced()).toBe('Added photo.png.');
+        rerender(<Upload label="Attachments" name="attachments" multiple files={[]} />);
+        expect(announced()).toBe('Removed report.pdf. Removed photo.png.');
+      });
     });
 
     it('takes its words from labels', async () => {

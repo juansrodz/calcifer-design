@@ -9,13 +9,14 @@ import { IconButton } from '../IconButton/IconButton';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
 import styles from './Upload.module.css';
 
-export type UploadRejectionReason = 'type' | 'size' | 'count';
+export type UploadRejectionReason = 'type' | 'size' | 'count' | 'duplicate';
 
 export interface UploadRejection {
   file: File;
   /**
    * `type`: not covered by `accept`. `size`: over `maxSizeBytes`. `count`: a second file when
-   * `multiple` is off. Checked in that order, and a file gets the first reason that applies.
+   * `multiple` is off. `duplicate`: with `multiple`, a file the list already holds. Checked in
+   * that order, and a file gets the first reason that applies.
    */
   reason: UploadRejectionReason;
 }
@@ -39,6 +40,7 @@ const REJECTION_REASONS: Record<UploadRejectionReason, string> = {
   type: 'that type of file is not allowed',
   size: 'it is too large',
   count: 'only one file can be chosen',
+  duplicate: 'it is already in the list',
 };
 
 const DEFAULT_LABELS: Omit<UploadLabels, 'choose' | 'dropHint'> = {
@@ -57,8 +59,9 @@ export interface UploadProps extends FieldFrameProps {
   files?: File[];
   defaultFiles?: File[];
   /**
-   * The whole new list. With `multiple` a choice adds to the list and the same file twice counts
-   * once; without it a choice replaces the file there was.
+   * The whole new list. With `multiple` a choice adds to the list, and the same file again goes to
+   * `onReject` as a `duplicate`. Without it a choice replaces the file there was, and choosing that
+   * same file again is no change: this is not called and nothing is announced.
    */
   onFilesChange?: (files: File[]) => void;
   /**
@@ -91,6 +94,9 @@ function acceptsFile(file: File, accept: string | undefined): boolean {
     if (token.startsWith('.')) {
       return fileName.endsWith(token);
     }
+    if (token === '*/*') {
+      return true;
+    }
     if (token.endsWith('/*')) {
       return fileType.startsWith(token.slice(0, -1));
     }
@@ -101,6 +107,23 @@ function acceptsFile(file: File, accept: string | undefined): boolean {
 /** Identifies a file as far as a browser allows, which is what makes "the same file" decidable. */
 function signatureOf(file: File): string {
   return [file.name, file.size, file.lastModified].join(':');
+}
+
+function signaturesOf(files: File[]): string {
+  return files.map(signatureOf).join('|');
+}
+
+/** The files of `list` with no partner in `other`, where each file partners only one. */
+function withoutPartners(list: File[], other: File[]): File[] {
+  const unmatched = other.map(signatureOf);
+  return list.filter((file) => {
+    const partner = unmatched.indexOf(signatureOf(file));
+    if (partner === -1) {
+      return true;
+    }
+    unmatched.splice(partner, 1);
+    return false;
+  });
 }
 
 /**
@@ -128,6 +151,8 @@ export function Upload({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const focusAfterRemoval = useRef<number | null>(null);
+  const announcedFiles = useRef<File[]>(files ?? defaultFiles ?? []);
+  const turnedAwayThisCommit = useRef('');
   const [heldFiles, setHeldFiles] = useState<File[]>(defaultFiles ?? []);
   const [isDragging, setIsDragging] = useState(false);
   const [rejectionMessages, setRejectionMessages] = useState<string[]>([]);
@@ -171,6 +196,26 @@ export function Upload({
     focusAfterRemoval.current = null;
   });
 
+  // What joined or left is read off the list itself, since a parent can refuse a change or make one
+  // of its own. A layout effect, so that a file turned away by the same choice is said in the same
+  // breath: it was announced at once, and this replaces that text before anything can read it.
+  useLayoutEffect(() => {
+    const addedNames = withoutPartners(currentFiles, announcedFiles.current)
+      .map((file) => file.name)
+      .join(', ');
+    const changes = [
+      addedNames === '' ? null : words.added(addedNames),
+      ...withoutPartners(announcedFiles.current, currentFiles).map((file) =>
+        words.removed(file.name),
+      ),
+    ].filter(Boolean);
+    announcedFiles.current = currentFiles;
+    if (changes.length > 0) {
+      announce([...changes, turnedAwayThisCommit.current].filter(Boolean).join(' '));
+    }
+    turnedAwayThisCommit.current = '';
+  });
+
   const commit = (nextFiles: File[]) => {
     setHeldFiles(nextFiles);
     onFilesChange?.(nextFiles);
@@ -190,34 +235,32 @@ export function Upload({
         rejections.push({ file, reason: 'size' });
       } else if (!multiple && accepted.length > 0) {
         rejections.push({ file, reason: 'count' });
-      } else if (!known.has(signatureOf(file))) {
+      } else if (known.has(signatureOf(file))) {
+        rejections.push({ file, reason: 'duplicate' });
+      } else {
         known.add(signatureOf(file));
         accepted.push(file);
       }
     }
-    if (accepted.length > 0) {
-      commit(multiple ? [...currentFiles, ...accepted] : accepted);
+    const nextFiles = multiple ? [...currentFiles, ...accepted] : accepted;
+    if (accepted.length > 0 && signaturesOf(nextFiles) !== signaturesOf(currentFiles)) {
+      commit(nextFiles);
     }
     const messages = rejections.map(({ file, reason }) => words.rejected(file.name, reason));
     setRejectionMessages(messages);
     if (rejections.length > 0) {
       onReject?.(rejections);
     }
-    const addedNames = accepted.map((file) => file.name).join(', ');
-    announce(
-      [addedNames === '' ? null : words.added(addedNames), ...messages].filter(Boolean).join(' '),
-    );
+    if (rejections.length > 0) {
+      turnedAwayThisCommit.current = messages.join(' ');
+      announce(turnedAwayThisCommit.current);
+    }
   };
 
   const remove = (index: number) => {
-    const removed = currentFiles[index];
-    if (removed === undefined) {
-      return;
-    }
     focusAfterRemoval.current = index;
     setRejectionMessages([]);
     commit(currentFiles.filter((_file, fileIndex) => fileIndex !== index));
-    announce(words.removed(removed.name));
   };
 
   const carriesFiles = (event: DragEvent) =>
@@ -268,7 +311,7 @@ export function Upload({
           ref={inputRef}
           className={styles.input}
           // Base UI compares this to clear a `Form` entry; the file input itself cannot hold it.
-          value={currentFiles.map(signatureOf).join('|')}
+          value={signaturesOf(currentFiles)}
           onBlur={onBlur}
           // A chosen list satisfies `required` even where `showInInput` cannot fill the input.
           required={required && currentFiles.length === 0}
