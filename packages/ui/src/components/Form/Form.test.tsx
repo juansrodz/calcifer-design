@@ -459,6 +459,65 @@ describe('Form', () => {
   });
 
   describe('onSubmit', () => {
+    it("leaves out an input that is not one of the library's", async () => {
+      const onSubmit = vi.fn();
+      render(
+        <Form onSubmit={onSubmit}>
+          <Field label="Email" name="email">
+            <TextInput defaultValue="ada@example.com" />
+          </Field>
+          <input aria-label="Raw" name="raw" defaultValue="left out" />
+          <button type="submit">Save</button>
+        </Form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({ email: 'ada@example.com' });
+    });
+
+    it('brings a stale entry back after a success, until the parent drops it', async () => {
+      const onSubmit = vi.fn();
+      const staleForm = () => (
+        <Form onSubmit={onSubmit} errors={{ email: 'Taken.' }}>
+          <Field label="Email" name="email">
+            <TextInput defaultValue="ada@example.com" />
+          </Field>
+          <button type="submit">Save</button>
+        </Form>
+      );
+      const { rerender } = render(staleForm());
+      await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'm');
+      expect(screen.queryByText('Taken.')).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      rerender(staleForm());
+      expect(screen.getByText('Taken.')).toBeVisible();
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+
+    it('takes an interface for its values, which has no index signature', async () => {
+      interface Signup {
+        email: string;
+      }
+      const seen: Signup[] = [];
+      render(
+        <Form<Signup> onSubmit={(values) => seen.push(values)}>
+          <Field label="Email" name="email">
+            <TextInput defaultValue="ada@example.com" />
+          </Field>
+          <button type="submit">Save</button>
+        </Form>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(seen).toEqual([{ email: 'ada@example.com' }]);
+    });
+
+    it('still refuses values that are not an object', () => {
+      // @ts-expect-error a string has no fields to name.
+      render(<Form<string> onSubmit={noop}>{null}</Form>);
+      expect(screen.queryByRole('textbox')).toBeNull();
+    });
+
     it('gets a plain object holding each kind of value', async () => {
       const onSubmit = vi.fn();
       render(
