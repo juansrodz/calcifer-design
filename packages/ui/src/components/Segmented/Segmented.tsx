@@ -45,6 +45,12 @@ interface SegmentedNamedByElement extends SegmentedBaseProps {
 
 export type SegmentedProps = SegmentedNamedByLabel | SegmentedNamedByElement;
 
+/** The option holding `value`, or else the first enabled one; -1 when there is neither. */
+function chosenIndexOf(options: SegmentedOption[], value: string | undefined): number {
+  const namedIndex = options.findIndex((option) => option.value === value);
+  return namedIndex === -1 ? options.findIndex((option) => !option.disabled) : namedIndex;
+}
+
 /**
  * Choose exactly one of a few options. Each is a toggle button, and the group is one tab stop
  * whose arrow keys, Home and End move focus without changing the choice.
@@ -67,10 +73,7 @@ export function Segmented({
   const insideToolbar = useContext(InsideToolbarContext);
   const [heldValue, setHeldValue] = useState(defaultValue);
   const [focusedValue, setFocusedValue] = useState<string | null>(null);
-  const chosenValue = value ?? heldValue;
-  const heldIndex = options.findIndex((option) => option.value === chosenValue);
-  const chosenIndex =
-    heldIndex === -1 ? options.findIndex((option) => !option.disabled) : heldIndex;
+  const chosenIndex = chosenIndexOf(options, value ?? heldValue);
   // Read from `options`, not only from blur: React fires none for a focused element it removes.
   const focusIsInside = options.some((option) => option.value === focusedValue && !option.disabled);
   const chosenOption = options[chosenIndex];
