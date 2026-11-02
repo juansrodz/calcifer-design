@@ -3,7 +3,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
+import { CheckIcon } from '../../icons/CheckIcon';
 import buttonStyles from '../Button/Button.module.css';
+import { IconButton } from '../IconButton/IconButton';
 import iconButtonStyles from '../IconButton/IconButton.module.css';
 import { Segmented } from '../Segmented/Segmented';
 import { Toolbar, ToolbarButton, ToolbarSeparator } from './Toolbar';
@@ -130,7 +132,7 @@ describe('Toolbar', () => {
 
   // Base UI's default, kept on purpose: a disabled toolbar button stays reachable so its name can
   // be read, and it says so with `aria-disabled` rather than the attribute that removes focus.
-  it('keeps a disabled button focusable, dimmed and inert', async () => {
+  it('keeps a disabled button focusable and inert, and marks it for the skin to dim', async () => {
     const onClick = vi.fn();
     render(
       <Toolbar aria-label="Actions">
@@ -152,6 +154,70 @@ describe('Toolbar', () => {
     await userEvent.keyboard('{Enter}');
     await userEvent.keyboard(' ');
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  describe('a loading button', () => {
+    async function expectFocusableBusyAndInert(name: string, onClick: () => void) {
+      const button = screen.getByRole('button', { name });
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button).toHaveAttribute('data-loading');
+      expect(button).toHaveAttribute('data-disabled');
+      expect(button).not.toHaveAttribute('disabled');
+      await userEvent.click(button);
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(button).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+      await userEvent.keyboard(' ');
+      expect(onClick).not.toHaveBeenCalled();
+    }
+
+    it('in the default look says what it is, stays focusable and does nothing', async () => {
+      const onClick = vi.fn();
+      render(
+        <Toolbar aria-label="Actions">
+          <ToolbarButton>Save</ToolbarButton>
+          <ToolbarButton loading onClick={onClick}>
+            Publish
+          </ToolbarButton>
+        </Toolbar>,
+      );
+      await expectFocusableBusyAndInert('Publish', onClick);
+      expect(screen.getByRole('button', { name: 'Publish' })).toHaveClass(buttonStyles.root);
+    });
+
+    it('passes loading on to the IconButton in render, which draws its spinner', async () => {
+      const onClick = vi.fn();
+      render(
+        <Toolbar aria-label="Actions">
+          <ToolbarButton>Save</ToolbarButton>
+          <ToolbarButton
+            loading
+            onClick={onClick}
+            render={
+              <IconButton label="Approve" size="sm">
+                <CheckIcon />
+              </IconButton>
+            }
+          />
+        </Toolbar>,
+      );
+      await expectFocusableBusyAndInert('Approve', onClick);
+      expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    });
+
+    it('leaves nothing behind once it stops loading', () => {
+      render(
+        <Toolbar aria-label="Actions">
+          <ToolbarButton loading={false}>Publish</ToolbarButton>
+        </Toolbar>,
+      );
+      const button = screen.getByRole('button', { name: 'Publish' });
+      expect(button).toHaveAttribute('aria-disabled', 'false');
+      expect(button).not.toHaveAttribute('aria-busy');
+      expect(button).not.toHaveAttribute('data-loading');
+    });
   });
 
   it('disables every button in a disabled group', () => {
@@ -237,6 +303,35 @@ describe('Toolbar', () => {
       await userEvent.tab({ shift: true });
       expect(screen.getByRole('button', { name: 'Day' })).toHaveFocus();
     });
+  });
+
+  it("keeps Base UI's own options out of ToolbarButton, at the type level", () => {
+    const narrowed = [
+      // @ts-expect-error decided here: a disabled toolbar button always stays focusable
+      <ToolbarButton key="focusable" focusableWhenDisabled={false} />,
+      // @ts-expect-error a toolbar button is a native button
+      <ToolbarButton key="native" nativeButton={false} />,
+      // @ts-expect-error a class name, not a function of Base UI's state
+      <ToolbarButton key="class" className={() => 'custom'} />,
+      // @ts-expect-error a style object, not a function of Base UI's state
+      <ToolbarButton key="style" style={() => ({})} />,
+      // @ts-expect-error an element, not a function of Base UI's state
+      <ToolbarButton key="render" render={() => <button type="button" />} />,
+    ];
+    expect(narrowed).toHaveLength(5);
+  });
+
+  it('still takes a class name and a style', () => {
+    render(
+      <Toolbar aria-label="Actions">
+        <ToolbarButton className="custom" style={{ width: '160px' }}>
+          Save
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toHaveClass('custom', buttonStyles.root);
+    expect(save).toHaveStyle({ width: '160px' });
   });
 
   it('rejects a toolbar with no name, at the type level', () => {

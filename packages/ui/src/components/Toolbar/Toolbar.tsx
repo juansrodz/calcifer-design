@@ -1,5 +1,11 @@
 import { Toolbar as BaseToolbar } from '@base-ui/react/toolbar';
-import { createContext, type ComponentPropsWithoutRef, type ReactNode } from 'react';
+import {
+  createContext,
+  type ComponentPropsWithoutRef,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { Button } from '../Button/Button';
 import styles from './Toolbar.module.css';
 
@@ -37,22 +43,44 @@ export function Toolbar({
   );
 }
 
-export type ToolbarButtonProps = ComponentPropsWithoutRef<typeof BaseToolbar.Button>;
+export interface ToolbarButtonProps extends Omit<
+  ComponentPropsWithoutRef<typeof BaseToolbar.Button>,
+  'className' | 'style' | 'render' | 'focusableWhenDisabled' | 'nativeButton'
+> {
+  /** A `Button` or `IconButton` to wear. With none it wears a small secondary `Button`. */
+  render?: ReactElement;
+  /** Shows a busy state on the `Button` or `IconButton` it wears, and blocks activation. */
+  loading?: boolean;
+  className?: string;
+  style?: CSSProperties;
+}
 
 /**
  * A button in the toolbar's roving focus. `render` picks its look: `<Button variant="ghost" />`
- * or `<IconButton label="Approve">{icon}</IconButton>`, and with no `render` it wears a small
- * secondary `Button`. Base UI's part draws nothing of its own, so it would otherwise be unstyled.
+ * or `<IconButton label="Approve">{icon}</IconButton>`. Base UI's part draws nothing of its own,
+ * so with no `render` it wears a small secondary `Button` rather than go unstyled.
  *
- * `disabled` goes here, not on the element in `render`. Here, Base UI keeps the button focusable
- * and says so with `aria-disabled`. On a `Button` in `render` it comes out natively disabled, out
- * of the arrow keys' reach, and with a contradictory `aria-disabled="false"`. Measured.
+ * `disabled` and `loading` go here, not on the element in `render`. Here, Base UI keeps the button
+ * focusable and says so with `aria-disabled`. On a `Button` in `render`, `disabled` comes out
+ * natively disabled, out of the arrow keys' reach, and with a contradictory `aria-disabled="false"`;
+ * `loading` comes out dimmed and inert, with that same `aria-disabled="false"`. Measured.
  */
 export function ToolbarButton({
   render = <Button variant="secondary" size="sm" />,
+  disabled,
+  loading,
   ...rest
 }: ToolbarButtonProps) {
-  return <BaseToolbar.Button render={render} {...rest} />;
+  return (
+    <BaseToolbar.Button
+      render={render}
+      disabled={disabled || loading}
+      // Not one of Base UI's props: it passes through them to the element in `render`. Left out
+      // when false, because an element that does not take it would write it to the DOM.
+      {...(loading ? { loading } : null)}
+      {...rest}
+    />
+  );
 }
 
 export interface ToolbarGroupProps {
