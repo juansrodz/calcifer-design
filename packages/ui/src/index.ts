@@ -72,3 +72,5 @@ export { Switch } from './components/Switch/Switch';
 export type { SwitchProps } from './components/Switch/Switch';
 export { ViewField } from './components/ViewField/ViewField';
 export type { ViewFieldProps, ViewFieldLayout } from './components/ViewField/ViewField';
+export { Descriptions } from './components/Descriptions/Descriptions';
+export type { DescriptionsProps, DescriptionsItem } from './components/Descriptions/Descriptions';
