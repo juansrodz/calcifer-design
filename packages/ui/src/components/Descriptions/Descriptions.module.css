@@ -26,6 +26,7 @@
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .label {
@@ -39,7 +40,6 @@
   color: var(--color-text);
   font-size: var(--text-md);
   line-height: var(--leading-snug);
-  overflow-wrap: anywhere;
 }
 
 .value[data-empty] {
