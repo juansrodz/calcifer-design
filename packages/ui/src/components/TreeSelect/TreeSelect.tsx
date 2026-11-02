@@ -163,10 +163,7 @@ export function TreeSelect({
         <RequiredMark when={required} />
       </BaseField.Label>
       <div className={styles.row}>
-        <BasePopover.Root
-          open={open}
-          onOpenChange={(nextOpen) => changeOpen(nextOpen)}
-        >
+        <BasePopover.Root open={open} onOpenChange={(nextOpen) => changeOpen(nextOpen)}>
           <BasePopover.Trigger
             ref={triggerRef}
             disabled={disabled}

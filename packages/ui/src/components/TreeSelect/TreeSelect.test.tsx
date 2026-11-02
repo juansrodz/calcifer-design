@@ -509,6 +509,36 @@ describe('TreeSelect', () => {
       expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
     });
 
+    // Base UI's `modal` traps nothing in a popup with no close button, so Tab cannot tell these
+    // apart from a modal one: what it adds is a backdrop over the page, and an earlier close.
+    describe('leaving the page alone, since it is not modal', () => {
+      function renderBeside() {
+        render(
+          <>
+            <TreeSelect label="Team" items={items} />
+            <p>Elsewhere</p>
+          </>,
+        );
+        return screen.getByText('Elsewhere');
+      }
+
+      it('puts no backdrop over the page', async () => {
+        renderBeside();
+        await openTree();
+        expect(document.querySelector('[data-base-ui-inert][role="presentation"]')).toBeNull();
+      });
+
+      it('closes on a finished press outside, not as soon as the button goes down', async () => {
+        const elsewhere = renderBeside();
+        await openTree();
+        const user = userEvent.setup();
+        await user.pointer({ keys: '[MouseLeft>]', target: elsewhere });
+        expect(screen.getByRole('tree')).toBeVisible();
+        await user.pointer({ keys: '[/MouseLeft]', target: elsewhere });
+        await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+      });
+    });
+
     describe('the Tab key, since nothing traps it', () => {
       function renderBetween() {
         render(

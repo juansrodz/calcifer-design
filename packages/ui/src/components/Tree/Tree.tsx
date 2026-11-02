@@ -178,6 +178,7 @@ export function TreeView({
   // On every commit, because the focused element can go with any change: removed, collapsed away or
   // moved under another parent. React fires no blur for an element it removes, so `focused` still
   // says focus was in here, and `activeElement` says it no longer is.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- every commit, as above; clearing `focused` ends the only update this asks for.
   useLayoutEffect(() => {
     const stop = tabStopId === undefined ? undefined : itemElements.current.get(tabStopId);
     if (focused !== null && stop !== undefined && document.activeElement !== stop) {
@@ -399,7 +400,8 @@ export function TreeView({
  *
  * Tab lands on the selected item, or on the nearest open ancestor of one that is collapsed away,
  * else on the first enabled item. Focus never goes with an item: when it is removed or collapsed
- * away, focus moves to the nearest ancestor still shown.
+ * away, focus moves to the nearest ancestor still shown. Only when every item goes does it fall to
+ * the page, and it is not taken back when items return.
  */
 export function Tree(props: TreeProps) {
   return <TreeView {...props} />;

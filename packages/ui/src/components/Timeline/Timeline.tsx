@@ -60,7 +60,10 @@ interface FormattedTimestamp {
  */
 function formatTimestamp(source: string, locale: string | undefined): FormattedTimestamp | null {
   if (parseIsoDate(source) !== null) {
-    return { text: dateFormatter(locale, { dateStyle: 'medium' }).format(source), dateTime: source };
+    return {
+      text: dateFormatter(locale, { dateStyle: 'medium' }).format(source),
+      dateTime: source,
+    };
   }
   if (YEAR_OR_MONTH.test(source)) {
     const hasMonth = source.length > 4;
