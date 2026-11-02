@@ -335,6 +335,14 @@ describe('Tree', () => {
       expect(screen.queryAllByRole('treeitem')).toEqual([]);
       rerender(<Tree items={items} aria-label="Docs" />);
       expect(tabStops()).toEqual(['Guides']);
+      expect(screen.getByRole('tree')).toHaveAttribute('data-direction', 'ltr');
+    });
+
+    it('draws nothing with no items, since a tree must own its treeitems', async () => {
+      const { container } = render(<Tree items={[]} aria-label="Docs" />);
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByRole('tree')).toBeNull();
+      expect(await axeDocument()).toHaveNoViolations();
     });
   });
 
@@ -432,6 +440,42 @@ describe('Tree', () => {
         <Tree items={structuredClone(items)} aria-label="Docs" defaultExpandedIds={['guides']} />,
       );
       expect(document.activeElement).toBe(focused);
+    });
+
+    it('does not pull focus back when every item goes and items return', async () => {
+      const { rerender } = render(
+        <>
+          <Tree items={items} aria-label="Docs" />
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+      await focusTree();
+      focusIsOn('Guides');
+      rerender(
+        <>
+          <Tree items={[]} aria-label="Docs" />
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+      expect(document.body).toHaveFocus();
+      const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+      act(() => elsewhere.focus());
+      rerender(
+        <>
+          <Tree items={items} aria-label="Docs" />
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+      expect(elsewhere).toHaveFocus();
+      expect(tabStops()).toEqual(['Guides']);
+    });
+
+    it('does not take focus from the page either, when items return', async () => {
+      const { rerender } = render(<Tree items={items} aria-label="Docs" />);
+      await focusTree();
+      rerender(<Tree items={[]} aria-label="Docs" />);
+      rerender(<Tree items={items} aria-label="Docs" />);
+      expect(document.body).toHaveFocus();
     });
 
     it('takes no focus when something goes while focus is outside', () => {

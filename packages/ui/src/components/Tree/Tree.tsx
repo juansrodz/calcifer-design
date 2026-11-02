@@ -35,7 +35,10 @@ export interface TreeItem {
 export type TreeSelectionMode = 'none' | 'single' | 'multiple';
 
 interface TreeBaseProps {
-  /** Static data. A new array of the same ids changes nothing but what is drawn. */
+  /**
+   * Static data. A new array of the same ids changes nothing but what is drawn. With none, nothing
+   * is drawn, and what to say instead is the app's.
+   */
   items: TreeItem[];
   /** Controlled: the ids of the open parents. Pair it with `onExpandedChange`. */
   expandedIds?: string[];
@@ -175,6 +178,10 @@ export function TreeView({
     const stop = tabStopId === undefined ? undefined : itemElements.current.get(tabStopId);
     if (focused !== null && stop !== undefined && document.activeElement !== stop) {
       stop.focus();
+    }
+    // Nothing left to hold it. Remembered, it would pull focus back whenever items return.
+    if (focused !== null && stop === undefined) {
+      setFocused(null);
     }
   });
 
@@ -355,6 +362,10 @@ export function TreeView({
     );
   };
 
+  if (index.roots.length === 0) {
+    // No empty tree: a `tree` role must own its treeitems.
+    return null;
+  }
   return (
     <ul
       ref={rootRef}
