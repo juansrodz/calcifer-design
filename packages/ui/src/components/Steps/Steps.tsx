@@ -43,6 +43,13 @@ function statusOf(index: number, current: number, currentStatus: 'active' | 'err
   return index === current ? currentStatus : 'upcoming';
 }
 
+function markerOf(status: StepStatus, index: number): ReactNode {
+  if (status === 'complete') {
+    return <CheckIcon />;
+  }
+  return status === 'error' ? '!' : index + 1;
+}
+
 /**
  * Progress through a sequence. A display only: nothing here can be focused or activated. Each
  * step's status is stated in visually hidden text, so colour and the drawn marker, which is
@@ -71,7 +78,7 @@ export function Steps({
             aria-current={index === current ? 'step' : undefined}
           >
             <span className={styles.marker} aria-hidden="true">
-              {status === 'complete' ? <CheckIcon /> : status === 'error' ? '!' : index + 1}
+              {markerOf(status, index)}
             </span>
             <span className={styles.body}>
               <span className={styles.title}>{item.title}</span>

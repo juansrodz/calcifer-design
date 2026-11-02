@@ -34,6 +34,24 @@ function defaultRenderLink(
   );
 }
 
+function renderItemContent(
+  item: BreadcrumbItem,
+  isLast: boolean,
+  renderLink: NonNullable<BreadcrumbProps['renderLink']>,
+): ReactElement {
+  if (isLast) {
+    return (
+      <span className={styles.current} aria-current="page">
+        {item.label}
+      </span>
+    );
+  }
+  if (item.href === undefined) {
+    return <span className={styles.text}>{item.label}</span>;
+  }
+  return renderLink({ ...item, href: item.href }, { className: styles.link, children: item.label });
+}
+
 export function Breadcrumb({
   items,
   'aria-label': ariaLabel = 'Breadcrumb',
@@ -45,32 +63,18 @@ export function Breadcrumb({
   return (
     <nav aria-label={ariaLabel}>
       <ol className={styles.list}>
-        {items.map((item, index) => {
-          const isLast = index === items.length - 1;
-          return (
-            // By position: a trail's items have no id, and neither `label` nor `href` has to be
-            // unique. A step of the trail is what its position says it is.
-            <li key={index} className={styles.item}>
-              {index > 0 ? (
-                <span className={styles.separator} aria-hidden="true">
-                  /
-                </span>
-              ) : null}
-              {isLast ? (
-                <span className={styles.current} aria-current="page">
-                  {item.label}
-                </span>
-              ) : item.href === undefined ? (
-                <span className={styles.text}>{item.label}</span>
-              ) : (
-                renderLink(
-                  { ...item, href: item.href },
-                  { className: styles.link, children: item.label },
-                )
-              )}
-            </li>
-          );
-        })}
+        {items.map((item, index) => (
+          // By position: a trail's items have no id, and neither `label` nor `href` has to be
+          // unique. A step of the trail is what its position says it is.
+          <li key={index} className={styles.item}>
+            {index > 0 ? (
+              <span className={styles.separator} aria-hidden="true">
+                /
+              </span>
+            ) : null}
+            {renderItemContent(item, index === items.length - 1, renderLink)}
+          </li>
+        ))}
       </ol>
     </nav>
   );
