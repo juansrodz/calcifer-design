@@ -256,6 +256,71 @@ describe('TreeSelect', () => {
       await waitFor(() => expect(node('Engineering')).toHaveFocus());
     });
 
+    describe('by the arrow keys on the trigger, as Select does', () => {
+      it.each(['{ArrowDown}', '{ArrowUp}'])(
+        '%s lands on the chosen node, with the branches around it open',
+        async (key) => {
+          renderSelect({ defaultValue: 'web' });
+          trigger().focus();
+          await userEvent.keyboard(key);
+          await waitFor(() => expect(node('Web')).toHaveFocus());
+          expect(node('Engineering')).toHaveAttribute('aria-expanded', 'true');
+          expect(node('Product')).toHaveAttribute('aria-expanded', 'true');
+        },
+      );
+
+      it.each(['{ArrowDown}', '{ArrowUp}'])(
+        '%s lands on the first enabled node when nothing is chosen',
+        async (key) => {
+          renderSelect();
+          trigger().focus();
+          await userEvent.keyboard(key);
+          await waitFor(() => expect(node('Engineering')).toHaveFocus());
+        },
+      );
+
+      it('keeps the page from scrolling', () => {
+        renderSelect();
+        trigger().focus();
+        const event = new KeyboardEvent('keydown', {
+          key: 'ArrowDown',
+          bubbles: true,
+          cancelable: true,
+        });
+        act(() => {
+          trigger().dispatchEvent(event);
+        });
+        expect(event.defaultPrevented).toBe(true);
+      });
+
+      it('leaves other keys to the page, and does not open on them', async () => {
+        renderSelect();
+        trigger().focus();
+        await userEvent.keyboard('{ArrowLeft}{ArrowRight}a');
+        expect(screen.queryByRole('tree')).toBeNull();
+      });
+
+      it('returns focus to the trigger on Escape', async () => {
+        renderSelect({ defaultValue: 'web' });
+        trigger().focus();
+        await userEvent.keyboard('{ArrowDown}');
+        await waitFor(() => expect(node('Web')).toHaveFocus());
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+        await expectFocusBack(trigger());
+      });
+
+      it('returns focus to the trigger after choosing', async () => {
+        renderSelect();
+        trigger().focus();
+        await userEvent.keyboard('{ArrowDown}');
+        await waitFor(() => expect(node('Engineering')).toHaveFocus());
+        await userEvent.keyboard('{End}{Enter}');
+        await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+        await expectFocusBack(trigger('Team Design'));
+      });
+    });
+
     it('names the tree and the popup after the field', async () => {
       renderSelect();
       const tree = await openTree();
@@ -271,6 +336,99 @@ describe('TreeSelect', () => {
       await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
       await openTree();
       expect(node('Engineering')).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('keeps the open branches when reopening with a value chosen', async () => {
+      renderSelect({ defaultValue: 'web' });
+      await openTree();
+      await waitFor(() => expect(node('Web')).toHaveFocus());
+      await userEvent.keyboard('{End}');
+      expect(node('Design')).toHaveFocus();
+      await userEvent.keyboard('{ArrowUp}{ArrowRight}{Escape}');
+      await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+      await openTree();
+      await waitFor(() => expect(node('Web')).toHaveFocus());
+      expect(node('Operations')).toHaveAttribute('aria-expanded', 'true');
+      expect(node('Product')).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  describe('with no items', () => {
+    function renderEmpty(props: Partial<TreeSelectProps> = {}) {
+      return render(
+        <>
+          <TreeSelect label="Team" name="team" items={[]} {...props} />
+          <button type="button">After</button>
+        </>,
+      );
+    }
+
+    it('says so in the popup, in place of a tree', async () => {
+      renderEmpty();
+      await userEvent.click(trigger());
+      const dialog = await screen.findByRole('dialog', { name: 'Team' });
+      expect(dialog).toHaveTextContent('No options');
+      expect(dialog).toHaveAccessibleDescription('No options');
+      expect(screen.queryByRole('tree')).toBeNull();
+    });
+
+    it('takes the words from labels', async () => {
+      renderEmpty({ labels: { empty: 'Sin opciones' } });
+      await userEvent.click(trigger());
+      expect(await screen.findByText('Sin opciones')).toBeVisible();
+    });
+
+    it('has no axe violations while open', async () => {
+      renderEmpty();
+      await userEvent.click(trigger());
+      await screen.findByRole('dialog');
+      expect(await axeDocument()).toHaveNoViolations();
+    });
+
+    it.each(['{Enter}', '{ArrowDown}'])(
+      'puts focus on the popup when opened with %s, and Escape brings it back',
+      async (key) => {
+        renderEmpty();
+        trigger().focus();
+        await userEvent.keyboard(key);
+        const dialog = await screen.findByRole('dialog');
+        await waitFor(() => expect(dialog).toHaveFocus());
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await expectFocusBack(trigger());
+      },
+    );
+
+    it('closes when Tab leaves it', async () => {
+      renderEmpty();
+      await userEvent.click(trigger());
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus());
+      await userEvent.tab();
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+    });
+
+    it('shows the tree when items arrive while it is open, and can be left', async () => {
+      const { rerender } = render(<TreeSelect label="Team" items={[]} />);
+      await userEvent.click(trigger());
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus());
+      rerender(<TreeSelect label="Team" items={items} />);
+      expect(screen.getByRole('tree')).toBeVisible();
+      expect(screen.queryByText('No options')).toBeNull();
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('tree')).toBeNull());
+      await expectFocusBack(trigger());
+    });
+
+    it('keeps focus in the popup when the items all go while it is open', async () => {
+      const { rerender } = render(<TreeSelect label="Team" items={items} />);
+      await openTree();
+      await waitFor(() => expect(node('Engineering')).toHaveFocus());
+      rerender(<TreeSelect label="Team" items={[]} />);
+      await waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus());
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      await expectFocusBack(trigger());
     });
   });
 

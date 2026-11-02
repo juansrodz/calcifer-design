@@ -59,6 +59,7 @@ export const WithError: Story = {
 };
 export const Clearable: Story = { args: { clearable: true, defaultValue: 'web' } };
 export const Placeholder: Story = { args: { placeholder: 'Any team' } };
+export const NoOptions: Story = { args: { items: [] } };
 export const LongLabels: Story = {
   args: {
     defaultValue: 'long',

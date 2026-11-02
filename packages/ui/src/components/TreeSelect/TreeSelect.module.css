@@ -50,3 +50,10 @@
   width: max(var(--anchor-width), 18rem);
   max-height: min(24rem, var(--available-height));
 }
+
+.empty {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

@@ -1,6 +1,6 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { Popover as BasePopover } from '@base-ui/react/popover';
-import { useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useFormReset } from '../../hooks/useFormReset';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import { CloseIcon } from '../../icons/CloseIcon';
@@ -20,17 +20,23 @@ export interface TreeSelectLabels {
   requiredMessage: string;
   /** The clear button's name. Defaults to "Clear" and the field's own label. */
   clear: string;
+  /** Shown in the popup, in place of the tree, while `items` is empty. */
+  empty: string;
 }
 
 const DEFAULT_LABELS: Omit<TreeSelectLabels, 'clear'> = {
   required: 'required',
   requiredMessage: 'Choose an option.',
+  empty: 'No options',
 };
 
 export interface TreeSelectProps extends FieldFrameProps {
   /** The visible label, the start of the trigger's accessible name and the name of the tree. */
   label: string;
-  /** The hierarchy, as `Tree` takes it. A new array of the same ids changes no state. */
+  /**
+   * The hierarchy, as `Tree` takes it. A new array of the same ids changes no state. While it is
+   * empty the popup still opens, says `labels.empty` and takes focus itself.
+   */
   items: TreeItem[];
   /** Sits under the trigger and joins its `aria-describedby`. */
   description?: ReactNode;
@@ -106,6 +112,7 @@ export function TreeSelect({
   const chosenNode = nodeOf(value === undefined ? heldValue : value);
   const chosen = chosenNode?.id ?? null;
   const words = { ...DEFAULT_LABELS, clear: `Clear ${label}`, ...labels };
+  const hasItems = index.roots.length > 0;
 
   useFormValue(disabled ? undefined : name, chosen);
 
@@ -122,6 +129,20 @@ export function TreeSelect({
       commit(defaultValue ?? null);
     }
   });
+
+  const changeOpen = (nextOpen: boolean) => {
+    if (nextOpen && chosenNode !== undefined) {
+      setExpandedIds([...new Set([...expandedIds, ...chosenNode.ancestorIds])]);
+    }
+    setOpen(nextOpen);
+  };
+
+  // The tree took its focused item with it, and the page must not be left holding focus.
+  useLayoutEffect(() => {
+    if (open && !hasItems && document.activeElement === document.body) {
+      popupRef.current?.focus();
+    }
+  }, [open, hasItems]);
 
   return (
     <BaseField.Root
@@ -144,12 +165,7 @@ export function TreeSelect({
       <div className={styles.row}>
         <BasePopover.Root
           open={open}
-          onOpenChange={(nextOpen) => {
-            if (nextOpen && chosenNode !== undefined) {
-              setExpandedIds([...new Set([...expandedIds, ...chosenNode.ancestorIds])]);
-            }
-            setOpen(nextOpen);
-          }}
+          onOpenChange={(nextOpen) => changeOpen(nextOpen)}
         >
           <BasePopover.Trigger
             ref={triggerRef}
@@ -159,6 +175,15 @@ export function TreeSelect({
                 className={[fieldStyles.control, styles.trigger].join(' ')}
                 value={chosen ?? ''}
                 onBlur={onBlur}
+                onKeyDown={(event) => {
+                  // As `Select` opens. A button's own keys already cover Enter and Space.
+                  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (!open) {
+                      changeOpen(true);
+                    }
+                  }
+                }}
                 // A button cannot be `aria-required`, so the word goes in its name, from a node
                 // `hidden` keeps out of everything except that reference.
                 aria-labelledby={[labelId, required ? requiredId : null, valueId]
@@ -185,22 +210,32 @@ export function TreeSelect({
                 ref={popupRef}
                 className={[popupStyles.surface, styles.popup].join(' ')}
                 data-popup="select"
+                // Named as the tree inside is: the pattern asks each of them for a name, and the
+                // field's label is the only true one either has.
                 aria-label={label}
-                // The tree's one tab stop, which it has already placed on the chosen node.
+                // The tree's one tab stop, which it has already placed on the chosen node. With no
+                // tree, Base UI falls back on the popup itself.
                 initialFocus={() => popupRef.current?.querySelector('[tabindex="0"]') ?? true}
               >
-                <TreeView
-                  items={items}
-                  aria-label={label}
-                  selectionMode="single"
-                  selectedIds={chosen === null ? [] : [chosen]}
-                  expandedIds={expandedIds}
-                  onExpandedChange={setExpandedIds}
-                  onItemChoose={(id) => {
-                    commit(id);
-                    setOpen(false);
-                  }}
-                />
+                {hasItems ? (
+                  <TreeView
+                    items={items}
+                    aria-label={label}
+                    selectionMode="single"
+                    selectedIds={chosen === null ? [] : [chosen]}
+                    expandedIds={expandedIds}
+                    onExpandedChange={setExpandedIds}
+                    onItemChoose={(id) => {
+                      commit(id);
+                      setOpen(false);
+                    }}
+                  />
+                ) : (
+                  // A description, so that it is read out with the popup as focus lands there.
+                  <BasePopover.Description className={styles.empty}>
+                    {words.empty}
+                  </BasePopover.Description>
+                )}
               </BasePopover.Popup>
             </BasePopover.Positioner>
           </BasePopover.Portal>
