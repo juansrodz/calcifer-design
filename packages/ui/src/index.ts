@@ -110,3 +110,5 @@ export type {
 } from './components/Upload/Upload';
 export { Tree } from './components/Tree/Tree';
 export type { TreeProps, TreeItem, TreeSelectionMode } from './components/Tree/Tree';
+export { TreeSelect } from './components/TreeSelect/TreeSelect';
+export type { TreeSelectProps, TreeSelectLabels } from './components/TreeSelect/TreeSelect';
