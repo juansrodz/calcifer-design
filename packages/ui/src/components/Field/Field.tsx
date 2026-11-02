@@ -15,7 +15,7 @@ import { useInsideForm } from '../Form/FormContext';
  */
 const FieldRequiredContext = createContext(false);
 
-/** Internal. Read by `TextInput`; not exported from the barrel. */
+/** Internal. Read by `TextInput`, `TextArea` and `TimePicker`; not exported from the barrel. */
 export function useFieldRequired(): boolean {
   return useContext(FieldRequiredContext);
 }
