@@ -1,0 +1,144 @@
+/* Branches nest in the DOM because the WAI-ARIA pattern reads them that way, but not in the layout:
+   every row spans the whole tree, so a selected row's fill does not step in with its level, and
+   the indent lives in the row's own padding where a phone's width can cap it. */
+.root,
+.group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Room for the focus ring, which a scrolling popup around the tree would otherwise clip. */
+.root {
+  min-width: 0;
+  padding: var(--space-1);
+}
+
+/* Past 40% of the width the indent stops growing, so a very deep branch keeps most of a phone's
+   width for its label. The depth is still announced. */
+.row {
+  --tree-indent: min(calc(var(--tree-level) * var(--space-4)), 40%);
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--size-touch);
+  margin-block-end: var(--space-1);
+  padding-inline: var(--tree-indent) var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+  cursor: pointer;
+  user-select: none;
+  transition-property: background-color, color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The ring goes on the row: this element holds the whole branch beneath it too. */
+.item:focus-visible {
+  outline: none;
+}
+
+.item:focus-visible > .row {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background: var(--color-surface-2);
+  }
+
+  .item[aria-selected='true'] > .row:hover {
+    background: var(--color-accent-hover);
+  }
+}
+
+/* The same fill `Segmented` and `DatePicker` give what is chosen, with a check as well as colour. */
+.item[aria-selected='true'] > .row {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.item[aria-disabled='true'] > .row {
+  cursor: not-allowed;
+}
+
+.item[aria-disabled='true'] > .row > * {
+  opacity: 0.45;
+}
+
+.icon,
+.check {
+  display: inline-flex;
+  flex: none;
+}
+
+.icon > svg,
+.check > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* As tall as the row and wider than the glyph: this is the whole target for opening a branch. */
+.toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  align-self: stretch;
+  justify-content: center;
+  width: 2rem;
+}
+
+.toggle > svg {
+  width: 1rem;
+  height: 1rem;
+  transform: rotate(-90deg);
+  transition-property: transform;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.root[data-direction='rtl'] .toggle > svg {
+  transform: rotate(90deg);
+}
+
+.item[aria-expanded='true'] > .row > .toggle > svg,
+.root[data-direction='rtl'] .item[aria-expanded='true'] > .row > .toggle > svg {
+  transform: none;
+}
+
+/* Long words break rather than push the row past a phone's edge. */
+.label {
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+/* Forced colours erase the accent fill and so the selection; system colours survive, as in
+   `Segmented.module.css`, where `forced-color-adjust: none` is explained. */
+@media (forced-colors: active) {
+  .item[aria-selected='true'] > .row,
+  .item[aria-selected='true'] > .row:hover {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    outline-color: CanvasText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .item[aria-disabled='true'] > .row > * {
+    opacity: 1;
+  }
+
+  .item[aria-disabled='true']:not([aria-selected='true']) > .row {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    color: GrayText;
+  }
+}

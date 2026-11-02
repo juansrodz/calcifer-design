@@ -108,3 +108,5 @@ export type {
   UploadRejection,
   UploadRejectionReason,
 } from './components/Upload/Upload';
+export { Tree } from './components/Tree/Tree';
+export type { TreeProps, TreeItem, TreeSelectionMode } from './components/Tree/Tree';
