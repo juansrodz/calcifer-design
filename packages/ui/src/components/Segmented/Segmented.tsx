@@ -1,7 +1,7 @@
 import { Toggle } from '@base-ui/react/toggle';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
 import { useContext, useState, type ReactNode } from 'react';
-import { InsideToolbarContext } from '../Toolbar/Toolbar';
+import { InsideToolbarContext } from '../Toolbar/InsideToolbarContext';
 import styles from './Segmented.module.css';
 
 export interface SegmentedOption {
