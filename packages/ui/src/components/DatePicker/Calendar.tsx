@@ -16,19 +16,16 @@ import {
   endOfWeek,
   firstOfMonth,
   isDateUnavailable,
-  lastOfMonth,
   startOfWeek,
   todayIn,
   weeksOfMonth,
+  type DateAvailability,
 } from './calendarDate';
 import styles from './DatePicker.module.css';
 
-export interface CalendarProps {
+export interface CalendarProps extends DateAvailability {
   gridRef: RefObject<HTMLTableElement | null>;
   chosen: string | null;
-  min: string | null;
-  max: string | null;
-  isDateDisabled: ((date: string) => boolean) | undefined;
   locale: string | undefined;
   weekStartsOn: number;
   previousMonthLabel: string;
@@ -41,7 +38,9 @@ const A_SUNDAY = '2023-01-01';
 /** How far to look for a date that can be chosen, before settling for one that cannot. */
 const SEARCH_LIMIT_IN_DAYS = 800;
 
-const monthOf = (date: string) => date.slice(0, 7);
+function monthOf(date: string): string {
+  return date.slice(0, 7);
+}
 
 /**
  * The month grid inside `DatePicker`'s dialog, mounted only while it is open. Internal.
@@ -184,8 +183,10 @@ export function Calendar({
     }
   };
 
-  const hasPreviousMonth = isReachable(lastOfMonth(addMonths(firstOfMonth(activeDate), -1)));
-  const hasNextMonth = isReachable(addMonths(firstOfMonth(activeDate), 1));
+  const previousMonth = addMonths(firstOfMonth(activeDate), -1);
+  const nextMonth = addMonths(firstOfMonth(activeDate), 1);
+  const hasPreviousMonth = isReachable(previousMonth);
+  const hasNextMonth = isReachable(nextMonth);
 
   return (
     <>
@@ -199,7 +200,7 @@ export function Calendar({
           aria-disabled={hasPreviousMonth ? undefined : true}
           onClick={() => {
             if (hasPreviousMonth) {
-              setMovedDate(restingDateIn(addMonths(firstOfMonth(activeDate), -1)));
+              setMovedDate(restingDateIn(previousMonth));
             }
           }}
         >
@@ -215,7 +216,7 @@ export function Calendar({
           aria-disabled={hasNextMonth ? undefined : true}
           onClick={() => {
             if (hasNextMonth) {
-              setMovedDate(restingDateIn(addMonths(firstOfMonth(activeDate), 1)));
+              setMovedDate(restingDateIn(nextMonth));
             }
           }}
         >

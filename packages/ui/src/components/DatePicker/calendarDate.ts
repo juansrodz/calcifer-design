@@ -86,14 +86,21 @@ export function lastOfMonth(date: string): string {
   return fromInstant(instant);
 }
 
+function daysInMonth(date: string): number {
+  return Number(lastOfMonth(date).slice(8, 10));
+}
+
+/** The given day of `date`'s month. */
+function withDay(date: string, day: number): string {
+  return `${date.slice(0, 8)}${String(day).padStart(2, '0')}`;
+}
+
 /** Moves whole months, and lands on the last day when the target month is too short. */
 export function addMonths(date: string, amount: number): string {
   const instant = toInstant(firstOfMonth(date));
   instant.setUTCMonth(instant.getUTCMonth() + amount);
   const first = fromInstant(instant);
-  const lastDay = Number(lastOfMonth(first).slice(8, 10));
-  const day = Math.min(Number(date.slice(8, 10)), lastDay);
-  return `${first.slice(0, 7)}-${String(day).padStart(2, '0')}`;
+  return withDay(first, Math.min(Number(date.slice(8, 10)), daysInMonth(first)));
 }
 
 /** 0 is Sunday, as `Date` and the prop have it. */
@@ -101,8 +108,13 @@ export function weekdayOf(date: string): number {
   return toInstant(date).getUTCDay();
 }
 
+/** How many days of its week come before `date`. */
+function daysIntoWeek(date: string, weekStartsOn: number): number {
+  return (weekdayOf(date) - weekStartsOn + 7) % 7;
+}
+
 export function startOfWeek(date: string, weekStartsOn: number): string {
-  return addDays(date, -((weekdayOf(date) - weekStartsOn + 7) % 7));
+  return addDays(date, -daysIntoWeek(date, weekStartsOn));
 }
 
 export function endOfWeek(date: string, weekStartsOn: number): string {
@@ -112,17 +124,15 @@ export function endOfWeek(date: string, weekStartsOn: number): string {
 /** The month holding `date` as rows of seven, with `null` for the cells outside the month. */
 export function weeksOfMonth(date: string, weekStartsOn: number): (string | null)[][] {
   const first = firstOfMonth(date);
-  const dayCount = Number(lastOfMonth(date).slice(8, 10));
-  const leadingCells = (weekdayOf(first) - weekStartsOn + 7) % 7;
+  const dayCount = daysInMonth(date);
+  const leadingCells = daysIntoWeek(first, weekStartsOn);
   const weekCount = Math.ceil((leadingCells + dayCount) / 7);
   // Counted from the first of the month, not stepped through with `addDays`, which stops at the
   // ends of the supported range and would repeat its last date instead of leaving the month.
   return Array.from({ length: weekCount }, (_unusedWeek, week) =>
     Array.from({ length: 7 }, (_unusedDay, column) => {
       const day = week * 7 + column - leadingCells + 1;
-      return day >= 1 && day <= dayCount
-        ? `${first.slice(0, 8)}${String(day).padStart(2, '0')}`
-        : null;
+      return day >= 1 && day <= dayCount ? withDay(first, day) : null;
     }),
   );
 }

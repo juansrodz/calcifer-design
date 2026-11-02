@@ -192,11 +192,7 @@ export function DatePicker({
         <RequiredMark when={required} />
       </BaseField.Label>
       <div className={styles.row}>
-        <BasePopover.Root
-          open={open}
-          onOpenChange={(nextOpen) => setOpen(nextOpen)}
-          modal="trap-focus"
-        >
+        <BasePopover.Root open={open} onOpenChange={setOpen} modal="trap-focus">
           <BasePopover.Trigger
             ref={triggerRef}
             disabled={disabled}
