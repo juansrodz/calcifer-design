@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
+import { PageShell } from './PageShell';
 import * as stories from './PageShell.stories';
 
 const { Default, WithSidebar, ContentOnly, CustomTarget, Dark } = composeStories(stories);
@@ -69,5 +70,11 @@ describe('PageShell', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Jump to the page' }));
     expect(screen.getByRole('main')).toHaveAttribute('id', 'page-content');
     expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('rejects a sidebar with no label, at the type level', () => {
+    // @ts-expect-error `sidebarLabel` is required with `sidebar`
+    const unnamed = <PageShell sidebar={<p>Sections</p>}>Content</PageShell>;
+    expect(unnamed).toBeDefined();
   });
 });

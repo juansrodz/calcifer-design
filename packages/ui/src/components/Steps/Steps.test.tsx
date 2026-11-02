@@ -8,7 +8,7 @@ import * as stories from './Steps.stories';
 const { Default, Vertical, WithError, NotStarted, AllComplete, TranslatedStatuses, Dark } =
   composeStories(stories);
 
-/** Each list item's status as it reads in the accessibility tree, in order. */
+/** Each list item's status, read from its visually hidden text, in order. */
 function readStatuses(): string[] {
   return screen.getAllByRole('listitem').map((listItem) => {
     const status = listItem.querySelector(`.${a11yStyles.visuallyHidden}`);
