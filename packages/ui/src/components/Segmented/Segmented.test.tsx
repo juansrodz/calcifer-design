@@ -1,4 +1,5 @@
 import { composeStories } from '@storybook/react';
+import type { ReactElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
@@ -172,12 +173,149 @@ describe('Segmented', () => {
     expect(onValueChange.mock.calls).toEqual([['week'], ['month']]);
   });
 
-  // Measured on Base UI 1.8.0: `ToggleGroup` offers no way to say which item holds the tab stop,
-  // so it is the first enabled one until focus has been moved, whichever option is pressed.
-  it('starts its tab stop on the first enabled option, not on the pressed one', async () => {
-    render(<Preselected />);
-    await userEvent.tab();
-    expect(screen.getByRole('button', { name: 'Day' })).toHaveFocus();
+  describe('its tab stop', () => {
+    function renderBetweenButtons(element: ReactElement) {
+      return render(
+        <>
+          <button type="button">Before</button>
+          {element}
+          <button type="button">After</button>
+        </>,
+      );
+    }
+
+    function option(name: string) {
+      return screen.getByRole('button', { name });
+    }
+
+    it('lands on the chosen option', async () => {
+      render(<Preselected />);
+      await userEvent.tab();
+      expect(option('Week')).toHaveFocus();
+    });
+
+    it('moves on from the chosen option with the arrow keys', async () => {
+      render(<Preselected />);
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(option('Month')).toHaveFocus();
+      await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+      expect(option('Day')).toHaveFocus();
+    });
+
+    it('returns to the chosen option after shift+tab out and tab back', async () => {
+      renderBetweenButtons(<Preselected />);
+      await userEvent.tab();
+      await userEvent.tab();
+      expect(option('Week')).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(option('Before')).toHaveFocus();
+      await userEvent.tab();
+      expect(option('Week')).toHaveFocus();
+    });
+
+    it('returns to the chosen option when focus left from another one', async () => {
+      renderBetweenButtons(<Preselected />);
+      await userEvent.tab();
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(option('Month')).toHaveFocus();
+      await userEvent.tab();
+      expect(option('After')).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(option('Week')).toHaveFocus();
+    });
+
+    it('is a single stop from a focused option that is not the chosen one', async () => {
+      renderBetweenButtons(<Preselected />);
+      await userEvent.tab();
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(option('Day')).toHaveFocus();
+      // Week sits after Day in the document: a second stop would catch this tab.
+      await userEvent.tab();
+      expect(option('After')).toHaveFocus();
+    });
+
+    it('follows a value changed from outside', async () => {
+      const { rerender } = render(
+        <>
+          <Segmented aria-label="Range" options={options} value="week" />
+          <button type="button">After</button>
+        </>,
+      );
+      rerender(
+        <>
+          <Segmented aria-label="Range" options={options} value="month" />
+          <button type="button">After</button>
+        </>,
+      );
+      await userEvent.tab();
+      expect(option('Month')).toHaveFocus();
+      await userEvent.tab();
+      expect(option('After')).toHaveFocus();
+    });
+
+    it('follows a value changed from outside while focus is away, after a visit', async () => {
+      const tree = (value: string) => (
+        <>
+          <button type="button">Before</button>
+          <Segmented aria-label="Range" options={options} value={value} />
+        </>
+      );
+      const { rerender } = render(tree('week'));
+      await userEvent.tab();
+      await userEvent.tab();
+      expect(option('Week')).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      rerender(tree('day'));
+      await userEvent.tab();
+      expect(option('Day')).toHaveFocus();
+    });
+
+    it('stays on the option chosen by pressing it', async () => {
+      renderBetweenButtons(<Preselected />);
+      await userEvent.click(option('Month'));
+      await userEvent.click(option('Before'));
+      await userEvent.tab();
+      expect(option('Month')).toHaveFocus();
+    });
+
+    it('falls back to an enabled option when the pressed one is disabled', async () => {
+      render(
+        <>
+          <Segmented
+            aria-label="Range"
+            defaultValue="week"
+            options={[
+              { value: 'day', label: 'Day' },
+              { value: 'week', label: 'Week', disabled: true },
+              { value: 'month', label: 'Month' },
+            ]}
+          />
+          <button type="button">After</button>
+        </>,
+      );
+      await userEvent.tab();
+      expect(option('Day')).toHaveFocus();
+      await userEvent.tab();
+      expect(option('After')).toHaveFocus();
+    });
+
+    it('recovers the chosen option when the focused one was removed', async () => {
+      const tree = (list: typeof options) => (
+        <Segmented aria-label="Range" options={list} defaultValue="week" />
+      );
+      const { rerender } = render(tree(options));
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(option('Month')).toHaveFocus();
+      // React fires no blur for an element it removes, so this has to be noticed some other way.
+      rerender(tree(options.slice(0, 2)));
+      expect(document.body).toHaveFocus();
+      await userEvent.tab();
+      expect(option('Week')).toHaveFocus();
+    });
   });
 
   it('leaves a disabled option out of the arrow keys and of the pointer', async () => {

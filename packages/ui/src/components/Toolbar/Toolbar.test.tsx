@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import buttonStyles from '../Button/Button.module.css';
 import iconButtonStyles from '../IconButton/IconButton.module.css';
+import { Segmented } from '../Segmented/Segmented';
 import { Toolbar, ToolbarButton, ToolbarSeparator } from './Toolbar';
 import * as stories from './Toolbar.stories';
 
@@ -195,6 +196,47 @@ describe('Toolbar', () => {
     expect(screen.getByRole('button', { name: 'Week' })).toHaveFocus();
     await userEvent.keyboard(' ');
     expect(screen.getByRole('button', { name: 'Week' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  describe('holding a Segmented whose chosen option is not its first', () => {
+    const toolbar = (
+      <>
+        <Toolbar aria-label="Actions">
+          <ToolbarButton>Refresh</ToolbarButton>
+          <Segmented
+            aria-label="Range"
+            defaultValue="week"
+            options={[
+              { value: 'day', label: 'Day' },
+              { value: 'week', label: 'Week' },
+            ]}
+          />
+        </Toolbar>
+        <button type="button">After</button>
+      </>
+    );
+
+    it("still has one tab stop, the toolbar's", async () => {
+      const { container } = render(toolbar);
+      const stops = container.querySelectorAll('[role="toolbar"] [tabindex="0"]');
+      expect(stops).toHaveLength(1);
+      expect(stops[0]).toHaveTextContent('Refresh');
+      await userEvent.tab();
+      expect(screen.getByRole('button', { name: 'Refresh' })).toHaveFocus();
+      await userEvent.tab();
+      expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+    });
+
+    it('leaves the stop where the toolbar put it, not on the chosen option', async () => {
+      render(toolbar);
+      await userEvent.tab();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(screen.getByRole('button', { name: 'Day' })).toHaveFocus();
+      await userEvent.tab();
+      expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(screen.getByRole('button', { name: 'Day' })).toHaveFocus();
+    });
   });
 
   it('rejects a toolbar with no name, at the type level', () => {

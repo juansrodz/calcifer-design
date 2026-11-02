@@ -1,7 +1,13 @@
 import { Toolbar as BaseToolbar } from '@base-ui/react/toolbar';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { createContext, type ComponentPropsWithoutRef, type ReactNode } from 'react';
 import { Button } from '../Button/Button';
 import styles from './Toolbar.module.css';
+
+/**
+ * Whether a control sits in a `Toolbar`, which then owns the one tab stop. Private to the library:
+ * `src/index.ts` does not export it, and `Segmented` reads it to leave that stop alone.
+ */
+export const InsideToolbarContext = createContext(false);
 
 export interface ToolbarProps {
   /** Names the toolbar. Required: a toolbar has no visible name to fall back on. */
@@ -23,9 +29,11 @@ export function Toolbar({
   children,
 }: ToolbarProps) {
   return (
-    <BaseToolbar.Root className={styles.root} aria-label={ariaLabel} orientation={orientation}>
-      {children}
-    </BaseToolbar.Root>
+    <InsideToolbarContext.Provider value={true}>
+      <BaseToolbar.Root className={styles.root} aria-label={ariaLabel} orientation={orientation}>
+        {children}
+      </BaseToolbar.Root>
+    </InsideToolbarContext.Provider>
   );
 }
 

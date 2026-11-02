@@ -1,6 +1,7 @@
 import { Toggle } from '@base-ui/react/toggle';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
-import { useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
+import { InsideToolbarContext } from '../Toolbar/Toolbar';
 import styles from './Segmented.module.css';
 
 export interface SegmentedOption {
@@ -46,9 +47,13 @@ export type SegmentedProps = SegmentedNamedByLabel | SegmentedNamedByElement;
 
 /**
  * Choose exactly one of a few options. Each is a toggle button, and the group is one tab stop
- * whose arrow keys, Home and End move focus without changing the choice. Base UI's `ToggleGroup`
- * decides the tab stop and has no prop for it, so it starts on the first enabled option rather
- * than on the chosen one, until focus has been moved.
+ * whose arrow keys, Home and End move focus without changing the choice.
+ *
+ * Tab lands on the chosen option. Base UI's `ToggleGroup` has no prop for that and roves from the
+ * first enabled option, so while focus is outside the group each `Toggle` is told its `tabIndex`.
+ * Inside it Base UI roves as usual: an override there would leave the chosen option as a second
+ * stop on the way out. A disabled chosen option cannot take focus, so Base UI decides then too,
+ * and inside a `Toolbar` the toolbar owns the stop.
  */
 export function Segmented({
   options,
@@ -59,11 +64,17 @@ export function Segmented({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
 }: SegmentedProps) {
+  const insideToolbar = useContext(InsideToolbarContext);
   const [heldValue, setHeldValue] = useState(defaultValue);
+  const [focusedValue, setFocusedValue] = useState<string | null>(null);
   const chosenValue = value ?? heldValue;
   const heldIndex = options.findIndex((option) => option.value === chosenValue);
   const chosenIndex =
     heldIndex === -1 ? options.findIndex((option) => !option.disabled) : heldIndex;
+  // Read from `options`, not only from blur: React fires none for a focused element it removes.
+  const focusIsInside = options.some((option) => option.value === focusedValue && !option.disabled);
+  const chosenOption = options[chosenIndex];
+  const placesTabStop = !insideToolbar && !focusIsInside && chosenOption && !chosenOption.disabled;
   return (
     <ToggleGroup
       className={styles.root}
@@ -75,6 +86,11 @@ export function Segmented({
       // one holds one. Base UI hears each option by its index, because its `Toggle` takes `''` for
       // no value at all and generates an id instead.
       value={chosenIndex === -1 ? [] : [String(chosenIndex)]}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setFocusedValue(null);
+        }
+      }}
       onValueChange={(nextIndexes) => {
         // An empty array is the active option being pressed again, which changes nothing.
         const nextOption = options[Number(nextIndexes[0] ?? -1)];
@@ -91,6 +107,8 @@ export function Segmented({
           className={styles.option}
           value={String(index)}
           disabled={option.disabled}
+          onFocus={() => setFocusedValue(option.value)}
+          {...(placesTabStop ? { tabIndex: index === chosenIndex ? 0 : -1 } : null)}
         >
           {option.icon ? (
             <span className={styles.icon} aria-hidden="true">
