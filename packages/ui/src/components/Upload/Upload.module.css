@@ -23,20 +23,13 @@
   cursor: not-allowed;
 }
 
-.face {
-  display: flex;
+/* `.face` also wears `field.module.css`'s `.control`, which is the input surface and the box. Two
+   classes so that the dashed line and the roomier padding out-rank it whatever the bundle order. */
+.zone .face {
   flex-wrap: wrap;
-  align-items: center;
   gap: var(--space-3);
-  min-height: var(--size-touch);
   padding: var(--space-4);
-  border: 1px solid var(--color-border-strong);
   border-style: dashed;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-input);
-  transition-property: background-color, border-color;
-  transition-duration: var(--motion-duration-1);
-  transition-timing-function: var(--motion-ease);
 }
 
 .hint {

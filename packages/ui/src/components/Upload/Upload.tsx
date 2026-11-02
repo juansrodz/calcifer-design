@@ -290,7 +290,7 @@ export function Upload({
             );
           }}
         />
-        <div className={styles.face} aria-hidden="true">
+        <div className={[fieldStyles.control, styles.face].join(' ')} aria-hidden="true">
           <Button variant="secondary" size="sm" tabIndex={-1} disabled={disabled}>
             {words.choose}
           </Button>
