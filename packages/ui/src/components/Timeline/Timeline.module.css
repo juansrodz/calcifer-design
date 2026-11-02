@@ -50,8 +50,9 @@
   position: absolute;
   inset-block: calc(var(--space-1) + var(--timeline-marker-size)) 0;
   inset-inline-start: calc(var(--timeline-marker-size) / 2);
-  width: 1px;
-  background: var(--color-border-strong);
+
+  /* A border and not a background, so that the rail survives forced colours. */
+  border-inline-start: 1px solid var(--color-border-strong);
 }
 
 /* A border as well as the fill: forced colours paint the one and erase the other. */
