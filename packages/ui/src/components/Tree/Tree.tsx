@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
-import { indexItems, visibleNodesOf, type TreeNode } from './treeIndex';
+import { indexItems, visibleNodesOf, type TreeIndex, type TreeNode } from './treeIndex';
 import styles from './Tree.module.css';
 
 export interface TreeItem {
@@ -81,14 +81,38 @@ export type TreeProps = TreeNamedByLabel | TreeNamedByElement;
 /** A pause longer than this starts a new type-ahead, in milliseconds. */
 const TYPE_AHEAD_WINDOW = 500;
 
+/** Not printable, but how a letter gets typed: they leave a type-ahead going. */
+const KEYS_WITHIN_TYPING = new Set(['Shift', 'CapsLock', 'AltGraph', 'Dead']);
+
 interface FocusedItem {
   id: string;
   /** Kept for when the item goes, taking its place in the tree with it. */
   ancestorIds: string[];
 }
 
-/** Not printable, but how a letter gets typed: they leave a type-ahead going. */
-const KEYS_WITHIN_TYPING = new Set(['Shift', 'CapsLock', 'AltGraph', 'Dead']);
+/** The item itself if it is shown, else the nearest ancestor that is. */
+function nearestShown(visible: TreeNode[], { id, ancestorIds }: FocusedItem): TreeNode | undefined {
+  return [id, ...ancestorIds]
+    .map((candidate) => visible.find((node) => node.id === candidate))
+    .find((node) => node !== undefined);
+}
+
+/** Where Tab comes in: the first selected item, what shows of one, the first enabled, the first. */
+function restingNode(
+  visible: TreeNode[],
+  nodes: TreeIndex['nodes'],
+  selected: ReadonlySet<string>,
+): TreeNode | undefined {
+  // The set holds known ids only, and a root is always shown, so the first of them is enough.
+  const [firstHeld] = selected;
+  const collapsedAway = firstHeld === undefined ? undefined : nodes.get(firstHeld);
+  return (
+    visible.find((node) => selected.has(node.id)) ??
+    (collapsedAway === undefined ? undefined : nearestShown(visible, collapsedAway)) ??
+    visible.find((node) => !node.item.disabled) ??
+    visible[0]
+  );
+}
 
 function isPrintable(key: string): boolean {
   return Array.from(key).length === 1;
@@ -153,40 +177,27 @@ export function TreeView({
     return new Set(selectionMode === 'single' ? known.slice(0, 1) : known);
   }, [selectionMode, selected, index.nodes]);
 
-  /** The item itself if it is shown, else the nearest ancestor that is. */
-  const nearestShown = (id: string, ancestorIds: string[]) =>
-    [id, ...ancestorIds].find((candidate) => visible.some((node) => node.id === candidate));
-  /** Where Tab comes in: the first selected item, what shows of one, the first enabled, the first. */
-  const restingId = () => {
-    const firstSelected =
-      visible.find((node) => selectedSet.has(node.id))?.id ??
-      [...selectedSet]
-        .map((id) => nearestShown(id, index.nodes.get(id)?.ancestorIds ?? []))
-        .find(Boolean);
-    return firstSelected ?? (visible.find((node) => !node.item.disabled) ?? visible[0])?.id;
-  };
   // Worked out on each render, so that no change to the items or to what is open can strand it.
-  const tabStopId =
+  const tabStop =
     (focused === null
       ? undefined
-      : nearestShown(
-          focused.id,
-          index.nodes.get(focused.id)?.ancestorIds ?? focused.ancestorIds,
-        )) ?? restingId();
-  const current = tabStopId === undefined ? undefined : index.nodes.get(tabStopId);
+      : nearestShown(visible, index.nodes.get(focused.id) ?? focused)) ??
+    restingNode(visible, index.nodes, selectedSet);
 
   // On every commit, because the focused element can go with any change: removed, collapsed away or
   // moved under another parent. React fires no blur for an element it removes, so `focused` still
   // says focus was in here, and `activeElement` says it no longer is.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- every commit, as above; clearing `focused` ends the only update this asks for.
   useLayoutEffect(() => {
-    const stop = tabStopId === undefined ? undefined : itemElements.current.get(tabStopId);
-    if (focused !== null && stop !== undefined && document.activeElement !== stop) {
-      stop.focus();
+    if (focused === null) {
+      return;
     }
-    // Nothing left to hold it. Remembered, it would pull focus back whenever items return.
-    if (focused !== null && stop === undefined) {
+    const stop = tabStop === undefined ? undefined : itemElements.current.get(tabStop.id);
+    if (stop === undefined) {
+      // Nothing left to hold it. Remembered, it would pull focus back whenever items return.
       setFocused(null);
+    } else if (document.activeElement !== stop) {
+      stop.focus();
     }
   });
 
@@ -239,15 +250,15 @@ export function TreeView({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    if (event.altKey || event.ctrlKey || event.metaKey || current === undefined) {
+    if (event.altKey || event.ctrlKey || event.metaKey || tabStop === undefined) {
       return;
     }
     if (!isPrintable(event.key) && !KEYS_WITHIN_TYPING.has(event.key)) {
       typedSoFar.current.text = '';
     }
-    const position = visible.indexOf(current);
+    const position = visible.indexOf(tabStop);
     const inRightToLeft = getComputedStyle(event.currentTarget).direction === 'rtl';
-    const isOpen = current.children.length > 0 && expandedSet.has(current.id);
+    const isOpen = tabStop.children.length > 0 && expandedSet.has(tabStop.id);
     const isTyping =
       typedSoFar.current.text !== '' &&
       event.timeStamp - typedSoFar.current.at <= TYPE_AHEAD_WINDOW;
@@ -257,19 +268,19 @@ export function TreeView({
       ArrowUp: () => focusNode(visible[position - 1]?.id),
       Home: () => focusNode(visible[0]?.id),
       End: () => focusNode(visible.at(-1)?.id),
-      Enter: () => activate(current),
+      Enter: () => activate(tabStop),
     };
     const moveInward = () =>
-      isOpen ? focusNode(current.children[0]?.id) : toggleExpanded(current);
+      isOpen ? focusNode(tabStop.children[0]?.id) : toggleExpanded(tabStop);
     const moveOutward = () =>
-      isOpen && !current.item.disabled
-        ? toggleExpanded(current)
-        : focusNode(current.ancestorIds[0]);
+      isOpen && !tabStop.item.disabled
+        ? toggleExpanded(tabStop)
+        : focusNode(tabStop.ancestorIds[0]);
     keyActions[inRightToLeft ? 'ArrowLeft' : 'ArrowRight'] = moveInward;
     keyActions[inRightToLeft ? 'ArrowRight' : 'ArrowLeft'] = moveOutward;
     if (!isTyping) {
       // Inside a type-ahead a space is a letter: "New York" must get past its gap.
-      keyActions[' '] = () => activate(current);
+      keyActions[' '] = () => activate(tabStop);
     }
 
     const keyAction = keyActions[event.key];
@@ -311,7 +322,7 @@ export function TreeView({
         }}
         role="treeitem"
         className={styles.item}
-        tabIndex={node.id === tabStopId ? 0 : -1}
+        tabIndex={node.id === tabStop?.id ? 0 : -1}
         // By its label alone: a treeitem's name would otherwise take in everything nested under it.
         aria-labelledby={labelId}
         aria-expanded={hasChildren ? isOpen : undefined}
