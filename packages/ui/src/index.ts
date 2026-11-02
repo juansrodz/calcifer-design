@@ -91,3 +91,5 @@ export type {
   ToolbarButtonProps,
   ToolbarGroupProps,
 } from './components/Toolbar/Toolbar';
+export { Steps } from './components/Steps/Steps';
+export type { StepsProps, StepsItem, StepStatus } from './components/Steps/Steps';
