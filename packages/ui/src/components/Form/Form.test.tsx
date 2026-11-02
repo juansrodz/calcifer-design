@@ -167,6 +167,21 @@ describe('Form', () => {
       expect(find()).not.toHaveAttribute('aria-invalid');
     });
 
+    it('shows nothing on a disabled control, and does not stop the submit', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <Form onSubmit={onSubmit} errors={{ target: 'From the server.' }}>
+          <Field label="Target" name="target" disabled>
+            <TextInput />
+          </Field>
+          <button type="submit">Save</button>
+        </Form>,
+      );
+      expect(screen.queryByText('From the server.')).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSubmit).toHaveBeenCalledWith({});
+    });
+
     it('shows on a RadioGroup and marks its options invalid', () => {
       render(
         <Form onSubmit={noop} errors={{ target: 'From the server.' }}>

@@ -21,7 +21,7 @@ export interface FormProps<Values extends Record<string, unknown> = Record<strin
    * again; an object with the same messages, as an inline literal makes on every render, does not
    * bring back one that was cleared, until the form has been submitted since.
    *
-   * A disabled control is marked invalid but shows no message, which is Base UI's rule.
+   * A disabled control shows no message and does not stop the submit, which is Base UI's rule.
    */
   errors?: Record<string, string>;
   /**

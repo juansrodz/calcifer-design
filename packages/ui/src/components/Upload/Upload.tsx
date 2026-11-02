@@ -315,8 +315,8 @@ export function Upload({
           ))}
         </ul>
       )}
-      {rejectionMessages.map((message) => (
-        <p key={message} className={styles.rejection}>
+      {rejectionMessages.map((message, index) => (
+        <p key={index} className={styles.rejection}>
           {message}
         </p>
       ))}

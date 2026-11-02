@@ -227,6 +227,17 @@ describe('Upload', () => {
       expect(screen.queryByText(/was not added/)).toBeNull();
     });
 
+    it('shows both when two files of one name are turned away, with no key warning', () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      renderUpload({ accept: '.pdf', multiple: true });
+      fireEvent.drop(zone(), {
+        dataTransfer: dataTransfer([text, new File(['other'], 'notes.txt')]),
+      });
+      expect(screen.getAllByText(/^notes.txt was not added/, { selector: 'p' })).toHaveLength(2);
+      expect(consoleError).not.toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
     it('keeps the files it has when the new one is turned away', async () => {
       const onFilesChange = vi.fn();
       renderUpload({ accept: '.pdf', defaultFiles: [pdf], onFilesChange });
