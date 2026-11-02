@@ -345,6 +345,20 @@ describe('DatePicker', () => {
       expect(focusedDate()).toBe('2026-03-18');
     });
 
+    it('takes its direction from the computed style, as the chevrons do', async () => {
+      // No `dir` attribute anywhere: an app that sets the direction in its stylesheet.
+      document.documentElement.style.direction = 'rtl';
+      try {
+        await openAt('2026-03-11');
+        const chevrons = screen.getByRole('button', { name: 'Previous month' }).parentElement;
+        expect(chevrons).toHaveAttribute('data-direction', 'rtl');
+        await userEvent.keyboard('{ArrowLeft}');
+        expect(focusedDate()).toBe('2026-03-12');
+      } finally {
+        document.documentElement.style.removeProperty('direction');
+      }
+    });
+
     it('selects with Enter and with Space, closes, and returns focus', async () => {
       const onValueChange = vi.fn();
       await openAt('2026-03-11', { onValueChange });

@@ -43,6 +43,14 @@ function monthOf(date: string): string {
 }
 
 /**
+ * The chevrons and the arrow keys both ask this, so that they cannot disagree. Computed, because an
+ * attribute is only one way to set a direction: a stylesheet can too, and `dir="auto"` names none.
+ */
+function readingDirectionOf(element: Element): string {
+  return getComputedStyle(element).direction;
+}
+
+/**
  * The month grid inside `DatePicker`'s dialog, mounted only while it is open. Internal.
  *
  * Roving focus, per the WAI-ARIA date picker dialog pattern: one date is the tab stop, the opening
@@ -137,7 +145,7 @@ export function Calendar({
   // the calendar costs no second render and shows no frame of the chevrons pointing the wrong way.
   useLayoutEffect(() => {
     if (headerRef.current !== null) {
-      headerRef.current.dataset.direction = getComputedStyle(headerRef.current).direction;
+      headerRef.current.dataset.direction = readingDirectionOf(headerRef.current);
     }
   });
 
@@ -159,7 +167,7 @@ export function Calendar({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTableElement>) => {
-    const inRightToLeft = event.currentTarget.closest('[dir]')?.getAttribute('dir') === 'rtl';
+    const inRightToLeft = readingDirectionOf(event.currentTarget) === 'rtl';
     const monthStep = event.shiftKey ? 12 : 1;
     const targets: Record<string, () => string> = {
       ArrowLeft: () => addDays(activeDate, inRightToLeft ? 1 : -1),
