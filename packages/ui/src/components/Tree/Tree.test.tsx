@@ -347,45 +347,55 @@ describe('Tree', () => {
   });
 
   describe('where focus goes when its item goes', () => {
+    // In a branch that is not the first: the first enabled item is where focus rests with no
+    // ancestors to go by, so an ancestor there could not tell the two apart.
     it('moves to the parent when the focused child is removed', async () => {
       const { rerender } = render(
         <Tree items={items} aria-label="Docs" defaultExpandedIds={everyParent} />,
       );
-      await focusTree();
-      await userEvent.keyboard('{ArrowDown}');
-      focusIsOn('Installing');
+      act(() => node('Tokens').focus());
+      focusIsOn('Tokens');
       rerender(
         <Tree
           items={[
-            { ...items[0], children: items[0]?.children?.slice(1) } as TreeItem,
-            ...items.slice(1),
+            items[0] as TreeItem,
+            { ...items[1], children: items[1]?.children?.slice(1) } as TreeItem,
+            ...items.slice(2),
           ]}
           aria-label="Docs"
           defaultExpandedIds={everyParent}
         />,
       );
-      focusIsOn('Guides');
-      expect(tabStops()).toEqual(['Guides']);
+      focusIsOn('Reference');
+      expect(tabStops()).toEqual(['Reference']);
     });
 
-    it('moves to the nearest surviving ancestor when a whole branch goes', async () => {
+    it('moves to the nearest surviving ancestor when a whole branch goes', () => {
+      const withBranch = (children: TreeItem[]): TreeItem[] => [
+        items[0] as TreeItem,
+        { id: 'reference', label: 'Reference', children },
+      ];
+      const hooks = { id: 'hooks', label: 'Hooks' };
       const { rerender } = render(
-        <Tree items={items} aria-label="Docs" defaultExpandedIds={everyParent} />,
-      );
-      await focusTree();
-      await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
-      focusIsOn('Light theme');
-      rerender(
         <Tree
-          items={[
-            { id: 'guides', label: 'Guides', children: [{ id: 'install', label: 'Installing' }] },
-            ...items.slice(1),
-          ]}
+          items={withBranch([
+            { id: 'tokens', label: 'Tokens' },
+            { id: 'api', label: 'API', children: [hooks] },
+          ])}
           aria-label="Docs"
-          defaultExpandedIds={everyParent}
+          defaultExpandedIds={['reference', 'api']}
         />,
       );
-      focusIsOn('Guides');
+      act(() => node('Hooks').focus());
+      focusIsOn('Hooks');
+      rerender(
+        <Tree
+          items={withBranch([{ id: 'tokens', label: 'Tokens' }])}
+          aria-label="Docs"
+          defaultExpandedIds={['reference', 'api']}
+        />,
+      );
+      focusIsOn('Reference');
     });
 
     it('moves to the first enabled item when a root item goes', async () => {
@@ -657,6 +667,31 @@ describe('Tree', () => {
       });
     });
 
+    it('keeps a type-ahead key from the page, letter and space alike', () => {
+      renderTree();
+      act(() => node('Guides').focus());
+      const press = (key: string) => {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        act(() => {
+          screen.getByRole('tree').querySelector('[tabindex="0"]')?.dispatchEvent(event);
+        });
+        return event.defaultPrevented;
+      };
+      expect(press('r')).toBe(true);
+      expect(press(' ')).toBe(true);
+      expect(press('z')).toBe(true);
+    });
+
+    it('leaves a key with nothing to do to the page', () => {
+      renderTree();
+      act(() => node('Guides').focus());
+      const event = new KeyboardEvent('keydown', { key: 'F2', bubbles: true, cancelable: true });
+      act(() => {
+        node('Guides').dispatchEvent(event);
+      });
+      expect(event.defaultPrevented).toBe(false);
+    });
+
     describe('type-ahead', () => {
       const pauseOverTypeAhead = () =>
         new Promise((resolve) => {
@@ -700,6 +735,23 @@ describe('Tree', () => {
         await userEvent.keyboard('legacy t');
         focusIsOn('Legacy tokens');
         expect(screen.queryByRole('treeitem', { selected: true })).toBeNull();
+      });
+
+      it('does not select an enabled item at the gap in "New York"', async () => {
+        const onSelectedChange = vi.fn();
+        renderTree({
+          items: [
+            { id: 'first', label: 'First' },
+            { id: 'new-jersey', label: 'New Jersey' },
+            { id: 'new-york', label: 'New York' },
+          ],
+          selectionMode: 'single',
+          onSelectedChange,
+        });
+        await focusTree();
+        await userEvent.keyboard('new y');
+        focusIsOn('New York');
+        expect(onSelectedChange).not.toHaveBeenCalled();
       });
 
       it('starts over after a pause', async () => {
@@ -759,6 +811,37 @@ describe('Tree', () => {
         await userEvent.keyboard('l');
         // "Tokens" and "Light theme" are both closed off, and "tl" matches nothing.
         focusIsOn('Themes');
+      });
+
+      describe('with a match collapsed away ahead of one that shows', () => {
+        const collapsedFirst: TreeItem[] = [
+          {
+            id: 'guides',
+            label: 'Guides',
+            children: [
+              { id: 'install', label: 'Installing' },
+              { id: 'dark', label: 'Dark theme' },
+            ],
+          },
+          { id: 'docs', label: 'Docs' },
+          { id: 'dates', label: 'Dates' },
+        ];
+
+        it('passes over it on one letter', async () => {
+          renderTree({ items: collapsedFirst });
+          await focusTree();
+          await userEvent.keyboard('d');
+          focusIsOn('Docs');
+        });
+
+        it('passes over it on several', async () => {
+          renderTree({ items: collapsedFirst });
+          await focusTree();
+          await userEvent.keyboard('d');
+          focusIsOn('Docs');
+          await userEvent.keyboard('a');
+          focusIsOn('Dates');
+        });
       });
 
       it('lands on a disabled item, which stays focusable', async () => {
@@ -880,6 +963,33 @@ describe('Tree', () => {
       expect(onExpandedChange).not.toHaveBeenCalled();
       await userEvent.keyboard('{ArrowRight}');
       focusIsOn('Free');
+    });
+
+    it('go on to their parent with Left when nested and left open by the app', async () => {
+      const onExpandedChange = vi.fn();
+      renderTree({
+        items: [
+          {
+            id: 'outer',
+            label: 'Outer',
+            children: [
+              {
+                id: 'nested',
+                label: 'Nested',
+                disabled: true,
+                children: [{ id: 'inner', label: 'Inner' }],
+              },
+            ],
+          },
+        ],
+        defaultExpandedIds: ['outer', 'nested'],
+        onExpandedChange,
+      });
+      act(() => node('Nested').focus());
+      await userEvent.keyboard('{ArrowLeft}');
+      focusIsOn('Outer');
+      expect(node('Nested')).toHaveAttribute('aria-expanded', 'true');
+      expect(onExpandedChange).not.toHaveBeenCalled();
     });
   });
 
