@@ -1,6 +1,7 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import { useId, useRef, useState, type ReactNode } from 'react';
+import { useFormReset } from '../../hooks/useFormReset';
 import { CalendarIcon } from '../../icons/CalendarIcon';
 import { CloseIcon } from '../../icons/CloseIcon';
 import fieldStyles from '../../styles/field.module.css';
@@ -65,6 +66,10 @@ export interface DatePickerProps extends FieldFrameProps {
    * blocked, for the reason `required` gives.
    */
   value?: string | null;
+  /**
+   * Uncontrolled: the first value, and the one a native reset of the surrounding form goes back to,
+   * with `onValueChange` told. A controlled `value` stays through a reset, as the parent's to change.
+   */
   defaultValue?: string | null;
   /** The chosen date or `null` once cleared, in one argument, and only for a real change. */
   onValueChange?: (value: string | null) => void;
@@ -131,6 +136,7 @@ export function DatePicker({
   const requiredId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const gridRef = useRef<HTMLTableElement>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
   const [heldValue, setHeldValue] = useState(() => parseIsoDate(defaultValue));
   const [open, setOpen] = useState(false);
   if (open && disabled) {
@@ -151,6 +157,12 @@ export function DatePicker({
       onValueChange?.(nextValue);
     }
   };
+
+  useFormReset(hiddenInputRef, () => {
+    if (value === undefined) {
+      commit(parseIsoDate(defaultValue));
+    }
+  });
 
   return (
     <BaseField.Root
@@ -270,7 +282,13 @@ export function DatePicker({
           {words.required}
         </span>
       ) : null}
-      <input type="hidden" name={name} value={chosen ?? ''} disabled={disabled} />
+      <input
+        ref={hiddenInputRef}
+        type="hidden"
+        name={name}
+        value={chosen ?? ''}
+        disabled={disabled}
+      />
       <FieldMessages description={description} error={error} />
     </BaseField.Root>
   );

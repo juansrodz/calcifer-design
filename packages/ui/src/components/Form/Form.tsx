@@ -52,6 +52,10 @@ function holdsSameMessages(
 /**
  * Collects values, shows validation messages and moves focus to the first invalid control. Every
  * field frame in the library works inside it; no field needs telling.
+ *
+ * A `type="reset"` button does not reset every control here: messages stay, and a `Select` or a
+ * `Checkbox` keeps its state where a text input does not. To start over, remount the form with a
+ * new `key`, which is the supported way and clears all of it.
  */
 export function Form<Values extends Record<string, unknown> = Record<string, unknown>>({
   onSubmit,

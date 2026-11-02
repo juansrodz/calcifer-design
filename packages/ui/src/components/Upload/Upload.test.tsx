@@ -1,7 +1,7 @@
 import { composeStories } from '@storybook/react';
-import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import { Form } from '../Form/Form';
@@ -109,8 +109,13 @@ describe('Upload', () => {
      * after the first render so that mounting does not reach jsdom's own setter. What the stand-in
      * holds last is what the input holds, which a test can push to as the browser's picker would.
      */
-    function renderWithFileList(props: Partial<UploadProps> = {}) {
-      const view = renderUpload({ multiple: true, ...props });
+    function renderWithFileList(
+      props: Partial<UploadProps> = {},
+      wrapper?: ComponentType<{ children: ReactNode }>,
+    ) {
+      const view = render(<Upload label="Attachments" name="attachments" multiple {...props} />, {
+        wrapper,
+      });
       const held: File[][] = [];
       Object.defineProperty(input(), 'files', {
         configurable: true,
@@ -141,12 +146,153 @@ describe('Upload', () => {
       expect(held.at(-1)).toEqual([png]);
     });
 
+    /** A browser empties a file input after its reset event, which jsdom does not. */
+    async function resetAsBrowsersDo(held: File[][]) {
+      const form = input().form as HTMLFormElement;
+      form.addEventListener('reset', () => held.push([]), { once: true });
+      await act(async () => {
+        form.reset();
+        await new Promise((resolve) => setTimeout(resolve));
+      });
+    }
+
+    function inForm(props: Partial<UploadProps>) {
+      return {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <form aria-label="Plan">{children}</form>
+        ),
+        props,
+      };
+    }
+
+    it('gets a controlled list back after a reset empties it', async () => {
+      const { wrapper, props } = inForm({ files: [pdf] });
+      const { held } = renderWithFileList(props, wrapper);
+      await resetAsBrowsersDo(held);
+      expect(held.at(-1)).toEqual([pdf]);
+    });
+
+    it('gets the default list back after a reset, even with nothing else to change', async () => {
+      const { wrapper, props } = inForm({ defaultFiles: [pdf] });
+      const { held } = renderWithFileList(props, wrapper);
+      await resetAsBrowsersDo(held);
+      expect(held.at(-1)).toEqual([pdf]);
+    });
+
     it('goes back to the list when a parent refuses what the picker just put in it', () => {
       const files = [pdf];
       const { held } = renderWithFileList({ files });
       held.push([png]);
       fireEvent.change(input());
       expect(held.at(-1)).toEqual(files);
+    });
+  });
+
+  describe('a native reset', () => {
+    async function resetForm(form: HTMLFormElement) {
+      await act(async () => {
+        form.reset();
+        await new Promise((resolve) => setTimeout(resolve));
+      });
+    }
+
+    function renderInForm(props: Partial<UploadProps> = {}) {
+      const view = render(
+        <form aria-label="Plan">
+          <Upload label="Attachments" name="attachments" multiple {...props} />
+          <button type="reset">Start over</button>
+        </form>,
+      );
+      return { ...view, form: screen.getByRole<HTMLFormElement>('form', { name: 'Plan' }) };
+    }
+
+    it('goes back to defaultFiles from a reset button, and reports and says so', async () => {
+      const onFilesChange = vi.fn();
+      renderInForm({ defaultFiles: [pdf], onFilesChange });
+      await userEvent.upload(input(), png);
+      expect(fileNames()).toEqual(['report.pdf', 'photo.png']);
+      onFilesChange.mockClear();
+      await userEvent.click(screen.getByRole('button', { name: 'Start over' }));
+      await waitFor(() => expect(fileNames()).toEqual(['report.pdf']));
+      expect(onFilesChange.mock.calls).toEqual([[[pdf]]]);
+      expect(announced()).toBe('Removed photo.png.');
+    });
+
+    it('empties the list when there was no default, and takes the rejections with it', async () => {
+      const { form } = renderInForm({ accept: '.pdf' });
+      fireEvent.drop(zone(), { dataTransfer: dataTransfer([pdf, text]) });
+      expect(screen.getByText(/notes.txt was not added/, { selector: 'p' })).toBeVisible();
+      await resetForm(form);
+      expect(fileNames()).toEqual([]);
+      expect(screen.queryByText(/notes.txt was not added/, { selector: 'p' })).toBeNull();
+    });
+
+    it("keeps a controlled list, which is the parent's to change", async () => {
+      const onFilesChange = vi.fn();
+      const { form } = renderInForm({ files: [pdf], onFilesChange });
+      await resetForm(form);
+      expect(fileNames()).toEqual(['report.pdf']);
+      expect(onFilesChange).not.toHaveBeenCalled();
+      expect(announced()).toBe('');
+    });
+
+    it('reports nothing when the list was the default already', async () => {
+      const onFilesChange = vi.fn();
+      const { form } = renderInForm({ defaultFiles: [pdf], onFilesChange });
+      await resetForm(form);
+      expect(onFilesChange).not.toHaveBeenCalled();
+    });
+
+    it('stays put when the reset is cancelled', async () => {
+      const { form } = renderInForm();
+      await userEvent.upload(input(), pdf);
+      form.addEventListener('reset', (event) => event.preventDefault());
+      await resetForm(form);
+      expect(fileNames()).toEqual(['report.pdf']);
+    });
+
+    it('works inside Form as well', async () => {
+      render(
+        <Form onSubmit={() => undefined} aria-label="Plan">
+          <Upload label="Attachments" name="attachments" />
+        </Form>,
+      );
+      await userEvent.upload(input(), pdf);
+      await resetForm(screen.getByRole<HTMLFormElement>('form', { name: 'Plan' }));
+      expect(fileNames()).toEqual([]);
+    });
+
+    it('stops listening once unmounted', () => {
+      function Plan({ showUpload }: { showUpload: boolean }) {
+        return (
+          <form aria-label="Plan">
+            {showUpload ? <Upload label="Attachments" name="attachments" /> : null}
+          </form>
+        );
+      }
+      const { rerender } = render(<Plan showUpload />);
+      const stopListening = vi.spyOn(
+        screen.getByRole<HTMLFormElement>('form', { name: 'Plan' }),
+        'removeEventListener',
+      );
+      rerender(<Plan showUpload={false} />);
+      expect(stopListening).toHaveBeenCalledWith('reset', expect.any(Function));
+    });
+
+    it('finds a form it only comes to be inside after mounting', async () => {
+      const host = document.createElement('div');
+      document.body.append(host);
+      const upload = () => <Upload label="Attachments" name="attachments" />;
+      const { rerender, unmount } = render(upload(), { container: host });
+      await userEvent.upload(input(), pdf);
+      const form = document.createElement('form');
+      document.body.append(form);
+      form.append(host);
+      rerender(upload());
+      await resetForm(form);
+      expect(fileNames()).toEqual([]);
+      unmount();
+      form.remove();
     });
   });
 

@@ -926,6 +926,159 @@ describe('DatePicker', () => {
     });
   });
 
+  describe('a native reset', () => {
+    /** Past the event, and past the timer on which the picker follows the browser's own reset. */
+    async function resetForm(form: HTMLFormElement) {
+      await act(async () => {
+        form.reset();
+        await new Promise((resolve) => setTimeout(resolve));
+      });
+    }
+
+    function hiddenValue() {
+      return document.querySelector<HTMLInputElement>('input[name="eventDate"]')?.value;
+    }
+
+    function renderInForm(props: Partial<DatePickerProps> = {}) {
+      const view = render(
+        <form aria-label="Plan">
+          <DatePicker label="Event date" name="eventDate" locale="en-US" {...props} />
+          <button type="reset">Start over</button>
+        </form>,
+      );
+      return { ...view, form: screen.getByRole<HTMLFormElement>('form', { name: 'Plan' }) };
+    }
+
+    async function chooseMarch16() {
+      await openCalendar();
+      await userEvent.click(cell('Monday, March 16, 2026'));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    }
+
+    it('goes back to the default value from a reset button, and says so', async () => {
+      const onValueChange = vi.fn();
+      renderInForm({ defaultValue: '2026-03-08', onValueChange });
+      await chooseMarch16();
+      expect(hiddenValue()).toBe('2026-03-16');
+      onValueChange.mockClear();
+      await userEvent.click(screen.getByRole('button', { name: 'Start over' }));
+      await waitFor(() => expect(trigger('Event date Mar 8, 2026')).toBeVisible());
+      expect(hiddenValue()).toBe('2026-03-08');
+      expect(onValueChange.mock.calls).toEqual([['2026-03-08']]);
+    });
+
+    it('goes back to nothing chosen when there was no default', async () => {
+      const { form } = renderInForm();
+      await chooseMarch16();
+      await resetForm(form);
+      expect(trigger('Event date Choose a date')).toBeVisible();
+      expect(hiddenValue()).toBe('');
+    });
+
+    it('reports nothing when the value was the default already', async () => {
+      const onValueChange = vi.fn();
+      const { form } = renderInForm({ defaultValue: '2026-03-08', onValueChange });
+      await resetForm(form);
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it("keeps a controlled value, which is the parent's to change", async () => {
+      const onValueChange = vi.fn();
+      const { form } = renderInForm({ value: '2026-03-08', onValueChange });
+      await resetForm(form);
+      expect(trigger('Event date Mar 8, 2026')).toBeVisible();
+      expect(hiddenValue()).toBe('2026-03-08');
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it('stays put when the reset is cancelled', async () => {
+      const { form } = renderInForm({ defaultValue: '2026-03-08' });
+      await chooseMarch16();
+      form.addEventListener('reset', (event) => event.preventDefault());
+      await resetForm(form);
+      expect(trigger('Event date Mar 16, 2026')).toBeVisible();
+    });
+
+    it('works inside Form as well', async () => {
+      render(
+        <Form onSubmit={() => undefined} aria-label="Plan">
+          <DatePicker
+            label="Event date"
+            name="eventDate"
+            locale="en-US"
+            defaultValue="2026-03-08"
+          />
+        </Form>,
+      );
+      await chooseMarch16();
+      await resetForm(screen.getByRole<HTMLFormElement>('form', { name: 'Plan' }));
+      expect(trigger('Event date Mar 8, 2026')).toBeVisible();
+    });
+
+    describe('once unmounted', () => {
+      const onValueChange = vi.fn();
+
+      function Plan({ showPicker }: { showPicker: boolean }) {
+        return (
+          <form aria-label="Plan">
+            {showPicker ? (
+              <DatePicker
+                label="Event date"
+                name="eventDate"
+                locale="en-US"
+                onValueChange={onValueChange}
+              />
+            ) : null}
+          </form>
+        );
+      }
+
+      it('stops listening', () => {
+        const { rerender } = render(<Plan showPicker />);
+        const form = screen.getByRole<HTMLFormElement>('form', { name: 'Plan' });
+        const stopListening = vi.spyOn(form, 'removeEventListener');
+        rerender(<Plan showPicker={false} />);
+        expect(stopListening).toHaveBeenCalledWith('reset', expect.any(Function));
+      });
+
+      it('drops a reset that was still on its way', async () => {
+        const { rerender } = render(<Plan showPicker />);
+        await chooseMarch16();
+        onValueChange.mockClear();
+        screen.getByRole<HTMLFormElement>('form', { name: 'Plan' }).reset();
+        rerender(<Plan showPicker={false} />);
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(onValueChange).not.toHaveBeenCalled();
+      });
+    });
+
+    it('finds a form it only comes to be inside after mounting', async () => {
+      const onValueChange = vi.fn();
+      const host = document.createElement('div');
+      document.body.append(host);
+      const picker = () => (
+        <DatePicker
+          label="Event date"
+          name="eventDate"
+          locale="en-US"
+          defaultValue="2026-03-08"
+          onValueChange={onValueChange}
+        />
+      );
+      const { rerender, unmount } = render(picker(), { container: host });
+      await chooseMarch16();
+      onValueChange.mockClear();
+      const form = document.createElement('form');
+      document.body.append(form);
+      form.append(host);
+      rerender(picker());
+      await resetForm(form);
+      expect(onValueChange.mock.calls).toEqual([['2026-03-08']]);
+      unmount();
+      form.remove();
+    });
+  });
+
   describe('the time zone', () => {
     const originalZone = process.env.TZ;
 

@@ -1,5 +1,6 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { useLayoutEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useFormReset } from '../../hooks/useFormReset';
 import { CloseIcon } from '../../icons/CloseIcon';
 import fieldStyles from '../../styles/field.module.css';
 import { Button } from '../Button/Button';
@@ -57,6 +58,11 @@ export interface UploadProps extends FieldFrameProps {
   description?: ReactNode;
   /** Controlled. Pair it with `onFilesChange`; use `defaultFiles` for an uncontrolled one. */
   files?: File[];
+  /**
+   * Uncontrolled: the first list, and the one a native reset of the surrounding form goes back to,
+   * with `onFilesChange` told. A controlled `files` stays through a reset, and goes back in the
+   * input the browser just emptied.
+   */
   defaultFiles?: File[];
   /**
    * The whole new list. With `multiple` a choice adds to the list, and the same file again goes to
@@ -256,6 +262,16 @@ export function Upload({
       announce(turnedAwayThisCommit.current);
     }
   };
+
+  useFormReset(inputRef, () => {
+    const restored = files ?? defaultFiles ?? [];
+    setRejectionMessages([]);
+    if (signaturesOf(restored) !== signaturesOf(currentFiles)) {
+      commit(restored);
+    }
+    // Always, because the browser has emptied the input whether or not the list changed.
+    showInInput(restored);
+  });
 
   const remove = (index: number) => {
     focusAfterRemoval.current = index;
