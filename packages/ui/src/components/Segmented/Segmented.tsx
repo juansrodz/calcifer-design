@@ -1,13 +1,10 @@
 import { Toggle } from '@base-ui/react/toggle';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import styles from './Segmented.module.css';
 
 export interface SegmentedOption {
-  /**
-   * What `value` and `onValueChange` speak in. Must not be empty: Base UI's `Toggle` treats `''`
-   * as no value at all and generates an id in its place, so that option could never be pressed.
-   */
+  /** What `value` and `onValueChange` speak in. The empty string is a value like any other. */
   value: string;
   /** The visible text, and the option's accessible name. */
   label: string;
@@ -18,9 +15,12 @@ export interface SegmentedOption {
 
 interface SegmentedBaseProps {
   options: SegmentedOption[];
-  /** Controlled. Pair it with `onValueChange`; use `defaultValue` for an uncontrolled one. */
+  /**
+   * Controlled. Pair it with `onValueChange`; use `defaultValue` for an uncontrolled one. A value
+   * no option holds shows the first enabled option as chosen, and reports nothing.
+   */
   value?: string;
-  /** With neither this nor `value`, the first enabled option starts out chosen. */
+  /** Leave this and `value` out, or name no option, and the first enabled option is chosen. */
   defaultValue?: string;
   /**
    * The newly chosen option's value. One argument, as on every other control in the library, and
@@ -59,32 +59,37 @@ export function Segmented({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
 }: SegmentedProps) {
-  const initialValue = defaultValue ?? options.find((option) => !option.disabled)?.value;
+  const [heldValue, setHeldValue] = useState(defaultValue);
+  const chosenValue = value ?? heldValue;
+  const heldIndex = options.findIndex((option) => option.value === chosenValue);
+  const chosenIndex =
+    heldIndex === -1 ? options.findIndex((option) => !option.disabled) : heldIndex;
   return (
     <ToggleGroup
       className={styles.root}
       data-size={size}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
-      // Arrays are Base UI's shape for a group that can hold several; this one holds one.
-      value={value === undefined ? undefined : [value]}
-      defaultValue={initialValue === undefined ? undefined : [initialValue]}
-      onValueChange={(nextValues, eventDetails) => {
-        const [nextValue] = nextValues;
-        // An empty array is the active option being pressed again. Cancelling is what Base UI
-        // offers for this, and it stops the group's own state as well as this callback's.
-        if (nextValue === undefined) {
-          eventDetails.cancel();
+      // Always controlled, so that what is pressed follows `options` past the first render and
+      // `value` may arrive late. Arrays are Base UI's shape for a group that can hold several; this
+      // one holds one. Base UI hears each option by its index, because its `Toggle` takes `''` for
+      // no value at all and generates an id instead.
+      value={chosenIndex === -1 ? [] : [String(chosenIndex)]}
+      onValueChange={(nextIndexes) => {
+        // An empty array is the active option being pressed again, which changes nothing.
+        const nextOption = options[Number(nextIndexes[0] ?? -1)];
+        if (!nextOption) {
           return;
         }
-        onValueChange?.(nextValue);
+        setHeldValue(nextOption.value);
+        onValueChange?.(nextOption.value);
       }}
     >
-      {options.map((option) => (
+      {options.map((option, index) => (
         <Toggle
           key={option.value}
           className={styles.option}
-          value={option.value}
+          value={String(index)}
           disabled={option.disabled}
         >
           {option.icon ? (

@@ -1,7 +1,7 @@
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import { Segmented } from './Segmented';
 import * as stories from './Segmented.stories';
@@ -198,6 +198,149 @@ describe('Segmented', () => {
     expect(screen.getByRole('button', { name: 'Week' })).toHaveFocus();
     await userEvent.keyboard('{ArrowLeft}');
     expect(screen.getByRole('button', { name: 'Month' })).toHaveFocus();
+  });
+
+  describe('holding exactly one beyond first mount', () => {
+    let consoleError: MockInstance<typeof console.error>;
+
+    beforeEach(() => {
+      consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleError.mockRestore();
+    });
+
+    it('chooses the first option once options arrive, with no Base UI error', () => {
+      const onValueChange = vi.fn();
+      const { rerender } = render(
+        <Segmented aria-label="Range" options={[]} onValueChange={onValueChange} />,
+      );
+      rerender(<Segmented aria-label="Range" options={options} onValueChange={onValueChange} />);
+      expect(pressedLabels()).toEqual(['Day']);
+      expect(onValueChange).not.toHaveBeenCalled();
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it('honours a default value whose option arrives later', () => {
+      const { rerender } = render(
+        <Segmented aria-label="Range" options={[]} defaultValue="week" />,
+      );
+      rerender(<Segmented aria-label="Range" options={options} defaultValue="week" />);
+      expect(pressedLabels()).toEqual(['Week']);
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it('moves to the first enabled option when the chosen one is removed, reporting nothing', () => {
+      const onValueChange = vi.fn();
+      const { rerender } = render(
+        <Segmented
+          aria-label="Range"
+          options={options}
+          defaultValue="month"
+          onValueChange={onValueChange}
+        />,
+      );
+      rerender(
+        <Segmented
+          aria-label="Range"
+          options={[{ value: 'day', label: 'Day', disabled: true }, ...options.slice(1, 2)]}
+          defaultValue="month"
+          onValueChange={onValueChange}
+        />,
+      );
+      expect(pressedLabels()).toEqual(['Week']);
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it('resolves an unknown default value to the first enabled option', () => {
+      const onValueChange = vi.fn();
+      render(
+        <Segmented
+          aria-label="Range"
+          options={options}
+          defaultValue="decade"
+          onValueChange={onValueChange}
+        />,
+      );
+      expect(pressedLabels()).toEqual(['Day']);
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it('resolves an unknown controlled value the same way, reporting nothing', () => {
+      const onValueChange = vi.fn();
+      render(
+        <Segmented
+          aria-label="Range"
+          options={options}
+          value="decade"
+          onValueChange={onValueChange}
+        />,
+      );
+      expect(pressedLabels()).toEqual(['Day']);
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it('takes a value that was undefined at first, with no uncontrolled-to-controlled error', () => {
+      const { rerender } = render(
+        <Segmented aria-label="Range" options={options} value={undefined} />,
+      );
+      expect(pressedLabels()).toEqual(['Day']);
+      rerender(<Segmented aria-label="Range" options={options} value="week" />);
+      expect(pressedLabels()).toEqual(['Week']);
+      expect(consoleError).not.toHaveBeenCalled();
+    });
+
+    it('presses nothing when every option is disabled', () => {
+      render(
+        <Segmented aria-label="Range" options={[{ value: 'day', label: 'Day', disabled: true }]} />,
+      );
+      expect(pressedLabels()).toEqual([]);
+    });
+  });
+
+  describe('an option whose value is the empty string', () => {
+    const withAll = [{ value: '', label: 'All' }, ...options];
+
+    it('reports the empty string, not a generated id', async () => {
+      const onValueChange = vi.fn();
+      render(
+        <Segmented
+          aria-label="Range"
+          options={withAll}
+          defaultValue="week"
+          onValueChange={onValueChange}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'All' }));
+      expect(onValueChange.mock.calls).toEqual([['']]);
+      expect(pressedLabels()).toEqual(['All']);
+    });
+
+    it('can be the default value and the controlled value', () => {
+      const { unmount } = render(
+        <Segmented aria-label="Range" options={withAll} defaultValue="" />,
+      );
+      expect(pressedLabels()).toEqual(['All']);
+      unmount();
+      render(<Segmented aria-label="Range" options={withAll} value="" />);
+      expect(pressedLabels()).toEqual(['All']);
+    });
+
+    it('never clears when pressed again', async () => {
+      const onValueChange = vi.fn();
+      render(
+        <Segmented
+          aria-label="Range"
+          options={withAll}
+          defaultValue=""
+          onValueChange={onValueChange}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'All' }));
+      expect(pressedLabels()).toEqual(['All']);
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
   });
 
   it('keeps an icon out of the accessible name', () => {
