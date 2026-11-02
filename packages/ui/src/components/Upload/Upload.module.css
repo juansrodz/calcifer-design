@@ -94,9 +94,7 @@
   overflow-wrap: anywhere;
 }
 
+/* `field.module.css`'s `.error` is the type; this is the one thing a `<p>` adds. */
 .rejection {
   margin: 0;
-  color: var(--color-danger);
-  font-size: var(--text-sm);
-  line-height: var(--leading-snug);
 }

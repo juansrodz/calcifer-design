@@ -132,6 +132,10 @@ function withoutPartners(list: File[], other: File[]): File[] {
   });
 }
 
+function carriesFiles(event: DragEvent): boolean {
+  return Array.from(event.dataTransfer.types ?? []).includes('Files');
+}
+
 /**
  * Selects files; it does not transfer them. The real file input lies over the whole zone, so the
  * keyboard, a screen reader and a pointer all use it, and what looks like a button is a picture of
@@ -223,8 +227,10 @@ export function Upload({
   });
 
   const commit = (nextFiles: File[]) => {
-    setHeldFiles(nextFiles);
-    onFilesChange?.(nextFiles);
+    if (signaturesOf(nextFiles) !== signaturesOf(currentFiles)) {
+      setHeldFiles(nextFiles);
+      onFilesChange?.(nextFiles);
+    }
   };
 
   const receive = (incoming: File[]) => {
@@ -248,16 +254,13 @@ export function Upload({
         accepted.push(file);
       }
     }
-    const nextFiles = multiple ? [...currentFiles, ...accepted] : accepted;
-    if (accepted.length > 0 && signaturesOf(nextFiles) !== signaturesOf(currentFiles)) {
-      commit(nextFiles);
+    if (accepted.length > 0) {
+      commit(multiple ? [...currentFiles, ...accepted] : accepted);
     }
     const messages = rejections.map(({ file, reason }) => words.rejected(file.name, reason));
     setRejectionMessages(messages);
     if (rejections.length > 0) {
       onReject?.(rejections);
-    }
-    if (rejections.length > 0) {
       turnedAwayThisCommit.current = messages.join(' ');
       announce(turnedAwayThisCommit.current);
     }
@@ -266,9 +269,7 @@ export function Upload({
   useFormReset(inputRef, () => {
     const restored = files ?? defaultFiles ?? [];
     setRejectionMessages([]);
-    if (signaturesOf(restored) !== signaturesOf(currentFiles)) {
-      commit(restored);
-    }
+    commit(restored);
     // Always, because the browser has emptied the input whether or not the list changed.
     showInInput(restored);
   });
@@ -278,9 +279,6 @@ export function Upload({
     setRejectionMessages([]);
     commit(currentFiles.filter((_file, fileIndex) => fileIndex !== index));
   };
-
-  const carriesFiles = (event: DragEvent) =>
-    Array.from(event.dataTransfer.types ?? []).includes('Files');
 
   return (
     <BaseField.Root
@@ -375,7 +373,7 @@ export function Upload({
         </ul>
       )}
       {rejectionMessages.map((message, index) => (
-        <p key={index} className={styles.rejection}>
+        <p key={index} className={[fieldStyles.error, styles.rejection].join(' ')}>
           {message}
         </p>
       ))}
