@@ -119,6 +119,9 @@ export function FilterBar({
       .map((filter) => removeButtons.current.get(filter.id))
       .find((button) => button !== undefined);
     const root = rootRef.current;
+    // Handed on, so this commit's work is done: a chip taking focus sets this again for itself, and
+    // anything else would have every later commit take focus back from wherever it had gone.
+    focusedPart.current = null;
     (survivor ?? root?.querySelector<HTMLElement>(FOCUSABLE) ?? root)?.focus();
   });
 

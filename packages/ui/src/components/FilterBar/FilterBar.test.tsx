@@ -255,6 +255,65 @@ describe('FilterBar', () => {
       expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
     });
 
+    describe('after handing focus on', () => {
+      /** Re-renders the bar on each keystroke in an input outside it, as a parent with state does. */
+      function BarBesideInput({
+        withSearch = false,
+        children,
+      }: {
+        withSearch?: boolean;
+        children?: FilterBarProps['children'];
+      }) {
+        const [active, setActive] = useState(filters.slice(0, 1));
+        const [typed, setTyped] = useState('');
+        const common = {
+          activeFilters: active,
+          onRemoveFilter: () => setActive([]),
+          onClearAll: () => setActive([]),
+          children,
+        };
+        return (
+          <>
+            {withSearch ? <FilterBar {...search} {...common} /> : <FilterBar {...common} />}
+            <label>
+              Outside
+              <input value={typed} onChange={(event) => setTyped(event.target.value)} />
+            </label>
+          </>
+        );
+      }
+
+      const slotted = <button type="button">Sort</button>;
+
+      it.each([
+        ['the search', 'chip', { withSearch: true }, () => screen.getByRole('searchbox')],
+        ['the search', 'Clear all', { withSearch: true }, () => screen.getByRole('searchbox')],
+        [
+          'a slot control',
+          'chip',
+          { children: slotted },
+          () => screen.getByRole('button', { name: 'Sort' }),
+        ],
+        [
+          'a slot control',
+          'Clear all',
+          { children: slotted },
+          () => screen.getByRole('button', { name: 'Sort' }),
+        ],
+        ['the bar itself', 'chip', {}, () => document.querySelector('[tabindex="-1"]')],
+        ['the bar itself', 'Clear all', {}, () => document.querySelector('[tabindex="-1"]')],
+      ])('lets go once it has reached %s from a %s', async (_target, source, props, target) => {
+        render(<BarBesideInput {...props} />);
+        await userEvent.click(source === 'chip' ? removeButton('Status: Open') : clearButton());
+        expect(target()).toHaveFocus();
+        const outside = screen.getByRole('textbox', { name: 'Outside' });
+        await userEvent.click(outside);
+        await userEvent.keyboard('hello');
+        expect(outside).toHaveFocus();
+        expect(outside).toHaveValue('hello');
+      });
+    });
+
     it('takes no focus when filters go while focus was never there', () => {
       const { rerender } = render(<FilterBar {...search} activeFilters={filters} />);
       rerender(<FilterBar {...search} activeFilters={[]} />);
