@@ -50,6 +50,14 @@ describe('Timeline', () => {
     expect(container.querySelector('.description')).toBeNull();
   });
 
+  it.each([false, ''])(
+    'draws no empty description for %j, as `condition && text` gives',
+    (description) => {
+      const { container } = renderTimeline([{ id: 'one', title: 'Event', description }]);
+      expect(container.querySelector('.description')).toBeNull();
+    },
+  );
+
   it('draws no empty list with no items', () => {
     const { container } = renderTimeline([]);
     expect(container).toBeEmptyDOMElement();

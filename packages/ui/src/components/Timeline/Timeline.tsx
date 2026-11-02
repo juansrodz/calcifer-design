@@ -97,6 +97,16 @@ function formatTimestamp(source: string, locale: string | undefined): FormattedT
 }
 
 /**
+ * `description: condition && text` leaves `false` or `''` when there is nothing to say, and either
+ * would draw an empty block. `0` is a value.
+ */
+function hasDescription(description: ReactNode): boolean {
+  return (
+    description !== undefined && description !== null && description !== false && description !== ''
+  );
+}
+
+/**
  * A chronological record. A display only: nothing here can be focused or activated. A tone is said
  * in visible words beside the time, because forced colours flatten every tint here to the same
  * thing, and the words are what still tells a failure from a success.
@@ -130,7 +140,7 @@ export function Timeline({ items, locale, 'aria-label': ariaLabel, toneLabels }:
                   {item.tone ? <span className={styles.tone}>{words[item.tone]}</span> : null}
                 </div>
               ) : null}
-              {item.description !== undefined && item.description !== null ? (
+              {hasDescription(item.description) ? (
                 <div className={styles.description}>{item.description}</div>
               ) : null}
             </div>
