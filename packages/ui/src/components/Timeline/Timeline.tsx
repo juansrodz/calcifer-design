@@ -9,9 +9,11 @@ export interface TimelineItem {
   id: string;
   title: ReactNode;
   /**
-   * ISO 8601: `YYYY-MM-DD`, or a date and time such as `2026-03-08T09:30:00Z`. A date alone is a day
-   * on the calendar and shifts in no time zone; a time is shown in the viewer's zone. The source
-   * string stays in `<time datetime>`. Anything else is shown as written, without a `<time>`.
+   * ISO 8601: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, or a date and time such as `2026-03-08T09:30:00Z`.
+   * Without a time it is a place on the calendar and shifts in no time zone; a time is shown in the
+   * viewer's zone. The source string stays in `<time datetime>`, with any offset written in full as
+   * `+05:00`, which HTML and `Date` can both read. Anything else is shown as written, without a
+   * `<time>`.
    */
   timestamp?: string;
   description?: ReactNode;
@@ -43,26 +45,52 @@ const DEFAULT_TONE_LABELS: Record<TimelineTone, string> = {
 };
 
 const DATE_AND_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}(:?\d{2})?)?$/;
+const OFFSET = /([+-]\d{2}):?(\d{2})?$/;
+/** Not the year 0: it is no valid `<time>`, and `Intl` would print it as the year 1. */
+const YEAR_OR_MONTH = /^(?!0000)\d{4}(-\d{2})?$/;
+
+interface FormattedTimestamp {
+  text: string;
+  dateTime: string;
+}
 
 /**
- * The words for `source`, or `null` when it is not a timestamp. The pattern comes first because
- * `Date` itself is too forgiving: it reads "March 8" as 2001, and "12" as December.
+ * The words for `source` and its `datetime`, or `null` when it is not a timestamp. The pattern comes
+ * first because `Date` itself is too forgiving: it reads "March 8" as 2001, and "12" as December.
  */
-function formatTimestamp(source: string, locale: string | undefined): string | null {
+function formatTimestamp(source: string, locale: string | undefined): FormattedTimestamp | null {
   if (parseIsoDate(source) !== null) {
-    return dateFormatter(locale, { dateStyle: 'medium' }).format(source);
+    return { text: dateFormatter(locale, { dateStyle: 'medium' }).format(source), dateTime: source };
+  }
+  if (YEAR_OR_MONTH.test(source)) {
+    const hasMonth = source.length > 4;
+    const firstDay = hasMonth ? `${source}-01` : `${source}-01-01`;
+    if (parseIsoDate(firstDay) === null) {
+      return null;
+    }
+    const fields: Intl.DateTimeFormatOptions = hasMonth
+      ? { year: 'numeric', month: 'short' }
+      : { year: 'numeric' };
+    return { text: dateFormatter(locale, fields).format(firstDay), dateTime: source };
   }
   if (!DATE_AND_TIME.test(source) || parseIsoDate(source.slice(0, 10)) === null) {
     return null;
   }
-  const instant = new Date(source);
+  const dateTime = source.replace(
+    OFFSET,
+    (_whole, hours: string, minutes: string | undefined) => `${hours}:${minutes ?? '00'}`,
+  );
+  const instant = new Date(dateTime);
   return Number.isNaN(instant.getTime())
     ? null
-    : new Intl.DateTimeFormat(locale, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        calendar: 'gregory',
-      }).format(instant);
+    : {
+        text: new Intl.DateTimeFormat(locale, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          calendar: 'gregory',
+        }).format(instant),
+        dateTime,
+      };
 }
 
 /**
@@ -94,12 +122,12 @@ export function Timeline({ items, locale, 'aria-label': ariaLabel, toneLabels }:
                       <span>{item.timestamp}</span>
                     ) : null
                   ) : (
-                    <time dateTime={item.timestamp}>{formatted}</time>
+                    <time dateTime={formatted.dateTime}>{formatted.text}</time>
                   )}
                   {item.tone ? <span className={styles.tone}>{words[item.tone]}</span> : null}
                 </div>
               ) : null}
-              {item.description ? (
+              {item.description !== undefined && item.description !== null ? (
                 <div className={styles.description}>{item.description}</div>
               ) : null}
             </div>

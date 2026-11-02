@@ -40,6 +40,16 @@ describe('Timeline', () => {
     expect(screen.getByText('What happened.')).toBeVisible();
   });
 
+  it('shows a description of 0, as a value and not as nothing', () => {
+    const { container } = renderTimeline([{ id: 'one', title: 'Event', description: 0 }]);
+    expect(container.querySelector('.description')).toHaveTextContent(/^0$/);
+  });
+
+  it.each([undefined, null])('draws no description for %s', (description) => {
+    const { container } = renderTimeline([{ id: 'one', title: 'Event', description }]);
+    expect(container.querySelector('.description')).toBeNull();
+  });
+
   it('draws no empty list with no items', () => {
     const { container } = renderTimeline([]);
     expect(container).toBeEmptyDOMElement();
@@ -82,6 +92,68 @@ describe('Timeline', () => {
       },
     );
 
+    describe('with an offset written short', () => {
+      it.each([
+        ['2026-03-08T09:30:00+05', '2026-03-08T09:30:00+05:00'],
+        ['2026-03-08T09:30-08', '2026-03-08T09:30-08:00'],
+        ['2026-03-08T09:30:00+0530', '2026-03-08T09:30:00+05:30'],
+      ])('reads %s as a time, with the offset in full', (source, written) => {
+        const { container } = renderStamp(source);
+        const time = container.querySelector('time');
+        // HTML has no `+05` of its own, and JavaScript's `Date` is only sure of `+05:00`.
+        expect(time).toHaveAttribute('datetime', written);
+        expect(time?.textContent).toBe(
+          new Intl.DateTimeFormat('en-US', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+            calendar: 'gregory',
+          }).format(new Date(written)),
+        );
+      });
+    });
+
+    describe('with only a year or a month', () => {
+      it('renders a year in <time>', () => {
+        const { container } = renderStamp('2026');
+        const time = container.querySelector('time');
+        expect(time).toHaveAttribute('datetime', '2026');
+        expect(time).toHaveTextContent(/^2026$/);
+      });
+
+      it('renders a year and month in <time>', () => {
+        const { container } = renderStamp('2026-03');
+        const time = container.querySelector('time');
+        expect(time).toHaveAttribute('datetime', '2026-03');
+        expect(time).toHaveTextContent(/^Mar 2026$/);
+      });
+
+      it('does not shift across time zones, at the very start of a year or month', () => {
+        const { container, rerender } = renderStamp('2026-01');
+        expect(container.querySelector('time')).toHaveTextContent(/^Jan 2026$/);
+        rerender(
+          <Timeline
+            aria-label="History"
+            locale="en-US"
+            items={[{ id: 'one', title: 'Event', timestamp: '2026' }]}
+          />,
+        );
+        expect(container.querySelector('time')).toHaveTextContent(/^2026$/);
+      });
+
+      it('follows locale, on the Gregorian calendar', () => {
+        const { container, rerender } = renderStamp('2026-03', { locale: 'es-ES' });
+        expect(container.querySelector('time')).toHaveTextContent(/^mar 2026$/);
+        rerender(
+          <Timeline
+            aria-label="History"
+            locale="fa-IR"
+            items={[{ id: 'one', title: 'Event', timestamp: '2026' }]}
+          />,
+        );
+        expect(container.querySelector('time')?.textContent).toMatch(/۲۰۲۶/);
+      });
+    });
+
     it('follows locale', () => {
       const { container } = renderStamp('2026-03-08', { locale: 'es-ES' });
       expect(container.querySelector('time')).toHaveTextContent('8 mar 2026');
@@ -118,6 +190,13 @@ describe('Timeline', () => {
         '2026-13-01',
         '2026-02-30T10:00:00Z',
         '2026-03-08T25:00:00Z',
+        '2026-03-08T09:30:00+99',
+        '2026-13',
+        '2026-00',
+        '0000',
+        '0000-01',
+        '202',
+        '20260',
         'March 8',
         '12',
       ])('shows %s as written, with no <time> and no "Invalid Date"', (source) => {
