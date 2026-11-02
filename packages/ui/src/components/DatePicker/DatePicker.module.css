@@ -107,7 +107,6 @@
 .day {
   height: var(--size-touch);
   padding: 0;
-  border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--color-text);
   font-size: var(--text-md);
@@ -125,10 +124,11 @@
   }
 }
 
-/* A border as well as the weight: `aria-current` is announced, and this is its sighted twin. It
-   survives forced colours on its own, since a border's colour is mapped rather than dropped. */
+/* A border as well as the weight: `aria-current` is announced, and this is its sighted twin. Only
+   today has one at all, because forced colours paint even a transparent border, and a resting
+   border on every cell would leave today looking like the rest of them. */
 .day[aria-current='date'] {
-  border-color: var(--color-accent);
+  border: 1px solid var(--color-accent);
   font-weight: 600;
 }
 

@@ -1,4 +1,12 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import { IconButton } from '../IconButton/IconButton';
 import {
@@ -139,7 +147,7 @@ export function Calendar({
     }
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTableElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLTableElement>) => {
     const inRightToLeft = event.currentTarget.closest('[dir]')?.getAttribute('dir') === 'rtl';
     const monthStep = event.shiftKey ? 12 : 1;
     const targets: Record<string, () => string> = {
