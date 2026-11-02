@@ -112,3 +112,9 @@ export { Tree } from './components/Tree/Tree';
 export type { TreeProps, TreeItem, TreeSelectionMode } from './components/Tree/Tree';
 export { TreeSelect } from './components/TreeSelect/TreeSelect';
 export type { TreeSelectProps, TreeSelectLabels } from './components/TreeSelect/TreeSelect';
+export { FilterBar } from './components/FilterBar/FilterBar';
+export type {
+  FilterBarProps,
+  FilterBarFilter,
+  FilterBarLabels,
+} from './components/FilterBar/FilterBar';

@@ -1,0 +1,104 @@
+/* Both rows wrap, and everything in them may shrink: at 390px a long chip takes a line of its own
+   and breaks inside it rather than pushing the page sideways. */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.controls > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Takes what the slots leave, and a line of its own once that is less than a usable width. */
+.search {
+  flex: 1 1 16rem;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.count {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* `Tag` holds to one line, which a chip longer than a phone cannot. */
+.chipLabel {
+  min-width: 0;
+  padding-block: var(--space-1);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 24px drawn, as tall as the chip, and 40px to a finger: the `::after` reaches into the gap around
+   the chip, where it covers nothing else that can be pressed. */
+.remove {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-inline-start: var(--space-1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.remove::after {
+  --remove-reach: calc(var(--space-2) * -1);
+
+  content: '';
+  position: absolute;
+  inset: var(--remove-reach);
+}
+
+.remove > svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+@media (hover: hover) {
+  .remove:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+  }
+}
