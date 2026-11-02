@@ -1,6 +1,7 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { createContext, useContext, type ReactNode } from 'react';
 import fieldStyles from '../../styles/field.module.css';
+import { useInsideForm } from '../Form/FormContext';
 
 /**
  * Carries `required` from the frame to the control inside it.
@@ -50,6 +51,7 @@ export function FieldMessages({ description, descriptionId, error, errorId }: Fi
   // commonest conditional-render idiom in React. Testing for `undefined` alone rendered an
   // empty description node for both and joined it to the control's `aria-describedby`.
   const hasDescription = description !== undefined && description !== null && description !== false;
+  const insideForm = useInsideForm();
   return (
     <>
       {hasDescription ? (
@@ -65,6 +67,13 @@ export function FieldMessages({ description, descriptionId, error, errorId }: Fi
           {error}
         </BaseField.Error>
       )}
+      {/* Only this part, without `match`, can read `Form`'s `errors` and hear them clear, and it
+          renders nothing until there is something to say. It also says what `required` and the
+          other native constraints found, which is why it stays out of a plain `<form>`: there a
+          required field that was pressed Enter in would start showing the browser's message. */}
+      {error === undefined && insideForm ? (
+        <BaseField.Error id={errorId} className={fieldStyles.error} />
+      ) : null}
     </>
   );
 }

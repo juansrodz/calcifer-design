@@ -1,0 +1,6 @@
+/* Fields in a column, far enough apart that a message under one is not read as the next one's. */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}

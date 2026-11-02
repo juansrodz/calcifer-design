@@ -97,3 +97,5 @@ export { TextArea } from './components/TextArea/TextArea';
 export type { TextAreaProps } from './components/TextArea/TextArea';
 export { TimePicker } from './components/TimePicker/TimePicker';
 export type { TimePickerProps } from './components/TimePicker/TimePicker';
+export { Form } from './components/Form/Form';
+export type { FormProps } from './components/Form/Form';

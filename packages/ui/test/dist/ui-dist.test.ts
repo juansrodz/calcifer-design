@@ -59,6 +59,7 @@ describe('@calcifer-design/ui dist', () => {
       'Steps',
       'TextArea',
       'TimePicker',
+      'Form',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
