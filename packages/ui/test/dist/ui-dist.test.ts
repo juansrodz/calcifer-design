@@ -47,6 +47,7 @@ describe('@calcifer-design/ui dist', () => {
       'Checkbox',
       'RadioGroup',
       'Switch',
+      'ViewField',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

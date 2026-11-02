@@ -70,3 +70,5 @@ export { RadioGroup } from './components/RadioGroup/RadioGroup';
 export type { RadioGroupProps, RadioOption } from './components/RadioGroup/RadioGroup';
 export { Switch } from './components/Switch/Switch';
 export type { SwitchProps } from './components/Switch/Switch';
+export { ViewField } from './components/ViewField/ViewField';
+export type { ViewFieldProps, ViewFieldLayout } from './components/ViewField/ViewField';
