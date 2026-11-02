@@ -48,8 +48,9 @@ interface TreeBaseProps {
   onExpandedChange?: (ids: string[]) => void;
   /**
    * `none`, the default: Enter, Space and a press on the row open and close a parent. `single` and
-   * `multiple`: they select, and the chevron or the Left and Right keys open and close. `multiple`
-   * toggles one item at a time; there is no range selection.
+   * `multiple`: they select, and the chevron or the Left and Right keys open and close. `single`
+   * cannot deselect: pressing the selected item again changes nothing, and only choosing another
+   * moves it. `multiple` toggles one item at a time; there is no range selection.
    */
   selectionMode?: TreeSelectionMode;
   /**
@@ -85,6 +86,9 @@ interface FocusedItem {
   /** Kept for when the item goes, taking its place in the tree with it. */
   ancestorIds: string[];
 }
+
+/** Not printable, but how a letter gets typed: they leave a type-ahead going. */
+const KEYS_WITHIN_TYPING = new Set(['Shift', 'CapsLock', 'AltGraph', 'Dead']);
 
 function isPrintable(key: string): boolean {
   return Array.from(key).length === 1;
@@ -236,6 +240,9 @@ export function TreeView({
   const handleKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
     if (event.altKey || event.ctrlKey || event.metaKey || current === undefined) {
       return;
+    }
+    if (!isPrintable(event.key) && !KEYS_WITHIN_TYPING.has(event.key)) {
+      typedSoFar.current.text = '';
     }
     const position = visible.indexOf(current);
     const inRightToLeft = getComputedStyle(event.currentTarget).direction === 'rtl';

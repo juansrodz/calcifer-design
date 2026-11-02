@@ -712,6 +712,45 @@ describe('Tree', () => {
         focusIsOn('Installing');
       });
 
+      it.each([
+        ['ArrowDown', '{ArrowDown}'],
+        ['Home', '{Home}'],
+        ['Escape', '{Escape}'],
+        ['F2', '{F2}'],
+      ])('starts over after %s, with no pause', async (_name, key) => {
+        renderOpen();
+        await focusTree();
+        await userEvent.keyboard('t');
+        focusIsOn('Themes');
+        await userEvent.keyboard(key);
+        await userEvent.keyboard('i');
+        // Taken together with the "t", this would be "ti", which matches nothing.
+        focusIsOn('Installing');
+      });
+
+      it('takes Space as activating, not typing, after a key that is not a letter', async () => {
+        const onSelectedChange = vi.fn();
+        renderOpen({ selectionMode: 'single', onSelectedChange });
+        await focusTree();
+        await userEvent.keyboard('t');
+        focusIsOn('Themes');
+        await userEvent.keyboard('{ArrowDown} ');
+        expect(onSelectedChange).toHaveBeenCalledWith(['light']);
+      });
+
+      it('goes on through Shift and Caps Lock, which are how a capital is typed', async () => {
+        renderTree({
+          items: [
+            { id: 'first', label: 'First' },
+            { id: 'new-jersey', label: 'New Jersey' },
+            { id: 'new-york', label: 'New York' },
+          ],
+        });
+        await focusTree();
+        await userEvent.keyboard('{Shift>}N{/Shift}ew {Shift>}Y{/Shift}{CapsLock}O{CapsLock}');
+        focusIsOn('New York');
+      });
+
       it('skips what is collapsed away', async () => {
         renderTree({ defaultExpandedIds: ['guides'] });
         await focusTree();
