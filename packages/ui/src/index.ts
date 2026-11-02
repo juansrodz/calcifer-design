@@ -76,3 +76,5 @@ export { Descriptions } from './components/Descriptions/Descriptions';
 export type { DescriptionsProps, DescriptionsItem } from './components/Descriptions/Descriptions';
 export { PageShell } from './components/PageShell/PageShell';
 export type { PageShellProps } from './components/PageShell/PageShell';
+export { Segmented } from './components/Segmented/Segmented';
+export type { SegmentedProps, SegmentedOption } from './components/Segmented/Segmented';

@@ -50,6 +50,7 @@ describe('@calcifer-design/ui dist', () => {
       'ViewField',
       'Descriptions',
       'PageShell',
+      'Segmented',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

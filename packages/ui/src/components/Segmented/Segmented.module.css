@@ -1,0 +1,72 @@
+/* A quiet track with the chosen option filled in accent, the fill `Switch` uses for "on": the
+   state has to read at a glance, and a raised white chip on a pale track does not reach the 3:1
+   a state indicator needs. `aria-pressed` says the same to a screen reader.
+
+   `inline-flex` to hug its options and `flex-wrap` with `max-width` to fit a phone: a row too long
+   for 390px takes a second row inside the track, and the page never scrolls sideways. */
+.root {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  max-width: 100%;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.option {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch);
+  min-width: var(--size-touch);
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+  cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The same step `Button`'s `sm` takes. */
+.root[data-size='sm'] .option {
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  font-size: var(--text-sm);
+}
+
+@media (hover: hover) {
+  .option:hover:not([data-disabled], [data-pressed]) {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+  }
+}
+
+.option[data-pressed] {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.option[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.icon > svg {
+  width: 1rem;
+  height: 1rem;
+}
