@@ -80,3 +80,14 @@ export { Segmented } from './components/Segmented/Segmented';
 export type { SegmentedProps, SegmentedOption } from './components/Segmented/Segmented';
 export { Breadcrumb } from './components/Breadcrumb/Breadcrumb';
 export type { BreadcrumbProps, BreadcrumbItem } from './components/Breadcrumb/Breadcrumb';
+export {
+  Toolbar,
+  ToolbarButton,
+  ToolbarGroup,
+  ToolbarSeparator,
+} from './components/Toolbar/Toolbar';
+export type {
+  ToolbarProps,
+  ToolbarButtonProps,
+  ToolbarGroupProps,
+} from './components/Toolbar/Toolbar';

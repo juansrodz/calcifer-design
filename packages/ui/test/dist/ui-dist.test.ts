@@ -52,6 +52,10 @@ describe('@calcifer-design/ui dist', () => {
       'PageShell',
       'Segmented',
       'Breadcrumb',
+      'Toolbar',
+      'ToolbarButton',
+      'ToolbarGroup',
+      'ToolbarSeparator',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
