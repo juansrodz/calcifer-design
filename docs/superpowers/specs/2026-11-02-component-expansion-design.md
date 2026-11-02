@@ -36,6 +36,9 @@ any of them.
 - Field-like controls extend `FieldFrameProps` and reuse `FieldMessages` and `RequiredMark`.
 - Links are customisable the way `NavMenu` does it, using `LinkRenderProps`, so a router can supply
   them.
+- A list drawn with `list-style: none` outside a `nav` sets `role="list"` on its `ol` or `ul`, with a
+  comment saying why: WebKit drops list semantics otherwise. `Steps` set the pattern, and `Timeline`
+  and `CardList` follow it.
 - Each component is exported from `src/index.ts`, added to `test/dist/ui-dist.test.ts` and listed in
   the root `README.md` table.
 - Each group adds one `minor` changeset for `@calcifer-design/ui`.

@@ -58,7 +58,10 @@ export function Steps({
 }: StepsProps) {
   const labels = { ...DEFAULT_STATUS_LABELS, ...statusLabels };
   return (
-    <ol className={styles.list} data-orientation={orientation} aria-label={ariaLabel}>
+    // `role="list"` is not redundant: WebKit drops list semantics for `list-style: none` outside a
+    // `nav`, and this list is the only thing telling a screen reader how many steps there are.
+    // eslint-disable-next-line jsx-a11y/no-redundant-roles -- the reason above
+    <ol role="list" className={styles.list} data-orientation={orientation} aria-label={ariaLabel}>
       {items.map((item, index) => {
         const status = statusOf(index, current, currentStatus);
         return (

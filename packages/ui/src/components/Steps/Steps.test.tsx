@@ -37,6 +37,12 @@ describe('Steps', () => {
     expect(within(list).getAllByRole('listitem')).toHaveLength(4);
   });
 
+  // WebKit drops list semantics for `list-style: none` outside a `nav`; only the role restores them.
+  it('states its list role outright', () => {
+    render(<Default />);
+    expect(screen.getByRole('list', { name: 'Sign-up progress' })).toHaveAttribute('role', 'list');
+  });
+
   it('marks only the current item with aria-current="step"', () => {
     const { container } = render(<Default />);
     const marked = container.querySelectorAll('[aria-current]');

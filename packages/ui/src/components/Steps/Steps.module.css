@@ -68,10 +68,11 @@
   color: var(--color-text);
 }
 
+/* The glyph is in text colour: danger on its own tint falls short of 4.5:1 in the light theme. */
 .item[data-status='error'] .marker {
   border-color: var(--color-danger);
   background: var(--color-danger-surface);
-  color: var(--color-danger);
+  color: var(--color-text);
 }
 
 .body {
