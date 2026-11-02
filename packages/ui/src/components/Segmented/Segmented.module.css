@@ -57,6 +57,16 @@
   color: var(--color-accent-text);
 }
 
+/* Forced colours replace the accent fill and so erase the chosen option; system colours survive. */
+@media (forced-colors: active) {
+  .option[data-pressed] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+}
+
 .option[data-disabled] {
   cursor: not-allowed;
   opacity: 0.45;
