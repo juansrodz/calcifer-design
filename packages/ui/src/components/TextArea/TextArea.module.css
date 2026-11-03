@@ -1,0 +1,17 @@
+/* `.control` is the box; this says only what a multi-line box adds. `min-height` is the one
+   declaration the two share, and the attribute selector out-ranks `.control` so bundle order
+   cannot decide it. */
+.root {
+  resize: vertical;
+}
+
+/* `field-sizing: content` makes `rows` meaningless, so the same height is rebuilt from the count:
+   that many lines, the padding above and below, and the two border pixels. Inside `@supports`
+   because a browser without it must keep the resize handle and the attribute's height. */
+@supports (field-sizing: content) {
+  .root[data-auto-resize] {
+    field-sizing: content;
+    min-height: calc(var(--text-area-rows) * 1lh + 2 * var(--space-2) + 2px);
+    resize: none;
+  }
+}

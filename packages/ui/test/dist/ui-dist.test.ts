@@ -57,6 +57,11 @@ describe('@calcifer-design/ui dist', () => {
       'ToolbarGroup',
       'ToolbarSeparator',
       'Steps',
+      'TextArea',
+      'TimePicker',
+      'Form',
+      'DatePicker',
+      'Upload',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

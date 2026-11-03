@@ -93,3 +93,18 @@ export type {
 } from './components/Toolbar/Toolbar';
 export { Steps } from './components/Steps/Steps';
 export type { StepsProps, StepsItem, StepStatus } from './components/Steps/Steps';
+export { TextArea } from './components/TextArea/TextArea';
+export type { TextAreaProps } from './components/TextArea/TextArea';
+export { TimePicker } from './components/TimePicker/TimePicker';
+export type { TimePickerProps } from './components/TimePicker/TimePicker';
+export { Form } from './components/Form/Form';
+export type { FormProps } from './components/Form/Form';
+export { DatePicker } from './components/DatePicker/DatePicker';
+export type { DatePickerProps, DatePickerLabels } from './components/DatePicker/DatePicker';
+export { Upload } from './components/Upload/Upload';
+export type {
+  UploadProps,
+  UploadLabels,
+  UploadRejection,
+  UploadRejectionReason,
+} from './components/Upload/Upload';
