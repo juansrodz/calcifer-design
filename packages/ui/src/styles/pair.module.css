@@ -1,0 +1,23 @@
+/* The one read-only pair skin. `ViewField` and `Descriptions` wear it unchanged, in the type of
+   `field.module.css`'s label and a control's value so a view of a record lines up with the form
+   that edits it. Each component's own stylesheet lays out the group around these two parts and
+   declares nothing on them, so the specificity tie `popup.module.css` records cannot arise. */
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+/* `min-width: 0` is for `ViewField`'s inline row, where a value must be able to shrink. In a
+   column it does nothing. The browser's `<dd>` margin goes. */
+.value {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+}
+
+.value[data-empty] {
+  color: var(--color-text-muted);
+}

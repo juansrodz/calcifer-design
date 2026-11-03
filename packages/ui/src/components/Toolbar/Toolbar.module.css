@@ -1,0 +1,30 @@
+/* `flex-wrap` is what keeps a horizontal toolbar at 390px: controls that do not fit take another
+   row, and the arrow keys still walk them in order. */
+.root,
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.root[data-orientation='vertical'],
+.group[data-orientation='vertical'] {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Base UI writes the separator's own orientation, the opposite of the toolbar's. */
+.separator {
+  flex: none;
+  background: var(--color-border-strong);
+}
+
+.separator[data-orientation='vertical'] {
+  align-self: stretch;
+  width: 1px;
+}
+
+.separator[data-orientation='horizontal'] {
+  height: 1px;
+}

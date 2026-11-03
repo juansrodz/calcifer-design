@@ -23,6 +23,7 @@ export default tseslint.config(
     rules: {
       ...jsxA11y.flatConfigs.recommended.rules,
       ...reactHooks.configs['recommended-latest'].rules,
+      'jsx-a11y/no-redundant-roles': ['error', { ol: ['list'], ul: ['list'] }],
       'id-length': ['error', { min: 2, exceptions: [] }],
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-unused-vars': [

@@ -1,0 +1,52 @@
+/* `flex-wrap` is the whole of the 390px story: a trail too long for the row takes another, and
+   `overflow-wrap` breaks a single label that is wider than the row on its own. */
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.separator {
+  flex: none;
+  color: var(--color-text-subtle);
+}
+
+/* `min-height` is WCAG 2.5.8's 24px target; the row's gap keeps two links' targets apart. The
+   resting underline is what tells a link from a plain item without relying on colour. */
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    text-decoration: none;
+  }
+}
+
+.text {
+  color: var(--color-text-muted);
+}
+
+.current {
+  color: var(--color-text);
+  font-weight: 500;
+}

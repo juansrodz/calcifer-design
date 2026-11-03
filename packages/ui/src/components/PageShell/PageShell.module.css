@@ -1,0 +1,66 @@
+/* Named areas rather than auto-placement, so a slot the caller left out is an empty row of no
+   height and `main` is always the row that takes the slack, which is what holds a footer to the
+   bottom of a short page.
+
+   One column is the base rule and it matches the source order, so at 390px the sidebar stacks
+   above the content with nothing to override. `position: relative` anchors the absolutely
+   positioned skip link to the shell, and being absolute takes it out of the grid. */
+.root {
+  position: relative;
+  display: grid;
+  grid-template:
+    'header' auto
+    'sidebar' auto
+    'main' 1fr
+    'footer' auto
+    / minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.header {
+  grid-area: header;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar {
+  grid-area: sidebar;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.main {
+  grid-area: main;
+  padding: var(--space-5) var(--space-4);
+}
+
+/* The ring would otherwise be drawn outside the box, where the header and the viewport's edge can
+   hide it. Drawn inside, a keyboard user sees where the skip link put them. */
+.main:focus-visible {
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.footer {
+  grid-area: footer;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .root[data-has-sidebar] {
+    grid-template:
+      'header header' auto
+      'sidebar main' 1fr
+      'footer footer' auto
+      / 16rem minmax(0, 1fr);
+  }
+
+  .sidebar {
+    border-inline-end: 1px solid var(--color-border);
+    border-bottom: 0;
+  }
+
+  .main {
+    padding-inline: var(--space-5);
+  }
+}
