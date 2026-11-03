@@ -1,41 +1,6 @@
-/* The trigger is `field.module.css`'s `.control` and the popup its `popup.module.css` surface; this
-   says what they do not, and declares nothing either of them does except where a selector's
-   attribute out-ranks them. */
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.trigger {
-  flex: 1;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-width: 0;
-  text-align: start;
-  cursor: pointer;
-}
-
-.value {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.value[data-placeholder] {
-  color: var(--color-text-muted);
-}
-
-.icon {
-  display: inline-flex;
-  flex: none;
-  color: var(--color-text-muted);
-}
-
-.icon > svg {
-  width: 1rem;
-  height: 1rem;
-}
+/* The trigger's frame is `PickerField`'s and the popup its `popup.module.css` surface; this says what
+   they do not, and declares nothing either of them does except where a selector's attribute
+   out-ranks them. */
 
 /* Seven touch-sized columns and the popup's padding. `max-width` on the surface still wins on a
    screen narrower than this, and the fixed table layout then shares what is left. */

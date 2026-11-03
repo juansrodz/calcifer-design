@@ -1,15 +1,10 @@
-import { Field as BaseField } from '@base-ui/react/field';
 import { Popover as BasePopover } from '@base-ui/react/popover';
-import { useId, useRef, useState, type ReactNode } from 'react';
-import { useFormReset } from '../../hooks/useFormReset';
+import { useRef, useState, type ReactNode } from 'react';
 import { CalendarIcon } from '../../icons/CalendarIcon';
-import { CloseIcon } from '../../icons/CloseIcon';
-import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
 import { Button } from '../Button/Button';
-import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
-import { useFormValue } from '../Form/FormContext';
-import { IconButton } from '../IconButton/IconButton';
+import type { FieldFrameProps } from '../Field/Field';
+import { PickerField } from '../Field/PickerField';
 import { Calendar } from './Calendar';
 import {
   dateFormatter,
@@ -100,10 +95,6 @@ export interface DatePickerProps extends FieldFrameProps {
 /**
  * A date field: a button showing the formatted date opens the WAI-ARIA date picker dialog, whose
  * grid is ours because Base UI has no public calendar. Submits `YYYY-MM-DD` through a hidden input.
- *
- * The trigger is the frame's `Field.Control`, holding the date as a button's `value`. That one
- * element gets the name, the description, `aria-invalid`, `Form`'s focus and the clearing of a
- * `Form` error as any Base UI control does, none of which a hidden input could use.
  */
 export function DatePicker({
   label,
@@ -125,12 +116,7 @@ export function DatePicker({
   placeholder = 'Choose a date',
   labels,
 }: DatePickerProps) {
-  const labelId = useId();
-  const valueId = useId();
-  const requiredId = useId();
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const gridRef = useRef<HTMLTableElement>(null);
-  const hiddenInputRef = useRef<HTMLInputElement>(null);
   const [heldValue, setHeldValue] = useState(() => parseIsoDate(defaultValue));
   const [open, setOpen] = useState(false);
   if (open && disabled) {
@@ -143,8 +129,6 @@ export function DatePicker({
   const earliest = parseIsoDate(min);
   const latest = parseIsoDate(max);
 
-  useFormValue(disabled ? undefined : name, chosen);
-
   const commit = (nextValue: string | null) => {
     setHeldValue(nextValue);
     if (nextValue !== chosen) {
@@ -152,18 +136,22 @@ export function DatePicker({
     }
   };
 
-  useFormReset(hiddenInputRef, () => {
-    if (value === undefined) {
-      commit(parseIsoDate(defaultValue));
-    }
-  });
-
   return (
-    <BaseField.Root
-      className={fieldStyles.frame}
+    <PickerField
+      label={label}
       name={name}
+      description={description}
+      error={error}
+      required={required}
       disabled={disabled}
-      invalid={error !== undefined}
+      value={chosen}
+      valueText={
+        chosen === null
+          ? placeholder
+          : dateFormatter(resolvedLocale, { dateStyle: 'medium' }).format(chosen)
+      }
+      icon={<CalendarIcon />}
+      requiredWord={words.required}
       validate={() => {
         if (chosen === null) {
           return required ? words.requiredMessage : null;
@@ -172,112 +160,55 @@ export function DatePicker({
           ? words.unavailableMessage
           : null;
       }}
+      onReset={() => {
+        if (value === undefined) {
+          commit(parseIsoDate(defaultValue));
+        }
+      }}
+      clearable={clearable}
+      clearLabel={words.clear}
+      onClear={() => commit(null)}
+      onBlur={onBlur}
+      open={open}
+      onOpenChange={setOpen}
+      modal="trap-focus"
     >
-      {/* `nativeLabel={false}` with a `<span>`, as `Select` does for its button. */}
-      <BaseField.Label
-        id={labelId}
-        className={fieldStyles.label}
-        nativeLabel={false}
-        render={<span />}
-      >
-        {label}
-        <RequiredMark when={required} />
-      </BaseField.Label>
-      <div className={styles.row}>
-        <BasePopover.Root open={open} onOpenChange={setOpen} modal="trap-focus">
-          <BasePopover.Trigger
-            ref={triggerRef}
-            disabled={disabled}
-            render={
-              <BaseField.Control
-                className={[fieldStyles.control, styles.trigger].join(' ')}
-                value={chosen ?? ''}
-                onBlur={onBlur}
-                // A button cannot be `aria-required`, so the word goes in its name, from a node
-                // `hidden` keeps out of everything except that reference.
-                aria-labelledby={[labelId, required ? requiredId : null, valueId]
-                  .filter(Boolean)
-                  .join(' ')}
-                render={<button type="button" />}
-              />
-            }
+      <BasePopover.Portal>
+        <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
+          <BasePopover.Popup
+            className={[popupStyles.surface, styles.popup].join(' ')}
+            data-popup="popover"
+            aria-label={label}
+            aria-modal="true"
+            dir={resolvedLocale === undefined ? undefined : directionOf(resolvedLocale)}
+            // Tab order and the opening focus agree: the grid's one tab stop, per `Calendar`.
+            initialFocus={() => gridRef.current?.querySelector('[tabindex="0"]') ?? true}
           >
-            <span
-              id={valueId}
-              className={styles.value}
-              data-placeholder={chosen === null ? '' : undefined}
-            >
-              {chosen === null
-                ? placeholder
-                : dateFormatter(resolvedLocale, { dateStyle: 'medium' }).format(chosen)}
-            </span>
-            <span className={styles.icon}>
-              <CalendarIcon />
-            </span>
-          </BasePopover.Trigger>
-          <BasePopover.Portal>
-            <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
-              <BasePopover.Popup
-                className={[popupStyles.surface, styles.popup].join(' ')}
-                data-popup="popover"
-                aria-label={label}
-                aria-modal="true"
-                dir={resolvedLocale === undefined ? undefined : directionOf(resolvedLocale)}
-                // Tab order and the opening focus agree: the grid's one tab stop, per `Calendar`.
-                initialFocus={() => gridRef.current?.querySelector('[tabindex="0"]') ?? true}
-              >
-                <Calendar
-                  gridRef={gridRef}
-                  chosen={chosen}
-                  min={earliest}
-                  max={latest}
-                  isDateDisabled={isDateDisabled}
-                  locale={resolvedLocale}
-                  weekStartsOn={firstWeekday}
-                  previousMonthLabel={words.previousMonth}
-                  nextMonthLabel={words.nextMonth}
-                  onSelect={(date) => {
-                    commit(date);
-                    setOpen(false);
-                  }}
-                />
-                {/* Visible, not visually hidden as `Popover`'s is: it sits in this dialog's tab
-                    order, and Base UI only arms the focus trap when one is present. */}
-                <div className={styles.footer}>
-                  <BasePopover.Close render={<Button variant="ghost" size="sm" />}>
-                    {words.close}
-                  </BasePopover.Close>
-                </div>
-              </BasePopover.Popup>
-            </BasePopover.Positioner>
-          </BasePopover.Portal>
-        </BasePopover.Root>
-        {clearable && chosen !== null && !disabled ? (
-          <IconButton
-            label={words.clear}
-            onClick={() => {
-              commit(null);
-              // The button is about to go, and focus must not go with it.
-              triggerRef.current?.focus();
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        ) : null}
-      </div>
-      {required ? (
-        <span id={requiredId} hidden>
-          {words.required}
-        </span>
-      ) : null}
-      <input
-        ref={hiddenInputRef}
-        type="hidden"
-        name={name}
-        value={chosen ?? ''}
-        disabled={disabled}
-      />
-      <FieldMessages description={description} error={error} />
-    </BaseField.Root>
+            <Calendar
+              gridRef={gridRef}
+              chosen={chosen}
+              min={earliest}
+              max={latest}
+              isDateDisabled={isDateDisabled}
+              locale={resolvedLocale}
+              weekStartsOn={firstWeekday}
+              previousMonthLabel={words.previousMonth}
+              nextMonthLabel={words.nextMonth}
+              onSelect={(date) => {
+                commit(date);
+                setOpen(false);
+              }}
+            />
+            {/* Visible, not visually hidden as `Popover`'s is: it sits in this dialog's tab
+                order, and Base UI only arms the focus trap when one is present. */}
+            <div className={styles.footer}>
+              <BasePopover.Close render={<Button variant="ghost" size="sm" />}>
+                {words.close}
+              </BasePopover.Close>
+            </div>
+          </BasePopover.Popup>
+        </BasePopover.Positioner>
+      </BasePopover.Portal>
+    </PickerField>
   );
 }

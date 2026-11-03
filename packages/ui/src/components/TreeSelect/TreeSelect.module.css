@@ -1,0 +1,28 @@
+/* The trigger's frame is `PickerField`'s and the popup its `popup.module.css` surface; this says what
+   they do not, and declares nothing either of them does except where a selector's attribute
+   out-ranks them. */
+.chevron {
+  transition-property: transform;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* The child combinator keeps this to the field's own trigger: another popup's trigger wrapped
+   around the field carries the same attribute. */
+[data-popup-open] > .chevron {
+  transform: rotate(180deg);
+}
+
+/* A hierarchy needs more room than a flat list: at least the trigger's width, and enough for a few
+   levels of indent beside a narrow trigger. A long branch scrolls inside the popup. */
+.popup[data-popup] {
+  width: max(var(--anchor-width), 18rem);
+  max-height: min(24rem, var(--available-height));
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

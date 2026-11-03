@@ -7,11 +7,11 @@ export interface FormProps<Values extends object = Record<string, unknown>> {
   /**
    * The values as a plain object keyed by field `name`, once nothing is invalid. A text control
    * or a `Select` gives a string, `''` when empty; a `RadioGroup` a string or `null`; `Checkbox`
-   * and `Switch` a boolean; `DatePicker` a `YYYY-MM-DD` string or `null`; and `Upload` an array of
-   * `File`s, empty when none is chosen and an array even without `multiple`. A disabled control
-   * is left out, as a browser leaves it out, and so is an input that is not one of the library's:
-   * a raw `<input name>` has no field frame to report through. The browser's own submit never
-   * happens, so `Form` takes no `action`.
+   * and `Switch` a boolean; `DatePicker` a `YYYY-MM-DD` string or `null`; `TreeSelect` a node's `id`
+   * or `null`; and `Upload` an array of `File`s, empty when none is chosen and an array even without
+   * `multiple`. A disabled control is left out, as a browser leaves it out, and so is an input that
+   * is not one of the library's: a raw `<input name>` has no field frame to report through. The
+   * browser's own submit never happens, so `Form` takes no `action`.
    */
   onSubmit: (values: Values) => void;
   /**

@@ -108,3 +108,17 @@ export type {
   UploadRejection,
   UploadRejectionReason,
 } from './components/Upload/Upload';
+export { Tree } from './components/Tree/Tree';
+export type { TreeProps, TreeItem, TreeSelectionMode } from './components/Tree/Tree';
+export { TreeSelect } from './components/TreeSelect/TreeSelect';
+export type { TreeSelectProps, TreeSelectLabels } from './components/TreeSelect/TreeSelect';
+export { FilterBar } from './components/FilterBar/FilterBar';
+export type {
+  FilterBarProps,
+  FilterBarFilter,
+  FilterBarLabels,
+} from './components/FilterBar/FilterBar';
+export { CardList } from './components/CardList/CardList';
+export type { CardListProps } from './components/CardList/CardList';
+export { Timeline } from './components/Timeline/Timeline';
+export type { TimelineProps, TimelineItem, TimelineTone } from './components/Timeline/Timeline';
