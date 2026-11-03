@@ -1,5 +1,35 @@
 # @calcifer-design/ui
 
+## 0.5.0
+
+### Minor Changes
+
+- 7ce57f6: Add five data display components.
+
+  - `Tree`: a hierarchy following the WAI-ARIA tree view pattern, with `selectionMode` `none`, `single` or `multiple`. One tab stop, on the selected item or else the first enabled one; arrow keys, Home, End and type-ahead, with Left and Right swapping in right-to-left pages. Disabled items can be focused but do nothing. If an item goes, by removal or by being collapsed away, focus moves to its nearest ancestor still shown. Ids must be unique in the whole tree; a repeated one is left out, with what it holds.
+  - `TreeSelect`: choose one node from a hierarchy, as a full field with `label`, `description`, `error`, `required`, `disabled` and `clearable`. Opens by press or by the Up and Down keys, on the chosen node with the branches around it open; choosing closes it and returns focus, as Escape does. Submits the node's `id` through a hidden input, and works inside `Form`, including a `null` value when nothing is chosen, and a native reset of the form. A value no node holds reads as nothing chosen, and with no items the popup says so through `labels.empty`.
+  - `FilterBar`: the row above a results list, with a search, slots for filter controls, the active filters as chips and a count announced politely when it changes. It holds no filter logic. Removing a chip moves focus to the next one, or to the search when none are left. Every word can be replaced through `labels`.
+  - `CardList`: a responsive grid of cards, generic over the item type, with `loading`, `skeletonCount` and `emptyState`. Items already there stay while loading; skeletons stand in only for an empty list and are not read out.
+  - `Timeline`: a chronological record with `<time>` elements on the Gregorian calendar, in an optional `locale`. `tone` is stated in visible words, through `toneLabels`, as well as colour. A `timestamp` may be a year, a month, a date or a date and time, in ISO 8601; anything else is shown as written, without a `<time>`.
+
+- eb2eba3: Add five form components.
+
+  - `TextArea`: a textarea for `Field`, four rows tall by default. `autoResize` grows it with its content through CSS `field-sizing: content`; a browser without that keeps a normal textarea the user can drag taller.
+  - `Form`: collects values and hands `onSubmit` a plain object. `errors`, keyed by field `name`, shows each message on the matching `Field`, `Select`, `Checkbox`, `RadioGroup`, `Switch`, `DatePicker`, `TimePicker` or `Upload`, marks it invalid and clears it when that control's value changes. An explicit `error` prop wins. On submit, focus moves to the first invalid control, and an invalid control stops the submit. Inside a `Form`, a `required` control left empty now shows a message on its own frame. A plain `<form>` behaves as it did.
+  - `DatePicker`: a button showing the formatted date opens a calendar following the WAI-ARIA date picker dialog pattern. `value` is a `YYYY-MM-DD` string or `null`, so no date shifts across time zones. Takes `min`, `max`, `isDateDisabled`, `locale`, `weekStartsOn` and `clearable`, reads right-to-left locales the right way round, and submits through a hidden input. A string that names no real date reads as nothing chosen, and `Form` refuses a date the bounds refuse, with `labels.unavailableMessage`. Always draws the Gregorian calendar, in the locale's language and digits.
+  - `TimePicker`: the native time input for `Field`, with `min`, `max` and `step`.
+  - `Upload`: selects files without transferring them, on a real file input with a drop zone over it. `accept`, `maxSizeBytes` and the one-file limit are checked for dropped files as well as chosen ones, and `onReject` gets a reason per file, including a `duplicate` when `multiple` is on. Lists the chosen files with a named remove button each, and announces changes to screen readers. Inside `Form`, its value is an array of `File`s. `DatePicker` and `Upload` also follow a native reset of their form, going back to their defaults when uncontrolled. `Form` itself is reset by remounting with a new `key`.
+
+- 7977acd: Add seven components for structuring a page.
+
+  - `ViewField`: one read-only label and value, stacked or inline, showing an em dash (or your own `emptyText`) when there is no value. `0` counts as a value.
+  - `Descriptions`: a set of label and value pairs in one `<dl>`, in one to three columns that collapse to one at narrow widths. An item can span columns, and a `heading` names the list.
+  - `PageShell`: a page's landmarks, in reading order, behind a skip link: `header`, an optional named `aside`, a focusable `main` and `footer`. The sidebar stacks above the content at narrow widths.
+  - `Segmented`: choose exactly one of a few options, on Base UI's `ToggleGroup`. Pressing the active option never clears it. With no `value` or `defaultValue`, the first enabled option starts out chosen.
+  - `Breadcrumb`: `nav > ol` with the last item as plain text marked `aria-current="page"`. Long trails wrap, and `renderLink` supplies router links the way `NavMenu`'s does.
+  - `Toolbar`, with `ToolbarButton`, `ToolbarGroup` and `ToolbarSeparator`: one tab stop whose arrow keys move focus, on Base UI's `Toolbar`. A `ToolbarButton` wears `Button` or `IconButton` through `render`, and a disabled one stays focusable so its name can still be read.
+  - `Steps`: a progress display as an `ol`, with `aria-current="step"` on the current item and each status stated in text for screen readers, not by colour alone. `statusLabels` translates those words. Horizontal steps stack at narrow widths.
+
 ## 0.4.0
 
 ### Minor Changes
