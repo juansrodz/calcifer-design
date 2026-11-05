@@ -1,7 +1,11 @@
 import { flexRender, useTable, type RowData, type SortingState } from '@tanstack/react-table';
 import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import { useId, useRef, useState, type CSSProperties, type ElementType } from 'react';
-import { dataGridFeatures } from './columns';
+import { RefreshIcon } from '../../icons/RefreshIcon';
+import { IconButton } from '../IconButton/IconButton';
+import { Spinner } from '../Spinner/Spinner';
+import { Toolbar, ToolbarButton } from '../Toolbar/Toolbar';
+import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
 import { defaultDataGridLabels } from './labels';
 import type { DataGridProps } from './types';
@@ -34,6 +38,15 @@ function formatCellValue(value: unknown): string | null {
   return text.trim() === '' ? emptyCellText : text;
 }
 
+/** A compact cell is one line with an ellipsis, so its full text is the title. */
+function compactTitle<Row extends RowData>(
+  column: DataGridColumnDef<Row>,
+  row: Row,
+): string | undefined {
+  const text = textValueOf(column, row);
+  return text === undefined || text.trim() === '' ? undefined : text;
+}
+
 export function DataGrid<Row extends RowData>({
   heading,
   headingLevel = 2,
@@ -48,6 +61,10 @@ export function DataGrid<Row extends RowData>({
   maxHeight,
   fill = false,
   hideFooter = false,
+  loading = false,
+  emptyState,
+  onRefresh,
+  refreshing = false,
   labels,
 }: DataGridProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
@@ -94,7 +111,9 @@ export function DataGrid<Row extends RowData>({
   const topSpacerHeight = firstItem ? firstItem.start : 0;
   const bottomSpacerHeight = lastItem ? virtualizer.getTotalSize() - lastItem.end : 0;
   const columnCount = table.getAllLeafColumns().length;
-  const scrollStyle: CSSProperties | undefined = maxHeight ? { maxHeight } : undefined;
+  // A card that fills its parent is sized by it, so a maximum height has no place there.
+  const scrollStyle: CSSProperties | undefined = maxHeight && !fill ? { maxHeight } : undefined;
+  const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
 
   return (
     <section
@@ -105,7 +124,24 @@ export function DataGrid<Row extends RowData>({
         <HeadingTag id={headingId} className={styles.heading}>
           {heading}
         </HeadingTag>
-        {actions ? <div className={styles.actions}>{actions}</div> : null}
+        {onRefresh || actions ? (
+          <div className={styles.cluster}>
+            {onRefresh ? (
+              <Toolbar aria-label={resolvedLabels.toolbar}>
+                <ToolbarButton
+                  loading={refreshing}
+                  onClick={onRefresh}
+                  render={
+                    <IconButton label={resolvedLabels.refresh} size="sm">
+                      <RefreshIcon />
+                    </IconButton>
+                  }
+                />
+              </Toolbar>
+            ) : null}
+            {actions ? <div className={styles.actions}>{actions}</div> : null}
+          </div>
+        ) : null}
       </header>
       <div
         ref={scrollRef}
@@ -117,7 +153,9 @@ export function DataGrid<Row extends RowData>({
           className={styles.table}
           role="grid"
           aria-labelledby={headingId}
-          aria-rowcount={entries.length + 1}
+          aria-rowcount={stateKind ? 2 : entries.length + 1}
+          aria-busy={loading || undefined}
+          data-density={density}
         >
           <thead className={styles.head}>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -152,7 +190,30 @@ export function DataGrid<Row extends RowData>({
             ))}
           </thead>
           <tbody>
-            {topSpacerHeight > 0 ? (
+            {stateKind ? (
+              <tr aria-rowindex={2}>
+                <td
+                  role="gridcell"
+                  className={styles.stateCell}
+                  colSpan={columnCount}
+                  aria-colindex={1}
+                >
+                  {stateKind === 'loading' ? (
+                    <div className={styles.state} role="status">
+                      <Spinner size="md" />
+                      {resolvedLabels.loading}
+                    </div>
+                  ) : (
+                    (emptyState ?? (
+                      <div className={styles.state} role="status">
+                        {resolvedLabels.empty}
+                      </div>
+                    ))
+                  )}
+                </td>
+              </tr>
+            ) : null}
+            {!stateKind && topSpacerHeight > 0 ? (
               <tr aria-hidden="true">
                 <td
                   className={styles.spacerCell}
@@ -161,7 +222,7 @@ export function DataGrid<Row extends RowData>({
                 />
               </tr>
             ) : null}
-            {virtualItems.map((virtualItem) => {
+            {(stateKind ? [] : virtualItems).map((virtualItem) => {
               const entry = entries[virtualItem.index];
               if (!entry || entry.kind !== 'row') return null;
               const { row } = entry;
@@ -179,6 +240,14 @@ export function DataGrid<Row extends RowData>({
                       role="gridcell"
                       className={styles.cell}
                       aria-colindex={columnIndex + 1}
+                      title={
+                        density === 'compact'
+                          ? compactTitle(
+                              cell.column.columnDef as DataGridColumnDef<Row>,
+                              row.original,
+                            )
+                          : undefined
+                      }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -186,7 +255,7 @@ export function DataGrid<Row extends RowData>({
                 </tr>
               );
             })}
-            {bottomSpacerHeight > 0 ? (
+            {!stateKind && bottomSpacerHeight > 0 ? (
               <tr aria-hidden="true">
                 <td
                   className={styles.spacerCell}

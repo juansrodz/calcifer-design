@@ -40,6 +40,10 @@ export interface DataGridProps<Row extends RowData> {
   loading?: boolean;
   emptyState?: ReactNode;
   density?: DataGridDensity;
+  /**
+   * The tallest the scrolling body grows before it scrolls, as a CSS length. Defaults to the
+   * viewport height minus 16rem, which leaves room for a page header. Ignored when `fill` is set.
+   */
   maxHeight?: string;
   fill?: boolean;
   hideFooter?: boolean;

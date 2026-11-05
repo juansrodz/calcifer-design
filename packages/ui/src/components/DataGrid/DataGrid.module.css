@@ -24,9 +24,20 @@
 
 .heading {
   margin: 0;
+  white-space: nowrap;
   font-size: var(--text-md);
   font-weight: 600;
   color: var(--color-text);
+}
+
+/* The toolbar and the actions wrap among themselves, apart from the heading. */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-inline-start: auto;
 }
 
 .actions {
@@ -36,9 +47,9 @@
   gap: var(--space-2);
 }
 
-/* The default leaves room for a page header; the maxHeight prop overrides it inline. */
+/* The default leaves 16rem for a page header; the maxHeight prop overrides it inline. */
 .scroll {
-  max-height: calc(100dvh - var(--space-10) * 2);
+  max-height: calc(100dvh - 16rem);
   overflow: auto;
 }
 
@@ -140,10 +151,12 @@
   }
 }
 
+/* Comfortable cells wrap anywhere, so a long unbroken value never widens the grid. */
 .cell {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   vertical-align: middle;
   color: var(--color-text);
+  overflow-wrap: anywhere;
 }
 
 /* The outer columns line up with the card's own inset. */
@@ -155,6 +168,29 @@
 .headerCell:last-child,
 .cell:last-child {
   padding-inline-end: var(--space-5);
+}
+
+/* Compact cells keep to one line; the full text is the cell's title. */
+.table[data-density='compact'] .cell {
+  padding-block: var(--space-2);
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The message fills the body's width, centred, under the header band. */
+.stateCell {
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
 }
 
 .spacerCell {

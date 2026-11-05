@@ -2,7 +2,7 @@ import { composeStories } from '@storybook/react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
 import { createDataGridColumnHelper, textValueOf } from './columns';
@@ -10,7 +10,7 @@ import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
 import { inventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
 
-const { Basic, Large } = composeStories(stories);
+const { Basic, Large, Loading, Empty, Compact } = composeStories(stories);
 
 function bodyRows(): HTMLElement[] {
   return screen.getAllByRole('row').slice(1);
@@ -217,6 +217,163 @@ describe('DataGrid', () => {
   });
 });
 
+describe('states, density and the toolbar', () => {
+  it('shows a loading state with the header still visible', async () => {
+    const { container } = renderGrid({
+      loading: true,
+      actions: <button type="button">Add item</button>,
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading rows…');
+    expect(screen.getByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add item' })).toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader')).toHaveLength(inventoryColumns.length);
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-busy', 'true');
+    expect(within(screen.getByRole('grid')).queryByText('SKU-1000')).not.toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows the loading story without axe violations', async () => {
+    const { container } = render(<Loading />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading rows…');
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('shows an empty state and keeps the actions usable', async () => {
+    const onAdd = vi.fn();
+    const { container } = renderGrid({
+      rows: [],
+      actions: (
+        <button type="button" onClick={onAdd}>
+          Add item
+        </button>
+      ),
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows to show.');
+    await userEvent.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('replaces the empty message with emptyState', () => {
+    renderGrid({ rows: [], emptyState: <p>Nothing stocked yet.</p> });
+    expect(screen.getByText('Nothing stocked yet.')).toBeInTheDocument();
+    expect(screen.queryByText('No rows to show.')).not.toBeInTheDocument();
+  });
+
+  it('shows the empty story without axe violations', async () => {
+    const { container } = render(<Empty />);
+    expect(screen.getByText('No rows to show.')).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('draws a refresh button only when onRefresh is given', async () => {
+    const onRefresh = vi.fn();
+    const { rerender } = renderGrid();
+    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
+
+    rerender(
+      <DataGrid<InventoryRow>
+        gridId="test-grid"
+        heading="Inventory"
+        rows={makeInventoryRows(10)}
+        columns={inventoryColumns}
+        getRowId={(row) => row.id}
+        onRefresh={onRefresh}
+      />,
+    );
+    const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
+    await userEvent.click(within(toolbar).getByRole('button', { name: 'Refresh' }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not refresh again while refreshing', async () => {
+    const onRefresh = vi.fn();
+    renderGrid({ onRefresh, refreshing: true });
+    const refreshButton = within(screen.getByRole('toolbar', { name: 'Grid tools' })).getByRole(
+      'button',
+      { name: 'Refresh' },
+    );
+    expect(refreshButton).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(refreshButton);
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('keeps the toolbar between the heading and the actions', () => {
+    renderGrid({ onRefresh: vi.fn(), actions: <button type="button">Add item</button> });
+    const heading = screen.getByRole('heading', { name: 'Inventory' });
+    const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
+    const action = screen.getByRole('button', { name: 'Add item' });
+    expect(
+      heading.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(toolbar.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('compact density keeps cells to one line and titles them', async () => {
+    const { container } = renderGrid({ density: 'compact' });
+    expect(screen.getByRole('grid')).toHaveAttribute('data-density', 'compact');
+    const nameCell = within(bodyRows()[0] as HTMLElement).getAllByRole('gridcell')[1];
+    expect(nameCell).toHaveAttribute('title', makeInventoryRows(1)[0]?.name);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('comfortable density does not title its cells', () => {
+    renderGrid();
+    expect(screen.getByRole('grid')).toHaveAttribute('data-density', 'comfortable');
+    const nameCell = within(bodyRows()[0] as HTMLElement).getAllByRole('gridcell')[1];
+    expect(nameCell).not.toHaveAttribute('title');
+  });
+
+  it('does not title a compact cell that has no text', () => {
+    const columnHelper = createDataGridColumnHelper<InventoryRow>();
+    const columns = columnHelper.columns([
+      columnHelper.display({ id: 'menu', header: 'Menu', cell: () => <span>open</span> }),
+    ]);
+    renderGrid({ columns, density: 'compact' });
+    const cell = within(bodyRows()[0] as HTMLElement).getAllByRole('gridcell')[0];
+    expect(cell).not.toHaveAttribute('title');
+  });
+
+  it('shows the compact story', () => {
+    render(<Compact />);
+    expect(screen.getByRole('grid')).toHaveAttribute('data-density', 'compact');
+  });
+
+  it('labels replace the English defaults', () => {
+    renderGrid({
+      labels: { rowCount: (count) => `${count} filas`, loading: 'Cargando…' },
+      loading: true,
+    });
+    expect(screen.getByText('10 filas')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando…');
+  });
+
+  it('names the toolbar and the refresh button from the labels', () => {
+    renderGrid({
+      onRefresh: vi.fn(),
+      labels: { toolbar: 'Herramientas', refresh: 'Actualizar' },
+    });
+    const toolbar = screen.getByRole('toolbar', { name: 'Herramientas' });
+    expect(within(toolbar).getByRole('button', { name: 'Actualizar' })).toBeInTheDocument();
+  });
+});
+
+describe('height', () => {
+  function scrollArea(): HTMLElement {
+    return document.querySelector('[data-grid-scroll]') as HTMLElement;
+  }
+
+  it('applies maxHeight inline', () => {
+    renderGrid({ maxHeight: '20rem' });
+    expect(scrollArea().style.maxHeight).toBe('20rem');
+  });
+
+  it('ignores maxHeight when fill is set', () => {
+    renderGrid({ maxHeight: '20rem', fill: true });
+    expect(scrollArea().style.maxHeight).toBe('');
+  });
+});
+
 describe('virtualisation', () => {
   function scrollGridTo(scrollTop: number) {
     const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
@@ -237,6 +394,17 @@ describe('virtualisation', () => {
     expect(bodyRows().length).toBeLessThan(40);
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '5001');
     expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '2');
+  });
+
+  it('hides the spacer rows from assistive technology', async () => {
+    const { container } = render(<Large />);
+    scrollGridTo(40 * 2000);
+    const rowsInBody = [...container.querySelectorAll('tbody > tr')];
+    const spacerRows = rowsInBody.filter((row) => !row.hasAttribute('aria-rowindex'));
+    // One above the rendered window and one below it.
+    expect(spacerRows).toHaveLength(2);
+    for (const spacerRow of spacerRows) expect(spacerRow).toHaveAttribute('aria-hidden', 'true');
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('renders later rows after scrolling', () => {

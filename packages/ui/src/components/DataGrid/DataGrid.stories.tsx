@@ -19,6 +19,26 @@ type Story = StoryObj<typeof meta>;
 
 export const Basic: Story = {};
 
+export const Compact: Story = {
+  args: { heading: 'Compact inventory', density: 'compact' },
+};
+
+export const Loading: Story = {
+  args: { heading: 'Loading inventory', rows: [], loading: true },
+};
+
+export const Empty: Story = {
+  args: { heading: 'Empty inventory', rows: [] },
+};
+
+export const WithRefresh: Story = {
+  args: {
+    heading: 'Inventory with refresh',
+    onRefresh: () => undefined,
+    actions: <button type="button">Add item</button>,
+  },
+};
+
 const largeRows = makeInventoryRows(5000);
 
 export const Large: Story = {
