@@ -101,6 +101,25 @@ describe('server mode', () => {
     });
   });
 
+  it('does not sort in server mode without onQueryChange', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    renderGrid({ onLoadMore, initialSorting: [{ id: 'sku', desc: false }] });
+    const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+    const skuHeader = screen.getByRole('columnheader', { name: 'SKU' });
+    expect(skuHeader).not.toHaveAttribute('aria-sort');
+
+    await user.click(nameHeader);
+    expect(nameHeader).not.toHaveAttribute('aria-sort');
+    nameHeader.focus();
+    await user.keyboard('{Enter}');
+    expect(nameHeader).not.toHaveAttribute('aria-sort');
+
+    // Nothing waits on a query the app never heard of: the grid still asks for more.
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
   it('asks for more rows near the end', () => {
     const onLoadMore = vi.fn();
     const { rerender } = renderGrid({ onLoadMore });
@@ -291,6 +310,7 @@ describe('server mode', () => {
       selectionMode: 'multiple',
       defaultSelectedRowIds: ['item-1', 'item-2'],
       onSelectedRowIdsChange,
+      onQueryChange: vi.fn(),
     });
     emulateScrollTo();
     expect(screen.getByText('2 selected')).toBeInTheDocument();
@@ -308,18 +328,19 @@ describe('server mode', () => {
   it('loads more after a query replaces the rows with as many', async () => {
     const user = userEvent.setup();
     const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
     const rows = makeInventoryRows(50);
-    const { rerender } = renderGrid({ rows, onLoadMore });
+    const { rerender } = renderGrid({ rows, onLoadMore, onQueryChange });
     scrollGridTo(40 * 50);
     expect(onLoadMore).toHaveBeenCalledTimes(1);
-    rerender(gridElement({ rows: makeInventoryRows(100), onLoadMore }));
+    rerender(gridElement({ rows: makeInventoryRows(100), onLoadMore, onQueryChange }));
 
     await user.click(screen.getByRole('columnheader', { name: 'Name' }));
     // The old rows stay until the app replaces them, and nothing is asked of them meanwhile.
     scrollGridTo(40 * 100);
     expect(onLoadMore).toHaveBeenCalledTimes(1);
 
-    rerender(gridElement({ rows: makeInventoryRows(50).reverse(), onLoadMore }));
+    rerender(gridElement({ rows: makeInventoryRows(50).reverse(), onLoadMore, onQueryChange }));
     scrollGridTo(40 * 50);
     expect(onLoadMore).toHaveBeenCalledTimes(2);
   });

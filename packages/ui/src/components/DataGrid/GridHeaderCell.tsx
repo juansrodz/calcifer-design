@@ -12,14 +12,17 @@ export interface GridHeaderCellProps<Row extends RowData> {
   cellProps: GridCellProps;
 }
 
-/** A column's header cell. The cell is the sort control: a click sorts, and so does Enter. */
+/**
+ * A column's header cell. The cell is the sort control: a click sorts, and so does Enter. A column
+ * that cannot sort claims no sort order, whatever the sorting state says.
+ */
 export function GridHeaderCell<Row extends RowData>({
   header,
   ariaColIndex,
   cellProps,
 }: GridHeaderCellProps<Row>) {
-  const sortDirection = header.column.getIsSorted();
   const canSort = header.column.getCanSort();
+  const sortDirection = canSort && header.column.getIsSorted();
   return (
     <th
       scope="col"

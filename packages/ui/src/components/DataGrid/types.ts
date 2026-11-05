@@ -32,12 +32,20 @@ export interface DataGridProps<Row extends RowData> {
   /** Defaults to the text value of the first column. */
   getRowLabel?: (row: Row) => string;
   actions?: ReactNode;
+  /**
+   * `'client'` (the default) sorts the given rows itself. `'server'` leaves sorting to the app and
+   * asks for rows page by page; there, headers sort only when `onQueryChange` is given.
+   */
   mode?: DataGridMode;
   totalRowCount?: number;
   hasMore?: boolean;
   loadingMore?: boolean;
   loadError?: string;
   onLoadMore?: () => void;
+  /**
+   * Server mode: the user changed the sort, so load the first page of rows for this query. Without
+   * it, server mode's headers are not sortable and carry no `aria-sort`.
+   */
   onQueryChange?: (query: DataGridQuery) => void;
   initialSorting?: SortingState;
   enableSorting?: boolean;

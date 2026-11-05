@@ -131,6 +131,8 @@ export function DataGrid<Row extends RowData>({
   labels,
 }: DataGridProps<Row>) {
   const serverMode = mode === 'server';
+  // In server mode only the app can sort, so without its query handler nothing sorts.
+  const sortingEnabled = enableSorting && (!serverMode || onQueryChange !== undefined);
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
   // The rows the grid held when the query last changed. Until the app replaces them the loaded
   // rows answer the old query, so nothing more is asked of them.
@@ -200,7 +202,7 @@ export function DataGrid<Row extends RowData>({
       }
     },
     enableRowSelection: (row) => isRowSelectable?.(row.original) ?? true,
-    enableSorting,
+    enableSorting: sortingEnabled,
     enableMultiSort: multiSort,
     defaultColumn: {
       // Cycle ascending, descending, off for every type; TanStack would start numbers descending.
