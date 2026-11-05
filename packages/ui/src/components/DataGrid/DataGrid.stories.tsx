@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { Button } from '../Button/Button';
 import { DataGrid } from './DataGrid';
 import { inventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
 
@@ -57,6 +58,47 @@ export const SelectionWithLockedRows: Story = {
     selectionMode: 'multiple',
     highlightOnClick: true,
     isRowSelectable: (row) => (row as InventoryRow).status !== 'out',
+  },
+};
+
+export const RowActions: Story = {
+  args: {
+    heading: 'Inventory with row actions',
+    renderRowActions: (row) => (
+      <Button size="sm" variant="ghost" aria-label={`Edit ${(row as InventoryRow).name}`}>
+        Edit
+      </Button>
+    ),
+  },
+};
+
+function InventoryDetails({ row }: { row: InventoryRow }) {
+  return (
+    <dl style={{ display: 'flex', gap: 'var(--space-6)', margin: 0 }}>
+      <div>
+        <dt>Location</dt>
+        <dd style={{ margin: 0 }}>{row.location}</dd>
+      </div>
+      <div>
+        <dt>Last updated</dt>
+        <dd style={{ margin: 0 }}>{row.updated}</dd>
+      </div>
+    </dl>
+  );
+}
+
+export const ExpandableRows: Story = {
+  args: {
+    heading: 'Inventory with details',
+    selectionMode: 'multiple',
+    defaultExpandedRowIds: ['item-2'],
+    isRowExpandable: (row) => (row as InventoryRow).status !== 'out',
+    renderExpandedRow: (row) => <InventoryDetails row={row as InventoryRow} />,
+    renderRowActions: (row) => (
+      <Button size="sm" variant="ghost" aria-label={`Edit ${(row as InventoryRow).name}`}>
+        Edit
+      </Button>
+    ),
   },
 };
 

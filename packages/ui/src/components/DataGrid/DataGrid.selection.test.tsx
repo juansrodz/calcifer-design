@@ -156,6 +156,27 @@ describe('row events', () => {
     expect(onRowContextMenu).toHaveBeenCalledTimes(4);
   });
 
+  it('a key press the browser never echoes does not swallow a later contextmenu', async () => {
+    const user = userEvent.setup();
+    const onRowContextMenu = vi.fn();
+    renderGrid({ onRowContextMenu });
+    const cell = cellOfItem(3, 'SKU');
+    cell.focus();
+
+    // Another key press in between: the next contextmenu is not that key's echo.
+    fireEvent.keyDown(cell, { key: 'ContextMenu' });
+    await user.keyboard('{ArrowRight}{ArrowLeft}');
+    fireEvent.contextMenu(cell);
+    expect(onRowContextMenu).toHaveBeenCalledTimes(2);
+
+    // Focus leaving the cell in between: the same.
+    fireEvent.keyDown(cell, { key: 'ContextMenu' });
+    cellOfItem(5, 'SKU').focus();
+    cell.focus();
+    fireEvent.contextMenu(cell);
+    expect(onRowContextMenu).toHaveBeenCalledTimes(4);
+  });
+
   it('Enter on a body cell is a row click', async () => {
     const user = userEvent.setup();
     const onRowClick = vi.fn();
@@ -212,6 +233,9 @@ describe('row events', () => {
     expect(onLinkClick).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Peek Washer 8 mm' }));
     expect(onSpanClick).toHaveBeenCalledTimes(1);
+    // A key on a control inside the cell is the control's, not a row click.
+    await user.keyboard('{Enter}');
+    expect(onSpanKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: 'Enter' }));
     expect(onRowClick).not.toHaveBeenCalled();
     expect(onRowDoubleClick).not.toHaveBeenCalled();
     expect(onHighlightChange).not.toHaveBeenCalled();
@@ -480,6 +504,88 @@ describe('checkbox selection', () => {
     expect(lastSelection(onSelectedRowIdsChange)).toHaveLength(10);
     await user.keyboard('[Space]');
     expect(onSelectedRowIdsChange).toHaveBeenLastCalledWith([]);
+  });
+
+  it('Space on select-all does nothing while there is nothing to select', async () => {
+    const user = userEvent.setup();
+    const onSelectedRowIdsChange = vi.fn();
+    const { rerender } = renderGrid({
+      selectionMode: 'multiple',
+      defaultSelectedRowIds: itemIds(2),
+      onSelectedRowIdsChange,
+    });
+    const reload = (rows: InventoryRow[], loading: boolean) =>
+      rerender(
+        <DataGrid<InventoryRow>
+          gridId="selection-grid"
+          heading="Inventory"
+          rows={rows}
+          columns={inventoryColumns}
+          getRowId={(row) => row.id}
+          selectionMode="multiple"
+          defaultSelectedRowIds={itemIds(2)}
+          onSelectedRowIdsChange={onSelectedRowIdsChange}
+          loading={loading}
+        />,
+      );
+    reload([], true);
+    screen.getAllByRole('columnheader')[0]?.focus();
+    await user.keyboard('[Space]');
+    expect(onSelectedRowIdsChange).not.toHaveBeenCalled();
+    reload(makeInventoryRows(10), false);
+    expect(rowCheckbox(2)).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('a click anywhere in the checkbox cell toggles the row, and is no row click', async () => {
+    const user = userEvent.setup();
+    const onSelectedRowIdsChange = vi.fn();
+    const onRowClick = vi.fn();
+    renderGrid({
+      selectionMode: 'multiple',
+      isRowSelectable: (row) => row.status !== 'out',
+      onSelectedRowIdsChange,
+      onRowClick,
+      highlightOnClick: true,
+    });
+    await user.click(rowCheckbox(2));
+    expect(onSelectedRowIdsChange).toHaveBeenLastCalledWith(itemIds(2));
+    // The cell's padding, around the checkbox.
+    await user.click(rowOfItem(3).querySelectorAll('td')[0] as HTMLElement);
+    expect(onSelectedRowIdsChange).toHaveBeenLastCalledWith(itemIds(2, 3));
+    await user.keyboard('{Shift>}');
+    await user.click(rowOfItem(6).querySelectorAll('td')[0] as HTMLElement);
+    await user.keyboard('{/Shift}');
+    // Item 4 cannot be selected, so the range skips it.
+    expect(lastSelection(onSelectedRowIdsChange)).toEqual(itemIds(2, 3, 5, 6));
+
+    // Neither an enabled nor a disabled checkbox, nor its cell, is a click on the row.
+    onSelectedRowIdsChange.mockClear();
+    await user.click(rowCheckbox(4));
+    await user.click(rowOfItem(4).querySelectorAll('td')[0] as HTMLElement);
+    expect(onSelectedRowIdsChange).not.toHaveBeenCalled();
+    expect(onRowClick).not.toHaveBeenCalled();
+    expect(rowOfItem(4)).not.toHaveAttribute('data-highlighted');
+  });
+
+  it('a modified click on a row that cannot be selected does nothing', async () => {
+    const user = userEvent.setup();
+    const onSelectedRowIdsChange = vi.fn();
+    const onRowClick = vi.fn();
+    renderGrid({
+      selectionMode: 'multiple',
+      isRowSelectable: (row) => row.status !== 'out',
+      onSelectedRowIdsChange,
+      onRowClick,
+      highlightOnClick: true,
+    });
+    for (const modifier of ['Shift', 'Control', 'Meta']) {
+      await user.keyboard(`{${modifier}>}`);
+      await user.click(cellOfItem(4, 'SKU'));
+      await user.keyboard(`{/${modifier}}`);
+    }
+    expect(onSelectedRowIdsChange).not.toHaveBeenCalled();
+    expect(onRowClick).not.toHaveBeenCalled();
+    expect(rowOfItem(4)).not.toHaveAttribute('data-highlighted');
   });
 
   it('keeps the grid to one tab stop with the checkbox column in it', () => {

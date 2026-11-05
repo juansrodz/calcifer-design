@@ -10,6 +10,8 @@ export interface DataGridLabels {
   empty: string;
   selectAll: string;
   selectRow: (rowLabel: string) => string;
+  /** The expand column's header, which shows nothing but needs a name. */
+  expandColumn: string;
   expandRow: (rowLabel: string) => string;
   rowActions: string;
 }
@@ -29,6 +31,7 @@ export const defaultDataGridLabels: DataGridLabels = {
   empty: 'No rows to show.',
   selectAll: 'Select all rows',
   selectRow: (rowLabel) => `Select ${rowLabel}`,
+  expandColumn: 'Details',
   expandRow: (rowLabel) => `Show details for ${rowLabel}`,
   rowActions: 'Actions',
 };

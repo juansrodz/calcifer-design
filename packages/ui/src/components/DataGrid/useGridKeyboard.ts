@@ -60,9 +60,30 @@ function isHiddenControl(control: HTMLElement): boolean {
   return control.closest('[aria-hidden="true"]') !== null;
 }
 
-function controlsOf(cell: HTMLElement): HTMLElement[] {
-  return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)].filter(
-    (control) => !isHiddenControl(control),
+/**
+ * Whether an element is one of this grid's navigable cells. A detail panel can hold a table or a
+ * grid of its own, whose cells match the same selector but are not this grid's.
+ */
+function isNavigableCell(grid: HTMLElement, element: Element | null): element is HTMLElement {
+  return element?.matches(navigableCellSelector) === true && element.closest('table') === grid;
+}
+
+/** The cell of this grid an element sits in, passing over the cells of any table nested in it. */
+function ownCellOf(grid: HTMLElement, element: Element): HTMLElement | null {
+  let cell = element.closest<HTMLElement>('td, th');
+  while (cell !== null && cell.closest('table') !== grid) {
+    cell = cell.parentElement?.closest<HTMLElement>('td, th') ?? null;
+  }
+  return cell;
+}
+
+/**
+ * The controls of a cell that this grid manages. A grid nested in the cell manages its own, so of
+ * those only its current tab stop counts, which is where entering the cell lands in it.
+ */
+function controlsOf(grid: HTMLElement, cell: HTMLElement): HTMLElement[] {
+  return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)].filter((control) =>
+    control.closest('[role="grid"]') === grid ? !isHiddenControl(control) : control.tabIndex === 0,
   );
 }
 
@@ -74,10 +95,31 @@ function isFromCell(event: { currentTarget: HTMLElement; target: EventTarget }):
   return event.target instanceof Node && event.currentTarget.contains(event.target);
 }
 
-/** `aria-rowindex` and `aria-colindex` count from 1; positions count from 0. */
-function cellAt(grid: HTMLElement, position: GridCellPosition): HTMLElement | null {
-  return grid.querySelector<HTMLElement>(
-    `tr[aria-rowindex="${position.rowIndex + 1}"] > [aria-colindex="${position.columnIndex + 1}"]`,
+/**
+ * `aria-rowindex` and `aria-colindex` count from 1; positions count from 0. A cell spanning
+ * several columns, such as a detail panel's, is the cell at each of them. Only the grid's own rows
+ * are searched, never those of a table nested in a panel.
+ */
+function cellAt(grid: HTMLTableElement, position: GridCellPosition): HTMLElement | null {
+  const ariaRowIndex = String(position.rowIndex + 1);
+  const row = [...grid.rows].find(
+    (candidate) => candidate.getAttribute('aria-rowindex') === ariaRowIndex,
+  );
+  if (row === undefined) return null;
+  const column = position.columnIndex + 1;
+  for (const cell of row.cells) {
+    const firstColumn = Number(cell.getAttribute('aria-colindex'));
+    if (column >= firstColumn && column < firstColumn + cell.colSpan) return cell;
+  }
+  return null;
+}
+
+/** Whether a cell starting at `start` and `columnSpan` columns wide covers `target`. */
+function covers(start: GridCellPosition, columnSpan: number, target: GridCellPosition): boolean {
+  return (
+    target.rowIndex === start.rowIndex &&
+    target.columnIndex >= start.columnIndex &&
+    target.columnIndex < start.columnIndex + columnSpan
   );
 }
 
@@ -91,8 +133,10 @@ function clamp(value: number, lowest: number, highest: number): number {
  */
 function syncControlTabIndexes(grid: HTMLElement, enteredCell: HTMLElement | null) {
   for (const control of grid.querySelectorAll<HTMLElement>(cellControlSelector)) {
-    const cell = control.closest<HTMLElement>('td, th');
-    if (cell === null || cell === control || !cell.matches(navigableCellSelector)) continue;
+    // A grid nested in a panel keeps its own tab stops.
+    if (control.closest('[role="grid"]') !== grid) continue;
+    const cell = ownCellOf(grid, control);
+    if (cell === null || cell === control || !isNavigableCell(grid, cell)) continue;
     if (isHiddenControl(control)) {
       control.tabIndex = -1;
       continue;
@@ -116,7 +160,7 @@ export function useGridKeyboard({
   scrollToEntry,
 }: UseGridKeyboardOptions): {
   focusedCell: GridCellPosition;
-  getCellProps: (rowIndex: number, columnIndex: number) => GridCellProps;
+  getCellProps: (rowIndex: number, columnIndex: number, columnSpan?: number) => GridCellProps;
   gridRef: RefObject<HTMLTableElement | null>;
 } {
   const gridRef = useRef<HTMLTableElement>(null);
@@ -154,7 +198,7 @@ export function useGridKeyboard({
     const focusAstray =
       hasFocusRef.current &&
       active !== cell &&
-      (!grid.contains(active) || active?.matches(navigableCellSelector) === true);
+      (!grid.contains(active) || isNavigableCell(grid, active));
     if (!pendingFocusRef.current && !focusAstray) return;
     if (cell !== null) {
       pendingFocusRef.current = false;
@@ -197,7 +241,11 @@ export function useGridKeyboard({
     controls[0]?.focus();
   };
 
-  const handleKeyDown = (position: GridCellPosition, event: KeyboardEvent<HTMLElement>) => {
+  const handleKeyDown = (
+    position: GridCellPosition,
+    columnSpan: number,
+    event: KeyboardEvent<HTMLElement>,
+  ) => {
     const cell = event.currentTarget;
     if (!isFromCell(event)) return;
     if (event.target !== cell) {
@@ -211,18 +259,19 @@ export function useGridKeyboard({
     }
 
     const { key, ctrlKey, shiftKey, altKey, metaKey } = event;
-    const { rowIndex, columnIndex } = position;
+    const { rowIndex } = position;
 
     if (key === 'ContextMenu' || (key === 'F10' && shiftKey)) {
-      onContextMenu(rowIndex, columnIndex, event);
+      onContextMenu(rowIndex, position.columnIndex, event);
       return;
     }
     if (key === 'Enter' || key === ' ') {
-      onActivate(rowIndex, columnIndex, event);
+      onActivate(rowIndex, position.columnIndex, event);
       if (event.defaultPrevented || key === ' ') return;
     }
     if (key === 'Enter' || key === 'F2') {
-      const controls = controlsOf(cell);
+      const grid = gridRef.current;
+      const controls = grid === null ? [] : controlsOf(grid, cell);
       if (controls.length > 0) {
         event.preventDefault();
         enter(controls);
@@ -233,12 +282,18 @@ export function useGridKeyboard({
     // Modified keys are left to the page (Alt+Left goes back), except Ctrl+Home and Ctrl+End.
     if (altKey || metaKey || shiftKey || (ctrlKey && key !== 'Home' && key !== 'End')) return;
     const inRightToLeft = getComputedStyle(cell).direction === 'rtl';
-    const forward = inRightToLeft ? -1 : 1;
+    // Up and down keep the column focus came in on, which a spanning cell covers but does not start.
+    const columnIndex = covers(position, columnSpan, focusedCell)
+      ? focusedCell.columnIndex
+      : position.columnIndex;
+    // Sideways moves leave a spanning cell from its edges, so they are measured from them.
+    const columnBefore = { rowIndex, columnIndex: position.columnIndex - 1 };
+    const columnAfter = { rowIndex, columnIndex: position.columnIndex + columnSpan };
     const targets: Record<string, () => GridCellPosition> = {
       ArrowUp: () => ({ rowIndex: rowIndex - 1, columnIndex }),
       ArrowDown: () => ({ rowIndex: rowIndex + 1, columnIndex }),
-      ArrowLeft: () => ({ rowIndex, columnIndex: columnIndex - forward }),
-      ArrowRight: () => ({ rowIndex, columnIndex: columnIndex + forward }),
+      ArrowLeft: () => (inRightToLeft ? columnAfter : columnBefore),
+      ArrowRight: () => (inRightToLeft ? columnBefore : columnAfter),
       Home: () => (ctrlKey ? { rowIndex: 0, columnIndex: 0 } : { rowIndex, columnIndex: 0 }),
       End: () =>
         ctrlKey
@@ -248,19 +303,21 @@ export function useGridKeyboard({
       PageDown: () => ({ rowIndex: rowIndex + pageSize, columnIndex }),
     };
     const target = targets[key];
-    if (target) {
-      event.preventDefault();
-      moveTo(target());
-    }
+    if (!target) return;
+    event.preventDefault();
+    const next = target();
+    const clampedNext = { ...next, columnIndex: clamp(next.columnIndex, 0, lastColumn) };
+    // A move within the focused cell's own columns goes nowhere, and must not forget the column.
+    if (!covers(position, columnSpan, clampedNext)) moveTo(next);
   };
 
-  const getCellProps = (rowIndex: number, columnIndex: number): GridCellProps => {
-    const isFocused = rowIndex === focusedCell.rowIndex && columnIndex === focusedCell.columnIndex;
+  const getCellProps = (rowIndex: number, columnIndex: number, columnSpan = 1): GridCellProps => {
     const position = { rowIndex, columnIndex };
+    const isFocused = covers(position, columnSpan, focusedCell);
     return {
       tabIndex: isFocused && !inside ? 0 : -1,
       'data-focused': isFocused ? '' : undefined,
-      onKeyDown: (event) => handleKeyDown(position, event),
+      onKeyDown: (event) => handleKeyDown(position, columnSpan, event),
       onFocus: (event) => {
         if (!isFromCell(event)) return;
         hasFocusRef.current = true;
@@ -274,6 +331,8 @@ export function useGridKeyboard({
         if (next instanceof Node && event.currentTarget.contains(next)) return;
         if (!(next instanceof Node && gridRef.current?.contains(next))) {
           hasFocusRef.current = false;
+          // A move to a cell that has not rendered yet must not pull focus back later.
+          pendingFocusRef.current = false;
           setInside(false);
         }
       },

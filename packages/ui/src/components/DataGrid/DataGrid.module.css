@@ -199,49 +199,152 @@
 }
 
 /*
- * The checkbox column: about 40px, and it stays at the start while the grid scrolls sideways. A
- * sticky cell must cover what passes under it, so it paints the card's surface and the row's tint
- * is laid over that. The doubled selectors outrank the outer-column padding above and the
- * compact density's one-line rules below.
+ * Pinned columns stay in place while the grid scrolls sideways: the checkbox and expand columns at
+ * the start, the row actions column at the end. A sticky cell must cover what passes under it, so
+ * it paints the card's surface and the row's tint is laid over that. The doubled selectors outrank
+ * the outer-column padding above.
  */
-.headerCell.selectHeader,
-.cell.selectCell {
+.headerCell.pinnedHeader,
+.cell.pinnedCell {
   position: sticky;
-  inset-inline-start: 0;
-  width: 2.5rem;
-  min-width: 2.5rem;
-  max-width: 2.5rem;
   padding-inline: 0;
   text-align: center;
-  overflow: visible;
 }
 
-.headerCell.selectHeader {
+.headerCell.pinnedHeader {
   background: var(--color-surface-1);
 }
 
-.cell.selectCell {
+.cell.pinnedCell {
   background-color: var(--color-surface-raised);
 }
 
-.row:hover .cell.selectCell {
-  background-image: linear-gradient(var(--color-surface-2), var(--color-surface-2));
+@media (hover: hover) {
+  .row:hover .cell.pinnedCell {
+    background-image: linear-gradient(var(--color-surface-2), var(--color-surface-2));
+  }
 }
 
-.row[data-highlighted] .cell.selectCell,
-.row[aria-selected='true'] .cell.selectCell {
+.row[data-highlighted] .cell.pinnedCell,
+.row[aria-selected='true'] .cell.pinnedCell {
   background-image: linear-gradient(var(--color-accent-wash), var(--color-accent-wash));
 }
 
 @media (hover: hover) {
-  .row[data-highlighted]:hover .cell.selectCell,
-  .row[aria-selected='true']:hover .cell.selectCell {
+  .row[data-highlighted]:hover .cell.pinnedCell,
+  .row[aria-selected='true']:hover .cell.pinnedCell {
     background-image: linear-gradient(var(--color-accent-soft), var(--color-accent-soft));
   }
 }
 
-.table[data-density='compact'] .cell.selectCell {
+/* The checkbox column: about 40px, first at the start. */
+.headerCell.selectHeader,
+.cell.selectCell {
+  inset-inline-start: 0;
+  width: 2.5rem;
+  min-width: 2.5rem;
   max-width: 2.5rem;
+}
+
+/* The expand column: about 28px, at the start or right after the checkbox column. */
+.headerCell.expandHeader,
+.cell.expandCell {
+  inset-inline-start: 0;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  max-width: 1.75rem;
+}
+
+.selectHeader + .expandHeader,
+.selectCell + .expandCell {
+  inset-inline-start: 2.5rem;
+}
+
+.expandButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.expandButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.expandButton svg {
+  width: 1rem;
+  height: 1rem;
+  transition-property: rotate;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* Open, the chevron turns from the reading direction to point down at the panel. */
+.expandButton[aria-expanded='true'] svg {
+  rotate: 90deg;
+}
+
+[dir='rtl'] .expandButton svg {
+  scale: -1 1;
+}
+
+[dir='rtl'] .expandButton[aria-expanded='true'] svg {
+  rotate: -90deg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expandButton svg {
+    transition: none;
+  }
+}
+
+/*
+ * The row actions column: about 72px, at the end, with a hairline before it. The header's hairline
+ * joins its top and bottom ones, which are pseudo-elements for the reason given above.
+ */
+.headerCell.actionsHeader,
+.cell.actionsCell {
+  inset-inline-end: 0;
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 4.5rem;
+}
+
+.cell.actionsCell::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-inline-start: 1px solid var(--color-border);
+  pointer-events: none;
+}
+
+.headerCell.actionsHeader::after {
+  inset-block-start: 0;
+  border-inline-start: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--color-border);
+}
+
+/*
+ * An expanded row's detail panel: one cell across the row on a slightly tinted surface, with a
+ * divider above it. Its content wraps freely, compact density included.
+ */
+.detailRow {
+  border-block: 1px solid var(--color-border);
+}
+
+.detailCell {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-1);
+  color: var(--color-text);
 }
 
 /*
@@ -249,14 +352,21 @@
  * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
  */
 .headerCell:focus-visible,
-.cell:focus-visible {
+.cell:focus-visible,
+.detailCell:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-ring-width) * -1);
 }
 
-/* Compact cells keep to one line; the full text is the cell's title. */
+/*
+ * Compact cells keep to one line; the full text is the cell's title. Pinned cells keep their own
+ * width and let their controls' focus rings show.
+ */
 .table[data-density='compact'] .cell {
   padding-block: var(--space-2);
+}
+
+.table[data-density='compact'] .cell:not(.pinnedCell) {
   max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

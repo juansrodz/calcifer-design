@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from 'react';
 import { RefreshIcon } from '../../icons/RefreshIcon';
+import a11yStyles from '../../styles/a11y.module.css';
 import { IconButton } from '../IconButton/IconButton';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { Spinner } from '../Spinner/Spinner';
@@ -21,20 +22,20 @@ import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns
 import styles from './DataGrid.module.css';
 import { GridCheckbox } from './GridCheckbox';
 import { GridHeaderCell } from './GridHeaderCell';
-import { GridRow } from './GridRow';
+import { GridDetailRow, GridRow } from './GridRow';
 import { defaultDataGridLabels } from './labels';
 import type { DataGridProps, DataGridRowEvent } from './types';
 import { useGridEntries } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
 import { useGridMetrics } from './useGridMetrics';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
+import { useRowExpansion } from './useRowExpansion';
 import { useRowSelection, type RowSelection } from './useRowSelection';
 
 const emptyCellText = '—';
 
 const estimatedRowHeight = { comfortable: 40, compact: 34 } as const;
 const overscanRows = 8;
-const noExpandedIds: ReadonlySet<string> = new Set();
 
 /** The rows in view plus the overscan, plus any pinned entries (the focused one stays mounted). */
 function extractRange(range: Range, pinnedIndexes: ReadonlySet<number>): number[] {
@@ -92,6 +93,13 @@ export function DataGrid<Row extends RowData>({
   onRowClick,
   onRowDoubleClick,
   onRowContextMenu,
+  renderRowActions,
+  rowActionsHeader,
+  renderExpandedRow,
+  isRowExpandable,
+  expandedRowIds,
+  defaultExpandedRowIds,
+  onExpandedRowIdsChange,
   labels,
 }: DataGridProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
@@ -103,8 +111,17 @@ export function DataGrid<Row extends RowData>({
     onHighlightChange,
   });
   const selecting = selectionMode === 'multiple';
-  // The checkbox column is not a TanStack column; it shifts every cell's column position by one.
-  const columnOffset = selecting ? 1 : 0;
+  const expanding = renderExpandedRow !== undefined;
+  // The checkbox and expand columns are not TanStack columns; they come before every row's own
+  // cells, the checkbox column first. The row actions column comes after them.
+  const expandColumn = selecting ? 1 : 0;
+  const columnOffset = expandColumn + (expanding ? 1 : 0);
+  const expansion = useRowExpansion({
+    expandedRowIds,
+    defaultExpandedRowIds,
+    onExpandedRowIdsChange,
+  });
+  const isExpandable = (row: Row) => expanding && (isRowExpandable?.(row) ?? true);
   // Annotated: the table needs the selection, and the callback below needs the table's entries.
   const selection: RowSelection = useRowSelection({
     enabled: selecting,
@@ -120,6 +137,7 @@ export function DataGrid<Row extends RowData>({
       entries.flatMap((entry) => (entry.kind === 'row' ? [entry.row.id] : [])),
   });
   const headingId = useId();
+  const panelIdPrefix = useId();
   const resolvedLabels = { ...defaultDataGridLabels, ...labels };
   const HeadingTag: ElementType = `h${headingLevel}`;
 
@@ -148,10 +166,14 @@ export function DataGrid<Row extends RowData>({
   const headRef = useRef<HTMLTableSectionElement>(null);
   const { viewportHeight, headerHeight } = useGridMetrics(scrollRef, headRef);
   const tableRows = table.getRowModel().rows;
-  const entries = useGridEntries(tableRows, noExpandedIds);
+  const entries = useGridEntries(tableRows, expansion.expandedIds, (row) =>
+    isExpandable(row.original),
+  );
   const leafHeaders = table.getHeaderGroups()[0]?.headers ?? [];
   const leafColumns = table.getAllLeafColumns();
-  const columnCount = leafColumns.length + columnOffset;
+  const columnCount = columnOffset + leafColumns.length + (renderRowActions ? 1 : 0);
+  // Stable across sorts: TanStack's row index is the row's place in `rows`.
+  const panelIdOf = (row: { index: number }) => `${panelIdPrefix}-detail-${row.index}`;
   const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
   const rowHeight = estimatedRowHeight[density];
 
@@ -162,10 +184,13 @@ export function DataGrid<Row extends RowData>({
     setHighlightedId(highlightedId === row.id ? null : row.id);
   };
 
-  /** Shift, Ctrl or Cmd with a click selects; a plain click is the row's own. */
+  /**
+   * Shift, Ctrl or Cmd with a click selects, and on a row that cannot be selected does nothing; a
+   * plain click is the row's own.
+   */
   const handleRowClick = (row: { id: string; original: Row }, event: MouseEvent<HTMLElement>) => {
     const selectsRow = event.shiftKey || event.ctrlKey || event.metaKey;
-    if (selecting && selectsRow && selection.isSelectable(row.id)) {
+    if (selecting && selectsRow) {
       selection.toggleRow(row.id, { range: event.shiftKey });
       return;
     }
@@ -186,11 +211,21 @@ export function DataGrid<Row extends RowData>({
     columnIndex: number,
     event: KeyboardEvent<HTMLElement>,
   ) => {
+    // In the expand column Enter or Space opens or closes the row.
+    if (rowIndex > 0 && expanding && columnIndex === expandColumn) {
+      const entry = entries[rowIndex - 1];
+      if (entry?.kind === 'row' && isExpandable(entry.row.original)) {
+        event.preventDefault();
+        expansion.toggleRow(entry.row.id);
+        return;
+      }
+    }
     if (event.key === ' ') {
       // In the checkbox column Space toggles the row, and on its header select-all.
       if (!selecting) return;
       if (rowIndex === 0) {
-        if (columnIndex !== 0) return;
+        // Rows on their way in leave nothing to select, and a kept selection must survive them.
+        if (columnIndex !== 0 || !selection.canSelectAny) return;
         event.preventDefault();
         selection.toggleAll();
         return;
@@ -219,8 +254,13 @@ export function DataGrid<Row extends RowData>({
     }
   };
 
-  // The cell a key press opened the context menu on, until its echo arrives or a pointer presses.
+  // The cell a key press opened the context menu on, until its echo arrives, a pointer presses,
+  // another key is pressed or focus leaves the cell.
   const keyboardContextMenuCellRef = useRef<HTMLElement | null>(null);
+
+  const forgetKeyboardContextMenu = () => {
+    keyboardContextMenuCellRef.current = null;
+  };
 
   const handleContextMenu = (
     rowIndex: number,
@@ -286,7 +326,7 @@ export function DataGrid<Row extends RowData>({
   let renderedEnd = headerHeight;
   for (const virtualItem of virtualItems) {
     const entry = entries[virtualItem.index];
-    if (!entry || entry.kind !== 'row') continue;
+    if (!entry) continue;
     if (virtualItem.start > renderedEnd) {
       bodyRows.push(
         spacerRow(`gap-${virtualItem.index}`, virtualItem.start - renderedEnd, columnCount),
@@ -294,6 +334,21 @@ export function DataGrid<Row extends RowData>({
     }
     renderedEnd = virtualItem.end;
     const { row } = entry;
+    if (entry.kind === 'detail') {
+      bodyRows.push(
+        <GridDetailRow
+          key={`detail:${row.id}`}
+          entryIndex={virtualItem.index}
+          measureRef={virtualizer.measureElement}
+          columnCount={columnCount}
+          panelId={panelIdOf(row)}
+          getCellProps={keyboard.getCellProps}
+        >
+          {renderExpandedRow?.(row.original)}
+        </GridDetailRow>,
+      );
+      continue;
+    }
     bodyRows.push(
       <GridRow
         key={row.id}
@@ -312,9 +367,22 @@ export function DataGrid<Row extends RowData>({
                 selectable: row.getCanSelect(),
                 onCheckedChange: () => selection.toggleRowFromCheckbox(row.id),
                 onClickCapture: selection.noteCheckboxClick,
+                onCellClick: (event) => selection.toggleRow(row.id, { range: event.shiftKey }),
               }
             : undefined
         }
+        expander={
+          expanding
+            ? {
+                expandable: isExpandable(row.original),
+                expanded: entries[virtualItem.index + 1]?.kind === 'detail',
+                label: resolvedLabels.expandRow(rowLabelOf(row)),
+                panelId: panelIdOf(row),
+                onToggle: () => expansion.toggleRow(row.id),
+              }
+            : undefined
+        }
+        renderRowActions={renderRowActions}
         getCellProps={keyboard.getCellProps}
         onClick={(event) => handleRowClick(row, event)}
         onDoubleClick={
@@ -403,9 +471,9 @@ export function DataGrid<Row extends RowData>({
           aria-multiselectable={selecting || undefined}
           aria-busy={loading || undefined}
           data-density={density}
-          onPointerDownCapture={() => {
-            keyboardContextMenuCellRef.current = null;
-          }}
+          onPointerDownCapture={forgetKeyboardContextMenu}
+          onKeyDownCapture={forgetKeyboardContextMenu}
+          onBlur={forgetKeyboardContextMenu}
         >
           <thead ref={headRef} className={styles.head}>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -413,7 +481,7 @@ export function DataGrid<Row extends RowData>({
                 {selecting ? (
                   <th
                     scope="col"
-                    className={`${styles.headerCell} ${styles.selectHeader}`}
+                    className={`${styles.headerCell} ${styles.pinnedHeader} ${styles.selectHeader}`}
                     aria-colindex={1}
                     {...keyboard.getCellProps(0, 0)}
                   >
@@ -427,6 +495,16 @@ export function DataGrid<Row extends RowData>({
                     />
                   </th>
                 ) : null}
+                {expanding ? (
+                  <th
+                    scope="col"
+                    className={`${styles.headerCell} ${styles.pinnedHeader} ${styles.expandHeader}`}
+                    aria-colindex={expandColumn + 1}
+                    {...keyboard.getCellProps(0, expandColumn)}
+                  >
+                    <span className={a11yStyles.visuallyHidden}>{resolvedLabels.expandColumn}</span>
+                  </th>
+                ) : null}
                 {headerGroup.headers.map((header, columnIndex) => (
                   <GridHeaderCell
                     key={header.id}
@@ -435,6 +513,18 @@ export function DataGrid<Row extends RowData>({
                     cellProps={keyboard.getCellProps(0, columnIndex + columnOffset)}
                   />
                 ))}
+                {renderRowActions ? (
+                  <th
+                    scope="col"
+                    className={`${styles.headerCell} ${styles.pinnedHeader} ${styles.actionsHeader}`}
+                    aria-colindex={columnCount}
+                    {...keyboard.getCellProps(0, columnCount - 1)}
+                  >
+                    {rowActionsHeader ?? (
+                      <span className={a11yStyles.visuallyHidden}>{resolvedLabels.rowActions}</span>
+                    )}
+                  </th>
+                ) : null}
               </tr>
             ))}
           </thead>
