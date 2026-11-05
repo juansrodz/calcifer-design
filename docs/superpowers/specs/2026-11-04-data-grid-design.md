@@ -257,11 +257,11 @@ pass. Each one is useful on its own.
 
 1. **Grid core.** Both data modes with sorting, the card and header, virtualised rows, density,
    height, footer, loading and empty states, keyboard grid navigation, highlight, checkbox selection,
-   row events, row actions column, expandable rows. Adds `@tanstack/react-virtual`, and the optional
-   `IconButton` pressed state and badge. The first task confirms TanStack Table v9 has each feature
-   module this document relies on.
+   row events, row actions column, expandable rows. Adds `@tanstack/react-virtual`.
 2. **Finding rows.** Filter strip with the three filter types, match mode, search with wildcards, the
-   badge, filtered-empty state, `initialQuery`, and the query's debounce.
+   badge, filtered-empty state, `initialQuery`, and the query's debounce. Adds the optional
+   `IconButton` pressed state and count badge, which the search and filter buttons are the first to
+   need.
 3. **Columns.** Resize, reorder, show and hide, pinning. Adds the dnd-kit packages.
 4. **Saving and menus.** Storage adapter and browser adapter, saved filters, saved layout, the more
    menu with app items and snapshot, export. Adds the optional `Menu` danger tone and groups.
