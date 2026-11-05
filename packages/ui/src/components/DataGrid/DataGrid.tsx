@@ -1,9 +1,8 @@
-import { flexRender, useTable, type RowData, type SortingState } from '@tanstack/react-table';
+import { useTable, type RowData, type SortingState } from '@tanstack/react-table';
 import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import {
   useCallback,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,7 +11,6 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
-  type RefObject,
 } from 'react';
 import { RefreshIcon } from '../../icons/RefreshIcon';
 import { IconButton } from '../IconButton/IconButton';
@@ -22,14 +20,15 @@ import { Toolbar, ToolbarButton } from '../Toolbar/Toolbar';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
 import { GridCheckbox } from './GridCheckbox';
+import { GridHeaderCell } from './GridHeaderCell';
+import { GridRow } from './GridRow';
 import { defaultDataGridLabels } from './labels';
 import type { DataGridProps, DataGridRowEvent } from './types';
 import { useGridEntries } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
+import { useGridMetrics } from './useGridMetrics';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 import { useRowSelection, type RowSelection } from './useRowSelection';
-
-const ariaSortByDirection = { asc: 'ascending', desc: 'descending' } as const;
 
 const emptyCellText = '—';
 
@@ -49,42 +48,6 @@ function extractRange(range: Range, pinnedIndexes: ReadonlySet<number>): number[
   return [...indexes].sort((first, second) => first - second);
 }
 
-interface GridMetrics {
-  viewportHeight: number;
-  /** The sticky header band, which covers the top of the scroll area. */
-  headerHeight: number;
-}
-
-/** The scroll area's height and the header band's, kept current as either resizes. */
-function useGridMetrics(
-  scrollRef: RefObject<HTMLElement | null>,
-  headRef: RefObject<HTMLElement | null>,
-): GridMetrics {
-  const [metrics, setMetrics] = useState<GridMetrics>({ viewportHeight: 0, headerHeight: 0 });
-  useLayoutEffect(() => {
-    const scrollElement = scrollRef.current;
-    const head = headRef.current;
-    if (scrollElement === null || head === null) return;
-    const measure = () => {
-      const viewportHeight = scrollElement.clientHeight;
-      const headerHeight = head.offsetHeight;
-      setMetrics((current) =>
-        current.viewportHeight === viewportHeight && current.headerHeight === headerHeight
-          ? current
-          : { viewportHeight, headerHeight },
-      );
-    };
-    measure();
-    // Without a ResizeObserver (a bare jsdom) the size is read once and never follows.
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(scrollElement);
-    observer.observe(head);
-    return () => observer.disconnect();
-  }, [scrollRef, headRef]);
-  return metrics;
-}
-
 function spacerRow(key: string, height: number, columnCount: number): ReactNode {
   return (
     <tr key={key} aria-hidden="true">
@@ -97,28 +60,6 @@ function formatCellValue(value: unknown): string | null {
   if (value === null || value === undefined) return emptyCellText;
   const text = typeof value === 'string' ? value : String(value);
   return text.trim() === '' ? emptyCellText : text;
-}
-
-/**
- * Whether a mouse event on a row is a click on the row: it came from the row's own DOM (not a popup
- * a control portalled elsewhere), and not from a control inside a cell, which has its own handler.
- */
-function isRowEvent(event: MouseEvent<HTMLElement>): boolean {
-  const { target, currentTarget } = event;
-  if (!(target instanceof Element) || !currentTarget.contains(target)) return false;
-  const cell = target.closest('td');
-  if (cell === null) return false;
-  const control = target.closest(cellControlSelector);
-  return control === null || control === cell || !cell.contains(control);
-}
-
-/** A compact cell is one line with an ellipsis, so its full text is the title. */
-function compactTitle<Row extends RowData>(
-  column: DataGridColumnDef<Row>,
-  row: Row,
-): string | undefined {
-  const text = textValueOf(column, row);
-  return text === undefined || text.trim() === '' ? undefined : text;
 }
 
 export function DataGrid<Row extends RowData>({
@@ -223,7 +164,6 @@ export function DataGrid<Row extends RowData>({
 
   /** Shift, Ctrl or Cmd with a click selects; a plain click is the row's own. */
   const handleRowClick = (row: { id: string; original: Row }, event: MouseEvent<HTMLElement>) => {
-    if (!isRowEvent(event)) return;
     const selectsRow = event.shiftKey || event.ctrlKey || event.metaKey;
     if (selecting && selectsRow && selection.isSelectable(row.id)) {
       selection.toggleRow(row.id, { range: event.shiftKey });
@@ -354,35 +294,35 @@ export function DataGrid<Row extends RowData>({
     }
     renderedEnd = virtualItem.end;
     const { row } = entry;
-    const rowIndex = virtualItem.index + 1;
-    const isHighlighted = highlightedId === row.id;
-    const selectable = selecting && row.getCanSelect();
-    const selected = row.getIsSelected();
     bodyRows.push(
-      <tr
+      <GridRow
         key={row.id}
-        ref={virtualizer.measureElement}
-        data-index={virtualItem.index}
-        className={styles.row}
-        aria-rowindex={rowIndex + 1}
-        // With checkboxes aria-selected is the selection and the highlight is the current row;
-        // without them the highlight is the only selection there is.
-        aria-selected={selecting ? (selectable ? selected : undefined) : isHighlighted || undefined}
-        aria-current={selecting && isHighlighted ? 'true' : undefined}
-        data-highlighted={isHighlighted ? '' : undefined}
-        data-clickable={onRowClick || highlightOnClick ? '' : undefined}
-        onClick={(event) => handleRowClick(row, event)}
-        onDoubleClick={
-          onRowDoubleClick
-            ? (event) => {
-                if (isRowEvent(event)) onRowDoubleClick(row.original, event);
+        row={row}
+        entryIndex={virtualItem.index}
+        measureRef={virtualizer.measureElement}
+        density={density}
+        columnOffset={columnOffset}
+        highlighted={highlightedId === row.id}
+        clickable={Boolean(onRowClick || highlightOnClick)}
+        checkbox={
+          selecting
+            ? {
+                label: resolvedLabels.selectRow(rowLabelOf(row)),
+                selected: row.getIsSelected(),
+                selectable: row.getCanSelect(),
+                onCheckedChange: () => selection.toggleRowFromCheckbox(row.id),
+                onClickCapture: selection.noteCheckboxClick,
               }
             : undefined
+        }
+        getCellProps={keyboard.getCellProps}
+        onClick={(event) => handleRowClick(row, event)}
+        onDoubleClick={
+          onRowDoubleClick ? (event) => onRowDoubleClick(row.original, event) : undefined
         }
         onContextMenu={
           onRowContextMenu
             ? (event) => {
-                if (!isRowEvent(event)) return;
                 event.preventDefault();
                 const pressedCell = keyboardContextMenuCellRef.current;
                 keyboardContextMenuCellRef.current = null;
@@ -397,41 +337,7 @@ export function DataGrid<Row extends RowData>({
               }
             : undefined
         }
-      >
-        {selecting ? (
-          <td
-            role="gridcell"
-            className={`${styles.cell} ${styles.selectCell}`}
-            aria-colindex={1}
-            onClickCapture={selection.noteCheckboxClick}
-            {...keyboard.getCellProps(rowIndex, 0)}
-          >
-            <GridCheckbox
-              label={resolvedLabels.selectRow(rowLabelOf(row))}
-              checked={selected}
-              disabled={!selectable}
-              onCheckedChange={() => selection.toggleRowFromCheckbox(row.id)}
-              tabIndex={-1}
-            />
-          </td>
-        ) : null}
-        {row.getAllCells().map((cell, columnIndex) => (
-          <td
-            key={cell.id}
-            role="gridcell"
-            className={styles.cell}
-            aria-colindex={columnIndex + 1 + columnOffset}
-            title={
-              density === 'compact'
-                ? compactTitle(cell.column.columnDef as DataGridColumnDef<Row>, row.original)
-                : undefined
-            }
-            {...keyboard.getCellProps(rowIndex, columnIndex + columnOffset)}
-          >
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-          </td>
-        ))}
-      </tr>,
+      />,
     );
   }
   const bottomSpacerHeight = virtualItems.length
@@ -521,32 +427,14 @@ export function DataGrid<Row extends RowData>({
                     />
                   </th>
                 ) : null}
-                {headerGroup.headers.map((header, columnIndex) => {
-                  const sortDirection = header.column.getIsSorted();
-                  const canSort = header.column.getCanSort();
-                  return (
-                    // The header cell is the sort control: a click sorts, and so does Enter.
-                    <th
-                      key={header.id}
-                      scope="col"
-                      className={styles.headerCell}
-                      aria-colindex={columnIndex + 1 + columnOffset}
-                      aria-sort={sortDirection ? ariaSortByDirection[sortDirection] : undefined}
-                      data-sortable={canSort ? '' : undefined}
-                      onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                      {...keyboard.getCellProps(0, columnIndex + columnOffset)}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {canSort ? (
-                        <span
-                          aria-hidden="true"
-                          className={styles.sortIcon}
-                          data-direction={sortDirection || 'none'}
-                        />
-                      ) : null}
-                    </th>
-                  );
-                })}
+                {headerGroup.headers.map((header, columnIndex) => (
+                  <GridHeaderCell
+                    key={header.id}
+                    header={header}
+                    ariaColIndex={columnIndex + 1 + columnOffset}
+                    cellProps={keyboard.getCellProps(0, columnIndex + columnOffset)}
+                  />
+                ))}
               </tr>
             ))}
           </thead>

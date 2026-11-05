@@ -44,7 +44,8 @@ export type DataGridColumnDef<Row extends RowData, Value = unknown> = TanStackCo
 > &
   TextValueOption<Row>;
 
-type Features = typeof dataGridFeatures;
+export type DataGridFeatures = typeof dataGridFeatures;
+type Features = DataGridFeatures;
 
 export interface DataGridColumnHelper<Row extends RowData> {
   accessor: <
