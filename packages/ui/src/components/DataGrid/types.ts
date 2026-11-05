@@ -38,6 +38,10 @@ export interface DataGridProps<Row extends RowData> {
   enableSorting?: boolean;
   multiSort?: boolean;
   loading?: boolean;
+  /**
+   * Replaces the default empty message. The grid announces `labels.empty` when it is empty, not
+   * this node, so set `labels.empty` to match your message.
+   */
   emptyState?: ReactNode;
   density?: DataGridDensity;
   /**

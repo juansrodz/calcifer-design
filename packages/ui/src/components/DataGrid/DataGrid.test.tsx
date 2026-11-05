@@ -257,12 +257,46 @@ describe('states, density and the toolbar', () => {
   it('replaces the empty message with emptyState', () => {
     renderGrid({ rows: [], emptyState: <p>Nothing stocked yet.</p> });
     expect(screen.getByText('Nothing stocked yet.')).toBeInTheDocument();
-    expect(screen.queryByText('No rows to show.')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('grid')).queryByText('No rows to show.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('announces the empty label politely even when emptyState is custom', () => {
+    renderGrid({ rows: [], emptyState: <p>Nothing stocked yet.</p> });
+    const region = screen.getByRole('status');
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region).toHaveTextContent('No rows to show.');
+  });
+
+  it('keeps one persistent polite region that is empty while rows show', () => {
+    const { rerender } = renderGrid();
+    const region = screen.getByRole('status');
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region).toBeEmptyDOMElement();
+
+    rerender(
+      <DataGrid<InventoryRow>
+        gridId="test-grid"
+        heading="Inventory"
+        rows={[]}
+        columns={inventoryColumns}
+        getRowId={(row) => row.id}
+      />,
+    );
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region).toHaveTextContent('No rows to show.');
+  });
+
+  it('hides the visible state message from assistive technology', () => {
+    renderGrid({ rows: [] });
+    const visibleMessage = within(screen.getByRole('grid')).getByText('No rows to show.');
+    expect(visibleMessage).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('shows the empty story without axe violations', async () => {
     const { container } = render(<Empty />);
-    expect(screen.getByText('No rows to show.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('No rows to show.');
     expect(await axe(container)).toHaveNoViolations();
   });
 

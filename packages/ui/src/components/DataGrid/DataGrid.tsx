@@ -3,6 +3,7 @@ import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import { useId, useRef, useState, type CSSProperties, type ElementType } from 'react';
 import { RefreshIcon } from '../../icons/RefreshIcon';
 import { IconButton } from '../IconButton/IconButton';
+import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { Spinner } from '../Spinner/Spinner';
 import { Toolbar, ToolbarButton } from '../Toolbar/Toolbar';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
@@ -114,6 +115,14 @@ export function DataGrid<Row extends RowData>({
   // A card that fills its parent is sized by it, so a maximum height has no place there.
   const scrollStyle: CSSProperties | undefined = maxHeight && !fill ? { maxHeight } : undefined;
   const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
+  // One region that is always mounted: a live region announces reliably only when its text
+  // changes, not when it appears with its text.
+  const stateAnnouncement =
+    stateKind === 'loading'
+      ? resolvedLabels.loading
+      : stateKind === 'empty'
+        ? resolvedLabels.empty
+        : '';
 
   return (
     <section
@@ -143,6 +152,7 @@ export function DataGrid<Row extends RowData>({
           </div>
         ) : null}
       </header>
+      <LiveRegion message={stateAnnouncement} politeness="polite" />
       <div
         ref={scrollRef}
         className={fill ? `${styles.scroll} ${styles.scrollFill}` : styles.scroll}
@@ -199,13 +209,13 @@ export function DataGrid<Row extends RowData>({
                   aria-colindex={1}
                 >
                   {stateKind === 'loading' ? (
-                    <div className={styles.state} role="status">
+                    <div className={styles.state} aria-hidden="true">
                       <Spinner size="md" />
                       {resolvedLabels.loading}
                     </div>
                   ) : (
                     (emptyState ?? (
-                      <div className={styles.state} role="status">
+                      <div className={styles.state} aria-hidden="true">
                         {resolvedLabels.empty}
                       </div>
                     ))
