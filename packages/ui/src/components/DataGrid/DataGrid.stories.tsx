@@ -18,3 +18,20 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Basic: Story = {};
+
+const largeRows = makeInventoryRows(5000);
+
+export const Large: Story = {
+  args: { heading: 'Large inventory', rows: largeRows, maxHeight: '25rem' },
+};
+
+export const FillsItsParent: Story = {
+  args: { heading: 'Fills its parent', rows: largeRows, fill: true },
+  decorators: [
+    (StoryComponent) => (
+      <div style={{ height: '30rem' }}>
+        <StoryComponent />
+      </div>
+    ),
+  ],
+};

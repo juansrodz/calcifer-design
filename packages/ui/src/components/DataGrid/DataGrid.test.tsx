@@ -1,14 +1,16 @@
 import { composeStories } from '@storybook/react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { act } from 'react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
+import { installElementSize } from '../../../test/elementSize';
 import { createDataGridColumnHelper, textValueOf } from './columns';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
 import { inventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
 
-const { Basic } = composeStories(stories);
+const { Basic, Large } = composeStories(stories);
 
 function bodyRows(): HTMLElement[] {
   return screen.getAllByRole('row').slice(1);
@@ -30,6 +32,16 @@ function renderGrid(overrides: Partial<React.ComponentProps<typeof DataGrid<Inve
     />,
   );
 }
+
+let restoreElementSize: () => void;
+
+beforeEach(() => {
+  restoreElementSize = installElementSize({ viewportHeight: 400, rowHeight: 40 });
+});
+
+afterEach(() => {
+  restoreElementSize();
+});
 
 describe('DataGrid', () => {
   it('renders a grid named by its heading', async () => {
@@ -202,6 +214,43 @@ describe('DataGrid', () => {
   it('replaces labels through the labels prop', () => {
     renderGrid({ labels: { rowCount: (count) => `${count} items` } });
     expect(screen.getByText('10 items')).toBeInTheDocument();
+  });
+});
+
+describe('virtualisation', () => {
+  function scrollGridTo(scrollTop: number) {
+    const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
+    act(() => {
+      scrollElement.scrollTop = scrollTop;
+      scrollElement.dispatchEvent(new Event('scroll'));
+    });
+  }
+
+  function rowWithIndex(rowIndex: number): HTMLElement | undefined {
+    return screen
+      .getAllByRole('row')
+      .find((row) => row.getAttribute('aria-rowindex') === String(rowIndex));
+  }
+
+  it('renders only the visible rows of a large set', () => {
+    render(<Large />);
+    expect(bodyRows().length).toBeLessThan(40);
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '5001');
+    expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '2');
+  });
+
+  it('renders later rows after scrolling', () => {
+    render(<Large />);
+    scrollGridTo(40 * 2000);
+    expect(rowWithIndex(2002)).toBeDefined();
+    expect(rowWithIndex(2)).toBeUndefined();
+  });
+
+  it('keeps the header in place', () => {
+    render(<Large />);
+    scrollGridTo(40 * 2000);
+    expect(rowWithIndex(1)).toBeDefined();
+    expect(screen.getAllByRole('columnheader')).toHaveLength(inventoryColumns.length);
   });
 });
 

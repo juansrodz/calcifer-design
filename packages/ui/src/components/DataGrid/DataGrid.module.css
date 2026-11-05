@@ -1,4 +1,7 @@
-/* One card: header row, scrolling body with a sticky header band, footer. */
+/*
+ * One card: header row, scrolling body with a sticky header band, footer. The card shrinks to
+ * its rows; the scroll area stops growing at its max-height and scrolls from there.
+ */
 .card {
   display: flex;
   flex-direction: column;
@@ -33,8 +36,21 @@
   gap: var(--space-2);
 }
 
+/* The default leaves room for a page header; the maxHeight prop overrides it inline. */
 .scroll {
+  max-height: calc(100dvh - var(--space-10) * 2);
   overflow: auto;
+}
+
+/* Fill the parent: the card takes its height and the scroll area flexes into what is left. */
+.fill {
+  height: 100%;
+}
+
+.scrollFill {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
 }
 
 .table {
@@ -52,14 +68,35 @@
   background: var(--color-surface-1);
 }
 
+/*
+ * The hairlines are pseudo-elements, not borders: in a collapsed table a border does not travel
+ * with a sticky cell, so it would be left behind when the body scrolls.
+ */
 .headerCell {
+  position: relative;
   padding: var(--space-2) var(--space-3);
-  border-block: 1px solid var(--color-border);
   text-align: left;
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+.headerCell::before,
+.headerCell::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  border-block-start: 1px solid var(--color-border);
+  pointer-events: none;
+}
+
+.headerCell::before {
+  inset-block-start: 0;
+}
+
+.headerCell::after {
+  inset-block-end: 0;
 }
 
 .headerCell[data-sortable] {
@@ -118,6 +155,11 @@
 .headerCell:last-child,
 .cell:last-child {
   padding-inline-end: var(--space-5);
+}
+
+.spacerCell {
+  padding: 0;
+  border: 0;
 }
 
 .footer {
