@@ -21,10 +21,13 @@ import { Spinner } from '../Spinner/Spinner';
 import { Toolbar, ToolbarButton } from '../Toolbar/Toolbar';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
+import { GridCheckbox } from './GridCheckbox';
 import { defaultDataGridLabels } from './labels';
 import type { DataGridProps, DataGridRowEvent } from './types';
 import { useGridEntries } from './useGridEntries';
+import { useGridHighlight } from './useGridHighlight';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
+import { useRowSelection, type RowSelection } from './useRowSelection';
 
 const ariaSortByDirection = { asc: 'ascending', desc: 'descending' } as const;
 
@@ -124,6 +127,7 @@ export function DataGrid<Row extends RowData>({
   rows,
   columns,
   getRowId,
+  getRowLabel,
   actions,
   initialSorting = [],
   enableSorting = true,
@@ -139,15 +143,41 @@ export function DataGrid<Row extends RowData>({
   highlightOnClick = false,
   highlightedRowId,
   onHighlightChange,
+  selectionMode = 'none',
+  selectedRowIds,
+  defaultSelectedRowIds,
+  onSelectedRowIdsChange,
+  isRowSelectable,
   onRowClick,
   onRowDoubleClick,
   onRowContextMenu,
   labels,
 }: DataGridProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
-  const [ownHighlightedRowId, setOwnHighlightedRowId] = useState<string | null>(null);
-  // A highlightedRowId prop, null included, hands the highlight to the consumer.
-  const highlightedId = highlightedRowId === undefined ? ownHighlightedRowId : highlightedRowId;
+  const { highlightedId, setHighlightedId } = useGridHighlight({
+    rows,
+    getRowId,
+    loading,
+    highlightedRowId,
+    onHighlightChange,
+  });
+  const selecting = selectionMode === 'multiple';
+  // The checkbox column is not a TanStack column; it shifts every cell's column position by one.
+  const columnOffset = selecting ? 1 : 0;
+  // Annotated: the table needs the selection, and the callback below needs the table's entries.
+  const selection: RowSelection = useRowSelection({
+    enabled: selecting,
+    rows,
+    getRowId,
+    isRowSelectable,
+    loading,
+    selectedRowIds,
+    defaultSelectedRowIds,
+    onSelectedRowIdsChange,
+    // Called from event handlers only, after the entries below exist.
+    getDisplayedRowIds: () =>
+      entries.flatMap((entry) => (entry.kind === 'row' ? [entry.row.id] : [])),
+  });
   const headingId = useId();
   const resolvedLabels = { ...defaultDataGridLabels, ...labels };
   const HeadingTag: ElementType = `h${headingLevel}`;
@@ -157,8 +187,13 @@ export function DataGrid<Row extends RowData>({
     data: rows,
     columns,
     getRowId,
-    state: { sorting },
-    onSortingChange: setSorting,
+    state: { sorting, rowSelection: selection.rowSelection },
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      // Rows that move under the selection would make it hard to see what it covers.
+      selection.clear();
+    },
+    enableRowSelection: (row) => isRowSelectable?.(row.original) ?? true,
     enableSorting,
     enableMultiSort: multiSort,
     defaultColumn: {
@@ -174,7 +209,8 @@ export function DataGrid<Row extends RowData>({
   const tableRows = table.getRowModel().rows;
   const entries = useGridEntries(tableRows, noExpandedIds);
   const leafHeaders = table.getHeaderGroups()[0]?.headers ?? [];
-  const columnCount = table.getAllLeafColumns().length;
+  const leafColumns = table.getAllLeafColumns();
+  const columnCount = leafColumns.length + columnOffset;
   const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
   const rowHeight = estimatedRowHeight[density];
 
@@ -182,9 +218,27 @@ export function DataGrid<Row extends RowData>({
   const clickRow = (row: { id: string; original: Row }, event: DataGridRowEvent) => {
     onRowClick?.(row.original, event);
     if (!highlightOnClick) return;
-    const next = highlightedId === row.id ? null : row.id;
-    onHighlightChange?.(next);
-    if (highlightedRowId === undefined) setOwnHighlightedRowId(next);
+    setHighlightedId(highlightedId === row.id ? null : row.id);
+  };
+
+  /** Shift, Ctrl or Cmd with a click selects; a plain click is the row's own. */
+  const handleRowClick = (row: { id: string; original: Row }, event: MouseEvent<HTMLElement>) => {
+    if (!isRowEvent(event)) return;
+    const selectsRow = event.shiftKey || event.ctrlKey || event.metaKey;
+    if (selecting && selectsRow && selection.isSelectable(row.id)) {
+      selection.toggleRow(row.id, { range: event.shiftKey });
+      return;
+    }
+    clickRow(row, event);
+  };
+
+  const rowLabelOf = (row: { id: string; original: Row }): string => {
+    if (getRowLabel) return getRowLabel(row.original);
+    const firstColumn = leafColumns[0];
+    const text = firstColumn
+      ? textValueOf(firstColumn.columnDef as DataGridColumnDef<Row>, row.original)
+      : undefined;
+    return text ?? row.id;
   };
 
   const handleActivate = (
@@ -192,9 +246,24 @@ export function DataGrid<Row extends RowData>({
     columnIndex: number,
     event: KeyboardEvent<HTMLElement>,
   ) => {
+    if (event.key === ' ') {
+      // In the checkbox column Space toggles the row, and on its header select-all.
+      if (!selecting) return;
+      if (rowIndex === 0) {
+        if (columnIndex !== 0) return;
+        event.preventDefault();
+        selection.toggleAll();
+        return;
+      }
+      const entry = entries[rowIndex - 1];
+      if (entry?.kind !== 'row' || !selection.isSelectable(entry.row.id)) return;
+      event.preventDefault();
+      selection.toggleRow(entry.row.id, { range: event.shiftKey });
+      return;
+    }
     if (event.key !== 'Enter') return;
     if (rowIndex === 0) {
-      const column = leafHeaders[columnIndex]?.column;
+      const column = leafHeaders[columnIndex - columnOffset]?.column;
       if (column?.getCanSort()) {
         event.preventDefault();
         column.getToggleSortingHandler()?.(event);
@@ -210,6 +279,9 @@ export function DataGrid<Row extends RowData>({
     }
   };
 
+  // The cell a key press opened the context menu on, until its echo arrives or a pointer presses.
+  const keyboardContextMenuCellRef = useRef<HTMLElement | null>(null);
+
   const handleContextMenu = (
     rowIndex: number,
     _columnIndex: number,
@@ -218,6 +290,8 @@ export function DataGrid<Row extends RowData>({
     const entry = entries[rowIndex - 1];
     if (entry?.kind !== 'row' || !onRowContextMenu) return;
     event.preventDefault();
+    // Some browsers follow this key with a contextmenu event of their own on the same cell.
+    keyboardContextMenuCellRef.current = event.currentTarget;
     onRowContextMenu(entry.row.original, event);
   };
 
@@ -281,6 +355,9 @@ export function DataGrid<Row extends RowData>({
     renderedEnd = virtualItem.end;
     const { row } = entry;
     const rowIndex = virtualItem.index + 1;
+    const isHighlighted = highlightedId === row.id;
+    const selectable = selecting && row.getCanSelect();
+    const selected = row.getIsSelected();
     bodyRows.push(
       <tr
         key={row.id}
@@ -288,12 +365,13 @@ export function DataGrid<Row extends RowData>({
         data-index={virtualItem.index}
         className={styles.row}
         aria-rowindex={rowIndex + 1}
-        aria-selected={highlightedId === row.id ? true : undefined}
-        data-highlighted={highlightedId === row.id ? '' : undefined}
+        // With checkboxes aria-selected is the selection and the highlight is the current row;
+        // without them the highlight is the only selection there is.
+        aria-selected={selecting ? (selectable ? selected : undefined) : isHighlighted || undefined}
+        aria-current={selecting && isHighlighted ? 'true' : undefined}
+        data-highlighted={isHighlighted ? '' : undefined}
         data-clickable={onRowClick || highlightOnClick ? '' : undefined}
-        onClick={(event) => {
-          if (isRowEvent(event)) clickRow(row, event);
-        }}
+        onClick={(event) => handleRowClick(row, event)}
         onDoubleClick={
           onRowDoubleClick
             ? (event) => {
@@ -306,23 +384,49 @@ export function DataGrid<Row extends RowData>({
             ? (event) => {
                 if (!isRowEvent(event)) return;
                 event.preventDefault();
+                const pressedCell = keyboardContextMenuCellRef.current;
+                keyboardContextMenuCellRef.current = null;
+                // The echo of a key press that already called the handler.
+                if (
+                  pressedCell !== null &&
+                  pressedCell === (event.target as Element).closest('td')
+                ) {
+                  return;
+                }
                 onRowContextMenu(row.original, event);
               }
             : undefined
         }
       >
+        {selecting ? (
+          <td
+            role="gridcell"
+            className={`${styles.cell} ${styles.selectCell}`}
+            aria-colindex={1}
+            onClickCapture={selection.noteCheckboxClick}
+            {...keyboard.getCellProps(rowIndex, 0)}
+          >
+            <GridCheckbox
+              label={resolvedLabels.selectRow(rowLabelOf(row))}
+              checked={selected}
+              disabled={!selectable}
+              onCheckedChange={() => selection.toggleRowFromCheckbox(row.id)}
+              tabIndex={-1}
+            />
+          </td>
+        ) : null}
         {row.getAllCells().map((cell, columnIndex) => (
           <td
             key={cell.id}
             role="gridcell"
             className={styles.cell}
-            aria-colindex={columnIndex + 1}
+            aria-colindex={columnIndex + 1 + columnOffset}
             title={
               density === 'compact'
                 ? compactTitle(cell.column.columnDef as DataGridColumnDef<Row>, row.original)
                 : undefined
             }
-            {...keyboard.getCellProps(rowIndex, columnIndex)}
+            {...keyboard.getCellProps(rowIndex, columnIndex + columnOffset)}
           >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </td>
@@ -390,12 +494,33 @@ export function DataGrid<Row extends RowData>({
           aria-labelledby={headingId}
           aria-rowcount={stateKind ? 2 : entries.length + 1}
           aria-colcount={columnCount}
+          aria-multiselectable={selecting || undefined}
           aria-busy={loading || undefined}
           data-density={density}
+          onPointerDownCapture={() => {
+            keyboardContextMenuCellRef.current = null;
+          }}
         >
           <thead ref={headRef} className={styles.head}>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} aria-rowindex={1}>
+                {selecting ? (
+                  <th
+                    scope="col"
+                    className={`${styles.headerCell} ${styles.selectHeader}`}
+                    aria-colindex={1}
+                    {...keyboard.getCellProps(0, 0)}
+                  >
+                    <GridCheckbox
+                      label={resolvedLabels.selectAll}
+                      checked={selection.allSelected}
+                      indeterminate={selection.someSelected}
+                      disabled={!selection.canSelectAny}
+                      onCheckedChange={selection.toggleAll}
+                      tabIndex={-1}
+                    />
+                  </th>
+                ) : null}
                 {headerGroup.headers.map((header, columnIndex) => {
                   const sortDirection = header.column.getIsSorted();
                   const canSort = header.column.getCanSort();
@@ -405,11 +530,11 @@ export function DataGrid<Row extends RowData>({
                       key={header.id}
                       scope="col"
                       className={styles.headerCell}
-                      aria-colindex={columnIndex + 1}
+                      aria-colindex={columnIndex + 1 + columnOffset}
                       aria-sort={sortDirection ? ariaSortByDirection[sortDirection] : undefined}
                       data-sortable={canSort ? '' : undefined}
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                      {...keyboard.getCellProps(0, columnIndex)}
+                      {...keyboard.getCellProps(0, columnIndex + columnOffset)}
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {canSort ? (
@@ -455,7 +580,12 @@ export function DataGrid<Row extends RowData>({
         </table>
       </div>
       {hideFooter ? null : (
-        <footer className={styles.footer}>{resolvedLabels.rowCount(rows.length)}</footer>
+        <footer className={styles.footer}>
+          {selection.selectedIds.size > 0 ? (
+            <span>{resolvedLabels.selectedCount(selection.selectedIds.size)}</span>
+          ) : null}
+          <span className={styles.rowCount}>{resolvedLabels.rowCount(rows.length)}</span>
+        </footer>
       )}
     </section>
   );

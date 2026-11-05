@@ -199,6 +199,52 @@
 }
 
 /*
+ * The checkbox column: about 40px, and it stays at the start while the grid scrolls sideways. A
+ * sticky cell must cover what passes under it, so it paints the card's surface and the row's tint
+ * is laid over that. The doubled selectors outrank the outer-column padding above and the
+ * compact density's one-line rules below.
+ */
+.headerCell.selectHeader,
+.cell.selectCell {
+  position: sticky;
+  inset-inline-start: 0;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  max-width: 2.5rem;
+  padding-inline: 0;
+  text-align: center;
+  overflow: visible;
+}
+
+.headerCell.selectHeader {
+  background: var(--color-surface-1);
+}
+
+.cell.selectCell {
+  background-color: var(--color-surface-raised);
+}
+
+.row:hover .cell.selectCell {
+  background-image: linear-gradient(var(--color-surface-2), var(--color-surface-2));
+}
+
+.row[data-highlighted] .cell.selectCell,
+.row[aria-selected='true'] .cell.selectCell {
+  background-image: linear-gradient(var(--color-accent-wash), var(--color-accent-wash));
+}
+
+@media (hover: hover) {
+  .row[data-highlighted]:hover .cell.selectCell,
+  .row[aria-selected='true']:hover .cell.selectCell {
+    background-image: linear-gradient(var(--color-accent-soft), var(--color-accent-soft));
+  }
+}
+
+.table[data-density='compact'] .cell.selectCell {
+  max-width: 2.5rem;
+}
+
+/*
  * The roving focus: one cell at a time, ringed inside its edges so that neighbouring cells and the
  * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
  */
@@ -237,9 +283,16 @@
 }
 
 .footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   padding: var(--space-2) var(--space-5);
   border-block-start: 1px solid var(--color-border);
-  text-align: right;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+}
+
+/* The row count keeps to the end, whether or not the selection count sits before it. */
+.rowCount {
+  margin-inline-start: auto;
 }

@@ -43,6 +43,23 @@ export const HighlightOnClick: Story = {
   args: { heading: 'Inventory with a highlighted row', highlightOnClick: true },
 };
 
+export const CheckboxSelection: Story = {
+  args: {
+    heading: 'Inventory with checkbox selection',
+    selectionMode: 'multiple',
+    defaultSelectedRowIds: ['item-2', 'item-3'],
+  },
+};
+
+export const SelectionWithLockedRows: Story = {
+  args: {
+    heading: 'Out of stock items cannot be selected',
+    selectionMode: 'multiple',
+    highlightOnClick: true,
+    isRowSelectable: (row) => (row as InventoryRow).status !== 'out',
+  },
+};
+
 const largeRows = makeInventoryRows(5000);
 
 export const Large: Story = {

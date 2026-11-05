@@ -55,8 +55,15 @@ export const cellControlSelector =
 /** The cells focus moves between: header cells and the cells of rendered entries. */
 const navigableCellSelector = 'thead th, tbody tr[data-index] > td';
 
+/** A control hidden from assistive technology, such as a checkbox's mirror input, is no tab stop. */
+function isHiddenControl(control: HTMLElement): boolean {
+  return control.closest('[aria-hidden="true"]') !== null;
+}
+
 function controlsOf(cell: HTMLElement): HTMLElement[] {
-  return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)];
+  return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)].filter(
+    (control) => !isHiddenControl(control),
+  );
 }
 
 /**
@@ -86,6 +93,10 @@ function syncControlTabIndexes(grid: HTMLElement, enteredCell: HTMLElement | nul
   for (const control of grid.querySelectorAll<HTMLElement>(cellControlSelector)) {
     const cell = control.closest<HTMLElement>('td, th');
     if (cell === null || cell === control || !cell.matches(navigableCellSelector)) continue;
+    if (isHiddenControl(control)) {
+      control.tabIndex = -1;
+      continue;
+    }
     control.tabIndex = cell === enteredCell ? 0 : -1;
   }
 }
