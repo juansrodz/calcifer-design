@@ -307,6 +307,59 @@ describe('keyboard navigation', () => {
     expectFocusAt(3, 3);
   });
 
+  it('enters a cell past a disabled first control, and keeps one tab stop', async () => {
+    const user = userEvent.setup();
+    renderGrid({
+      rows: makeInventoryRows(3),
+      renderRowActions: (row) => (
+        <>
+          <button type="button" disabled>
+            Delete {row.name}
+          </button>
+          <button type="button">Edit {row.name}</button>
+        </>
+      ),
+    });
+    await tabIntoGrid(user);
+    await user.keyboard('{ArrowDown}{End}');
+    const actionsCell = cellAt(2, inventoryColumns.length + 1);
+    expect(actionsCell).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    const editButton = within(actionsCell).getByRole('button', { name: /^Edit/ });
+    expect(editButton).toHaveFocus();
+    const grid = screen.getByRole('grid');
+    expect([...grid.querySelectorAll('[tabindex="0"]:not(:disabled)')]).toEqual([editButton]);
+  });
+
+  it('enters a cell at the first control that takes focus', async () => {
+    const user = userEvent.setup();
+    // A control that refuses focus, as a browser's disabled button does.
+    const refuseFocus = (element: HTMLButtonElement | null) => {
+      if (element) element.focus = () => {};
+    };
+    renderGrid({
+      rows: makeInventoryRows(3),
+      renderRowActions: (row) => (
+        <>
+          <button type="button" ref={refuseFocus}>
+            Archive {row.name}
+          </button>
+          <button type="button">Edit {row.name}</button>
+        </>
+      ),
+    });
+    await tabIntoGrid(user);
+    await user.keyboard('{ArrowDown}{End}{Enter}');
+    const actionsCell = cellAt(2, inventoryColumns.length + 1);
+    const editButton = within(actionsCell).getByRole('button', { name: /^Edit/ });
+    expect(editButton).toHaveFocus();
+    expect(actionsCell).toHaveAttribute('tabindex', '-1');
+    // Both controls of the entered cell are tab stops now, and nothing else in the grid is.
+    const tabStops = [...screen.getByRole('grid').querySelectorAll('[tabindex="0"]')];
+    expect(tabStops).toEqual(within(actionsCell).getAllByRole('button'));
+  });
+
   it('leaves the controls tabbable no longer once focus leaves the cell', async () => {
     const user = userEvent.setup();
     renderGrid({ columns: columnsWithControls });

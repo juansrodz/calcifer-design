@@ -77,13 +77,24 @@ function ownCellOf(grid: HTMLElement, element: Element): HTMLElement | null {
   return cell;
 }
 
+/** A disabled, hidden or inert control takes no focus, so entering a cell passes over it. */
+function isUnfocusableControl(control: HTMLElement): boolean {
+  return (
+    isHiddenControl(control) ||
+    control.matches(':disabled') ||
+    control.closest('[hidden], [inert]') !== null
+  );
+}
+
 /**
- * The controls of a cell that this grid manages. A grid nested in the cell manages its own, so of
- * those only its current tab stop counts, which is where entering the cell lands in it.
+ * The controls of a cell that entering it can land on. A grid nested in the cell manages its own,
+ * so of those only its current tab stop counts, which is where entering the cell lands in it.
  */
 function controlsOf(grid: HTMLElement, cell: HTMLElement): HTMLElement[] {
   return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)].filter((control) =>
-    control.closest('[role="grid"]') === grid ? !isHiddenControl(control) : control.tabIndex === 0,
+    control.closest('[role="grid"]') === grid
+      ? !isUnfocusableControl(control)
+      : control.tabIndex === 0,
   );
 }
 
@@ -242,9 +253,16 @@ export function useGridKeyboard({
     setHeldCell(next);
   };
 
+  /**
+   * Focuses the first control that takes focus. The cell's focus handler then marks it entered,
+   * and the sync step puts its controls in the tab order; one that refuses focus leaves the cell
+   * as it was.
+   */
   const enter = (controls: HTMLElement[]) => {
-    for (const control of controls) control.tabIndex = 0;
-    controls[0]?.focus();
+    for (const control of controls) {
+      control.focus();
+      if (document.activeElement === control) return;
+    }
   };
 
   const handleKeyDown = (
