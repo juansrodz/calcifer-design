@@ -347,13 +347,29 @@
   color: var(--color-text);
 }
 
+/* The error row closes the body: the message and its retry button, centred. */
+.errorCell {
+  padding: var(--space-3) var(--space-5);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.errorContent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
 /*
  * The roving focus: one cell at a time, ringed inside its edges so that neighbouring cells and the
  * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
  */
 .headerCell:focus-visible,
 .cell:focus-visible,
-.detailCell:focus-visible {
+.detailCell:focus-visible,
+.errorCell:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-ring-width) * -1);
 }
@@ -405,19 +421,4 @@
 /* The row count keeps to the end, whether or not the selection count sits before it. */
 .rowCount {
   margin-inline-start: auto;
-}
-
-/* The error row closes the body: the message and its retry button, centred. */
-.errorCell {
-  padding: var(--space-3) var(--space-5);
-  text-align: center;
-  color: var(--color-text);
-}
-
-.errorContent {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
 }

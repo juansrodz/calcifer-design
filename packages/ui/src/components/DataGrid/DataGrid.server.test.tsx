@@ -109,11 +109,14 @@ describe('server mode', () => {
     scrollGridTo(40 * 50);
     expect(onLoadMore).toHaveBeenCalledTimes(1);
 
-    // While a load is under way the grid waits, whatever the user does.
-    rerender(gridElement({ onLoadMore: vi.fn(), loadingMore: true, rows: makeInventoryRows(50) }));
-    scrollGridTo(0);
-    scrollGridTo(40 * 50);
+    // More rows arrived, and the user is at the new end, but a load is under way: only that holds
+    // the grid back.
+    rerender(gridElement({ onLoadMore, loadingMore: true, rows: makeInventoryRows(100) }));
+    scrollGridTo(40 * 100);
     expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+    rerender(gridElement({ onLoadMore, loadingMore: false, rows: makeInventoryRows(100) }));
+    expect(onLoadMore).toHaveBeenCalledTimes(2);
   });
 
   it('does not ask while loadingMore is set', () => {
@@ -165,6 +168,82 @@ describe('server mode', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onLoadMore).toHaveBeenCalledTimes(1);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('numbers the error row within the rows of the grid', () => {
+    const { rerender } = renderGrid({ loadError: 'Could not load rows' });
+    // Header, 50 rows, then the error row; the total is not known.
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '52');
+    expect(screen.getByText('Could not load rows').closest('tr')).toHaveAttribute(
+      'aria-rowindex',
+      '52',
+    );
+
+    rerender(gridElement({ loadError: 'Could not load rows', totalRowCount: 1240 }));
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '1241');
+  });
+
+  it('shows only the error row when the first page failed', () => {
+    renderGrid({ rows: [], hasMore: true, loadError: 'Could not load rows' });
+    expect(screen.getByText('Could not load rows')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.queryByText('No rows to show.')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '2');
+    expect(screen.getByText('Could not load rows').closest('tr')).toHaveAttribute(
+      'aria-rowindex',
+      '2',
+    );
+  });
+
+  describe('error row keyboard', () => {
+    function gridBetweenButtons(overrides: Partial<GridProps> = {}) {
+      return (
+        <>
+          <button type="button">Before</button>
+          {gridElement({ rows: makeInventoryRows(10), hasMore: false, ...overrides })}
+          <button type="button">After</button>
+        </>
+      );
+    }
+
+    it('keeps the grid one tab stop, and reaches the retry button with the keys', async () => {
+      const user = userEvent.setup();
+      const onLoadMore = vi.fn();
+      render(gridBetweenButtons({ loadError: 'Could not load rows', onLoadMore }));
+      screen.getByRole('button', { name: 'Before' }).focus();
+      await user.tab();
+      expect(screen.getByRole('columnheader', { name: 'SKU' })).toHaveFocus();
+      await user.tab();
+      expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+      await user.tab({ shift: true });
+      expect(screen.getByRole('columnheader', { name: 'SKU' })).toHaveFocus();
+
+      // The error row's cell is the last one, reached like any other.
+      await user.keyboard('{Control>}{End}{/Control}');
+      const errorCell = screen.getByText('Could not load rows').closest('td');
+      expect(errorCell).toHaveFocus();
+      const retryButton = screen.getByRole('button', { name: 'Try again' });
+      expect(retryButton).toHaveAttribute('tabindex', '-1');
+
+      await user.keyboard('{Enter}');
+      expect(retryButton).toHaveFocus();
+      await user.keyboard('{Enter}');
+      expect(onLoadMore).toHaveBeenCalledTimes(1);
+      await user.keyboard('{Escape}');
+      expect(errorCell).toHaveFocus();
+      await user.keyboard('{ArrowUp}');
+      expect(errorCell).not.toHaveFocus();
+      expect(document.activeElement?.closest('tr')).toHaveAttribute('aria-rowindex', '11');
+    });
+
+    it('leaves the grid in one Tab from inside the retry button', async () => {
+      const user = userEvent.setup();
+      render(gridBetweenButtons({ loadError: 'Could not load rows' }));
+      await user.click(screen.getByRole('button', { name: 'Try again' }));
+      await user.tab();
+      expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+    });
   });
 
   it('a retry that adds nothing does not loop either', async () => {

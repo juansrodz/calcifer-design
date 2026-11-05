@@ -1,5 +1,6 @@
 import type { RowSelectionState } from '@tanstack/react-table';
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useLatest } from './useLatest';
 
 export interface UseRowSelectionOptions<Row> {
   /** False for `selectionMode: 'none'`: nothing is selected and nothing is reported. */
@@ -91,14 +92,13 @@ export function useRowSelection<Row>({
     if (selectedRowIds === undefined) setOwnIds(ordered);
   };
 
-  const dropGoneRows = useEffectEvent(() => commit(selectedIds));
+  const dropGoneRowsRef = useLatest(() => commit(selectedIds));
   const hasGoneRows = enabled && !loading && selectedIds.size !== reportedIds.length;
   useEffect(() => {
     // The rows changed under the selection, which no event of ours started: the consumer must be
     // told, and the effect is where a change in the props is answered.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (hasGoneRows) dropGoneRows();
-  }, [hasGoneRows, rows]);
+    if (hasGoneRows) dropGoneRowsRef.current();
+  }, [hasGoneRows, rows, dropGoneRowsRef]);
 
   const toggleRow: RowSelection['toggleRow'] = (rowId, { range = false } = {}) => {
     if (!selectableIds.has(rowId)) return;

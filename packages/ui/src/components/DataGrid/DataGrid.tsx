@@ -221,7 +221,9 @@ export function DataGrid<Row extends RowData>({
   const columnCount = columnOffset + leafColumns.length + (renderRowActions ? 1 : 0);
   // Stable across sorts: TanStack's row index is the row's place in `rows`.
   const panelIdOf = (row: { index: number }) => `${panelIdPrefix}-detail-${row.index}`;
-  const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
+  // A failed first page is the error row alone, with no 'no rows' message beside it.
+  const showsLoadError = serverMode && loadError !== undefined && !loading;
+  const stateKind = loading ? 'loading' : entries.length === 0 && !showsLoadError ? 'empty' : null;
   const rowHeight = estimatedRowHeight[density];
   const rowsPerViewport = Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight));
 
@@ -324,7 +326,7 @@ export function DataGrid<Row extends RowData>({
   };
 
   const keyboard = useGridKeyboard({
-    rowCount: stateKind ? 1 : entries.length + 1,
+    rowCount: stateKind ? 1 : entries.length + 1 + (showsLoadError ? 1 : 0),
     columnCount,
     pageSize: rowsPerViewport,
     onActivate: handleActivate,
@@ -468,7 +470,6 @@ export function DataGrid<Row extends RowData>({
       />,
     );
   }
-  const showsLoadError = serverMode && loadError !== undefined;
   const bottomSpacerHeight = virtualItems.length
     ? virtualizer.getTotalSize() + headerHeight - renderedEnd
     : 0;
@@ -478,16 +479,19 @@ export function DataGrid<Row extends RowData>({
     // A cell the browser scrolls to on focus lands below the sticky header band too.
     scrollPaddingBlockStart: headerHeight || undefined,
   };
-  // One region that is always mounted: a live region announces reliably only when its text
-  // changes, not when it appears with its text.
+  // The error row comes after the last entry, as the header is row 1.
+  const errorRowIndex = entries.length + 2;
   // The header, every row the app has (not only those loaded) and the open panels.
   const openPanelCount = entries.length - rows.length;
-  const rowCountOfGrid =
-    (serverMode && totalRowCount !== undefined
-      ? Math.max(totalRowCount, rows.length)
-      : rows.length) +
-    openPanelCount +
-    1;
+  const knownRowCount =
+    serverMode && totalRowCount !== undefined ? Math.max(totalRowCount, rows.length) : rows.length;
+  // The error row follows the last entry, whatever the grid knows of rows it has not loaded.
+  const rowCountOfGrid = Math.max(
+    knownRowCount + openPanelCount + 1,
+    showsLoadError ? errorRowIndex : 0,
+  );
+  // One region that is always mounted: a live region announces reliably only when its text
+  // changes, not when it appears with its text.
   const stateAnnouncement =
     stateKind === 'loading'
       ? resolvedLabels.loading
@@ -626,12 +630,13 @@ export function DataGrid<Row extends RowData>({
             {bodyRows}
             {bottomSpacerHeight > 0 ? spacerRow('after', bottomSpacerHeight, columnCount) : null}
             {showsLoadError ? (
-              <tr aria-rowindex={(stateKind ? 1 : entries.length) + 2}>
+              <tr data-index={entries.length} aria-rowindex={errorRowIndex}>
                 <td
                   role="gridcell"
                   className={styles.errorCell}
                   colSpan={columnCount}
                   aria-colindex={1}
+                  {...keyboard.getCellProps(entries.length + 1, 0, columnCount)}
                 >
                   <div className={styles.errorContent}>
                     <span role="alert">{loadError}</span>

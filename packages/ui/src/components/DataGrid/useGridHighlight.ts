@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLatest } from './useLatest';
 
 export interface UseGridHighlightOptions<Row> {
   rows: readonly Row[];
@@ -31,15 +32,14 @@ export function useGridHighlight<Row>({
     if (highlightedRowId === undefined) setOwnHighlightedId(next);
   };
 
-  const clearHighlight = useEffectEvent(() => setHighlightedId(null));
+  const clearHighlightRef = useLatest(() => setHighlightedId(null));
   const isStale =
     highlightedId !== null && !loading && !rows.some((row) => getRowId(row) === highlightedId);
   useEffect(() => {
     // The rows changed under the highlight, which no event of ours started: the consumer must be
     // told, and the effect is where a change in the props is answered.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (isStale) clearHighlight();
-  }, [isStale, rows]);
+    if (isStale) clearHighlightRef.current();
+  }, [isStale, rows, clearHighlightRef]);
 
   return { highlightedId, setHighlightedId };
 }

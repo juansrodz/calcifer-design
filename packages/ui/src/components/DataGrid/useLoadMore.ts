@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useLatest } from './useLatest';
 
 export interface UseLoadMoreOptions {
   /** False outside server mode, and while something else (a first load, a pending query) rules. */
@@ -44,14 +45,14 @@ export function useLoadMore({
     requestedCountRef.current = loadedCount;
     onLoadMore?.();
   };
-  const requestFromEffect = useEffectEvent(request);
+  const requestRef = useLatest(request);
 
   const nearEnd = loadedCount - 1 - lastRenderedIndex <= threshold;
   useEffect(() => {
     if (!enabled || !hasMore || loadingMore || loadError !== undefined || !nearEnd) return;
     if (requestedCountRef.current === loadedCount) return;
-    requestFromEffect();
-  }, [enabled, hasMore, loadingMore, loadError, nearEnd, loadedCount]);
+    requestRef.current();
+  }, [enabled, hasMore, loadingMore, loadError, nearEnd, loadedCount, requestRef]);
 
   return {
     retry: request,
