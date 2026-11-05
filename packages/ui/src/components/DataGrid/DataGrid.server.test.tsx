@@ -257,6 +257,33 @@ describe('server mode', () => {
     expect(onLoadMore).toHaveBeenCalledTimes(1);
   });
 
+  it('asks again at the same count after a failed load is cleared', () => {
+    const onLoadMore = vi.fn();
+    const rows = makeInventoryRows(50);
+    const { rerender } = renderGrid({ rows, onLoadMore });
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+    // The load fails, and the app clears the error with as many rows as before, as a refresh does.
+    rerender(gridElement({ rows, onLoadMore, loadingMore: true }));
+    rerender(gridElement({ rows, onLoadMore, loadError: 'Could not load rows' }));
+    rerender(gridElement({ rows: makeInventoryRows(50), onLoadMore }));
+    expect(onLoadMore).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks again at the same count after a reload', () => {
+    const onLoadMore = vi.fn();
+    const { rerender } = renderGrid({ onLoadMore });
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+    // The app reloads from the first page before the answer came, to as many rows as before.
+    rerender(gridElement({ onLoadMore, loading: true }));
+    rerender(gridElement({ onLoadMore }));
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).toHaveBeenCalledTimes(2);
+  });
+
   it('a query change scrolls to the top and clears the selection', async () => {
     const user = userEvent.setup();
     const onSelectedRowIdsChange = vi.fn();

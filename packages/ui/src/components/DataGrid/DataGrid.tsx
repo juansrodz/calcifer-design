@@ -378,7 +378,8 @@ export function DataGrid<Row extends RowData>({
   const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
   // Annotated for the sort handler above, which resets the guard before this line has run.
   const loadMore: ReturnType<typeof useLoadMore> = useLoadMore({
-    enabled: serverMode && !loading && !awaitingNewRows,
+    enabled: serverMode && !awaitingNewRows,
+    loading,
     loadedCount: rows.length,
     lastRenderedIndex:
       (stateKind ? undefined : entries[virtualizer.range?.endIndex ?? -1]?.rowIndex) ?? -1,
