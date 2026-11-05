@@ -231,6 +231,8 @@ export function DataGrid<Row extends RowData>({
   const clickRow = (row: { id: string; original: Row }, event: DataGridRowEvent) => {
     onRowClick?.(row.original, event);
     if (!highlightOnClick) return;
+    // The second click of a double click leaves the highlight the first one set.
+    if (highlightedId === row.id && 'detail' in event && event.detail > 1) return;
     setHighlightedId(highlightedId === row.id ? null : row.id);
   };
 
@@ -359,7 +361,7 @@ export function DataGrid<Row extends RowData>({
     // Exact, not rounded to whole pixels as the default does: a row is rarely a whole number of
     // pixels tall, and rounded sizes make the spacers disagree with the rows they stand for.
     measureElement: (element, entry) =>
-      entry?.borderBoxSize[0]?.blockSize ?? element.getBoundingClientRect().height,
+      entry?.borderBoxSize?.[0]?.blockSize ?? element.getBoundingClientRect().height,
     getItemKey,
     overscan: overscanRows,
     initialRect: {
@@ -494,10 +496,8 @@ export function DataGrid<Row extends RowData>({
     knownRowCount + openPanelCount + 1,
     showsLoadError ? errorRowIndex : 0,
   );
-  // ARIA's "unknown total" is -1: more rows exist than the app has said how many. A shown load
-  // error holds the count at the rows it follows, since nothing more loads until a retry.
-  const totalIsUnknown =
-    serverMode && totalRowCount === undefined && hasMore && !stateKind && !showsLoadError;
+  // ARIA's "unknown total" is -1: more rows exist than the app has said how many.
+  const totalIsUnknown = serverMode && totalRowCount === undefined && hasMore && !stateKind;
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text.
   const stateAnnouncement =

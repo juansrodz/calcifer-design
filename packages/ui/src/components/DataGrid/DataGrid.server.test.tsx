@@ -172,8 +172,8 @@ describe('server mode', () => {
 
   it('numbers the error row within the rows of the grid', () => {
     const { rerender } = renderGrid({ loadError: 'Could not load rows' });
-    // Header, 50 rows, then the error row; the total is not known.
-    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '52');
+    // Header, 50 rows, then the error row; the total is not known, so the count is ARIA's -1.
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '-1');
     expect(screen.getByText('Could not load rows').closest('tr')).toHaveAttribute(
       'aria-rowindex',
       '52',
@@ -189,7 +189,7 @@ describe('server mode', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(screen.queryByText('No rows to show.')).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
-    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '2');
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '-1');
     expect(screen.getByText('Could not load rows').closest('tr')).toHaveAttribute(
       'aria-rowindex',
       '2',
@@ -324,6 +324,10 @@ describe('server mode', () => {
     // Everything is loaded: the count is known again, whether or not a total came with it.
     rerender(gridElement({ hasMore: false }));
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '51');
+
+    // A load error does not make the total known.
+    rerender(gridElement({ loadError: 'Could not load rows' }));
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '-1');
   });
 
   it('aria-rowcount adds the open panels to the total', () => {

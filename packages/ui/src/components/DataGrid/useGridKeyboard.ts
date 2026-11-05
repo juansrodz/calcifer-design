@@ -231,9 +231,13 @@ export function useGridKeyboard({
     if (next.rowIndex === focusedCell.rowIndex && next.columnIndex === focusedCell.columnIndex) {
       return;
     }
-    // The header row stays in place while the body scrolls, so going to it brings the first entry
-    // into view instead.
-    scrollToEntry(Math.max(0, next.rowIndex - 1));
+    if (next.rowIndex > 0) {
+      scrollToEntry(next.rowIndex - 1);
+    } else if (focusedCell.rowIndex > 0) {
+      // The header row stays in place while the body scrolls, so arriving at it from a row brings
+      // the first entry into view; a move along the header leaves the body where it is.
+      scrollToEntry(0);
+    }
     pendingFocusRef.current = true;
     setHeldCell(next);
   };

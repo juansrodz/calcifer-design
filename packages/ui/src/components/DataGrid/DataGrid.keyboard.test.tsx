@@ -187,6 +187,28 @@ describe('keyboard navigation', () => {
     expect(rowWithIndex(3)).toBeDefined();
   });
 
+  it('moving between header cells leaves the scroll position alone', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Before</button>
+        <Large />
+      </>,
+    );
+    const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
+    scrollElement.scrollTo = ((options: ScrollToOptions) => {
+      scrollElement.scrollTop = options.top ?? 0;
+      scrollElement.dispatchEvent(new Event('scroll'));
+    }) as typeof scrollElement.scrollTo;
+    await tabIntoGrid(user);
+    expect(document.activeElement).toBe(screen.getByRole('columnheader', { name: 'SKU' }));
+    scrollGridTo(40 * 3000);
+
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(screen.getByRole('columnheader', { name: 'Name' }));
+    expect(scrollElement.scrollTop).toBe(40 * 3000);
+  });
+
   it('Page Down and Page Up move by a screen', async () => {
     const user = userEvent.setup();
     render(

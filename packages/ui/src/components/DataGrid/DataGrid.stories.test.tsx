@@ -29,8 +29,15 @@ describe('DataGrid stories', () => {
     const user = userEvent.setup();
     render(<FileList />);
     expect(screen.getByText('Nothing opened yet.')).toBeInTheDocument();
-    await user.dblClick(screen.getByRole('gridcell', { name: 'Document 2.pdf' }));
+    const cell = screen.getByRole('gridcell', { name: 'Document 2.pdf' });
+    await user.dblClick(cell);
     expect(screen.getByText('Opened Document 2.pdf.')).toBeInTheDocument();
+    // The two clicks of a double click do not highlight the row and then clear it again.
+    expect(cell.closest('tr')).toHaveAttribute('data-highlighted');
+
+    // A slow second click, on its own, still clears it.
+    await user.click(cell);
+    expect(cell.closest('tr')).not.toHaveAttribute('data-highlighted');
   });
 
   it('the file list story opens a file from its action button', async () => {
