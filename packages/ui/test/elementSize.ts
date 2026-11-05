@@ -1,6 +1,8 @@
 interface ElementSizeOptions {
   viewportHeight: number;
   rowHeight: number;
+  /** The grid's `thead`, the sticky band over the top of the scroll area; 0 by default. */
+  headerHeight?: number;
 }
 
 const viewportWidth = 800;
@@ -13,12 +15,20 @@ function isGridRow(element: Element): boolean {
   return element.tagName === 'TR';
 }
 
+function isGridHead(element: Element): boolean {
+  return element.tagName === 'THEAD';
+}
+
 /**
  * jsdom does no layout, so a virtualiser measures nothing and renders no rows. This stubs the
- * measurements it reads: `[data-grid-scroll]` is `viewportHeight` tall and every `tr` is
- * `rowHeight` tall. Returns a function that puts everything back.
+ * measurements it reads: `[data-grid-scroll]` is `viewportHeight` tall, every `tr` is `rowHeight`
+ * tall and a `thead` is `headerHeight` tall. Returns a function that puts everything back.
  */
-export function installElementSize({ viewportHeight, rowHeight }: ElementSizeOptions): () => void {
+export function installElementSize({
+  viewportHeight,
+  rowHeight,
+  headerHeight = 0,
+}: ElementSizeOptions): () => void {
   const elementPrototype = HTMLElement.prototype;
   const originals = {
     clientHeight: Object.getOwnPropertyDescriptor(elementPrototype, 'clientHeight'),
@@ -30,6 +40,7 @@ export function installElementSize({ viewportHeight, rowHeight }: ElementSizeOpt
   function heightOf(element: Element): number {
     if (isGridScroll(element)) return viewportHeight;
     if (isGridRow(element)) return rowHeight;
+    if (isGridHead(element)) return headerHeight;
     return 0;
   }
 

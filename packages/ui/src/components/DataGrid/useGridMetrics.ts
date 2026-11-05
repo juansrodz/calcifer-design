@@ -4,14 +4,21 @@ export interface GridMetrics {
   viewportHeight: number;
   /** The sticky header band, which covers the top of the scroll area. */
   headerHeight: number;
+  /**
+   * The computed direction is right to left, whether a `dir` attribute or a stylesheet set it. Read
+   * when the grid mounts and when it resizes, not on every render.
+   */
+  rightToLeft: boolean;
 }
+
+const initialMetrics: GridMetrics = { viewportHeight: 0, headerHeight: 0, rightToLeft: false };
 
 /** The scroll area's height and the header band's, kept current as either resizes. */
 export function useGridMetrics(
   scrollRef: RefObject<HTMLElement | null>,
   headRef: RefObject<HTMLElement | null>,
 ): GridMetrics {
-  const [metrics, setMetrics] = useState<GridMetrics>({ viewportHeight: 0, headerHeight: 0 });
+  const [metrics, setMetrics] = useState<GridMetrics>(initialMetrics);
   useLayoutEffect(() => {
     const scrollElement = scrollRef.current;
     const head = headRef.current;
@@ -19,10 +26,13 @@ export function useGridMetrics(
     const measure = () => {
       const viewportHeight = scrollElement.clientHeight;
       const headerHeight = head.offsetHeight;
+      const rightToLeft = getComputedStyle(scrollElement).direction === 'rtl';
       setMetrics((current) =>
-        current.viewportHeight === viewportHeight && current.headerHeight === headerHeight
+        current.viewportHeight === viewportHeight &&
+        current.headerHeight === headerHeight &&
+        current.rightToLeft === rightToLeft
           ? current
-          : { viewportHeight, headerHeight },
+          : { viewportHeight, headerHeight, rightToLeft },
       );
     };
     measure();

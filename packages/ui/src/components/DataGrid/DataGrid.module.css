@@ -49,7 +49,7 @@
 
 /* The default leaves 16rem for a page header; the maxHeight prop overrides it inline. */
 .scroll {
-  max-height: calc(100dvh - 16rem);
+  max-height: calc(100dvh - var(--space-10) * 2);
   overflow: auto;
 }
 
@@ -86,7 +86,7 @@
 .headerCell {
   position: relative;
   padding: var(--space-2) var(--space-3);
-  text-align: left;
+  text-align: start;
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text-muted);
@@ -179,8 +179,12 @@
   }
 }
 
-/* Comfortable cells wrap anywhere, so a long unbroken value never widens the grid. */
+/*
+ * Comfortable cells wrap anywhere, so a long unbroken value never widens the grid. A column with no
+ * width of its own would shrink to a letter or two under a short header, so each keeps 3.75rem.
+ */
 .cell {
+  min-width: calc(var(--space-3) * 5);
   padding: var(--space-3);
   vertical-align: middle;
   color: var(--color-text);
@@ -240,27 +244,27 @@
   }
 }
 
-/* The checkbox column: about 40px, first at the start. */
+/* The checkbox column: 2.5rem (about 40px), first at the start. */
 .headerCell.selectHeader,
 .cell.selectCell {
   inset-inline-start: 0;
-  width: 2.5rem;
-  min-width: 2.5rem;
-  max-width: 2.5rem;
+  width: calc(var(--space-2) * 5);
+  min-width: calc(var(--space-2) * 5);
+  max-width: calc(var(--space-2) * 5);
 }
 
-/* The expand column: about 28px, at the start or right after the checkbox column. */
+/* The expand column: its button and a little room, 1.75rem (about 28px), after any checkboxes. */
 .headerCell.expandHeader,
 .cell.expandCell {
   inset-inline-start: 0;
-  width: 1.75rem;
-  min-width: 1.75rem;
-  max-width: 1.75rem;
+  width: calc(var(--space-5) + var(--space-1));
+  min-width: calc(var(--space-5) + var(--space-1));
+  max-width: calc(var(--space-5) + var(--space-1));
 }
 
 .selectHeader + .expandHeader,
 .selectCell + .expandCell {
-  inset-inline-start: 2.5rem;
+  inset-inline-start: calc(var(--space-2) * 5);
 }
 
 .expandButton {
@@ -295,11 +299,12 @@
   rotate: 90deg;
 }
 
-[dir='rtl'] .expandButton svg {
+/* The grid marks a right-to-left computed direction, whether a dir attribute or a stylesheet set it. */
+.table[data-rtl] .expandButton svg {
   scale: -1 1;
 }
 
-[dir='rtl'] .expandButton[aria-expanded='true'] svg {
+.table[data-rtl] .expandButton[aria-expanded='true'] svg {
   rotate: -90deg;
 }
 
@@ -310,15 +315,15 @@
 }
 
 /*
- * The row actions column: about 72px, at the end, with a hairline before it. The header's hairline
+ * The row actions column: 4.5rem (about 72px), at the end, with a hairline before it. The header's hairline
  * joins its top and bottom ones, which are pseudo-elements for the reason given above.
  */
 .headerCell.actionsHeader,
 .cell.actionsCell {
   inset-inline-end: 0;
-  width: 4.5rem;
-  min-width: 4.5rem;
-  max-width: 4.5rem;
+  width: calc(var(--space-5) * 3);
+  min-width: calc(var(--space-5) * 3);
+  max-width: calc(var(--space-5) * 3);
 }
 
 .cell.actionsCell::before {
@@ -385,9 +390,8 @@
   padding-block: var(--space-2);
 }
 
+/* The zero maximum lets the ellipsis cut a cell; the minimum width above still holds. */
 .table[data-density='compact'] .cell:not(.pinnedCell) {
-  /* With no width of their own these columns would shrink to nothing under a short header. */
-  min-width: 3.75rem;
   max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

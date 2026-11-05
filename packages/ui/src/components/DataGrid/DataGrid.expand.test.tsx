@@ -407,6 +407,25 @@ describe('expandable rows', () => {
       'false',
     );
   });
+
+  it('flips the chevron for a right-to-left direction set by a stylesheet, not a dir attribute', () => {
+    const stylesheet = document.createElement('style');
+    stylesheet.textContent = 'html { direction: rtl; }';
+    document.head.append(stylesheet);
+    try {
+      renderGrid({ renderExpandedRow: showDetails });
+      // The stylesheet turns the chevron of a grid marked right to left.
+      expect(screen.getByRole('grid')).toHaveAttribute('data-rtl');
+      expect(expandButton('Item 1').closest('[data-rtl]')).toBe(screen.getByRole('grid'));
+    } finally {
+      stylesheet.remove();
+    }
+  });
+
+  it('leaves the chevron alone left to right', () => {
+    renderGrid({ renderExpandedRow: showDetails });
+    expect(screen.getByRole('grid')).not.toHaveAttribute('data-rtl');
+  });
 });
 
 describe('a table inside a detail panel', () => {

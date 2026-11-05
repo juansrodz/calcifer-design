@@ -24,6 +24,8 @@ export default defineConfig({
         './src/**',
         '!./src/**/*.test.{ts,tsx}',
         '!./src/**/*.stories.{ts,tsx}',
+        // Sample data for stories and tests only.
+        '!./src/**/fixtures.ts',
         '!./src/styles/base.css',
       ],
     },

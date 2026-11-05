@@ -24,11 +24,12 @@ export interface UseGridKeyboardOptions {
   /** The rows focus can reach, the header row included. */
   rowCount: number;
   columnCount: number;
-  /** How many rows Page Up and Page Down move. */
-  pageSize: number;
+  /** How many rows Page Up and Page Down move; called from key handlers only. */
+  getPageSize: () => number;
   /**
    * Enter or Space on a focused cell. Calling `event.preventDefault()` claims the key; an Enter left
-   * unclaimed moves focus into the cell's controls, if it has any.
+   * unclaimed moves focus into the cell's controls, if it has any. Space is claimed afterwards
+   * either way, so that it never scrolls the body.
    */
   onActivate: GridCellKeyHandler;
   /** The context menu key or Shift+F10 on a focused cell. */
@@ -165,7 +166,7 @@ function syncControlTabIndexes(grid: HTMLElement, enteredCell: HTMLElement | nul
 export function useGridKeyboard({
   rowCount,
   columnCount,
-  pageSize,
+  getPageSize,
   onActivate,
   onContextMenu,
   scrollToEntry,
@@ -291,7 +292,12 @@ export function useGridKeyboard({
     }
     if (key === 'Enter' || key === ' ') {
       onActivate(rowIndex, position.columnIndex, event);
-      if (event.defaultPrevented || key === ' ') return;
+      if (key === ' ') {
+        // A cell does nothing with an unclaimed Space either, but it must not scroll the body.
+        event.preventDefault();
+        return;
+      }
+      if (event.defaultPrevented) return;
     }
     if (key === 'Enter' || key === 'F2') {
       const grid = gridRef.current;
@@ -323,8 +329,8 @@ export function useGridKeyboard({
         ctrlKey
           ? { rowIndex: lastRow, columnIndex: lastColumn }
           : { rowIndex, columnIndex: lastColumn },
-      PageUp: () => ({ rowIndex: rowIndex - pageSize, columnIndex }),
-      PageDown: () => ({ rowIndex: rowIndex + pageSize, columnIndex }),
+      PageUp: () => ({ rowIndex: rowIndex - getPageSize(), columnIndex }),
+      PageDown: () => ({ rowIndex: rowIndex + getPageSize(), columnIndex }),
     };
     const target = targets[key];
     if (!target) return;

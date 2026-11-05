@@ -213,10 +213,15 @@ export function DataGrid<Row extends RowData>({
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLTableSectionElement>(null);
-  const { viewportHeight, headerHeight } = useGridMetrics(scrollRef, headRef);
+  const { viewportHeight, headerHeight, rightToLeft } = useGridMetrics(scrollRef, headRef);
   const tableRows = table.getRowModel().rows;
   const entries = useGridEntries(tableRows, expansion.expandedIds, (row) =>
     isExpandable(row.original),
+  );
+  // Counted, not worked out from the rows: the row model can hold fewer rows than `rows`.
+  const openPanelCount = useMemo(
+    () => entries.filter((entry) => entry.kind === 'detail').length,
+    [entries],
   );
   const leafHeaders = table.getHeaderGroups()[0]?.headers ?? [];
   const leafColumns = table.getAllLeafColumns();
@@ -332,11 +337,15 @@ export function DataGrid<Row extends RowData>({
   const keyboard = useGridKeyboard({
     rowCount: stateKind ? 1 : entries.length + 1 + (showsLoadError ? 1 : 0),
     columnCount,
-    pageSize: rowsPerViewport,
     onActivate: handleActivate,
     onContextMenu: handleContextMenu,
-    // Called from key handlers only, after the virtualiser below exists.
+    // Both called from key handlers only, after the virtualiser below exists.
     scrollToEntry: (entryIndex) => virtualizer.scrollToIndex(entryIndex),
+    // The rows the virtualiser measured in view; before it has, the estimate.
+    getPageSize: () => {
+      const range = virtualizer.range;
+      return range ? Math.max(1, range.endIndex - range.startIndex + 1) : rowsPerViewport;
+    },
   });
   const focusedEntryIndex = keyboard.focusedCell.rowIndex - 1;
   const pinnedIndexes = useMemo(
@@ -491,7 +500,6 @@ export function DataGrid<Row extends RowData>({
   // The error row comes after the last entry, as the header is row 1.
   const errorRowIndex = entries.length + 2;
   // The header, every row the app has (not only those loaded) and the open panels.
-  const openPanelCount = entries.length - rows.length;
   const knownRowCount =
     serverMode && totalRowCount !== undefined ? Math.max(totalRowCount, rows.length) : rows.length;
   // The error row follows the last entry, whatever the grid knows of rows it has not loaded.
@@ -555,6 +563,8 @@ export function DataGrid<Row extends RowData>({
           aria-multiselectable={selecting || undefined}
           aria-busy={loading || undefined}
           data-density={density}
+          // The chevron turns with the computed direction, which a stylesheet can set as well.
+          data-rtl={rightToLeft ? '' : undefined}
           onPointerDownCapture={forgetKeyboardContextMenu}
           onKeyDownCapture={forgetKeyboardContextMenu}
           onBlur={forgetKeyboardContextMenu}

@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -508,6 +508,70 @@ describe('virtualisation', () => {
     scrollGridTo(40 * 2000);
     expect(rowWithIndex(1)).toBeDefined();
     expect(screen.getAllByRole('columnheader')).toHaveLength(inventoryColumns.length);
+  });
+
+  describe('under a header band', () => {
+    const rowHeight = 40;
+    const totalHeight = 5000 * rowHeight;
+
+    beforeEach(() => {
+      restoreElementSize();
+      restoreElementSize = installElementSize({ viewportHeight: 400, rowHeight, headerHeight: 40 });
+    });
+
+    function spacerHeights(container: HTMLElement): { above: number; below: number } {
+      const rowsInBody = [...container.querySelectorAll('tbody > tr')];
+      const heightOf = (row: Element | undefined) =>
+        row && !row.hasAttribute('data-index')
+          ? Number.parseFloat((row.firstElementChild as HTMLElement).style.height)
+          : 0;
+      return { above: heightOf(rowsInBody[0]), below: heightOf(rowsInBody.at(-1)) };
+    }
+
+    function renderedRows(container: HTMLElement): HTMLElement[] {
+      return [...container.querySelectorAll<HTMLElement>('tbody > tr[data-index]')];
+    }
+
+    it('starts the rows below the band, and fills the view only below it', () => {
+      const { container } = render(<Large />);
+      // Nine rows fit under the band, and eight more are rendered past them.
+      expect(renderedRows(container)).toHaveLength(9 + 8);
+      const { above, below } = spacerHeights(container);
+      expect(above).toBe(0);
+      expect(above + renderedRows(container).length * rowHeight + below).toBe(totalHeight);
+    });
+
+    it('keeps the spacers and the rows as tall as every row together', () => {
+      const { container } = render(<Large />);
+      scrollGridTo(rowHeight * 2000);
+      const rows = renderedRows(container);
+      const firstIndex = Number(rows[0]?.getAttribute('data-index'));
+      // Row 1999 is the first in view, as the band takes the first 40 pixels of the body.
+      expect(firstIndex).toBe(1999 - 8);
+      const { above, below } = spacerHeights(container);
+      expect(above).toBe(firstIndex * rowHeight);
+      expect(above + rows.length * rowHeight + below).toBe(totalHeight);
+    });
+
+    it('brings a row the band covers into view below it', async () => {
+      const user = userEvent.setup();
+      render(<Large />);
+      const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
+      // A browser scrolls the cell it focuses clear of the band.
+      expect(scrollElement.style.scrollPaddingBlockStart).toBe('40px');
+      scrollElement.scrollTo = ((options: ScrollToOptions) => {
+        scrollElement.scrollTop = options.top ?? 0;
+        scrollElement.dispatchEvent(new Event('scroll'));
+      }) as typeof scrollElement.scrollTo;
+      // The virtualiser scrolls no further than the scroll height allows, which jsdom leaves at 0.
+      Object.defineProperty(scrollElement, 'scrollHeight', { value: 40 + totalHeight });
+      // Row 50 sits exactly under the band; row 51 is the first in view.
+      scrollGridTo(rowHeight + 50 * rowHeight);
+      await user.click(within(rowWithIndex(53) as HTMLElement).getAllByRole('gridcell')[0]!);
+
+      await user.keyboard('{ArrowUp}');
+      await waitFor(() => expect(scrollElement.scrollTop).toBe(50 * rowHeight));
+    });
   });
 });
 

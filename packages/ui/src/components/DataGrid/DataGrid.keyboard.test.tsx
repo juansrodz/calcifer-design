@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -229,6 +229,27 @@ describe('keyboard navigation', () => {
     expectFocusAt(12, 1);
   });
 
+  it('Page Down moves by the rows measured in view, not by the estimate', async () => {
+    // Rows twice as tall as the grid's estimate: five fit the view, not ten.
+    restoreElementSize();
+    restoreElementSize = installElementSize({ viewportHeight: 400, rowHeight: 80 });
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Before</button>
+        <Large />
+      </>,
+    );
+    await tabIntoGrid(user);
+    await user.keyboard('{ArrowDown}');
+    expectFocusAt(2, 1);
+
+    await user.keyboard('{PageDown}');
+    expectFocusAt(7, 1);
+    await user.keyboard('{PageUp}');
+    expectFocusAt(2, 1);
+  });
+
   it('keeps the focused row rendered after scrolling it away', async () => {
     const user = userEvent.setup();
     render(<Large />);
@@ -385,6 +406,27 @@ describe('keyboard navigation', () => {
       rows[1],
       expect.objectContaining({ type: 'keydown', key: 'Enter' }),
     );
+  });
+
+  it('claims Space on every cell, so that it never scrolls the body', () => {
+    renderGrid({
+      columns: columnsWithControls,
+      selectionMode: 'multiple',
+      isRowSelectable: (row) => row.id !== 'item-2',
+      renderExpandedRow: (row) => <p>{`Details of ${row.name}`}</p>,
+      defaultExpandedRowIds: ['item-1'],
+    });
+    const header = screen.getByRole('columnheader', { name: 'SKU' });
+    const plainCell = cellAt(2, 3);
+    const panelCell = screen.getByText(/^Details of/).closest('td') as HTMLElement;
+    const lockedRowCheckboxCell = cellAt(4, 1);
+    for (const cell of [header, plainCell, panelCell, lockedRowCheckboxCell]) {
+      // `fireEvent` answers false when a handler called preventDefault.
+      expect(fireEvent.keyDown(cell, { key: ' ' })).toBe(false);
+    }
+    // Inside a cell Space belongs to its controls.
+    const editButton = within(cellAt(2, 5)).getByRole('button');
+    expect(fireEvent.keyDown(editButton, { key: ' ' })).toBe(true);
   });
 
   it('reads the page direction for left and right', async () => {

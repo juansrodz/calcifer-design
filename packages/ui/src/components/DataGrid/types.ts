@@ -1,5 +1,5 @@
 import type { RowData, SortingState } from '@tanstack/react-table';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import type { DataGridColumnDef } from './columns';
 import type { DataGridLabels } from './labels';
 
@@ -14,7 +14,7 @@ export interface DataGridQuery {
   search: string;
 }
 
-export type DataGridRowEvent = React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>;
+export type DataGridRowEvent = MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>;
 
 export interface DataGridProps<Row extends RowData> {
   gridId: string;
@@ -47,6 +47,10 @@ export interface DataGridProps<Row extends RowData> {
    * it, server mode's headers are not sortable and carry no `aria-sort`.
    */
   onQueryChange?: (query: DataGridQuery) => void;
+  /**
+   * The sort the grid starts with. The planned `initialQuery` prop will win over it when both are
+   * given.
+   */
   initialSorting?: SortingState;
   enableSorting?: boolean;
   multiSort?: boolean;
