@@ -170,6 +170,16 @@
   padding-inline-end: var(--space-5);
 }
 
+/*
+ * The roving focus: one cell at a time, ringed inside its edges so that neighbouring cells and the
+ * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
+ */
+.headerCell:focus-visible,
+.cell:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
 /* Compact cells keep to one line; the full text is the cell's title. */
 .table[data-density='compact'] .cell {
   padding-block: var(--space-2);

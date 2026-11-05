@@ -1,6 +1,17 @@
 import { flexRender, useTable, type RowData, type SortingState } from '@tanstack/react-table';
 import { useVirtualizer, type Range } from '@tanstack/react-virtual';
-import { useId, useRef, useState, type CSSProperties, type ElementType } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ElementType,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { RefreshIcon } from '../../icons/RefreshIcon';
 import { IconButton } from '../IconButton/IconButton';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
@@ -11,6 +22,7 @@ import styles from './DataGrid.module.css';
 import { defaultDataGridLabels } from './labels';
 import type { DataGridProps } from './types';
 import { useGridEntries } from './useGridEntries';
+import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 
 const ariaSortByDirection = { asc: 'ascending', desc: 'descending' } as const;
 
@@ -19,7 +31,6 @@ const emptyCellText = '—';
 const estimatedRowHeight = { comfortable: 40, compact: 34 } as const;
 const overscanRows = 8;
 const noExpandedIds: ReadonlySet<string> = new Set();
-const noPinnedIndexes: ReadonlySet<number> = new Set();
 
 /** The rows in view plus the overscan, plus any pinned entries (the focused one stays mounted). */
 function extractRange(range: Range, pinnedIndexes: ReadonlySet<number>): number[] {
@@ -31,6 +42,48 @@ function extractRange(range: Range, pinnedIndexes: ReadonlySet<number>): number[
     if (pinnedIndex >= 0 && pinnedIndex < range.count) indexes.add(pinnedIndex);
   }
   return [...indexes].sort((first, second) => first - second);
+}
+
+interface GridMetrics {
+  viewportHeight: number;
+  /** The sticky header band, which covers the top of the scroll area. */
+  headerHeight: number;
+}
+
+/** The scroll area's height and the header band's, kept current as either resizes. */
+function useGridMetrics(
+  scrollRef: RefObject<HTMLElement | null>,
+  headRef: RefObject<HTMLElement | null>,
+): GridMetrics {
+  const [metrics, setMetrics] = useState<GridMetrics>({ viewportHeight: 0, headerHeight: 0 });
+  useLayoutEffect(() => {
+    const scrollElement = scrollRef.current;
+    const head = headRef.current;
+    if (scrollElement === null || head === null) return;
+    const measure = () => {
+      const viewportHeight = scrollElement.clientHeight;
+      const headerHeight = head.offsetHeight;
+      setMetrics((current) =>
+        current.viewportHeight === viewportHeight && current.headerHeight === headerHeight
+          ? current
+          : { viewportHeight, headerHeight },
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(scrollElement);
+    observer.observe(head);
+    return () => observer.disconnect();
+  }, [scrollRef, headRef]);
+  return metrics;
+}
+
+function spacerRow(key: string, height: number, columnCount: number): ReactNode {
+  return (
+    <tr key={key} aria-hidden="true">
+      <td className={styles.spacerCell} colSpan={columnCount} style={{ height }} />
+    </tr>
+  );
 }
 
 function formatCellValue(value: unknown): string | null {
@@ -66,6 +119,8 @@ export function DataGrid<Row extends RowData>({
   emptyState,
   onRefresh,
   refreshing = false,
+  onRowClick,
+  onRowContextMenu,
   labels,
 }: DataGridProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
@@ -90,31 +145,139 @@ export function DataGrid<Row extends RowData>({
   });
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLTableSectionElement>(null);
+  const { viewportHeight, headerHeight } = useGridMetrics(scrollRef, headRef);
   const tableRows = table.getRowModel().rows;
   const entries = useGridEntries(tableRows, noExpandedIds);
+  const leafHeaders = table.getHeaderGroups()[0]?.headers ?? [];
+  const columnCount = table.getAllLeafColumns().length;
+  const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
+  const rowHeight = estimatedRowHeight[density];
+
+  const handleActivate = (
+    rowIndex: number,
+    columnIndex: number,
+    event: KeyboardEvent<HTMLElement>,
+  ) => {
+    if (event.key !== 'Enter') return;
+    if (rowIndex === 0) {
+      const column = leafHeaders[columnIndex]?.column;
+      if (column?.getCanSort()) {
+        event.preventDefault();
+        column.getToggleSortingHandler()?.(event);
+      }
+      return;
+    }
+    const entry = entries[rowIndex - 1];
+    // A cell with controls is entered instead; that is the hook's part.
+    if (entry?.kind !== 'row' || event.currentTarget.querySelector(cellControlSelector)) return;
+    if (onRowClick) {
+      event.preventDefault();
+      onRowClick(entry.row.original, event);
+    }
+  };
+
+  const handleContextMenu = (
+    rowIndex: number,
+    _columnIndex: number,
+    event: KeyboardEvent<HTMLElement>,
+  ) => {
+    const entry = entries[rowIndex - 1];
+    if (entry?.kind !== 'row' || !onRowContextMenu) return;
+    event.preventDefault();
+    onRowContextMenu(entry.row.original, event);
+  };
+
+  const keyboard = useGridKeyboard({
+    rowCount: stateKind ? 1 : entries.length + 1,
+    columnCount,
+    pageSize: Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight)),
+    onActivate: handleActivate,
+    onContextMenu: handleContextMenu,
+    // Called from key handlers only, after the virtualiser below exists.
+    scrollToEntry: (entryIndex) => virtualizer.scrollToIndex(entryIndex),
+  });
+  const focusedEntryIndex = keyboard.focusedCell.rowIndex - 1;
+  const pinnedIndexes = useMemo(
+    () => new Set(focusedEntryIndex >= 0 ? [focusedEntryIndex] : []),
+    [focusedEntryIndex],
+  );
+
   // The virtualiser is read only in this render and never handed to a memoised child.
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: entries.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => estimatedRowHeight[density],
+    estimateSize: () => rowHeight,
+    // Measured heights follow their row when a sort moves it.
+    getItemKey: (index) => {
+      const entry = entries[index];
+      return entry ? `${entry.kind}:${entry.row.id}` : index;
+    },
     overscan: overscanRows,
     initialRect: {
       width: scrollRef.current?.clientWidth ?? 0,
       height: scrollRef.current?.clientHeight ?? 0,
     },
-    // Task 4 passes the focused entry here so it stays mounted while scrolled out of view.
-    rangeExtractor: (range) => extractRange(range, noPinnedIndexes),
+    // The body starts below the sticky header band, which also covers the top of the view: the
+    // range starts where the body does, and a row scrolled into view lands below the band.
+    scrollMargin: headerHeight,
+    scrollPaddingStart: headerHeight,
+    // The focused entry stays mounted while it is scrolled out of view.
+    rangeExtractor: (range) => extractRange(range, pinnedIndexes),
   });
-  const virtualItems = virtualizer.getVirtualItems();
-  const firstItem = virtualItems[0];
-  const lastItem = virtualItems[virtualItems.length - 1];
-  const topSpacerHeight = firstItem ? firstItem.start : 0;
-  const bottomSpacerHeight = lastItem ? virtualizer.getTotalSize() - lastItem.end : 0;
-  const columnCount = table.getAllLeafColumns().length;
-  // A card that fills its parent is sized by it, so a maximum height has no place there.
-  const scrollStyle: CSSProperties | undefined = maxHeight && !fill ? { maxHeight } : undefined;
-  const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
+  const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
+  // Rows render in order with a spacer wherever the rendered entries leave a gap: above the
+  // window, below it, and between it and a focused entry scrolled far away.
+  const bodyRows: ReactNode[] = [];
+  let renderedEnd = headerHeight;
+  for (const virtualItem of virtualItems) {
+    const entry = entries[virtualItem.index];
+    if (!entry || entry.kind !== 'row') continue;
+    if (virtualItem.start > renderedEnd) {
+      bodyRows.push(
+        spacerRow(`gap-${virtualItem.index}`, virtualItem.start - renderedEnd, columnCount),
+      );
+    }
+    renderedEnd = virtualItem.end;
+    const { row } = entry;
+    const rowIndex = virtualItem.index + 1;
+    bodyRows.push(
+      <tr
+        key={row.id}
+        ref={virtualizer.measureElement}
+        data-index={virtualItem.index}
+        className={styles.row}
+        aria-rowindex={rowIndex + 1}
+      >
+        {row.getAllCells().map((cell, columnIndex) => (
+          <td
+            key={cell.id}
+            role="gridcell"
+            className={styles.cell}
+            aria-colindex={columnIndex + 1}
+            title={
+              density === 'compact'
+                ? compactTitle(cell.column.columnDef as DataGridColumnDef<Row>, row.original)
+                : undefined
+            }
+            {...keyboard.getCellProps(rowIndex, columnIndex)}
+          >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </td>
+        ))}
+      </tr>,
+    );
+  }
+  const bottomSpacerHeight = virtualItems.length
+    ? virtualizer.getTotalSize() + headerHeight - renderedEnd
+    : 0;
+  const scrollStyle: CSSProperties = {
+    // A card that fills its parent is sized by it, so a maximum height has no place there.
+    maxHeight: maxHeight && !fill ? maxHeight : undefined,
+    // A cell the browser scrolls to on focus lands below the sticky header band too.
+    scrollPaddingBlockStart: headerHeight || undefined,
+  };
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text.
   const stateAnnouncement =
@@ -160,6 +323,7 @@ export function DataGrid<Row extends RowData>({
         data-grid-scroll=""
       >
         <table
+          ref={keyboard.gridRef}
           className={styles.table}
           role="grid"
           aria-labelledby={headingId}
@@ -167,15 +331,14 @@ export function DataGrid<Row extends RowData>({
           aria-busy={loading || undefined}
           data-density={density}
         >
-          <thead className={styles.head}>
+          <thead ref={headRef} className={styles.head}>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} aria-rowindex={1}>
                 {headerGroup.headers.map((header, columnIndex) => {
                   const sortDirection = header.column.getIsSorted();
                   const canSort = header.column.getCanSort();
                   return (
-                    // The header cell is the sort control; keyboard operation arrives with
-                    // cell navigation, which makes headers focusable.
+                    // The header cell is the sort control: a click sorts, and so does Enter.
                     <th
                       key={header.id}
                       scope="col"
@@ -184,6 +347,7 @@ export function DataGrid<Row extends RowData>({
                       aria-sort={sortDirection ? ariaSortByDirection[sortDirection] : undefined}
                       data-sortable={canSort ? '' : undefined}
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                      {...keyboard.getCellProps(0, columnIndex)}
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {canSort ? (
@@ -223,57 +387,8 @@ export function DataGrid<Row extends RowData>({
                 </td>
               </tr>
             ) : null}
-            {!stateKind && topSpacerHeight > 0 ? (
-              <tr aria-hidden="true">
-                <td
-                  className={styles.spacerCell}
-                  colSpan={columnCount}
-                  style={{ height: topSpacerHeight }}
-                />
-              </tr>
-            ) : null}
-            {(stateKind ? [] : virtualItems).map((virtualItem) => {
-              const entry = entries[virtualItem.index];
-              if (!entry || entry.kind !== 'row') return null;
-              const { row } = entry;
-              return (
-                <tr
-                  key={row.id}
-                  ref={virtualizer.measureElement}
-                  data-index={virtualItem.index}
-                  className={styles.row}
-                  aria-rowindex={virtualItem.index + 2}
-                >
-                  {row.getAllCells().map((cell, columnIndex) => (
-                    <td
-                      key={cell.id}
-                      role="gridcell"
-                      className={styles.cell}
-                      aria-colindex={columnIndex + 1}
-                      title={
-                        density === 'compact'
-                          ? compactTitle(
-                              cell.column.columnDef as DataGridColumnDef<Row>,
-                              row.original,
-                            )
-                          : undefined
-                      }
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-            {!stateKind && bottomSpacerHeight > 0 ? (
-              <tr aria-hidden="true">
-                <td
-                  className={styles.spacerCell}
-                  colSpan={columnCount}
-                  style={{ height: bottomSpacerHeight }}
-                />
-              </tr>
-            ) : null}
+            {bodyRows}
+            {bottomSpacerHeight > 0 ? spacerRow('after', bottomSpacerHeight, columnCount) : null}
           </tbody>
         </table>
       </div>
