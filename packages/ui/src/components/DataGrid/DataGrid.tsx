@@ -24,7 +24,7 @@ import styles from './DataGrid.module.css';
 import { GridCheckbox } from './GridCheckbox';
 import { GridHeaderCell } from './GridHeaderCell';
 import { GridDetailRow, GridRow } from './GridRow';
-import { defaultDataGridLabels } from './labels';
+import { resolveDataGridLabels } from './labels';
 import type { DataGridProps, DataGridQuery, DataGridRowEvent } from './types';
 import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
@@ -173,7 +173,7 @@ export function DataGrid<Row extends RowData>({
   });
   const headingId = useId();
   const panelIdPrefix = useId();
-  const resolvedLabels = { ...defaultDataGridLabels, ...labels };
+  const resolvedLabels = resolveDataGridLabels(labels);
   const HeadingTag: ElementType = `h${headingLevel}`;
 
   const table = useTable({

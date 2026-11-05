@@ -234,6 +234,12 @@ describe('DataGrid', () => {
     renderGrid({ labels: { rowCount: (count) => `${count} items` } });
     expect(screen.getByText('10 items')).toBeInTheDocument();
   });
+
+  it('keeps the default for a label given as undefined', () => {
+    renderGrid({ labels: { rowCount: undefined, refresh: undefined }, onRefresh: vi.fn() });
+    expect(screen.getByText('10 rows')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+  });
 });
 
 describe('states, density and the toolbar', () => {

@@ -35,3 +35,9 @@ export const defaultDataGridLabels: DataGridLabels = {
   expandRow: (rowLabel) => `Show details for ${rowLabel}`,
   rowActions: 'Actions',
 };
+
+/** The defaults with the given labels over them; a label given as undefined keeps its default. */
+export function resolveDataGridLabels(labels: Partial<DataGridLabels> | undefined): DataGridLabels {
+  const givenLabels = Object.entries(labels ?? {}).filter(([, label]) => label !== undefined);
+  return { ...defaultDataGridLabels, ...Object.fromEntries(givenLabels) };
+}
