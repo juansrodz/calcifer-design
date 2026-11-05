@@ -1,9 +1,11 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installElementSize } from '../../../test/elementSize';
+import { Button } from '../Button/Button';
+import { Popover } from '../Popover/Popover';
 import { createDataGridColumnHelper } from './columns';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
@@ -346,6 +348,85 @@ describe('keyboard navigation', () => {
       expect.objectContaining({ type: 'keydown', key: 'F10' }),
     );
     expect(onRowContextMenu).toHaveBeenCalledTimes(2);
+  });
+
+  it('leaves focus in a popup opened from a cell when the grid renders again', async () => {
+    const user = userEvent.setup();
+    const columnsWithPopover = columnHelper.columns([
+      columnHelper.accessor('sku', { header: 'SKU' }),
+      columnHelper.display({
+        id: 'details',
+        header: 'Details',
+        cell: (context) => (
+          <Popover
+            heading={`About ${context.row.original.name}`}
+            trigger={<Button>Details for {context.row.original.name}</Button>}
+          >
+            <input aria-label="Note" />
+          </Popover>
+        ),
+      }),
+    ]);
+    const rows = makeInventoryRows(3);
+    const renderWith = (heading: string) => (
+      <>
+        <button type="button">Before</button>
+        <DataGrid<InventoryRow>
+          gridId="keyboard-grid"
+          heading={heading}
+          rows={rows}
+          columns={columnsWithPopover}
+          getRowId={(row) => row.id}
+        />
+        <button type="button">After</button>
+      </>
+    );
+    const { rerender } = render(renderWith('Inventory'));
+    await tabIntoGrid(user);
+    await user.keyboard('{ArrowDown}{ArrowRight}{Enter}');
+    const trigger = within(cellAt(2, 2)).getByRole('button');
+    expect(trigger).toHaveFocus();
+    await user.keyboard('{Enter}');
+    const popup = await screen.findByRole('dialog');
+    await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
+
+    rerender(renderWith('Inventory again'));
+    expect(screen.getByRole('dialog')).toBe(popup);
+    expect(popup.contains(document.activeElement)).toBe(true);
+
+    // Escape belongs to the popup: it closes and gives focus back to its trigger, not the cell.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+  });
+
+  it('forgets a position the rows shrank away from', async () => {
+    const user = userEvent.setup();
+    const rows = makeInventoryRows(10);
+    const renderWith = (count: number) => (
+      <>
+        <button type="button">Before</button>
+        <DataGrid<InventoryRow>
+          gridId="keyboard-grid"
+          heading="Inventory"
+          rows={rows.slice(0, count)}
+          columns={inventoryColumns}
+          getRowId={(row) => row.id}
+        />
+        <button type="button">After</button>
+      </>
+    );
+    const { rerender } = render(renderWith(10));
+    await tabIntoGrid(user);
+    await user.keyboard('{Control>}{End}{/Control}');
+    expectFocusAt(11, inventoryColumns.length);
+
+    rerender(renderWith(3));
+    expectFocusAt(4, inventoryColumns.length);
+
+    rerender(renderWith(10));
+    expectFocusAt(4, inventoryColumns.length);
+    expect(cellAt(11, inventoryColumns.length)).toHaveAttribute('tabindex', '-1');
   });
 
   it('keeps focus at the same position when the focused row is removed', async () => {

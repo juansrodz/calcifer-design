@@ -59,6 +59,14 @@ function controlsOf(cell: HTMLElement): HTMLElement[] {
   return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)];
 }
 
+/**
+ * React bubbles events along the component tree, so a popup a cell control portals elsewhere in
+ * the page still reaches the cell's handlers. Only events from the cell's own DOM count.
+ */
+function isFromCell(event: { currentTarget: HTMLElement; target: EventTarget }): boolean {
+  return event.target instanceof Node && event.currentTarget.contains(event.target);
+}
+
 /** `aria-rowindex` and `aria-colindex` count from 1; positions count from 0. */
 function cellAt(grid: HTMLElement, position: GridCellPosition): HTMLElement | null {
   return grid.querySelector<HTMLElement>(
@@ -115,6 +123,14 @@ export function useGridKeyboard({
     rowIndex: clamp(heldCell.rowIndex, 0, lastRow),
     columnIndex: clamp(heldCell.columnIndex, 0, lastColumn),
   };
+  if (
+    focusedCell.rowIndex !== heldCell.rowIndex ||
+    focusedCell.columnIndex !== heldCell.columnIndex
+  ) {
+    // Kept clamped, not just shown clamped: rows that grow back must not pull focus to the
+    // position they once shrank away from.
+    setHeldCell(focusedCell);
+  }
   const enteredCell = inside ? focusedCell : null;
 
   // Every commit: the cell to focus may render a commit after the move that asked for it, a
@@ -172,6 +188,7 @@ export function useGridKeyboard({
 
   const handleKeyDown = (position: GridCellPosition, event: KeyboardEvent<HTMLElement>) => {
     const cell = event.currentTarget;
+    if (!isFromCell(event)) return;
     if (event.target !== cell) {
       // Inside a cell every key belongs to its controls, except the one that leaves.
       if (event.key === 'Escape' && !event.defaultPrevented) {
@@ -234,12 +251,14 @@ export function useGridKeyboard({
       'data-focused': isFocused ? '' : undefined,
       onKeyDown: (event) => handleKeyDown(position, event),
       onFocus: (event) => {
+        if (!isFromCell(event)) return;
         hasFocusRef.current = true;
         if (!isFocused) setHeldCell(position);
         // A click on a control enters its cell as Enter would.
         setInside(event.target !== event.currentTarget);
       },
       onBlur: (event) => {
+        if (!isFromCell(event)) return;
         const next = event.relatedTarget;
         if (next instanceof Node && event.currentTarget.contains(next)) return;
         if (!(next instanceof Node && gridRef.current?.contains(next))) {
