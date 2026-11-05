@@ -20,6 +20,11 @@ export interface DataGridProps<Row extends RowData> {
   gridId: string;
   heading: string;
   headingLevel?: 2 | 3 | 4 | 5 | 6;
+  /**
+   * In server mode, pass a new array only when your data changes: after a query change the grid
+   * waits for a new `rows` array before it asks for more, so a copy made on every render would
+   * end that wait early.
+   */
   rows: Row[];
   /** Build with `createDataGridColumnHelper<Row>().columns([...])`, not a plain array literal. */
   columns: DataGridColumnDef<Row, unknown>[];

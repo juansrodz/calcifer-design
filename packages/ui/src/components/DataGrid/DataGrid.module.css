@@ -211,7 +211,10 @@
   text-align: center;
 }
 
+/* Header cells are positioned for their hairlines, so without a z-index the later ones would
+   paint over a pinned one as the columns pass under it. */
 .headerCell.pinnedHeader {
+  z-index: 1;
   background: var(--color-surface-1);
 }
 
@@ -383,6 +386,8 @@
 }
 
 .table[data-density='compact'] .cell:not(.pinnedCell) {
+  /* With no width of their own these columns would shrink to nothing under a short header. */
+  min-width: 3.75rem;
   max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

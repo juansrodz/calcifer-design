@@ -2,11 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { SortingState } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../Button/Button';
+import { createDataGridColumnHelper } from './columns';
 import { DataGrid } from './DataGrid';
 import {
   createMockInventoryServer,
   inventoryColumns,
+  makeFileRows,
   makeInventoryRows,
+  type FileRow,
   type InventoryRow,
 } from './fixtures';
 import type { DataGridQuery } from './types';
@@ -26,21 +29,55 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Basic: Story = {};
+export const Basic: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'A client-mode grid: click a header to sort, and arrow keys move between cells.',
+      },
+    },
+  },
+};
 
 export const Compact: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Compact density packs more rows into the same height and puts a title on cells that may be cut off.',
+      },
+    },
+  },
   args: { heading: 'Compact inventory', density: 'compact' },
 };
 
 export const Loading: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'While rows are on their way the grid shows skeleton rows and announces that it is loading.',
+      },
+    },
+  },
   args: { heading: 'Loading inventory', rows: [], loading: true },
 };
 
 export const Empty: Story = {
+  parameters: {
+    docs: { description: { story: 'With no rows the grid says so, and announces it.' } },
+  },
   args: { heading: 'Empty inventory', rows: [] },
 };
 
 export const WithRefresh: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'A toolbar with a refresh button and an app-supplied action beside it.',
+      },
+    },
+  },
   args: {
     heading: 'Inventory with refresh',
     onRefresh: () => undefined,
@@ -49,10 +86,26 @@ export const WithRefresh: Story = {
 };
 
 export const HighlightOnClick: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Click a row, or press Enter on it, to highlight it; do it again to clear the highlight.',
+      },
+    },
+  },
   args: { heading: 'Inventory with a highlighted row', highlightOnClick: true },
 };
 
-export const CheckboxSelection: Story = {
+export const Selection: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Checkboxes select rows. Shift and click selects a range, and the header checkbox selects every row.',
+      },
+    },
+  },
   args: {
     heading: 'Inventory with checkbox selection',
     selectionMode: 'multiple',
@@ -61,6 +114,13 @@ export const CheckboxSelection: Story = {
 };
 
 export const SelectionWithLockedRows: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'A row the app rules out cannot be selected, and select-all skips it.',
+      },
+    },
+  },
   args: {
     heading: 'Out of stock items cannot be selected',
     selectionMode: 'multiple',
@@ -70,6 +130,14 @@ export const SelectionWithLockedRows: Story = {
 };
 
 export const RowActions: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A trailing column of controls for each row, kept in view when the grid scrolls sideways.',
+      },
+    },
+  },
   args: {
     heading: 'Inventory with row actions',
     renderRowActions: (row) => (
@@ -95,7 +163,15 @@ function InventoryDetails({ row }: { row: InventoryRow }) {
   );
 }
 
-export const ExpandableRows: Story = {
+export const Expandable: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Rows with a toggle open a detail panel beneath them, here beside selection and row actions.',
+      },
+    },
+  },
   args: {
     heading: 'Inventory with details',
     selectionMode: 'multiple',
@@ -113,10 +189,25 @@ export const ExpandableRows: Story = {
 const largeRows = makeInventoryRows(5000);
 
 export const Large: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Five thousand rows in a scrolling body that only renders the rows in view; the header stays put.',
+      },
+    },
+  },
   args: { heading: 'Large inventory', rows: largeRows, maxHeight: '25rem' },
 };
 
 export const FillsItsParent: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'With fill set the grid takes the height of its parent instead of a maximum height.',
+      },
+    },
+  },
   args: { heading: 'Fills its parent', rows: largeRows, fill: true },
   decorators: [
     (StoryComponent) => (
@@ -201,5 +292,73 @@ function ServerModeGrid() {
 }
 
 export const ServerMode: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Rows come from a mock back end, fifty at a time, as the user scrolls. Sorting asks the server again, and the second page fails once to show the retry.',
+      },
+    },
+  },
   render: () => <ServerModeGrid />,
+};
+
+const fileColumnHelper = createDataGridColumnHelper<FileRow>();
+
+const fileColumns = fileColumnHelper.columns([
+  fileColumnHelper.accessor('name', { header: 'Name' }),
+  fileColumnHelper.accessor('kind', { header: 'Kind' }),
+  fileColumnHelper.accessor('size', {
+    header: 'Size',
+    cell: (context) =>
+      context.row.original.kind === 'folder'
+        ? '—'
+        : `${Math.round(context.getValue() / 1024).toLocaleString('en-US')} KB`,
+    textValue: (row) => (row.kind === 'folder' ? '' : String(row.size)),
+  }),
+  fileColumnHelper.accessor('modified', { header: 'Modified' }),
+]);
+
+const fileRows = makeFileRows(40);
+
+/** A file list: double click a row, or use its Open button, to open it. */
+function FileListGrid() {
+  const [opened, setOpened] = useState<string | undefined>(undefined);
+  return (
+    <div>
+      <DataGrid<FileRow>
+        gridId="file-list-story"
+        heading="Files"
+        rows={fileRows}
+        columns={fileColumns}
+        getRowId={(row) => row.id}
+        maxHeight="25rem"
+        highlightOnClick
+        onRowDoubleClick={(row) => setOpened(row.name)}
+        renderRowActions={(row) => (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={`Open ${row.name}`}
+            onClick={() => setOpened(row.name)}
+          >
+            Open
+          </Button>
+        )}
+      />
+      <p role="status">{opened === undefined ? 'Nothing opened yet.' : `Opened ${opened}.`}</p>
+    </div>
+  );
+}
+
+export const FileList: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Files and folders: click to highlight a row, double click to open it, or use its Open button.',
+      },
+    },
+  },
+  render: () => <FileListGrid />,
 };

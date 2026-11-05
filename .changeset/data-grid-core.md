@@ -1,0 +1,5 @@
+---
+'@calcifer-design/ui': minor
+---
+
+Add `DataGrid`, a virtualised data grid for large and server-backed lists, with `createDataGridColumnHelper` to build its columns. Release 1 renders only the rows in view (5,000 rows stay smooth) under a sticky header; sorts by one or several columns; moves by keyboard with one tab stop (arrows, Home, End, Page Up and Down, Ctrl+Home and Ctrl+End) and a row count and position that screen readers announce; and offers comfortable and compact density, loading, empty and error states, a toolbar with refresh and app-supplied actions, and a footer count. Rows can be highlighted on click, selected with checkboxes (shift-click ranges, select-all, locked rows), expanded to a detail panel, given a pinned actions column, and hear `onRowClick`, `onRowDoubleClick` and `onRowContextMenu`, with the context menu also on the keyboard. `mode="server"` hands sorting to the app, loads the next page as the user nears the end of the loaded rows, shows a retry when a load fails, and uses `totalRowCount` for the footer and `aria-rowcount`. Every word the grid shows can be replaced through `labels`.

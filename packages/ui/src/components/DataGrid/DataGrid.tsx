@@ -356,6 +356,10 @@ export function DataGrid<Row extends RowData>({
     count: entries.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
+    // Exact, not rounded to whole pixels as the default does: a row is rarely a whole number of
+    // pixels tall, and rounded sizes make the spacers disagree with the rows they stand for.
+    measureElement: (element, entry) =>
+      entry?.borderBoxSize[0]?.blockSize ?? element.getBoundingClientRect().height,
     getItemKey,
     overscan: overscanRows,
     initialRect: {
@@ -490,6 +494,10 @@ export function DataGrid<Row extends RowData>({
     knownRowCount + openPanelCount + 1,
     showsLoadError ? errorRowIndex : 0,
   );
+  // ARIA's "unknown total" is -1: more rows exist than the app has said how many. A shown load
+  // error holds the count at the rows it follows, since nothing more loads until a retry.
+  const totalIsUnknown =
+    serverMode && totalRowCount === undefined && hasMore && !stateKind && !showsLoadError;
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text.
   const stateAnnouncement =
@@ -539,7 +547,7 @@ export function DataGrid<Row extends RowData>({
           className={styles.table}
           role="grid"
           aria-labelledby={headingId}
-          aria-rowcount={stateKind ? 2 : rowCountOfGrid}
+          aria-rowcount={stateKind ? 2 : totalIsUnknown ? -1 : rowCountOfGrid}
           aria-colcount={columnCount}
           aria-multiselectable={selecting || undefined}
           aria-busy={loading || undefined}

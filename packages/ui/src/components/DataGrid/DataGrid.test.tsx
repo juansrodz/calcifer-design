@@ -40,6 +40,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   restoreElementSize();
 });
 
@@ -466,6 +467,34 @@ describe('virtualisation', () => {
     scrollGridTo(40 * 2000);
     expect(rowWithIndex(2002)).toBeDefined();
     expect(rowWithIndex(2)).toBeUndefined();
+  });
+
+  it('sizes the spacers from rows exactly as tall as they are, not rounded', () => {
+    // A row is rarely a whole number of pixels tall, and a spacer built from rounded heights
+    // would disagree with the rows it stands for, which shifts the scroll range as rows render.
+    restoreElementSize();
+    restoreElementSize = installElementSize({ viewportHeight: 400, rowHeight: 46.5 });
+    // A browser reports each row's exact box when it is first observed.
+    class RowSizeObserver {
+      constructor(private readonly callback: ResizeObserverCallback) {}
+      observe(target: Element) {
+        if (target.tagName !== 'TR') return;
+        const entry = { target, borderBoxSize: [{ blockSize: 46.5, inlineSize: 0 }] };
+        this.callback([entry as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+      }
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', RowSizeObserver);
+    const { container } = render(<Large />);
+    scrollGridTo(600);
+    const firstRow = container.querySelector('tbody > tr[data-index]') as HTMLElement;
+    const firstIndex = Number(firstRow.getAttribute('data-index'));
+    expect(firstIndex).toBeGreaterThan(0);
+    const spacerCell = container.querySelector(
+      'tbody > tr:not([aria-rowindex]) > td',
+    ) as HTMLElement;
+    expect(spacerCell.style.height).toBe(`${firstIndex * 46.5}px`);
   });
 
   it('keeps the header in place', () => {

@@ -12,6 +12,7 @@ export default tseslint.config(
       'apps/*/dist/**',
       '**/.rstack/**',
       '**/storybook-static/**',
+      '.superpowers/**',
       '**/*.module.css.d.ts',
     ],
   },

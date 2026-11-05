@@ -9,7 +9,7 @@ import { createDataGridColumnHelper } from './columns';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
 
-const { RowActions, ExpandableRows } = composeStories(stories);
+const { RowActions, Expandable } = composeStories(stories);
 
 interface ItemRow {
   id: string;
@@ -492,7 +492,7 @@ describe('stories', () => {
   });
 
   it('the expandable rows story has no axe violations', async () => {
-    const { container } = render(<ExpandableRows />);
+    const { container } = render(<Expandable />);
     expect(screen.getByText('Last updated')).toBeInTheDocument();
     // Items 4 and 8 are out of stock, so they have no details to show.
     expect(screen.getAllByRole('button', { name: /^Show details for / })).toHaveLength(8);

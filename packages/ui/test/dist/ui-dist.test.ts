@@ -67,6 +67,8 @@ describe('@calcifer-design/ui dist', () => {
       'FilterBar',
       'CardList',
       'Timeline',
+      'DataGrid',
+      'createDataGridColumnHelper',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

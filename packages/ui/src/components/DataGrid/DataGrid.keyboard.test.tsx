@@ -162,6 +162,31 @@ describe('keyboard navigation', () => {
     expect(document.activeElement).toBe(screen.getByRole('columnheader', { name: 'SKU' }));
   });
 
+  it('moving to the header row scrolls the first rows back into view', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Before</button>
+        <Large />
+      </>,
+    );
+    // jsdom has no `scrollTo`; a browser scrolls and then fires a scroll event, and so does this.
+    const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
+    scrollElement.scrollTo = ((options: ScrollToOptions) => {
+      scrollElement.scrollTop = options.top ?? 0;
+      scrollElement.dispatchEvent(new Event('scroll'));
+    }) as typeof scrollElement.scrollTo;
+    await tabIntoGrid(user);
+    await user.keyboard('{ArrowDown}');
+    scrollGridTo(40 * 3000);
+    expect(scrollElement.scrollTop).toBe(40 * 3000);
+
+    await user.keyboard('{Control>}{Home}{/Control}');
+    expect(document.activeElement).toBe(screen.getByRole('columnheader', { name: 'SKU' }));
+    await waitFor(() => expect(scrollElement.scrollTop).toBe(0));
+    expect(rowWithIndex(3)).toBeDefined();
+  });
+
   it('Page Down and Page Up move by a screen', async () => {
     const user = userEvent.setup();
     render(

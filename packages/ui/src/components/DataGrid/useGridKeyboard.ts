@@ -231,7 +231,9 @@ export function useGridKeyboard({
     if (next.rowIndex === focusedCell.rowIndex && next.columnIndex === focusedCell.columnIndex) {
       return;
     }
-    if (next.rowIndex > 0) scrollToEntry(next.rowIndex - 1);
+    // The header row stays in place while the body scrolls, so going to it brings the first entry
+    // into view instead.
+    scrollToEntry(Math.max(0, next.rowIndex - 1));
     pendingFocusRef.current = true;
     setHeldCell(next);
   };

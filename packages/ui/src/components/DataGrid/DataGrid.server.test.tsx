@@ -317,6 +317,15 @@ describe('server mode', () => {
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '1241');
   });
 
+  it('aria-rowcount is -1, the unknown total, while there is more and no total is known', () => {
+    const { rerender } = renderGrid();
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '-1');
+
+    // Everything is loaded: the count is known again, whether or not a total came with it.
+    rerender(gridElement({ hasMore: false }));
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '51');
+  });
+
   it('aria-rowcount adds the open panels to the total', () => {
     renderGrid({
       totalRowCount: 1240,
