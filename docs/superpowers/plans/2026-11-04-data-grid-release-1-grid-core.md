@@ -66,26 +66,26 @@ release 1 only.
 
 All under `packages/ui/`:
 
-| File | Responsibility |
-| --- | --- |
-| `src/components/DataGrid/types.ts` | Public types: `DataGridProps`, `DataGridQuery`, `DataGridFilterValue`, `DataGridDensity`, `DataGridMode` |
-| `src/components/DataGrid/columns.ts` | The TanStack feature set, `createDataGridColumnHelper`, `DataGridColumnDef`, `textValueOf` |
-| `src/components/DataGrid/labels.ts` | `DataGridLabels` and `defaultDataGridLabels` |
-| `src/components/DataGrid/DataGrid.tsx` | The component: card, header, table, footer, wiring of the hooks below |
-| `src/components/DataGrid/DataGrid.module.css` | All grid styles |
-| `src/components/DataGrid/useGridEntries.ts` | Flattens rows plus open detail panels into virtual entries |
-| `src/components/DataGrid/useGridKeyboard.ts` | Roving focus and every keyboard path |
-| `src/components/DataGrid/useLoadMore.ts` | Server mode's load-more trigger and its guard |
-| `src/components/DataGrid/GridCheckbox.tsx` | Base UI checkbox for cells, wearing `Checkbox.module.css` |
-| `src/components/DataGrid/fixtures.ts` | Deterministic story data and the mock server |
-| `src/components/DataGrid/DataGrid.stories.tsx` | Stories, the acceptance surface |
-| `src/components/DataGrid/DataGrid.test.tsx` | Rendering, sorting, states, density |
-| `src/components/DataGrid/DataGrid.keyboard.test.tsx` | Keyboard paths |
-| `src/components/DataGrid/DataGrid.selection.test.tsx` | Highlight, selection, row events |
-| `src/components/DataGrid/DataGrid.expand.test.tsx` | Row actions and expansion |
-| `src/components/DataGrid/DataGrid.server.test.tsx` | Server mode |
-| `src/icons/RefreshIcon.tsx`, `src/icons/ChevronRightIcon.tsx` | Icons, drawn like the existing ones in `src/icons/` |
-| `test/elementSize.ts` | jsdom layout stubs so the virtualiser renders rows |
+| File                                                          | Responsibility                                                                                           |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `src/components/DataGrid/types.ts`                            | Public types: `DataGridProps`, `DataGridQuery`, `DataGridFilterValue`, `DataGridDensity`, `DataGridMode` |
+| `src/components/DataGrid/columns.ts`                          | The TanStack feature set, `createDataGridColumnHelper`, `DataGridColumnDef`, `textValueOf`               |
+| `src/components/DataGrid/labels.ts`                           | `DataGridLabels` and `defaultDataGridLabels`                                                             |
+| `src/components/DataGrid/DataGrid.tsx`                        | The component: card, header, table, footer, wiring of the hooks below                                    |
+| `src/components/DataGrid/DataGrid.module.css`                 | All grid styles                                                                                          |
+| `src/components/DataGrid/useGridEntries.ts`                   | Flattens rows plus open detail panels into virtual entries                                               |
+| `src/components/DataGrid/useGridKeyboard.ts`                  | Roving focus and every keyboard path                                                                     |
+| `src/components/DataGrid/useLoadMore.ts`                      | Server mode's load-more trigger and its guard                                                            |
+| `src/components/DataGrid/GridCheckbox.tsx`                    | Base UI checkbox for cells, wearing `Checkbox.module.css`                                                |
+| `src/components/DataGrid/fixtures.ts`                         | Deterministic story data and the mock server                                                             |
+| `src/components/DataGrid/DataGrid.stories.tsx`                | Stories, the acceptance surface                                                                          |
+| `src/components/DataGrid/DataGrid.test.tsx`                   | Rendering, sorting, states, density                                                                      |
+| `src/components/DataGrid/DataGrid.keyboard.test.tsx`          | Keyboard paths                                                                                           |
+| `src/components/DataGrid/DataGrid.selection.test.tsx`         | Highlight, selection, row events                                                                         |
+| `src/components/DataGrid/DataGrid.expand.test.tsx`            | Row actions and expansion                                                                                |
+| `src/components/DataGrid/DataGrid.server.test.tsx`            | Server mode                                                                                              |
+| `src/icons/RefreshIcon.tsx`, `src/icons/ChevronRightIcon.tsx` | Icons, drawn like the existing ones in `src/icons/`                                                      |
+| `test/elementSize.ts`                                         | jsdom layout stubs so the virtualiser renders rows                                                       |
 
 Modified: `package.json` (dependency), `bun.lock`, `src/index.ts`, `test/dist/ui-dist.test.ts`, root
 `README.md` table, new `.changeset/data-grid-core.md`.
@@ -95,10 +95,12 @@ Modified: `package.json` (dependency), `bun.lock`, `src/index.ts`, `test/dist/ui
 ### Task 1: Public types, column helper, labels and a static grid
 
 **Files:**
+
 - Create: `types.ts`, `columns.ts`, `labels.ts`, `DataGrid.tsx`, `DataGrid.module.css`, `fixtures.ts`,
   `DataGrid.stories.tsx`, `DataGrid.test.tsx`
 
 **Interfaces:**
+
 - Produces (exact; later tasks implement the props, not redefine them):
 
 ```ts
@@ -116,13 +118,13 @@ export type DataGridRowEvent = React.MouseEvent<HTMLElement> | React.KeyboardEve
 export interface DataGridProps<Row extends RowData> {
   gridId: string;
   heading: string;
-  headingLevel?: 2 | 3 | 4 | 5 | 6;           // default 2
+  headingLevel?: 2 | 3 | 4 | 5 | 6; // default 2
   rows: Row[];
   columns: DataGridColumnDef<Row, unknown>[];
   getRowId: (row: Row) => string;
-  getRowLabel?: (row: Row) => string;         // default: first column's text value
+  getRowLabel?: (row: Row) => string; // default: first column's text value
   actions?: ReactNode;
-  mode?: DataGridMode;                        // default 'client'
+  mode?: DataGridMode; // default 'client'
   totalRowCount?: number;
   hasMore?: boolean;
   loadingMore?: boolean;
@@ -130,12 +132,12 @@ export interface DataGridProps<Row extends RowData> {
   onLoadMore?: () => void;
   onQueryChange?: (query: DataGridQuery) => void;
   initialSorting?: SortingState;
-  enableSorting?: boolean;                    // default true
-  multiSort?: boolean;                        // default false
+  enableSorting?: boolean; // default true
+  multiSort?: boolean; // default false
   loading?: boolean;
   emptyState?: ReactNode;
-  density?: DataGridDensity;                  // default 'comfortable'
-  maxHeight?: string;                         // default 'calc(100dvh - 16rem)'
+  density?: DataGridDensity; // default 'comfortable'
+  maxHeight?: string; // default 'calc(100dvh - 16rem)'
   fill?: boolean;
   hideFooter?: boolean;
   onRefresh?: () => void;
@@ -143,7 +145,7 @@ export interface DataGridProps<Row extends RowData> {
   highlightOnClick?: boolean;
   highlightedRowId?: string | null;
   onHighlightChange?: (rowId: string | null) => void;
-  selectionMode?: 'none' | 'multiple';        // default 'none'
+  selectionMode?: 'none' | 'multiple'; // default 'none'
   selectedRowIds?: string[];
   defaultSelectedRowIds?: string[];
   onSelectedRowIdsChange?: (rowIds: string[]) => void;
@@ -175,19 +177,19 @@ export function textValueOf<Row extends RowData>(column: DataGridColumnDef<Row, 
 ```ts
 // labels.ts — exact English defaults
 export interface DataGridLabels {
-  toolbar: string;                                   // 'Grid tools'
-  refresh: string;                                   // 'Refresh'
-  rowCount: (count: number) => string;               // '1,240 rows' / '1 row'
+  toolbar: string; // 'Grid tools'
+  refresh: string; // 'Refresh'
+  rowCount: (count: number) => string; // '1,240 rows' / '1 row'
   loadedRowCount: (loaded: number, total: number) => string; // 'Showing 50 of 1,240 rows'
-  selectedCount: (count: number) => string;          // '3 selected'
-  loading: string;                                   // 'Loading rows…'
-  loadingMore: string;                               // 'Loading more rows…'
-  retry: string;                                     // 'Try again'
-  empty: string;                                     // 'No rows to show.'
-  selectAll: string;                                 // 'Select all rows'
-  selectRow: (rowLabel: string) => string;           // 'Select Hex bolt M6'
-  expandRow: (rowLabel: string) => string;           // 'Show details for Hex bolt M6'
-  rowActions: string;                                // 'Actions'
+  selectedCount: (count: number) => string; // '3 selected'
+  loading: string; // 'Loading rows…'
+  loadingMore: string; // 'Loading more rows…'
+  retry: string; // 'Try again'
+  empty: string; // 'No rows to show.'
+  selectAll: string; // 'Select all rows'
+  selectRow: (rowLabel: string) => string; // 'Select Hex bolt M6'
+  expandRow: (rowLabel: string) => string; // 'Show details for Hex bolt M6'
+  rowActions: string; // 'Actions'
 }
 ```
 
@@ -197,7 +199,7 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
 `kind: 'folder' | 'file'`, `size`, `modified`), and `inventoryColumns` built with the helper.
 
 - [ ] **Step 1: Write the failing tests** in `DataGrid.test.tsx` against a `Basic` story (10 inventory
-  rows, heading 'Inventory'):
+      rows, heading 'Inventory'):
   - `renders a grid named by its heading` — `getByRole('grid', { name: 'Inventory' })`, a level-2
     heading 'Inventory', column headers equal to the columns, axe clean.
   - `shows an em dash for an empty data cell` — a row whose `location` is `''` and one with `'   '`
@@ -211,24 +213,26 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
   - `shows the row count in the footer` — `'10 rows'`; `hideFooter` removes it.
 - [ ] **Step 2: Run them; expect failures** (module not found).
 - [ ] **Step 3: Implement.** Feature set: `rowSortingFeature`, `rowSelectionFeature`,
-  `rowExpandingFeature`, `createSortedRowModel()` and the same three `sortFns` `DataTable` registers.
-  Markup: a card `<section aria-labelledby={headingId}>` → header (heading + `actions`) →
-  `<div data-grid-scroll>` holding `<table role="grid" aria-labelledby={headingId}>` with a sticky
-  `<thead>` → footer. Each header and cell has `aria-colindex`; the sort control is the header itself
-  (no inner button — Task 4 makes headers focusable cells); `aria-sort` as in `DataTable`. Look:
-  `--color-card-border` 1px border, `--radius-lg`, `--elevation-1`; semibold `--text-sm` headers;
-  hairline row dividers, no stripes; very faint hover tint (`--color-surface-2`).
+      `rowExpandingFeature`, `createSortedRowModel()` and the same three `sortFns` `DataTable` registers.
+      Markup: a card `<section aria-labelledby={headingId}>` → header (heading + `actions`) →
+      `<div data-grid-scroll>` holding `<table role="grid" aria-labelledby={headingId}>` with a sticky
+      `<thead>` → footer. Each header and cell has `aria-colindex`; the sort control is the header itself
+      (no inner button — Task 4 makes headers focusable cells); `aria-sort` as in `DataTable`. Look:
+      `--color-card-border` 1px border, `--radius-lg`, `--elevation-1`; semibold `--text-sm` headers;
+      hairline row dividers, no stripes; very faint hover tint (`--color-surface-2`).
 - [ ] **Step 4: Run the tests; expect PASS.** Then `cd packages/ui && bun run build && bunx tsc -p tsconfig.json`.
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid renders a sortable, named grid`.
 
 ### Task 2: Virtualised rows and height
 
 **Files:**
+
 - Create: `test/elementSize.ts`, `useGridEntries.ts`
 - Modify: `packages/ui/package.json`, `bun.lock`, `DataGrid.tsx`, `DataGrid.module.css`,
   `DataGrid.stories.tsx`, `DataGrid.test.tsx`
 
 **Interfaces:**
+
 - Produces: `installElementSize({ viewportHeight, rowHeight }: { viewportHeight: number; rowHeight: number }): () => void`
   in `test/elementSize.ts` — stubs `getBoundingClientRect`/`offsetHeight` so `[data-grid-scroll]` has
   `viewportHeight` and each `tr` has `rowHeight`, installs a no-op `ResizeObserver` if missing, and
@@ -239,7 +243,7 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
   header).
 
 - [ ] **Step 1: Add the dependency.** `cd packages/ui && bun add @tanstack/react-virtual@3.14.21`, then
-  set the range to `^3.14.21` in `package.json`, `bun install`, and confirm `bun.lock` resolves 3.14.21.
+      set the range to `^3.14.21` in `package.json`, `bun install`, and confirm `bun.lock` resolves 3.14.21.
 - [ ] **Step 2: Write the failing tests** (`describe('virtualisation')`, with `installElementSize({ viewportHeight: 400, rowHeight: 40 })`):
   - `renders only the visible rows of a large set` — `Large` story (5,000 rows): fewer than 40 data rows
     in the DOM; the grid has `aria-rowcount="5001"`; the first data row has `aria-rowindex="2"`.
@@ -248,21 +252,23 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
   - `keeps the header in place` — the header row is in the DOM after scrolling.
 - [ ] **Step 3: Run them; expect failures.**
 - [ ] **Step 4: Implement** with `useVirtualizer` on `[data-grid-scroll]`: `estimateSize` 40
-  (comfortable) or 34 (compact), `measureElement` on each rendered `tr`, `initialRect` of the
-  scroll element's current size, and a top and bottom spacer `<tr aria-hidden="true">` with a single
-  cell of the missing height. `rangeExtractor` takes a `pinnedIndexes` set so Task 4 can keep the
-  focused entry rendered. Height: the scroll area has `max-height: maxHeight` and shrinks to its rows;
-  `fill` makes the card `height: 100%` with the scroll area flexing to fill it.
+      (comfortable) or 34 (compact), `measureElement` on each rendered `tr`, `initialRect` of the
+      scroll element's current size, and a top and bottom spacer `<tr aria-hidden="true">` with a single
+      cell of the missing height. `rangeExtractor` takes a `pinnedIndexes` set so Task 4 can keep the
+      focused entry rendered. Height: the scroll area has `max-height: maxHeight` and shrinks to its rows;
+      `fill` makes the card `height: 100%` with the scroll area flexing to fill it.
 - [ ] **Step 5: Run the tests; expect PASS** (and Task 1's still pass).
 - [ ] **Step 6: Commit** — `feat(ui): DataGrid renders only the visible rows`.
 
 ### Task 3: Loading, empty, density and the toolbar
 
 **Files:**
+
 - Create: `src/icons/RefreshIcon.tsx`
 - Modify: `DataGrid.tsx`, `DataGrid.module.css`, `DataGrid.stories.tsx`, `DataGrid.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `IconButton` (`label`, `loading`), `Toolbar` (`aria-label`), `Spinner`, `LiveRegion`.
 
 - [ ] **Step 1: Write the failing tests:**
@@ -275,24 +281,25 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
     `aria-busy` and does not call it again.
   - `compact density keeps cells to one line and titles them` — `density="compact"`: the grid has
     `data-density="compact"`; a text cell has `title` equal to its text value.
-  - `labels replace the English defaults` — `labels={{ rowCount: (count) => \`${count} filas\` }}`
-    shows `'10 filas'`.
+  - `labels replace the English defaults` — `labels={{ rowCount: (count) => \`${count} filas\` }}`shows`'10 filas'`.
 - [ ] **Step 2: Run them; expect failures.**
 - [ ] **Step 3: Implement.** States render as one full-width row inside `<tbody>` so the grid keeps
-  its header; the loading and empty messages are announced politely. Comfortable cells about
-  `var(--space-3)` vertical padding and wrap (`overflow-wrap: anywhere`); compact cells one line,
-  `text-overflow: ellipsis`, `title` from `textValueOf`. The toolbar sits right of the heading, then
-  `actions`; the cluster wraps, the heading does not.
+      its header; the loading and empty messages are announced politely. Comfortable cells about
+      `var(--space-3)` vertical padding and wrap (`overflow-wrap: anywhere`); compact cells one line,
+      `text-overflow: ellipsis`, `title` from `textValueOf`. The toolbar sits right of the heading, then
+      `actions`; the cluster wraps, the heading does not.
 - [ ] **Step 4: Run; expect PASS.**
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid's loading and empty states, density and toolbar`.
 
 ### Task 4: Keyboard grid navigation
 
 **Files:**
+
 - Create: `useGridKeyboard.ts`, `DataGrid.keyboard.test.tsx`
 - Modify: `DataGrid.tsx`, `DataGrid.module.css`
 
 **Interfaces:**
+
 - Produces: `useGridKeyboard({ rowCount, columnCount, pageSize, onActivate, onContextMenu, scrollToEntry })`
   returning `{ focusedCell: { rowIndex: number; columnIndex: number }, getCellProps(rowIndex, columnIndex) }`
   where `rowIndex` 0 is the header row and `columnIndex` counts every rendered column, and
@@ -322,16 +329,17 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
     `components/DatePicker/Calendar.tsx` does.
 - [ ] **Step 2: Run; expect failures.**
 - [ ] **Step 3: Implement.** One focused cell has `tabIndex=0`, every other cell and every control
-  inside cells `-1` until the user enters the cell (then the cell's controls get `0` and the cell
-  `-1`; Escape restores). Moving to an unrendered row calls `scrollToEntry` first and focuses after it
-  renders. The focused entry index goes into Task 2's `pinnedIndexes`. The focused cell shows
-  `--color-focus` with `--focus-ring-width`, visible in forced colours.
+      inside cells `-1` until the user enters the cell (then the cell's controls get `0` and the cell
+      `-1`; Escape restores). Moving to an unrendered row calls `scrollToEntry` first and focuses after it
+      renders. The focused entry index goes into Task 2's `pinnedIndexes`. The focused cell shows
+      `--color-focus` with `--focus-ring-width`, visible in forced colours.
 - [ ] **Step 4: Run; expect PASS** (and earlier tests).
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid moves by keyboard with one tab stop`.
 
 ### Task 5: Row events and highlight
 
 **Files:**
+
 - Create: `DataGrid.selection.test.tsx`
 - Modify: `DataGrid.tsx`, `DataGrid.module.css`, `DataGrid.stories.tsx`
 
@@ -348,20 +356,22 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
     link: clicking either calls its own handler and neither `onRowClick` nor the highlight.
 - [ ] **Step 2: Run; expect failures.**
 - [ ] **Step 3: Implement.** A click counts as a row click unless its target is inside an interactive
-  element within the cell (`button, a[href], input, select, textarea, [role="button"], [tabindex]`
-  other than the cell itself). Highlighted and selected rows share `--color-accent-wash`, deepening
-  to `--color-accent-soft` on hover; pointer cursor only when a click handler or `highlightOnClick` is
-  set.
+      element within the cell (`button, a[href], input, select, textarea, [role="button"], [tabindex]`
+      other than the cell itself). Highlighted and selected rows share `--color-accent-wash`, deepening
+      to `--color-accent-soft` on hover; pointer cursor only when a click handler or `highlightOnClick` is
+      set.
 - [ ] **Step 4: Run; expect PASS.**
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid reports row events and highlights a row`.
 
 ### Task 6: Checkbox selection
 
 **Files:**
+
 - Create: `GridCheckbox.tsx`
 - Modify: `DataGrid.tsx`, `DataGrid.module.css`, `DataGrid.stories.tsx`, `DataGrid.selection.test.tsx`
 
 **Interfaces:**
+
 - Produces: `GridCheckbox({ label, checked, indeterminate, disabled, onCheckedChange, tabIndex })` —
   Base UI `Checkbox.Root` with `aria-label={label}`, classes from `Checkbox.module.css` and
   `field.module.css`'s `controlBox`, `CheckIcon`/`MinusIcon` as `Checkbox` uses them. No visible label.
@@ -384,15 +394,16 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
     (`onHighlightChange(null)`), and `onSelectedRowIdsChange(['item-6'])` is called exactly once.
 - [ ] **Step 2: Run; expect failures.**
 - [ ] **Step 3: Implement.** The checkbox column is about 40px wide, `position: sticky` at the start;
-  the selection is TanStack row selection keyed by `getRowId`. The range anchor is the last row toggled
-  by a plain or Ctrl/Cmd action. Space on the header cell toggles select-all. A checkbox click is not
-  a row click.
+      the selection is TanStack row selection keyed by `getRowId`. The range anchor is the last row toggled
+      by a plain or Ctrl/Cmd action. Space on the header cell toggles select-all. A checkbox click is not
+      a row click.
 - [ ] **Step 4: Run; expect PASS.**
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid selects rows with checkboxes, ranges and select-all`.
 
 ### Task 7: Row actions and expandable rows
 
 **Files:**
+
 - Create: `src/icons/ChevronRightIcon.tsx`, `DataGrid.expand.test.tsx`
 - Modify: `DataGrid.tsx`, `DataGrid.module.css`, `useGridEntries.ts`, `DataGrid.stories.tsx`
 
@@ -411,20 +422,22 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
     name descending: the panel still follows 'Item 3'; the selection is cleared.
 - [ ] **Step 2: Run; expect failures.**
 - [ ] **Step 3: Implement.** The expand column is about 28px, sticky after the checkbox column (offset
-  by its width); the chevron rotates 90° (no motion under `prefers-reduced-motion`). The actions
-  column is about 72px, `position: sticky` at the end with a hairline divider before it. The detail
-  row sits on `--color-surface-1` with a top divider and `var(--space-3) var(--space-4)` padding, and
-  is measured by the virtualiser like any row. Expansion state is keyed by row id.
+      by its width); the chevron rotates 90° (no motion under `prefers-reduced-motion`). The actions
+      column is about 72px, `position: sticky` at the end with a hairline divider before it. The detail
+      row sits on `--color-surface-1` with a top divider and `var(--space-3) var(--space-4)` padding, and
+      is measured by the virtualiser like any row. Expansion state is keyed by row id.
 - [ ] **Step 4: Run; expect PASS.**
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid's row actions column and expandable rows`.
 
 ### Task 8: Server mode
 
 **Files:**
+
 - Create: `useLoadMore.ts`, `DataGrid.server.test.tsx`
 - Modify: `DataGrid.tsx`, `fixtures.ts`, `DataGrid.stories.tsx`
 
 **Interfaces:**
+
 - Produces in `fixtures.ts`: `createMockInventoryServer({ total, pageSize, delayMs, failOnPage })`
   returning `fetchPage({ page, sorting }): Promise<{ rows: InventoryRow[]; total: number }>` (sorts
   server-side, rejects once on `failOnPage`), and a `ServerMode` story wiring it to the grid with
@@ -450,32 +463,33 @@ fields `id`, `sku`, `name`, `category`, `location`, `quantity`, `status: 'in sto
   - The `ServerMode` story loads, sorts and recovers from `failOnPage` (compose it; use `findBy`).
 - [ ] **Step 2: Run; expect failures.**
 - [ ] **Step 3: Implement.** `manualSorting` in server mode. Threshold: start loading when the last
-  rendered entry is within two viewports' worth of rows of the end. The guard records the loaded count
-  at the last request and only requests again when that count changes or the user presses retry.
+      rendered entry is within two viewports' worth of rows of the end. The guard records the loaded count
+      at the last request and only requests again when that count changes or the user presses retry.
 - [ ] **Step 4: Run; expect PASS.**
 - [ ] **Step 5: Commit** — `feat(ui): DataGrid's server mode loads pages as the user scrolls`.
 
 ### Task 9: Exports, documentation and release
 
 **Files:**
+
 - Modify: `src/index.ts`, `test/dist/ui-dist.test.ts`, root `README.md`, `DataGrid.stories.tsx`
 - Create: `.changeset/data-grid-core.md`
 
 - [ ] **Step 1: Export** `DataGrid`, `createDataGridColumnHelper` and the types `DataGridProps`,
-  `DataGridColumnDef`, `DataGridQuery`, `DataGridFilterValue`, `DataGridDensity`, `DataGridMode`,
-  `DataGridRowEvent`, `DataGridLabels` from `src/index.ts`; add `'DataGrid'` and
-  `'createDataGridColumnHelper'` to the dist test's export list; add `DataGrid` to the README table.
+      `DataGridColumnDef`, `DataGridQuery`, `DataGridFilterValue`, `DataGridDensity`, `DataGridMode`,
+      `DataGridRowEvent`, `DataGridLabels` from `src/index.ts`; add `'DataGrid'` and
+      `'createDataGridColumnHelper'` to the dist test's export list; add `DataGrid` to the README table.
 - [ ] **Step 2: Stories.** Make sure these exist and each has a short docs description: `Basic`,
-  `Large` (5,000 rows), `Compact`, `Loading`, `Empty`, `Selection`, `Expandable` (with row actions),
-  `ServerMode`, `FileList` (file rows, double click to open, actions). Every story passes axe in a
-  test.
+      `Large` (5,000 rows), `Compact`, `Loading`, `Empty`, `Selection`, `Expandable` (with row actions),
+      `ServerMode`, `FileList` (file rows, double click to open, actions). Every story passes axe in a
+      test.
 - [ ] **Step 3: Changeset** `.changeset/data-grid-core.md`, `'@calcifer-design/ui': minor`, one
-  paragraph on what release 1 adds.
+      paragraph on what release 1 adds.
 - [ ] **Step 4: Full check.** `bun run check` from the repo root. Expected: exit 0, lint, typecheck,
-  unit, dist and Storybook build all green.
+      unit, dist and Storybook build all green.
 - [ ] **Step 5: Browser check in Chromium** against the built Storybook (`bun run storybook` or
-  `storybook-static`): `Large` scrolls smoothly and keeps the header; keyboard travel from the first
-  to the last row; `ServerMode` loads more and recovers from its failure; both themes; 390px width
-  scrolls sideways with pinned columns in place; forced-colours emulation shows focus and selection.
-  Record the results in the branch's final report.
+      `storybook-static`): `Large` scrolls smoothly and keeps the header; keyboard travel from the first
+      to the last row; `ServerMode` loads more and recovers from its failure; both themes; 390px width
+      scrolls sideways with pinned columns in place; forced-colours emulation shows focus and selection.
+      Record the results in the branch's final report.
 - [ ] **Step 6: Commit** — `docs(ui): DataGrid exports, stories and changeset`.
