@@ -1,0 +1,433 @@
+/*
+ * One card: header row, scrolling body with a sticky header band, footer. The card shrinks to
+ * its rows; the scroll area stops growing at its max-height and scrolls from there.
+ */
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-1);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+}
+
+.heading {
+  margin: 0;
+  white-space: nowrap;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* The toolbar and the actions wrap among themselves, apart from the heading. */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The default leaves 16rem for a page header; the maxHeight prop overrides it inline. */
+.scroll {
+  max-height: calc(100dvh - var(--space-10) * 2);
+  overflow: auto;
+}
+
+/* Fill the parent: the card takes its height and the scroll area flexes into what is left. */
+.fill {
+  height: 100%;
+}
+
+.scrollFill {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The band stays in place while the body scrolls and follows it sideways. */
+.head {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--color-surface-1);
+}
+
+/*
+ * The hairlines are pseudo-elements, not borders: in a collapsed table a border does not travel
+ * with a sticky cell, so it would be left behind when the body scrolls.
+ */
+.headerCell {
+  position: relative;
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.headerCell::before,
+.headerCell::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  border-block-start: 1px solid var(--color-border);
+  pointer-events: none;
+}
+
+.headerCell::before {
+  inset-block-start: 0;
+}
+
+.headerCell::after {
+  inset-block-end: 0;
+}
+
+.headerCell[data-sortable] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortIcon {
+  margin-inline-start: var(--space-1);
+}
+
+.sortIcon::after {
+  content: '\2195';
+  color: var(--color-text-subtle);
+}
+
+.sortIcon[data-direction='asc']::after {
+  content: '\2191';
+  color: var(--color-link);
+}
+
+.sortIcon[data-direction='desc']::after {
+  content: '\2193';
+  color: var(--color-link);
+}
+
+.row {
+  border-bottom: 1px solid var(--color-border);
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background: var(--color-surface-2);
+  }
+}
+
+/* A pointer only where a click does something. */
+.row[data-clickable] {
+  cursor: pointer;
+}
+
+/* Highlighted and selected rows share one tint, which deepens on hover. */
+.row[data-highlighted],
+.row[aria-selected='true'] {
+  background: var(--color-accent-wash);
+}
+
+@media (hover: hover) {
+  .row[data-highlighted]:hover,
+  .row[aria-selected='true']:hover {
+    background: var(--color-accent-soft);
+  }
+}
+
+/* Forced colours erase the tint, so an outline in the text colour marks the row instead. */
+@media (forced-colors: active) {
+  .row[data-highlighted],
+  .row[aria-selected='true'] {
+    outline-style: solid;
+    outline-width: var(--focus-ring-width);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+  }
+}
+
+/*
+ * Comfortable cells wrap anywhere, so a long unbroken value never widens the grid. A column with no
+ * width of its own would shrink to a letter or two under a short header, so each keeps 3.75rem.
+ */
+.cell {
+  min-width: calc(var(--space-3) * 5);
+  padding: var(--space-3);
+  vertical-align: middle;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* The outer columns line up with the card's own inset. */
+.headerCell:first-child,
+.cell:first-child {
+  padding-inline-start: var(--space-5);
+}
+
+.headerCell:last-child,
+.cell:last-child {
+  padding-inline-end: var(--space-5);
+}
+
+/*
+ * Pinned columns stay in place while the grid scrolls sideways: the checkbox and expand columns at
+ * the start, the row actions column at the end. A sticky cell must cover what passes under it, so
+ * it paints the card's surface and the row's tint is laid over that. The doubled selectors outrank
+ * the outer-column padding above.
+ */
+.headerCell.pinnedHeader,
+.cell.pinnedCell {
+  position: sticky;
+  padding-inline: 0;
+  text-align: center;
+}
+
+/* Header cells are positioned for their hairlines, so without a z-index the later ones would
+   paint over a pinned one as the columns pass under it. */
+.headerCell.pinnedHeader {
+  z-index: 1;
+  background: var(--color-surface-1);
+}
+
+.cell.pinnedCell {
+  background-color: var(--color-surface-raised);
+}
+
+@media (hover: hover) {
+  .row:hover .cell.pinnedCell {
+    background-image: linear-gradient(var(--color-surface-2), var(--color-surface-2));
+  }
+}
+
+.row[data-highlighted] .cell.pinnedCell,
+.row[aria-selected='true'] .cell.pinnedCell {
+  background-image: linear-gradient(var(--color-accent-wash), var(--color-accent-wash));
+}
+
+@media (hover: hover) {
+  .row[data-highlighted]:hover .cell.pinnedCell,
+  .row[aria-selected='true']:hover .cell.pinnedCell {
+    background-image: linear-gradient(var(--color-accent-soft), var(--color-accent-soft));
+  }
+}
+
+/* The checkbox column: 2.5rem (about 40px), first at the start. */
+.headerCell.selectHeader,
+.cell.selectCell {
+  inset-inline-start: 0;
+  width: calc(var(--space-2) * 5);
+  min-width: calc(var(--space-2) * 5);
+  max-width: calc(var(--space-2) * 5);
+}
+
+/* The expand column: its button and a little room, 1.75rem (about 28px), after any checkboxes. */
+.headerCell.expandHeader,
+.cell.expandCell {
+  inset-inline-start: 0;
+  width: calc(var(--space-5) + var(--space-1));
+  min-width: calc(var(--space-5) + var(--space-1));
+  max-width: calc(var(--space-5) + var(--space-1));
+}
+
+.selectHeader + .expandHeader,
+.selectCell + .expandCell {
+  inset-inline-start: calc(var(--space-2) * 5);
+}
+
+.expandButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.expandButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.expandButton svg {
+  width: var(--space-4);
+  height: var(--space-4);
+  transition-property: rotate;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* Open, the chevron turns from the reading direction to point down at the panel. */
+.expandButton[aria-expanded='true'] svg {
+  rotate: 90deg;
+}
+
+/* The grid marks a right-to-left computed direction, whether a dir attribute or a stylesheet set it. */
+.table[data-rtl] .expandButton svg {
+  scale: -1 1;
+}
+
+.table[data-rtl] .expandButton[aria-expanded='true'] svg {
+  rotate: -90deg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expandButton svg {
+    transition: none;
+  }
+}
+
+/*
+ * The row actions column: 4.5rem (about 72px), at the end, with a hairline before it. The header's hairline
+ * joins its top and bottom ones, which are pseudo-elements for the reason given above.
+ */
+.headerCell.actionsHeader,
+.cell.actionsCell {
+  inset-inline-end: 0;
+  width: calc(var(--space-5) * 3);
+  min-width: calc(var(--space-5) * 3);
+  max-width: calc(var(--space-5) * 3);
+}
+
+.cell.actionsCell::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-inline-start: 1px solid var(--color-border);
+  pointer-events: none;
+}
+
+.headerCell.actionsHeader::after {
+  inset-block-start: 0;
+  border-inline-start: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--color-border);
+}
+
+/*
+ * An expanded row's detail panel: one cell across the row on a slightly tinted surface, with a
+ * divider above it. Its content wraps freely, compact density included.
+ */
+.detailRow {
+  border-block: 1px solid var(--color-border);
+}
+
+.detailCell {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-1);
+  color: var(--color-text);
+}
+
+/* The error row closes the body: the message and its retry button, centred. */
+.errorCell {
+  padding: var(--space-3) var(--space-5);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.errorContent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/*
+ * The roving focus: one cell at a time, ringed inside its edges so that neighbouring cells and the
+ * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
+ */
+.headerCell:focus-visible,
+.cell:focus-visible,
+.detailCell:focus-visible,
+.errorCell:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+/*
+ * Compact cells keep to one line; the full text is the cell's title. Pinned cells keep their own
+ * width and let their controls' focus rings show.
+ */
+.table[data-density='compact'] .cell {
+  padding-block: var(--space-2);
+}
+
+/* The zero maximum lets the ellipsis cut a cell; the minimum width above still holds. */
+.table[data-density='compact'] .cell:not(.pinnedCell) {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The message fills the body's width, centred, under the header band. */
+.stateCell {
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.spacerCell {
+  padding: 0;
+  border: 0;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  border-block-start: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* The row count keeps to the end, whether or not the selection count sits before it. */
+.rowCount {
+  margin-inline-start: auto;
+}

@@ -122,3 +122,15 @@ export { CardList } from './components/CardList/CardList';
 export type { CardListProps } from './components/CardList/CardList';
 export { Timeline } from './components/Timeline/Timeline';
 export type { TimelineProps, TimelineItem, TimelineTone } from './components/Timeline/Timeline';
+export { DataGrid } from './components/DataGrid/DataGrid';
+export { createDataGridColumnHelper } from './components/DataGrid/columns';
+export type { DataGridColumnDef } from './components/DataGrid/columns';
+export type {
+  DataGridProps,
+  DataGridQuery,
+  DataGridFilterValue,
+  DataGridDensity,
+  DataGridMode,
+  DataGridRowEvent,
+} from './components/DataGrid/types';
+export type { DataGridLabels } from './components/DataGrid/labels';

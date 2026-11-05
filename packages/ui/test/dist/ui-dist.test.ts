@@ -67,6 +67,8 @@ describe('@calcifer-design/ui dist', () => {
       'FilterBar',
       'CardList',
       'Timeline',
+      'DataGrid',
+      'createDataGridColumnHelper',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
@@ -79,6 +81,13 @@ describe('@calcifer-design/ui dist', () => {
     expect(buttonCss).toBeDefined();
     const css = await readFile(buttonCss ?? '', 'utf8');
     expect(css).toMatch(/\.[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\b/);
+  });
+
+  // Stories, tests and the sample data they share are for this repository, not for consumers.
+  it('ships no story, test or fixture modules', async () => {
+    const entries = await readdir(distRoot, { recursive: true });
+    const devOnly = entries.filter((entry) => /(\.stories|\.test|(^|\/)fixtures)\./.test(entry));
+    expect(devOnly).toEqual([]);
   });
 
   it('ships base.css and the declarations', async () => {
