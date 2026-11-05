@@ -39,6 +39,10 @@ export const WithRefresh: Story = {
   },
 };
 
+export const HighlightOnClick: Story = {
+  args: { heading: 'Inventory with a highlighted row', highlightOnClick: true },
+};
+
 const largeRows = makeInventoryRows(5000);
 
 export const Large: Story = {

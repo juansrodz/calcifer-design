@@ -73,6 +73,24 @@ describe('DataGrid', () => {
     );
   });
 
+  it('counts every rendered column on the grid', () => {
+    render(<Basic />);
+    expect(screen.getByRole('grid')).toHaveAttribute(
+      'aria-colcount',
+      String(screen.getAllByRole('columnheader').length),
+    );
+  });
+
+  it('renders without a ResizeObserver', () => {
+    vi.stubGlobal('ResizeObserver', undefined);
+    try {
+      renderGrid();
+      expect(bodyRows()).toHaveLength(10);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('shows an em dash for an empty data cell', () => {
     const locations = ['', '   ', 'A-01'];
     const rows = makeInventoryRows(3).map((row, index) => ({
@@ -318,6 +336,8 @@ describe('states, density and the toolbar', () => {
     const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
     await userEvent.click(within(toolbar).getByRole('button', { name: 'Refresh' }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
+    // A () => void callback is called bare, not handed the click event.
+    expect(onRefresh).toHaveBeenCalledWith();
   });
 
   it('does not refresh again while refreshing', async () => {

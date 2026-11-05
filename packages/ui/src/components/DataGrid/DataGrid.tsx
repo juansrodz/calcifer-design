@@ -1,6 +1,7 @@
 import { flexRender, useTable, type RowData, type SortingState } from '@tanstack/react-table';
 import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import {
+  useCallback,
   useId,
   useLayoutEffect,
   useMemo,
@@ -9,6 +10,7 @@ import {
   type CSSProperties,
   type ElementType,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -20,7 +22,7 @@ import { Toolbar, ToolbarButton } from '../Toolbar/Toolbar';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
 import { defaultDataGridLabels } from './labels';
-import type { DataGridProps } from './types';
+import type { DataGridProps, DataGridRowEvent } from './types';
 import { useGridEntries } from './useGridEntries';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 
@@ -70,6 +72,8 @@ function useGridMetrics(
       );
     };
     measure();
+    // Without a ResizeObserver (a bare jsdom) the size is read once and never follows.
+    if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);
     observer.observe(scrollElement);
     observer.observe(head);
@@ -90,6 +94,19 @@ function formatCellValue(value: unknown): string | null {
   if (value === null || value === undefined) return emptyCellText;
   const text = typeof value === 'string' ? value : String(value);
   return text.trim() === '' ? emptyCellText : text;
+}
+
+/**
+ * Whether a mouse event on a row is a click on the row: it came from the row's own DOM (not a popup
+ * a control portalled elsewhere), and not from a control inside a cell, which has its own handler.
+ */
+function isRowEvent(event: MouseEvent<HTMLElement>): boolean {
+  const { target, currentTarget } = event;
+  if (!(target instanceof Element) || !currentTarget.contains(target)) return false;
+  const cell = target.closest('td');
+  if (cell === null) return false;
+  const control = target.closest(cellControlSelector);
+  return control === null || control === cell || !cell.contains(control);
 }
 
 /** A compact cell is one line with an ellipsis, so its full text is the title. */
@@ -119,11 +136,18 @@ export function DataGrid<Row extends RowData>({
   emptyState,
   onRefresh,
   refreshing = false,
+  highlightOnClick = false,
+  highlightedRowId,
+  onHighlightChange,
   onRowClick,
+  onRowDoubleClick,
   onRowContextMenu,
   labels,
 }: DataGridProps<Row>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
+  const [ownHighlightedRowId, setOwnHighlightedRowId] = useState<string | null>(null);
+  // A highlightedRowId prop, null included, hands the highlight to the consumer.
+  const highlightedId = highlightedRowId === undefined ? ownHighlightedRowId : highlightedRowId;
   const headingId = useId();
   const resolvedLabels = { ...defaultDataGridLabels, ...labels };
   const HeadingTag: ElementType = `h${headingLevel}`;
@@ -154,6 +178,15 @@ export function DataGrid<Row extends RowData>({
   const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
   const rowHeight = estimatedRowHeight[density];
 
+  /** A click, or Enter on a cell: the consumer hears of it, and the highlight toggles. */
+  const clickRow = (row: { id: string; original: Row }, event: DataGridRowEvent) => {
+    onRowClick?.(row.original, event);
+    if (!highlightOnClick) return;
+    const next = highlightedId === row.id ? null : row.id;
+    onHighlightChange?.(next);
+    if (highlightedRowId === undefined) setOwnHighlightedRowId(next);
+  };
+
   const handleActivate = (
     rowIndex: number,
     columnIndex: number,
@@ -171,9 +204,9 @@ export function DataGrid<Row extends RowData>({
     const entry = entries[rowIndex - 1];
     // A cell with controls is entered instead; that is the hook's part.
     if (entry?.kind !== 'row' || event.currentTarget.querySelector(cellControlSelector)) return;
-    if (onRowClick) {
+    if (onRowClick || highlightOnClick) {
       event.preventDefault();
-      onRowClick(entry.row.original, event);
+      clickRow(entry.row, event);
     }
   };
 
@@ -203,17 +236,23 @@ export function DataGrid<Row extends RowData>({
     [focusedEntryIndex],
   );
 
+  // Measured heights follow their row when a sort moves it. A new function would make the
+  // virtualiser rebuild its measurements, so this changes only when the entries do.
+  const getItemKey = useCallback(
+    (index: number) => {
+      const entry = entries[index];
+      return entry ? `${entry.kind}:${entry.row.id}` : index;
+    },
+    [entries],
+  );
+
   // The virtualiser is read only in this render and never handed to a memoised child.
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: entries.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
-    // Measured heights follow their row when a sort moves it.
-    getItemKey: (index) => {
-      const entry = entries[index];
-      return entry ? `${entry.kind}:${entry.row.id}` : index;
-    },
+    getItemKey,
     overscan: overscanRows,
     initialRect: {
       width: scrollRef.current?.clientWidth ?? 0,
@@ -249,6 +288,28 @@ export function DataGrid<Row extends RowData>({
         data-index={virtualItem.index}
         className={styles.row}
         aria-rowindex={rowIndex + 1}
+        aria-selected={highlightedId === row.id ? true : undefined}
+        data-highlighted={highlightedId === row.id ? '' : undefined}
+        data-clickable={onRowClick || highlightOnClick ? '' : undefined}
+        onClick={(event) => {
+          if (isRowEvent(event)) clickRow(row, event);
+        }}
+        onDoubleClick={
+          onRowDoubleClick
+            ? (event) => {
+                if (isRowEvent(event)) onRowDoubleClick(row.original, event);
+              }
+            : undefined
+        }
+        onContextMenu={
+          onRowContextMenu
+            ? (event) => {
+                if (!isRowEvent(event)) return;
+                event.preventDefault();
+                onRowContextMenu(row.original, event);
+              }
+            : undefined
+        }
       >
         {row.getAllCells().map((cell, columnIndex) => (
           <td
@@ -302,7 +363,7 @@ export function DataGrid<Row extends RowData>({
               <Toolbar aria-label={resolvedLabels.toolbar}>
                 <ToolbarButton
                   loading={refreshing}
-                  onClick={onRefresh}
+                  onClick={() => onRefresh()}
                   render={
                     <IconButton label={resolvedLabels.refresh} size="sm">
                       <RefreshIcon />
@@ -328,6 +389,7 @@ export function DataGrid<Row extends RowData>({
           role="grid"
           aria-labelledby={headingId}
           aria-rowcount={stateKind ? 2 : entries.length + 1}
+          aria-colcount={columnCount}
           aria-busy={loading || undefined}
           data-density={density}
         >

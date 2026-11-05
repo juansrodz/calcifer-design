@@ -151,6 +151,34 @@
   }
 }
 
+/* A pointer only where a click does something. */
+.row[data-clickable] {
+  cursor: pointer;
+}
+
+/* Highlighted and selected rows share one tint, which deepens on hover. */
+.row[data-highlighted],
+.row[aria-selected='true'] {
+  background: var(--color-accent-wash);
+}
+
+@media (hover: hover) {
+  .row[data-highlighted]:hover,
+  .row[aria-selected='true']:hover {
+    background: var(--color-accent-soft);
+  }
+}
+
+/* Forced colours erase the tint, so an outline in the text colour marks the row instead. */
+@media (forced-colors: active) {
+  .row[data-highlighted],
+  .row[aria-selected='true'] {
+    outline-style: solid;
+    outline-width: var(--focus-ring-width);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+  }
+}
+
 /* Comfortable cells wrap anywhere, so a long unbroken value never widens the grid. */
 .cell {
   padding: var(--space-3);
