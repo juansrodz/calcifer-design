@@ -46,6 +46,13 @@ export interface GridCellProps {
   'data-focused': '' | undefined;
 }
 
+/** The props of the cell at a position; a cell spanning several columns gives its `columnSpan`. */
+export type GetCellProps = (
+  rowIndex: number,
+  columnIndex: number,
+  columnSpan?: number,
+) => GridCellProps;
+
 /**
  * What counts as a control inside a cell. Controls are out of the tab order until the user enters
  * their cell, and a click on one is not a click on its row.
@@ -135,6 +142,10 @@ function covers(start: GridCellPosition, columnSpan: number, target: GridCellPos
   );
 }
 
+function isSamePosition(first: GridCellPosition, second: GridCellPosition): boolean {
+  return first.rowIndex === second.rowIndex && first.columnIndex === second.columnIndex;
+}
+
 function clamp(value: number, lowest: number, highest: number): number {
   return Math.min(Math.max(value, lowest), Math.max(highest, lowest));
 }
@@ -172,7 +183,7 @@ export function useGridKeyboard({
   scrollToEntry,
 }: UseGridKeyboardOptions): {
   focusedCell: GridCellPosition;
-  getCellProps: (rowIndex: number, columnIndex: number, columnSpan?: number) => GridCellProps;
+  getCellProps: GetCellProps;
   gridRef: RefObject<HTMLTableElement | null>;
 } {
   const gridRef = useRef<HTMLTableElement>(null);
@@ -186,14 +197,12 @@ export function useGridKeyboard({
 
   const lastRow = rowCount - 1;
   const lastColumn = columnCount - 1;
-  const focusedCell: GridCellPosition = {
-    rowIndex: clamp(heldCell.rowIndex, 0, lastRow),
-    columnIndex: clamp(heldCell.columnIndex, 0, lastColumn),
-  };
-  if (
-    focusedCell.rowIndex !== heldCell.rowIndex ||
-    focusedCell.columnIndex !== heldCell.columnIndex
-  ) {
+  const clampToGrid = (position: GridCellPosition): GridCellPosition => ({
+    rowIndex: clamp(position.rowIndex, 0, lastRow),
+    columnIndex: clamp(position.columnIndex, 0, lastColumn),
+  });
+  const focusedCell = clampToGrid(heldCell);
+  if (!isSamePosition(focusedCell, heldCell)) {
     // Kept clamped, not just shown clamped: rows that grow back must not pull focus to the
     // position they once shrank away from.
     setHeldCell(focusedCell);
@@ -236,13 +245,8 @@ export function useGridKeyboard({
   }, [enteredRow, enteredColumn]);
 
   const moveTo = (target: GridCellPosition) => {
-    const next = {
-      rowIndex: clamp(target.rowIndex, 0, lastRow),
-      columnIndex: clamp(target.columnIndex, 0, lastColumn),
-    };
-    if (next.rowIndex === focusedCell.rowIndex && next.columnIndex === focusedCell.columnIndex) {
-      return;
-    }
+    const next = clampToGrid(target);
+    if (isSamePosition(next, focusedCell)) return;
     if (next.rowIndex > 0) {
       scrollToEntry(next.rowIndex - 1);
     } else if (focusedCell.rowIndex > 0) {

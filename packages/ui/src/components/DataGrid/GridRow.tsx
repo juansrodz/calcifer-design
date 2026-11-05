@@ -5,7 +5,7 @@ import { textValueOf, type DataGridColumnDef, type DataGridFeatures } from './co
 import styles from './DataGrid.module.css';
 import { GridCheckbox } from './GridCheckbox';
 import type { DataGridDensity } from './types';
-import { cellControlSelector, type GridCellProps } from './useGridKeyboard';
+import { cellControlSelector, type GetCellProps } from './useGridKeyboard';
 
 /**
  * The row's own cell an event happened in, or null when it came from elsewhere: from a popup a
@@ -33,6 +33,20 @@ function isRowEvent(event: MouseEvent<HTMLElement>): boolean {
 /** The checkbox and expand cells take every click in them as a toggle, not as a row click. */
 function isRowClick(event: MouseEvent<HTMLElement>): boolean {
   return isRowEvent(event) && !rowCellOf(event)?.hasAttribute('data-toggle-cell');
+}
+
+type RowMouseHandler = (event: MouseEvent<HTMLElement>) => void;
+
+function onlyRowClicks(handler: RowMouseHandler): RowMouseHandler {
+  return (event) => {
+    if (isRowClick(event)) handler(event);
+  };
+}
+
+function onlyRowEvents(handler: RowMouseHandler): RowMouseHandler {
+  return (event) => {
+    if (isRowEvent(event)) handler(event);
+  };
 }
 
 /** A compact cell is one line with an ellipsis, so its full text is the title. */
@@ -82,7 +96,7 @@ export interface GridRowProps<Row extends RowData> {
   expander?: GridRowExpander;
   /** Fills the row actions column at the end; absent without one. */
   renderRowActions?: (row: Row) => ReactNode;
-  getCellProps: (rowIndex: number, columnIndex: number, columnSpan?: number) => GridCellProps;
+  getCellProps: GetCellProps;
   /** The handlers hear only clicks on the row itself, not on its cells' controls. */
   onClick: (event: MouseEvent<HTMLElement>) => void;
   onDoubleClick?: (event: MouseEvent<HTMLElement>) => void;
@@ -113,30 +127,24 @@ export function GridRow<Row extends RowData>({
   const selecting = checkbox !== undefined;
   const expandColumn = selecting ? 1 : 0;
   const cells = row.getAllCells();
-  const onlyWhen =
-    (accepts: (event: MouseEvent<HTMLElement>) => boolean) =>
-    (handler: (event: MouseEvent<HTMLElement>) => void) =>
-    (event: MouseEvent<HTMLElement>) => {
-      if (accepts(event)) handler(event);
-    };
-  const onlyRowClicks = onlyWhen(isRowClick);
+  // With checkboxes aria-selected is the selection and the highlight is the current row;
+  // without them the highlight is the only selection there is.
+  let ariaSelected: boolean | undefined;
+  if (selecting) ariaSelected = checkbox.selectable ? checkbox.selected : undefined;
+  else ariaSelected = highlighted || undefined;
   return (
     <tr
       ref={measureRef}
       data-index={entryIndex}
       className={styles.row}
       aria-rowindex={rowIndex + 1}
-      // With checkboxes aria-selected is the selection and the highlight is the current row;
-      // without them the highlight is the only selection there is.
-      aria-selected={
-        selecting ? (checkbox.selectable ? checkbox.selected : undefined) : highlighted || undefined
-      }
+      aria-selected={ariaSelected}
       aria-current={selecting && highlighted ? 'true' : undefined}
       data-highlighted={highlighted ? '' : undefined}
       data-clickable={clickable ? '' : undefined}
       onClick={onlyRowClicks(onClick)}
       onDoubleClick={onDoubleClick ? onlyRowClicks(onDoubleClick) : undefined}
-      onContextMenu={onContextMenu ? onlyWhen(isRowEvent)(onContextMenu) : undefined}
+      onContextMenu={onContextMenu ? onlyRowEvents(onContextMenu) : undefined}
     >
       {checkbox ? (
         <td
@@ -221,7 +229,7 @@ export interface GridDetailRowProps {
   measureRef: (element: HTMLTableRowElement | null) => void;
   columnCount: number;
   panelId: string;
-  getCellProps: GridRowProps<RowData>['getCellProps'];
+  getCellProps: GetCellProps;
   children: ReactNode;
 }
 
@@ -252,6 +260,20 @@ export function GridDetailRow({
       >
         {children}
       </td>
+    </tr>
+  );
+}
+
+export interface GridSpacerRowProps {
+  height: number;
+  columnCount: number;
+}
+
+/** Holds the place of entries the virtualiser leaves unrendered, so the body keeps its height. */
+export function GridSpacerRow({ height, columnCount }: GridSpacerRowProps) {
+  return (
+    <tr aria-hidden="true">
+      <td className={styles.spacerCell} colSpan={columnCount} style={{ height }} />
     </tr>
   );
 }

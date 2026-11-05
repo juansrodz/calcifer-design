@@ -44,6 +44,10 @@ export function installElementSize({
     return 0;
   }
 
+  function widthOf(element: Element): number {
+    return isGridScroll(element) ? viewportWidth : 0;
+  }
+
   Object.defineProperty(elementPrototype, 'clientHeight', {
     configurable: true,
     get(this: HTMLElement) {
@@ -53,7 +57,7 @@ export function installElementSize({
   Object.defineProperty(elementPrototype, 'clientWidth', {
     configurable: true,
     get(this: HTMLElement) {
-      return isGridScroll(this) ? viewportWidth : 0;
+      return widthOf(this);
     },
   });
   Object.defineProperty(elementPrototype, 'offsetHeight', {
@@ -64,7 +68,7 @@ export function installElementSize({
   });
   elementPrototype.getBoundingClientRect = function getBoundingClientRect(this: HTMLElement) {
     const height = heightOf(this);
-    const width = isGridScroll(this) ? viewportWidth : 0;
+    const width = widthOf(this);
     return {
       top: 0,
       left: 0,

@@ -7,23 +7,17 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type ElementType,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from 'react';
-import { RefreshIcon } from '../../icons/RefreshIcon';
-import a11yStyles from '../../styles/a11y.module.css';
-import { Button } from '../Button/Button';
-import { IconButton } from '../IconButton/IconButton';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
-import { Spinner } from '../Spinner/Spinner';
-import { Toolbar, ToolbarButton } from '../Toolbar/Toolbar';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
-import { GridCheckbox } from './GridCheckbox';
-import { GridHeaderCell } from './GridHeaderCell';
-import { GridDetailRow, GridRow } from './GridRow';
+import { GridCardHeader } from './GridCardHeader';
+import { GridHeaderRow } from './GridHeaderRow';
+import { GridDetailRow, GridRow, GridSpacerRow } from './GridRow';
+import { GridErrorRow, GridStateRow, type GridStateKind } from './GridStateRows';
 import { resolveDataGridLabels } from './labels';
 import type { DataGridProps, DataGridQuery, DataGridRowEvent } from './types';
 import { useGridEntries, type GridEntry } from './useGridEntries';
@@ -38,6 +32,8 @@ const emptyCellText = '—';
 
 const estimatedRowHeight = { comfortable: 40, compact: 34 } as const;
 const overscanRows = 8;
+/** Two viewports' worth of rows from the end of the loaded rows is near enough to ask for more. */
+const loadAheadViewports = 2;
 
 /**
  * The rows in view plus the overscan, plus any pinned entries (the focused one stays mounted). An
@@ -63,22 +59,7 @@ function extractRange(
   return [...indexes].sort((first, second) => first - second);
 }
 
-/** Two viewports' worth of rows from the end of the loaded rows is near enough to ask for more. */
-const loadAheadViewports = 2;
-
-function isEmptyNode(node: ReactNode): boolean {
-  return node === undefined || node === null || node === false || node === '';
-}
-
-function spacerRow(key: string, height: number, columnCount: number): ReactNode {
-  return (
-    <tr key={key} aria-hidden="true">
-      <td className={styles.spacerCell} colSpan={columnCount} style={{ height }} />
-    </tr>
-  );
-}
-
-function formatCellValue(value: unknown): string | null {
+function formatCellValue(value: unknown): string {
   if (value === null || value === undefined) return emptyCellText;
   const text = typeof value === 'string' ? value : String(value);
   return text.trim() === '' ? emptyCellText : text;
@@ -174,7 +155,6 @@ export function DataGrid<Row extends RowData>({
   const headingId = useId();
   const panelIdPrefix = useId();
   const resolvedLabels = resolveDataGridLabels(labels);
-  const HeadingTag: ElementType = `h${headingLevel}`;
 
   const table = useTable({
     features: dataGridFeatures,
@@ -230,9 +210,12 @@ export function DataGrid<Row extends RowData>({
   const panelIdOf = (row: { index: number }) => `${panelIdPrefix}-detail-${row.index}`;
   // A failed first page is the error row alone, with no 'no rows' message beside it.
   const showsLoadError = serverMode && loadError !== undefined && !loading;
-  const stateKind = loading ? 'loading' : entries.length === 0 && !showsLoadError ? 'empty' : null;
+  let stateKind: GridStateKind | null = null;
+  if (loading) stateKind = 'loading';
+  else if (entries.length === 0 && !showsLoadError) stateKind = 'empty';
   const rowHeight = estimatedRowHeight[density];
   const rowsPerViewport = Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight));
+  const rowsClickable = Boolean(onRowClick || highlightOnClick);
 
   /** A click, or Enter on a cell: the consumer hears of it, and the highlight toggles. */
   const clickRow = (row: { id: string; original: Row }, event: DataGridRowEvent) => {
@@ -307,7 +290,7 @@ export function DataGrid<Row extends RowData>({
     const entry = entries[rowIndex - 1];
     // A cell with controls is entered instead; that is the hook's part.
     if (entry?.kind !== 'row' || event.currentTarget.querySelector(cellControlSelector)) return;
-    if (onRowClick || highlightOnClick) {
+    if (rowsClickable) {
       event.preventDefault();
       clickRow(entry.row, event);
     }
@@ -321,7 +304,7 @@ export function DataGrid<Row extends RowData>({
     keyboardContextMenuCellRef.current = null;
   };
 
-  const handleContextMenu = (
+  const handleContextMenuKey = (
     rowIndex: number,
     _columnIndex: number,
     event: KeyboardEvent<HTMLElement>,
@@ -334,11 +317,20 @@ export function DataGrid<Row extends RowData>({
     onRowContextMenu(entry.row.original, event);
   };
 
+  const handleRowContextMenu = (row: { original: Row }, event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    const pressedCell = keyboardContextMenuCellRef.current;
+    keyboardContextMenuCellRef.current = null;
+    // The echo of a key press that already called the handler.
+    if (pressedCell !== null && pressedCell === (event.target as Element).closest('td')) return;
+    onRowContextMenu?.(row.original, event);
+  };
+
   const keyboard = useGridKeyboard({
     rowCount: stateKind ? 1 : entries.length + 1 + (showsLoadError ? 1 : 0),
     columnCount,
     onActivate: handleActivate,
-    onContextMenu: handleContextMenu,
+    onContextMenu: handleContextMenuKey,
     // Both called from key handlers only, after the virtualiser below exists.
     scrollToEntry: (entryIndex) => virtualizer.scrollToIndex(entryIndex),
     // The rows the virtualiser measured in view; before it has, the estimate.
@@ -409,7 +401,11 @@ export function DataGrid<Row extends RowData>({
     if (!entry) continue;
     if (virtualItem.start > renderedEnd) {
       bodyRows.push(
-        spacerRow(`gap-${virtualItem.index}`, virtualItem.start - renderedEnd, columnCount),
+        <GridSpacerRow
+          key={`gap-${virtualItem.index}`}
+          height={virtualItem.start - renderedEnd}
+          columnCount={columnCount}
+        />,
       );
     }
     renderedEnd = virtualItem.end;
@@ -438,7 +434,7 @@ export function DataGrid<Row extends RowData>({
         density={density}
         columnOffset={columnOffset}
         highlighted={highlightedId === row.id}
-        clickable={Boolean(onRowClick || highlightOnClick)}
+        clickable={rowsClickable}
         checkbox={
           selecting
             ? {
@@ -468,23 +464,7 @@ export function DataGrid<Row extends RowData>({
         onDoubleClick={
           onRowDoubleClick ? (event) => onRowDoubleClick(row.original, event) : undefined
         }
-        onContextMenu={
-          onRowContextMenu
-            ? (event) => {
-                event.preventDefault();
-                const pressedCell = keyboardContextMenuCellRef.current;
-                keyboardContextMenuCellRef.current = null;
-                // The echo of a key press that already called the handler.
-                if (
-                  pressedCell !== null &&
-                  pressedCell === (event.target as Element).closest('td')
-                ) {
-                  return;
-                }
-                onRowContextMenu(row.original, event);
-              }
-            : undefined
-        }
+        onContextMenu={onRowContextMenu ? (event) => handleRowContextMenu(row, event) : undefined}
       />,
     );
   }
@@ -499,54 +479,41 @@ export function DataGrid<Row extends RowData>({
   };
   // The error row comes after the last entry, as the header is row 1.
   const errorRowIndex = entries.length + 2;
-  // The header, every row the app has (not only those loaded) and the open panels.
+  // Every row the app has, not only those loaded.
   const knownRowCount =
     serverMode && totalRowCount !== undefined ? Math.max(totalRowCount, rows.length) : rows.length;
-  // The error row follows the last entry, whatever the grid knows of rows it has not loaded.
-  const rowCountOfGrid = Math.max(
+  // The header, every known row and the open panels. The error row follows the last entry,
+  // whatever the grid knows of rows it has not loaded.
+  let ariaRowCount = Math.max(
     knownRowCount + openPanelCount + 1,
     showsLoadError ? errorRowIndex : 0,
   );
   // ARIA's "unknown total" is -1: more rows exist than the app has said how many.
-  const totalIsUnknown = serverMode && totalRowCount === undefined && hasMore && !stateKind;
+  if (serverMode && totalRowCount === undefined && hasMore) ariaRowCount = -1;
+  // The header and the state row.
+  if (stateKind) ariaRowCount = 2;
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text.
-  const stateAnnouncement =
-    stateKind === 'loading'
-      ? resolvedLabels.loading
-      : stateKind === 'empty'
-        ? resolvedLabels.empty
-        : '';
+  let stateLabel = '';
+  if (stateKind === 'loading') stateLabel = resolvedLabels.loading;
+  if (stateKind === 'empty') stateLabel = resolvedLabels.empty;
 
   return (
     <section
       className={fill ? `${styles.card} ${styles.fill}` : styles.card}
       aria-labelledby={headingId}
     >
-      <header className={styles.header}>
-        <HeadingTag id={headingId} className={styles.heading}>
-          {heading}
-        </HeadingTag>
-        {onRefresh || actions ? (
-          <div className={styles.cluster}>
-            {onRefresh ? (
-              <Toolbar aria-label={resolvedLabels.toolbar}>
-                <ToolbarButton
-                  loading={refreshing}
-                  onClick={() => onRefresh()}
-                  render={
-                    <IconButton label={resolvedLabels.refresh} size="sm">
-                      <RefreshIcon />
-                    </IconButton>
-                  }
-                />
-              </Toolbar>
-            ) : null}
-            {actions ? <div className={styles.actions}>{actions}</div> : null}
-          </div>
-        ) : null}
-      </header>
-      <LiveRegion message={stateAnnouncement} politeness="polite" />
+      <GridCardHeader
+        heading={heading}
+        headingLevel={headingLevel}
+        headingId={headingId}
+        actions={actions}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        toolbarLabel={resolvedLabels.toolbar}
+        refreshLabel={resolvedLabels.refresh}
+      />
+      <LiveRegion message={stateLabel} politeness="polite" />
       <div
         ref={scrollRef}
         className={fill ? `${styles.scroll} ${styles.scrollFill}` : styles.scroll}
@@ -558,7 +525,7 @@ export function DataGrid<Row extends RowData>({
           className={styles.table}
           role="grid"
           aria-labelledby={headingId}
-          aria-rowcount={stateKind ? 2 : totalIsUnknown ? -1 : rowCountOfGrid}
+          aria-rowcount={ariaRowCount}
           aria-colcount={columnCount}
           aria-multiselectable={selecting || undefined}
           aria-busy={loading || undefined}
@@ -571,102 +538,54 @@ export function DataGrid<Row extends RowData>({
         >
           <thead ref={headRef} className={styles.head}>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} aria-rowindex={1}>
-                {selecting ? (
-                  <th
-                    scope="col"
-                    className={`${styles.headerCell} ${styles.pinnedHeader} ${styles.selectHeader}`}
-                    aria-colindex={1}
-                    {...keyboard.getCellProps(0, 0)}
-                  >
-                    <GridCheckbox
-                      label={resolvedLabels.selectAll}
-                      checked={selection.allSelected}
-                      indeterminate={selection.someSelected}
-                      disabled={!selection.canSelectAny}
-                      onCheckedChange={selection.toggleAll}
-                      tabIndex={-1}
-                    />
-                  </th>
-                ) : null}
-                {expanding ? (
-                  <th
-                    scope="col"
-                    className={`${styles.headerCell} ${styles.pinnedHeader} ${styles.expandHeader}`}
-                    aria-colindex={expandColumn + 1}
-                    {...keyboard.getCellProps(0, expandColumn)}
-                  >
-                    <span className={a11yStyles.visuallyHidden}>{resolvedLabels.expandColumn}</span>
-                  </th>
-                ) : null}
-                {headerGroup.headers.map((header, columnIndex) => (
-                  <GridHeaderCell
-                    key={header.id}
-                    header={header}
-                    ariaColIndex={columnIndex + 1 + columnOffset}
-                    cellProps={keyboard.getCellProps(0, columnIndex + columnOffset)}
-                  />
-                ))}
-                {renderRowActions ? (
-                  <th
-                    scope="col"
-                    className={`${styles.headerCell} ${styles.pinnedHeader} ${styles.actionsHeader}`}
-                    aria-colindex={columnCount}
-                    {...keyboard.getCellProps(0, columnCount - 1)}
-                  >
-                    {isEmptyNode(rowActionsHeader) ? (
-                      <span className={a11yStyles.visuallyHidden}>{resolvedLabels.rowActions}</span>
-                    ) : (
-                      rowActionsHeader
-                    )}
-                  </th>
-                ) : null}
-              </tr>
+              <GridHeaderRow
+                key={headerGroup.id}
+                headers={headerGroup.headers}
+                columnCount={columnCount}
+                columnOffset={columnOffset}
+                selectAll={
+                  selecting
+                    ? {
+                        label: resolvedLabels.selectAll,
+                        checked: selection.allSelected,
+                        indeterminate: selection.someSelected,
+                        disabled: !selection.canSelectAny,
+                        onCheckedChange: selection.toggleAll,
+                      }
+                    : undefined
+                }
+                expandLabel={expanding ? resolvedLabels.expandColumn : undefined}
+                rowActions={
+                  renderRowActions
+                    ? { header: rowActionsHeader, label: resolvedLabels.rowActions }
+                    : undefined
+                }
+                getCellProps={keyboard.getCellProps}
+              />
             ))}
           </thead>
           <tbody>
             {stateKind ? (
-              <tr aria-rowindex={2}>
-                <td
-                  role="gridcell"
-                  className={styles.stateCell}
-                  colSpan={columnCount}
-                  aria-colindex={1}
-                >
-                  {stateKind === 'loading' ? (
-                    <div className={styles.state} aria-hidden="true">
-                      <Spinner size="md" />
-                      {resolvedLabels.loading}
-                    </div>
-                  ) : (
-                    (emptyState ?? (
-                      <div className={styles.state} aria-hidden="true">
-                        {resolvedLabels.empty}
-                      </div>
-                    ))
-                  )}
-                </td>
-              </tr>
+              <GridStateRow
+                kind={stateKind}
+                label={stateLabel}
+                emptyState={emptyState}
+                columnCount={columnCount}
+              />
             ) : null}
             {bodyRows}
-            {bottomSpacerHeight > 0 ? spacerRow('after', bottomSpacerHeight, columnCount) : null}
+            {bottomSpacerHeight > 0 ? (
+              <GridSpacerRow height={bottomSpacerHeight} columnCount={columnCount} />
+            ) : null}
             {showsLoadError ? (
-              <tr data-index={entries.length} aria-rowindex={errorRowIndex}>
-                <td
-                  role="gridcell"
-                  className={styles.errorCell}
-                  colSpan={columnCount}
-                  aria-colindex={1}
-                  {...keyboard.getCellProps(entries.length + 1, 0, columnCount)}
-                >
-                  <div className={styles.errorContent}>
-                    <span role="alert">{loadError}</span>
-                    <Button variant="secondary" size="sm" onClick={loadMore.retry}>
-                      {resolvedLabels.retry}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+              <GridErrorRow
+                entryIndex={entries.length}
+                columnCount={columnCount}
+                message={loadError}
+                retryLabel={resolvedLabels.retry}
+                onRetry={loadMore.retry}
+                getCellProps={keyboard.getCellProps}
+              />
             ) : null}
           </tbody>
         </table>
