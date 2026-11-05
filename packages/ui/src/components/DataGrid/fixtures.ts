@@ -1,3 +1,4 @@
+import type { SortingState } from '@tanstack/react-table';
 import { createDataGridColumnHelper } from './columns';
 
 export type InventoryStatus = 'in stock' | 'low' | 'out';
@@ -85,3 +86,62 @@ export const inventoryColumns = columnHelper.columns([
   columnHelper.accessor('status', { header: 'Status' }),
   columnHelper.accessor('updated', { header: 'Updated' }),
 ]);
+
+export interface MockInventoryServerOptions {
+  total: number;
+  pageSize: number;
+  /** How long each fetch takes. Defaults to none. */
+  delayMs?: number;
+  /** The page, counting from 0, whose first fetch rejects; later fetches of it succeed. */
+  failOnPage?: number;
+}
+
+export interface InventoryPage {
+  rows: InventoryRow[];
+  total: number;
+}
+
+function compareValues(first: unknown, second: unknown): number {
+  if (typeof first === 'number' && typeof second === 'number') return first - second;
+  return String(first).localeCompare(String(second), 'en', { numeric: true });
+}
+
+/**
+ * A stand-in for a back end: it sorts all of its rows by the given sorting, and returns one page of
+ * them. The first fetch of `failOnPage` rejects, to show a failed load and its retry.
+ */
+export function createMockInventoryServer({
+  total,
+  pageSize,
+  delayMs = 0,
+  failOnPage,
+}: MockInventoryServerOptions) {
+  const allRows = makeInventoryRows(total);
+  let failurePending = failOnPage !== undefined;
+
+  async function fetchPage({
+    page,
+    sorting,
+  }: {
+    page: number;
+    sorting: SortingState;
+  }): Promise<InventoryPage> {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    if (failurePending && page === failOnPage) {
+      failurePending = false;
+      throw new Error(`Page ${page} could not be loaded`);
+    }
+    // Array#sort is stable, so equal rows keep the order the server holds them in.
+    const sorted = [...allRows].sort((first, second) => {
+      for (const { id, desc } of sorting) {
+        const key = id as keyof InventoryRow;
+        const result = compareValues(first[key], second[key]);
+        if (result !== 0) return desc ? -result : result;
+      }
+      return 0;
+    });
+    return { rows: sorted.slice(page * pageSize, (page + 1) * pageSize), total };
+  }
+
+  return { fetchPage };
+}

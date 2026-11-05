@@ -1,6 +1,7 @@
 import { composeStories } from '@storybook/react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
@@ -137,6 +138,17 @@ describe('row actions', () => {
       '4',
     );
     expect(screen.queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
+  it('falls back to the actions label when rowActionsHeader is empty', () => {
+    renderGrid({
+      renderRowActions: (row) => <button type="button">Edit {row.name}</button>,
+      rowActionsHeader: '',
+    });
+    expect(screen.getByRole('columnheader', { name: 'Actions' })).toHaveAttribute(
+      'aria-colindex',
+      '4',
+    );
   });
 
   it('names the actions header from labels', () => {
@@ -344,6 +356,28 @@ describe('expandable rows', () => {
     await user.click(expandButton('Item 1'));
     expect(onExpandedRowIdsChange).toHaveBeenLastCalledWith(['item-3', 'item-1']);
     expect(screen.getByText('Details of Item 1')).toBeInTheDocument();
+  });
+
+  it('keeps the panel of an open row rendered while its row is, even scrolled away', async () => {
+    const user = userEvent.setup();
+    renderGrid({
+      rows: makeItems(100),
+      renderExpandedRow: showDetails,
+      defaultExpandedRowIds: ['item-1'],
+    });
+    // The focused row stays mounted when the user scrolls away from it.
+    await user.click(cellIn(rowNamed('Item 1'), 2));
+    const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
+    act(() => {
+      scrollElement.scrollTop = 40 * 70;
+      scrollElement.dispatchEvent(new Event('scroll'));
+    });
+    expect(screen.queryByText('Item 20')).not.toBeInTheDocument();
+
+    const button = expandButton('Item 1');
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    const controlsId = button.getAttribute('aria-controls');
+    expect(document.getElementById(controlsId ?? '')).toHaveTextContent('Details of Item 1');
   });
 
   it('a sort keeps expanded rows open and moves their panels', async () => {

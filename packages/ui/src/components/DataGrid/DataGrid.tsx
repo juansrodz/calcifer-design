@@ -14,6 +14,7 @@ import {
 } from 'react';
 import { RefreshIcon } from '../../icons/RefreshIcon';
 import a11yStyles from '../../styles/a11y.module.css';
+import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { Spinner } from '../Spinner/Spinner';
@@ -24,11 +25,12 @@ import { GridCheckbox } from './GridCheckbox';
 import { GridHeaderCell } from './GridHeaderCell';
 import { GridDetailRow, GridRow } from './GridRow';
 import { defaultDataGridLabels } from './labels';
-import type { DataGridProps, DataGridRowEvent } from './types';
-import { useGridEntries } from './useGridEntries';
+import type { DataGridProps, DataGridQuery, DataGridRowEvent } from './types';
+import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
 import { useGridMetrics } from './useGridMetrics';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
+import { useLoadMore } from './useLoadMore';
 import { useRowExpansion } from './useRowExpansion';
 import { useRowSelection, type RowSelection } from './useRowSelection';
 
@@ -37,8 +39,15 @@ const emptyCellText = '—';
 const estimatedRowHeight = { comfortable: 40, compact: 34 } as const;
 const overscanRows = 8;
 
-/** The rows in view plus the overscan, plus any pinned entries (the focused one stays mounted). */
-function extractRange(range: Range, pinnedIndexes: ReadonlySet<number>): number[] {
+/**
+ * The rows in view plus the overscan, plus any pinned entries (the focused one stays mounted). An
+ * open row's detail panel always comes with its row, since the row's button points at it.
+ */
+function extractRange(
+  range: Range,
+  pinnedIndexes: ReadonlySet<number>,
+  entries: readonly GridEntry<unknown>[],
+): number[] {
   const start = Math.max(range.startIndex - range.overscan, 0);
   const end = Math.min(range.endIndex + range.overscan, range.count - 1);
   const indexes = new Set<number>();
@@ -46,7 +55,19 @@ function extractRange(range: Range, pinnedIndexes: ReadonlySet<number>): number[
   for (const pinnedIndex of pinnedIndexes) {
     if (pinnedIndex >= 0 && pinnedIndex < range.count) indexes.add(pinnedIndex);
   }
+  for (const index of [...indexes]) {
+    if (entries[index]?.kind === 'row' && entries[index + 1]?.kind === 'detail') {
+      indexes.add(index + 1);
+    }
+  }
   return [...indexes].sort((first, second) => first - second);
+}
+
+/** Two viewports' worth of rows from the end of the loaded rows is near enough to ask for more. */
+const loadAheadViewports = 2;
+
+function isEmptyNode(node: ReactNode): boolean {
+  return node === undefined || node === null || node === false || node === '';
 }
 
 function spacerRow(key: string, height: number, columnCount: number): ReactNode {
@@ -71,6 +92,13 @@ export function DataGrid<Row extends RowData>({
   getRowId,
   getRowLabel,
   actions,
+  mode = 'client',
+  totalRowCount,
+  hasMore = false,
+  loadingMore = false,
+  loadError,
+  onLoadMore,
+  onQueryChange,
   initialSorting = [],
   enableSorting = true,
   multiSort = false,
@@ -102,7 +130,12 @@ export function DataGrid<Row extends RowData>({
   onExpandedRowIdsChange,
   labels,
 }: DataGridProps<Row>) {
+  const serverMode = mode === 'server';
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
+  // The rows the grid held when the query last changed. Until the app replaces them the loaded
+  // rows answer the old query, so nothing more is asked of them.
+  const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
+  const awaitingNewRows = rowsOfOldQuery === rows;
   const { highlightedId, setHighlightedId } = useGridHighlight({
     rows,
     getRowId,
@@ -147,10 +180,24 @@ export function DataGrid<Row extends RowData>({
     columns,
     getRowId,
     state: { sorting, rowSelection: selection.rowSelection },
+    manualSorting: serverMode,
     onSortingChange: (updater) => {
-      setSorting(updater);
+      const nextSorting = typeof updater === 'function' ? updater(sorting) : updater;
+      setSorting(nextSorting);
       // Rows that move under the selection would make it hard to see what it covers.
       selection.clear();
+      if (serverMode) {
+        // The app starts again from the first page; the view goes back to where that page lands.
+        setRowsOfOldQuery(rows);
+        loadMore.reset();
+        virtualizer.scrollToOffset(0);
+        onQueryChange?.({
+          sorting: nextSorting,
+          filters: {},
+          matchMode: 'all',
+          search: '',
+        } satisfies DataGridQuery);
+      }
     },
     enableRowSelection: (row) => isRowSelectable?.(row.original) ?? true,
     enableSorting,
@@ -176,6 +223,7 @@ export function DataGrid<Row extends RowData>({
   const panelIdOf = (row: { index: number }) => `${panelIdPrefix}-detail-${row.index}`;
   const stateKind = loading ? 'loading' : entries.length === 0 ? 'empty' : null;
   const rowHeight = estimatedRowHeight[density];
+  const rowsPerViewport = Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight));
 
   /** A click, or Enter on a cell: the consumer hears of it, and the highlight toggles. */
   const clickRow = (row: { id: string; original: Row }, event: DataGridRowEvent) => {
@@ -278,7 +326,7 @@ export function DataGrid<Row extends RowData>({
   const keyboard = useGridKeyboard({
     rowCount: stateKind ? 1 : entries.length + 1,
     columnCount,
-    pageSize: Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight)),
+    pageSize: rowsPerViewport,
     onActivate: handleActivate,
     onContextMenu: handleContextMenu,
     // Called from key handlers only, after the virtualiser below exists.
@@ -317,9 +365,21 @@ export function DataGrid<Row extends RowData>({
     scrollMargin: headerHeight,
     scrollPaddingStart: headerHeight,
     // The focused entry stays mounted while it is scrolled out of view.
-    rangeExtractor: (range) => extractRange(range, pinnedIndexes),
+    rangeExtractor: (range) => extractRange(range, pinnedIndexes, entries),
   });
   const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
+  // Annotated for the sort handler above, which resets the guard before this line has run.
+  const loadMore: ReturnType<typeof useLoadMore> = useLoadMore({
+    enabled: serverMode && !loading && !awaitingNewRows,
+    loadedCount: rows.length,
+    lastRenderedIndex:
+      (stateKind ? undefined : entries[virtualizer.range?.endIndex ?? -1]?.rowIndex) ?? -1,
+    threshold: loadAheadViewports * rowsPerViewport,
+    hasMore,
+    loadingMore,
+    loadError,
+    onLoadMore,
+  });
   // Rows render in order with a spacer wherever the rendered entries leave a gap: above the
   // window, below it, and between it and a focused entry scrolled far away.
   const bodyRows: ReactNode[] = [];
@@ -408,6 +468,7 @@ export function DataGrid<Row extends RowData>({
       />,
     );
   }
+  const showsLoadError = serverMode && loadError !== undefined;
   const bottomSpacerHeight = virtualItems.length
     ? virtualizer.getTotalSize() + headerHeight - renderedEnd
     : 0;
@@ -419,6 +480,14 @@ export function DataGrid<Row extends RowData>({
   };
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text.
+  // The header, every row the app has (not only those loaded) and the open panels.
+  const openPanelCount = entries.length - rows.length;
+  const rowCountOfGrid =
+    (serverMode && totalRowCount !== undefined
+      ? Math.max(totalRowCount, rows.length)
+      : rows.length) +
+    openPanelCount +
+    1;
   const stateAnnouncement =
     stateKind === 'loading'
       ? resolvedLabels.loading
@@ -466,7 +535,7 @@ export function DataGrid<Row extends RowData>({
           className={styles.table}
           role="grid"
           aria-labelledby={headingId}
-          aria-rowcount={stateKind ? 2 : entries.length + 1}
+          aria-rowcount={stateKind ? 2 : rowCountOfGrid}
           aria-colcount={columnCount}
           aria-multiselectable={selecting || undefined}
           aria-busy={loading || undefined}
@@ -520,8 +589,10 @@ export function DataGrid<Row extends RowData>({
                     aria-colindex={columnCount}
                     {...keyboard.getCellProps(0, columnCount - 1)}
                   >
-                    {rowActionsHeader ?? (
+                    {isEmptyNode(rowActionsHeader) ? (
                       <span className={a11yStyles.visuallyHidden}>{resolvedLabels.rowActions}</span>
+                    ) : (
+                      rowActionsHeader
                     )}
                   </th>
                 ) : null}
@@ -554,6 +625,23 @@ export function DataGrid<Row extends RowData>({
             ) : null}
             {bodyRows}
             {bottomSpacerHeight > 0 ? spacerRow('after', bottomSpacerHeight, columnCount) : null}
+            {showsLoadError ? (
+              <tr aria-rowindex={(stateKind ? 1 : entries.length) + 2}>
+                <td
+                  role="gridcell"
+                  className={styles.errorCell}
+                  colSpan={columnCount}
+                  aria-colindex={1}
+                >
+                  <div className={styles.errorContent}>
+                    <span role="alert">{loadError}</span>
+                    <Button variant="secondary" size="sm" onClick={loadMore.retry}>
+                      {resolvedLabels.retry}
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
@@ -562,7 +650,12 @@ export function DataGrid<Row extends RowData>({
           {selection.selectedIds.size > 0 ? (
             <span>{resolvedLabels.selectedCount(selection.selectedIds.size)}</span>
           ) : null}
-          <span className={styles.rowCount}>{resolvedLabels.rowCount(rows.length)}</span>
+          {serverMode && loadingMore ? <span>{resolvedLabels.loadingMore}</span> : null}
+          <span className={styles.rowCount}>
+            {serverMode && totalRowCount !== undefined
+              ? resolvedLabels.loadedRowCount(rows.length, totalRowCount)
+              : resolvedLabels.rowCount(rows.length)}
+          </span>
         </footer>
       )}
     </section>

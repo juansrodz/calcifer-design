@@ -264,8 +264,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: var(--space-5);
+  height: var(--space-5);
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
@@ -280,8 +280,8 @@
 }
 
 .expandButton svg {
-  width: 1rem;
-  height: 1rem;
+  width: var(--space-4);
+  height: var(--space-4);
   transition-property: rotate;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
@@ -405,4 +405,19 @@
 /* The row count keeps to the end, whether or not the selection count sits before it. */
 .rowCount {
   margin-inline-start: auto;
+}
+
+/* The error row closes the body: the message and its retry button, centred. */
+.errorCell {
+  padding: var(--space-3) var(--space-5);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.errorContent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
 }
