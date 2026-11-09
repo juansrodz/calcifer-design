@@ -3,6 +3,7 @@ import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import {
   useCallback,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -17,7 +18,12 @@ import styles from './DataGrid.module.css';
 import { GridCardHeader } from './GridCardHeader';
 import { GridHeaderRow } from './GridHeaderRow';
 import { GridDetailRow, GridRow, GridSpacerRow } from './GridRow';
-import { GridErrorRow, GridStateRow, type GridStateKind } from './GridStateRows';
+import {
+  GridErrorRow,
+  GridStateRow,
+  type GridStateKind,
+  type GridStateRowProps,
+} from './GridStateRows';
 import { resolveDataGridLabels } from './labels';
 import { createQueryMatcher } from './query';
 import type { DataGridProps, DataGridRowEvent } from './types';
@@ -117,15 +123,17 @@ export function DataGrid<Row extends RowData>({
   labels,
 }: DataGridProps<Row>) {
   const serverMode = mode === 'server';
-  // In server mode only the app can sort, so without its query handler nothing sorts.
-  const sortingEnabled = enableSorting && (!serverMode || onQueryChange !== undefined);
+  // In server mode only the app can sort, filter and search, so without its query handler the
+  // grid does none of them, and starts with no filters or search whatever `initialQuery` says.
+  const queryEnabled = !serverMode || onQueryChange !== undefined;
+  const sortingEnabled = enableSorting && queryEnabled;
   // The rows the grid held when the query last changed. Until the app replaces them the loaded
   // rows answer the old query, so nothing more is asked of them.
   const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
   const awaitingNewRows = rowsOfOldQuery === rows;
   const gridQuery = useGridQuery({
     columns,
-    initialQuery,
+    initialQuery: queryEnabled ? initialQuery : { ...initialQuery, filters: {}, search: '' },
     initialSorting,
     query,
     onQueryChange,
@@ -136,10 +144,18 @@ export function DataGrid<Row extends RowData>({
       virtualizer.scrollToOffset(0);
       if (serverMode) {
         // The app starts again from the first page.
-        setRowsOfOldQuery(rows);
+        setRowsOfOldQuery(committedRowsRef.current);
         loadMore.reset();
       }
     },
+  });
+  // The rows of the last commit. A query the app changes is acted on in a layout effect of the
+  // render that brings it, and that render may bring the new query's first page as well: the old
+  // query's rows are the ones before it. Declared after the query hook, so that its effect reads
+  // them before this one moves on.
+  const committedRowsRef = useRef(rows);
+  useLayoutEffect(() => {
+    committedRowsRef.current = rows;
   });
   // In server mode the app has already filtered and searched the rows.
   const shownRows = useMemo(() => {
@@ -514,6 +530,14 @@ export function DataGrid<Row extends RowData>({
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text. Each state kind is named after its label.
   const stateLabel = stateKind ? resolvedLabels[stateKind] : '';
+  // The app's own content in place of an empty state's message, and the filtered one's button.
+  let stateReplacement: ReactNode;
+  let clearFiltersButton: GridStateRowProps['clearFilters'];
+  if (stateKind === 'empty') stateReplacement = emptyState;
+  if (stateKind === 'filteredEmpty') {
+    stateReplacement = filteredEmptyState?.(gridQuery.clearFilters);
+    clearFiltersButton = { label: resolvedLabels.clearFilters, onClick: gridQuery.clearFilters };
+  }
   let rowCountText = resolvedLabels.rowCount(rows.length);
   if (serverMode && totalRowCount !== undefined) {
     rowCountText = resolvedLabels.loadedRowCount(rows.length, totalRowCount);
@@ -592,15 +616,8 @@ export function DataGrid<Row extends RowData>({
               <GridStateRow
                 kind={stateKind}
                 label={stateLabel}
-                replacement={
-                  stateKind === 'filteredEmpty'
-                    ? filteredEmptyState?.(gridQuery.clearFilters)
-                    : emptyState
-                }
-                clearFilters={{
-                  label: resolvedLabels.clearFilters,
-                  onClick: gridQuery.clearFilters,
-                }}
+                replacement={stateReplacement}
+                clearFilters={clearFiltersButton}
                 columnCount={columnCount}
               />
             ) : null}

@@ -1,5 +1,5 @@
 import type { RowData, SortingState } from '@tanstack/react-table';
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import type { DataGridColumnDef } from './columns';
 import { countActiveCriteria, isSameQuery, normaliseQuery } from './query';
 import type { DataGridFilterValue, DataGridQuery } from './types';
@@ -54,13 +54,17 @@ export function useGridQuery<Row extends RowData>({
   onChange,
   onQueryChange,
 }: UseGridQueryOptions<Row>): GridQuery {
-  const [ownQuery, setOwnQuery] = useState(() =>
-    normaliseQuery({ ...initialQuery, sorting: initialQuery?.sorting ?? initialSorting }, columns),
+  // The app's query when `query` is given, else the grid's own. It is kept while its contents
+  // hold, so that a query object made afresh on every render, as an inline `query` is, does not
+  // filter the rows again.
+  const [shownQuery, setShownQuery] = useState(() =>
+    normaliseQuery(
+      query ?? { ...initialQuery, sorting: initialQuery?.sorting ?? initialSorting },
+      columns,
+    ),
   );
-  const shownQuery = useMemo(
-    () => normaliseQuery(query ?? ownQuery, columns),
-    [query, ownQuery, columns],
-  );
+  const normalisedQuery = normaliseQuery(query ?? shownQuery, columns);
+  if (!isSameQuery(normalisedQuery, shownQuery)) setShownQuery(normalisedQuery);
   // The query `onChange` last heard of. A setter of the grid's own query tells it at once; a
   // controlled query that differs from it is the app's change, answered before the next paint.
   const [actedOnQuery, setActedOnQuery] = useState(shownQuery);
@@ -79,7 +83,7 @@ export function useGridQuery<Row extends RowData>({
     if (isSameQuery(nextQuery, shownQuery)) return;
     // A controlled query changes when the app passes the new one.
     if (query === undefined) {
-      setOwnQuery(nextQuery);
+      setShownQuery(nextQuery);
       actOn(nextQuery);
     }
     onQueryChange?.(nextQuery);

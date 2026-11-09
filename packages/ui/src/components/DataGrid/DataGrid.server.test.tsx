@@ -7,7 +7,14 @@ import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
-import { inventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
+import {
+  filterableInventoryColumns,
+  inventoryColumns,
+  makeInventoryRows,
+  type InventoryRow,
+} from './fixtures';
+import { emptyDataGridQuery } from './query';
+import type { DataGridQuery } from './types';
 
 const { ServerMode } = composeStories(stories);
 
@@ -390,6 +397,76 @@ describe('server mode', () => {
   it('keeps announcing an empty grid', () => {
     renderGrid({ rows: [], hasMore: false });
     expect(screen.getByRole('status')).toHaveTextContent('No rows to show.');
+  });
+
+  it('ignores initialQuery filters and search without onQueryChange', () => {
+    const initialQuery: Partial<DataGridQuery> = { filters: { status: 'out' }, search: 'bolt' };
+    const { unmount } = renderGrid({
+      columns: filterableInventoryColumns,
+      rows: [],
+      hasMore: false,
+      initialQuery,
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows to show.');
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+    unmount();
+
+    // With the handler the app filters by the same query, and its answer is empty.
+    renderGrid({
+      columns: filterableInventoryColumns,
+      rows: [],
+      hasMore: false,
+      initialQuery,
+      onQueryChange: vi.fn(),
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
+  });
+});
+
+describe('a controlled query in server mode', () => {
+  const searchedQuery: DataGridQuery = { ...emptyDataGridQuery, search: 'bolt' };
+
+  it('loads more when the app brings a new query and its rows together', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const { rerender } = renderGrid({ query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    // A cache keyed by the query already holds the new query's first page.
+    rerender(
+      gridElement({
+        query: searchedQuery,
+        rows: makeInventoryRows(50).reverse(),
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for new rows when the app changes only the query', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const rows = makeInventoryRows(50);
+    const { rerender } = renderGrid({ rows, query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    rerender(gridElement({ rows, query: searchedQuery, onQueryChange, onLoadMore }));
+    scrollGridTo(40 * 50);
+    // The loaded rows still answer the old query, so nothing more is asked of them.
+    expect(onLoadMore).not.toHaveBeenCalled();
+
+    rerender(
+      gridElement({
+        rows: makeInventoryRows(50).reverse(),
+        query: searchedQuery,
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -52,7 +52,8 @@ export interface DataGridProps<Row extends RowData> {
   onQueryChange?: (query: DataGridQuery) => void;
   /**
    * The query the grid starts with: filters, sort, match mode and search, as a "view all" link
-   * would set them. Its `sorting` wins over `initialSorting`. Read once, on mount.
+   * would set them. Its `sorting` wins over `initialSorting`. Read once, on mount. In server mode
+   * its filters and search apply only with `onQueryChange`.
    */
   initialQuery?: Partial<DataGridQuery>;
   /**

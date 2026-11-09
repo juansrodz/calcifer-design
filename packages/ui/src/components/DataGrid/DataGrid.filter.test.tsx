@@ -384,18 +384,59 @@ describe('a controlled query', () => {
   it('shows a controlled query until the app changes it', async () => {
     const user = userEvent.setup();
     const onQueryChange = vi.fn();
+    const isHexBolt = (row: InventoryRow) => row.name.startsWith('Hex bolt');
+    const hexBoltCount = idsOfRowsWhere(isHexBolt).length;
+    // The initial query's filter would change what the controlled search shows.
+    expect(idsOfRowsWhere((row) => isHexBolt(row) && row.status === 'out')).not.toHaveLength(
+      hexBoltCount,
+    );
     renderGrid({
-      query: { ...emptyDataGridQuery, search: 'nowhere' },
+      query: { ...emptyDataGridQuery, search: 'Hex bolt' },
       // Ignored: a controlled query wins over it.
-      initialQuery: { filters: { status: 'out' } },
+      initialQuery: { filters: { status: 'out' }, sorting: [{ id: 'sku', desc: true }] },
       onQueryChange,
     });
-    expect(screen.getByText(`0 of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByText(`${hexBoltCount} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'SKU' })).not.toHaveAttribute('aria-sort');
+    const shownNames = cellTextsOf('Name');
 
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await user.click(screen.getByRole('columnheader', { name: 'Name' }));
 
     expect(onQueryChange).toHaveBeenCalledTimes(1);
-    expect(onQueryChange).toHaveBeenCalledWith({ ...emptyDataGridQuery, search: '' });
-    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenCalledWith({
+      ...emptyDataGridQuery,
+      sorting: [{ id: 'name', desc: false }],
+      search: 'Hex bolt',
+    });
+    // The app kept its query, so the grid still shows it.
+    expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort');
+    expect(cellTextsOf('Name')).toEqual(shownNames);
+  });
+
+  it('keeps an inline controlled query whose contents have not changed', () => {
+    const onHighlightChange = vi.fn();
+    const rows = makeInventoryRows(rowTotal);
+    // A new query object on every render, with the same contents; it hides item-1, which the app
+    // keeps highlighted.
+    const gridElement = () => (
+      <DataGrid<InventoryRow>
+        gridId="inline-query-grid"
+        heading="Inventory"
+        rows={rows}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        query={{ ...emptyDataGridQuery, filters: { status: 'out' } }}
+        highlightedRowId="item-1"
+        onHighlightChange={onHighlightChange}
+      />
+    );
+    const { rerender } = render(gridElement());
+    expect(onHighlightChange).toHaveBeenCalledTimes(1);
+
+    rerender(gridElement());
+    rerender(gridElement());
+
+    // The shown rows are the same rows, so the hidden highlight is not reported again.
+    expect(onHighlightChange).toHaveBeenCalledTimes(1);
   });
 });

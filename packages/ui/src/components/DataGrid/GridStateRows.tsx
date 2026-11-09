@@ -11,10 +11,10 @@ export interface GridStateRowProps {
   kind: GridStateKind;
   /** The message for `kind`, which the grid also announces. */
   label: string;
-  /** The app's own content in place of an empty or filtered-empty message. */
+  /** For the empty kinds: the app's own content in place of the message. */
   replacement?: ReactNode;
-  /** The filtered-empty message's button. */
-  clearFilters: { label: string; onClick: () => void };
+  /** For `filteredEmpty`: the button beside the message. Without it the message shows alone. */
+  clearFilters?: { label: string; onClick: () => void };
   columnCount: number;
 }
 
@@ -48,9 +48,11 @@ export function GridStateRow({
     content = replacement ?? (
       <div className={`${styles.state} ${styles.filteredEmpty}`}>
         <span aria-hidden="true">{label}</span>
-        <Button variant="secondary" size="sm" onClick={clearFilters.onClick}>
-          {clearFilters.label}
-        </Button>
+        {clearFilters ? (
+          <Button variant="secondary" size="sm" onClick={clearFilters.onClick}>
+            {clearFilters.label}
+          </Button>
+        ) : null}
       </div>
     );
   }
