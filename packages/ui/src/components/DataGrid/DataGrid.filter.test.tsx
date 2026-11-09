@@ -1,8 +1,8 @@
-import { fireEvent, render, renderHook, screen, within } from '@testing-library/react';
+import { fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act, useState } from 'react';
+import { act, useState, type FormEvent } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { axe } from '../../../test/axe';
+import { axe, axeDocument } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
 import { DataGrid } from './DataGrid';
 import {
@@ -807,12 +807,20 @@ describe('the filter strip', () => {
     expect(stripCells.map((cell) => cell.getAttribute('aria-colindex'))).toEqual(
       Array.from({ length: 10 }, (_unused, index) => String(index + 1)),
     );
-    // Name and Location are the second and fourth columns, after the checkbox and expand ones.
+    // Name, Category, Location and Status are the second, third, fourth and sixth columns, after
+    // the checkbox and expand ones.
     expect(stripCells[3]).toContainElement(filterField('Name'));
+    expect(stripCells[4]).toContainElement(
+      screen.getByRole('combobox', { name: 'Filter by Category' }),
+    );
     expect(stripCells[5]).toContainElement(filterField('Location'));
+    expect(stripCells[7]).toContainElement(
+      screen.getByRole('combobox', { name: 'Filter by Status' }),
+    );
     expect(screen.getAllByRole('searchbox')).toHaveLength(2);
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
     for (const [index, cell] of stripCells.entries()) {
-      if (index !== 3 && index !== 5) expect(cell).toBeEmptyDOMElement();
+      if (![3, 4, 5, 7].includes(index)) expect(cell).toBeEmptyDOMElement();
     }
     expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
     expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '3');
@@ -1028,5 +1036,349 @@ describe('the filter strip', () => {
 
     expect(screen.getByRole('searchbox', { name: 'Filtrar por Name' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Filtrar por Location' })).toBeInTheDocument();
+  });
+});
+
+describe('the choice filters', () => {
+  type User = ReturnType<typeof userEvent.setup>;
+
+  async function openStrip(user: User, filtersButtonName = 'Filters') {
+    await user.click(screen.getByRole('button', { name: filtersButtonName }));
+  }
+
+  function choiceFilter(columnName: string): HTMLElement {
+    return screen.getByRole('combobox', { name: `Filter by ${columnName}` });
+  }
+
+  function optionNames(): string[] {
+    return screen.queryAllByRole('option').map((option) => option.textContent ?? '');
+  }
+
+  function highlightedOptionName(): string | undefined {
+    return screen.queryAllByRole('option').find((option) => option.hasAttribute('data-highlighted'))
+      ?.textContent;
+  }
+
+  function lastFilters(onQueryChange: ReturnType<typeof vi.fn>): DataGridQuery['filters'] {
+    return (onQueryChange.mock.lastCall?.[0] as DataGridQuery).filters;
+  }
+
+  it('filters by one status from a select filter', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    renderGrid({ onQueryChange });
+    await openStrip(user);
+    const statusFilter = choiceFilter('Status');
+    expect(statusFilter).toHaveValue('All');
+
+    await user.click(statusFilter);
+    // "All" shows as chosen while nothing else is.
+    expect(await screen.findByRole('option', { name: 'All' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(optionNames()).toEqual(['All', 'In stock', 'Low', 'Out']);
+    await user.click(screen.getByRole('option', { name: 'Low' }));
+
+    const lowIds = idsOfRowsWhere((row) => row.status === 'low');
+    expect(screen.getByText(`${lowIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(cellTextsOf('Status').every((status) => status === 'low')).toBe(true);
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: { status: 'low' } }),
+    );
+    expect(statusFilter).toHaveValue('Low');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+
+    await user.click(statusFilter);
+    expect(await screen.findByRole('option', { name: 'Low' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('option', { name: 'All' })).toHaveAttribute('aria-selected', 'false');
+    await user.click(screen.getByRole('option', { name: 'All' }));
+
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(lastFilters(onQueryChange)).toEqual({});
+    expect(statusFilter).toHaveValue('All');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('filters by several categories', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    renderGrid({ onQueryChange });
+    await openStrip(user);
+    const categoryFilter = choiceFilter('Category');
+    expect(categoryFilter).toHaveAttribute('placeholder', 'All');
+    expect(categoryFilter).toHaveAccessibleDescription('All');
+
+    await user.click(categoryFilter);
+    await user.click(await screen.findByRole('option', { name: 'Tools' }));
+
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+    expect(lastFilters(onQueryChange)).toEqual({ category: ['Tools'] });
+    expect(categoryFilter).toHaveAttribute('placeholder', 'Tools');
+    expect(categoryFilter).toHaveAccessibleDescription('Tools');
+
+    // The list stays open while options toggle.
+    await user.click(screen.getByRole('option', { name: 'Safety' }));
+
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    const categories = lastFilters(onQueryChange).category;
+    expect(categories).toHaveLength(2);
+    expect(categories).toEqual(expect.arrayContaining(['Tools', 'Safety']));
+    expect(screen.getByRole('option', { name: 'All' })).toHaveAttribute('aria-selected', 'false');
+
+    // An open list hides the rest of the page from assistive technology, so the rows are read
+    // with it closed.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(new Set(cellTextsOf('Category'))).toEqual(new Set(['Tools', 'Safety']));
+    const shownCount = idsOfRowsWhere((row) => ['Tools', 'Safety'].includes(row.category)).length;
+    expect(screen.getByText(`${shownCount} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(categoryFilter).toHaveValue('');
+    expect(categoryFilter).toHaveAttribute('placeholder', '2 selected');
+    expect(categoryFilter).toHaveAccessibleDescription('2 selected');
+
+    // Choosing "All" clears the filter and leaves the list open.
+    await user.click(categoryFilter);
+    await user.click(await screen.findByRole('option', { name: 'All' }));
+
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenCalledTimes(3);
+    expect(lastFilters(onQueryChange)).toEqual({});
+    expect(screen.getByRole('option', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: 'Tools' })).toHaveAttribute('aria-selected', 'false');
+    expect(categoryFilter).toHaveAttribute('placeholder', 'All');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('narrows the options as the user types', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    renderGrid({ initialQuery: { filters: { status: 'low' } }, onQueryChange });
+    await openStrip(user, 'Filters, 1 active');
+    const categoryFilter = choiceFilter('Category');
+
+    // Case does not matter, and "All" is no option to match while a query is typed.
+    await user.type(categoryFilter, 'PA');
+    expect(optionNames()).toEqual(['Packaging']);
+
+    await user.clear(categoryFilter);
+    expect(optionNames()).toEqual(['All', 'Fasteners', 'Packaging', 'Safety', 'Tools']);
+
+    // Choosing from a narrowed list keeps it open, narrowed.
+    await user.type(categoryFilter, 'to');
+    await user.click(screen.getByRole('option', { name: 'Tools' }));
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(optionNames()).toEqual(['Tools']);
+    expect(lastFilters(onQueryChange)).toEqual({ status: 'low', category: ['Tools'] });
+
+    // Emptying a select's text is no choice: the filter stays until an item is chosen, and the
+    // text comes back as the list closes.
+    await user.keyboard('{Escape}');
+    const statusFilter = choiceFilter('Status');
+    await user.clear(statusFilter);
+    await user.type(statusFilter, 'ow');
+    expect(optionNames()).toEqual(['Low']);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(statusFilter).toHaveValue('Low');
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('says when no option matches', async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    await openStrip(user);
+    const categoryFilter = choiceFilter('Category');
+
+    await user.type(categoryFilter, 'zzz');
+
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    // The message is a polite status, so it is heard as the list empties.
+    expect(screen.getByText('No matching options')).toHaveAttribute('role', 'status');
+
+    await user.clear(categoryFilter);
+
+    expect(screen.queryByText('No matching options')).not.toBeInTheDocument();
+    expect(optionNames()).toHaveLength(5);
+  });
+
+  it('closes the list on Escape before leaving the cell', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    renderGrid({
+      initialQuery: { filters: { status: 'low', category: ['Tools'] } },
+      onQueryChange,
+    });
+    await openStrip(user, 'Filters, 2 active');
+
+    for (const [columnName, shown] of [
+      ['Status', { value: 'Low' }],
+      ['Category', { placeholder: 'Tools' }],
+    ] as const) {
+      const filter = choiceFilter(columnName);
+      const cell = filter.closest('td') as HTMLElement;
+      await user.click(filter);
+      expect(await screen.findByRole('listbox')).toBeInTheDocument();
+      expect(filter).toHaveFocus();
+
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+      expect(filter).toHaveFocus();
+      expect(filter).toHaveAttribute('aria-expanded', 'false');
+      expect(cell).toHaveAttribute('data-focused');
+
+      await user.keyboard('{Escape}');
+
+      expect(cell).toHaveFocus();
+      // Leaving the cell keeps the filter.
+      if ('value' in shown) expect(filter).toHaveValue(shown.value);
+      else expect(filter).toHaveAttribute('placeholder', shown.placeholder);
+    }
+    expect(onQueryChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
+  });
+
+  it('keeps the arrow keys inside an open list', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    renderGrid({ onQueryChange });
+    await openStrip(user);
+    await user.tab();
+    // Down to the strip, then along to the Status column, the sixth.
+    await user.keyboard('{ArrowDown}{ArrowRight>5/}');
+    const statusFilter = choiceFilter('Status');
+    const statusCell = statusFilter.closest('td') as HTMLElement;
+    expect(statusCell).toHaveFocus();
+    expect(statusFilter).toHaveAttribute('tabindex', '-1');
+
+    await user.keyboard('{Enter}');
+    expect(statusFilter).toHaveFocus();
+    expect(statusFilter).toHaveAttribute('tabindex', '0');
+
+    await user.keyboard('{ArrowDown}');
+    expect(await screen.findByRole('listbox')).toBeInTheDocument();
+    await waitFor(() => expect(highlightedOptionName()).toBe('All'));
+
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+
+    expect(highlightedOptionName()).toBe('Low');
+    expect(statusFilter).toHaveFocus();
+    expect(statusCell).toHaveAttribute('data-focused');
+
+    await user.keyboard('{ArrowUp}{Enter}');
+
+    expect(lastFilters(onQueryChange)).toEqual({ status: 'in stock' });
+    expect(statusFilter).toHaveValue('In stock');
+    expect(statusFilter).toHaveFocus();
+    expect(statusCell).toHaveAttribute('data-focused');
+  });
+
+  it('adds no tab stop of its own while the list is open', async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    await openStrip(user);
+    const statusFilter = choiceFilter('Status');
+    const statusCell = statusFilter.closest('td') as HTMLElement;
+
+    await user.click(statusFilter);
+    expect(await screen.findByRole('listbox')).toBeInTheDocument();
+    // Base UI's dismiss control for screen readers sits beside the input, and only their cursor
+    // reaches it; the grid must not make it a stop.
+    await user.tab({ shift: true });
+
+    expect(statusCell).not.toContainElement(document.activeElement as HTMLElement);
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveFocus();
+  });
+
+  it('never submits a form the grid sits in on Enter', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((event: FormEvent) => event.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <DataGrid<InventoryRow>
+          gridId="form-grid"
+          heading="Inventory"
+          rows={makeInventoryRows(rowTotal)}
+          columns={filterableInventoryColumns}
+          getRowId={(row) => row.id}
+        />
+        <button type="submit">Save</button>
+      </form>,
+    );
+    await openStrip(user);
+
+    await user.type(screen.getByRole('searchbox', { name: 'Filter by Name' }), 'Washer{Enter}');
+
+    const washerCount = idsOfRowsWhere((row) => row.name.startsWith('Washer')).length;
+    expect(screen.getByText(`${washerCount} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // Enter picks the highlighted option of a select, then of a multi-select. Opening a list
+    // highlights its choice, "All" here.
+    await user.click(choiceFilter('Status'));
+    await waitFor(() => expect(highlightedOptionName()).toBe('All'));
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(choiceFilter('Status')).toHaveValue('In stock');
+    await user.click(choiceFilter('Category'));
+    await waitFor(() => expect(highlightedOptionName()).toBe('All'));
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(choiceFilter('Category')).toHaveAttribute('placeholder', 'Fasteners');
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    // And with the list closed, Enter does nothing at all.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    await user.keyboard('{Enter}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters, 3 active' })).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('has no axe violations with the list open', async () => {
+    const user = userEvent.setup();
+    renderGrid({ initialQuery: { filters: { category: ['Tools', 'Safety'] } } });
+    await openStrip(user, 'Filters, 1 active');
+
+    await user.click(choiceFilter('Category'));
+    expect(await screen.findByRole('listbox')).toBeInTheDocument();
+    expect(await axeDocument()).toHaveNoViolations();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    await user.click(choiceFilter('Status'));
+    expect(await screen.findByRole('option', { name: 'Low' })).toBeInTheDocument();
+    expect(await axeDocument()).toHaveNoViolations();
+  });
+
+  it('takes its words from labels', async () => {
+    const user = userEvent.setup();
+    renderGrid({
+      initialQuery: { filters: { category: ['Tools', 'Safety'] } },
+      labels: {
+        filterBy: (columnName) => `Filtrar por ${columnName}`,
+        filterAll: 'Todas',
+        filterSelectedCount: (count) => `${count} elegidas`,
+        filterNoOptions: 'Ninguna opción coincide',
+      },
+    });
+    await openStrip(user, 'Filters, 1 active');
+
+    const statusFilter = screen.getByRole('combobox', { name: 'Filtrar por Status' });
+    expect(statusFilter).toHaveValue('Todas');
+    const categoryFilter = screen.getByRole('combobox', { name: 'Filtrar por Category' });
+    expect(categoryFilter).toHaveAttribute('placeholder', '2 elegidas');
+    expect(categoryFilter).toHaveAccessibleDescription('2 elegidas');
+
+    await user.type(categoryFilter, 'zzz');
+    expect(screen.getByText('Ninguna opción coincide')).toBeInTheDocument();
+    await user.clear(categoryFilter);
+    expect(screen.getByRole('option', { name: 'Todas' })).toBeInTheDocument();
   });
 });

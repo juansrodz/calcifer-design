@@ -63,11 +63,17 @@ export type GetCellProps = (
 ) => GridCellProps;
 
 /**
- * What counts as a control inside a cell. Controls are out of the tab order until the user enters
- * their cell, and a click on one is not a click on its row.
+ * The controls inside a cell that take focus. They are out of the tab order until the user enters
+ * their cell.
  */
-export const cellControlSelector =
-  'button, a[href], input, select, textarea, [role="button"], [tabindex]';
+const focusableControlSelector = 'button, a[href], input, select, textarea, [tabindex]';
+
+/**
+ * What counts as a control inside a cell: a click on one is not a click on its row. An element
+ * that is a button by its role alone, with no tabindex, takes no focus, and the grid gives it no
+ * tab stop: a combobox's visually hidden dismiss button is for a screen reader's cursor only.
+ */
+export const cellControlSelector = `${focusableControlSelector}, [role="button"]`;
 
 /** The cells focus moves between: the head rows' cells and the cells of rendered entries. */
 const navigableCellSelector = 'thead th, thead td, tbody tr[data-index] > td';
@@ -108,7 +114,7 @@ function isUnfocusableControl(control: HTMLElement): boolean {
  * so of those only its current tab stop counts, which is where entering the cell lands in it.
  */
 function controlsOf(grid: HTMLElement, cell: HTMLElement): HTMLElement[] {
-  return [...cell.querySelectorAll<HTMLElement>(cellControlSelector)].filter((control) =>
+  return [...cell.querySelectorAll<HTMLElement>(focusableControlSelector)].filter((control) =>
     control.closest('[role="grid"]') === grid
       ? !isUnfocusableControl(control)
       : control.tabIndex === 0,
@@ -164,7 +170,7 @@ function clamp(value: number, lowest: number, highest: number): number {
  * entered, so that the grid keeps one tab stop.
  */
 function syncControlTabIndexes(grid: HTMLElement, enteredCell: HTMLElement | null) {
-  for (const control of grid.querySelectorAll<HTMLElement>(cellControlSelector)) {
+  for (const control of grid.querySelectorAll<HTMLElement>(focusableControlSelector)) {
     // A grid nested in a panel keeps its own tab stops.
     if (control.closest('[role="grid"]') !== grid) continue;
     const cell = ownCellOf(grid, control);

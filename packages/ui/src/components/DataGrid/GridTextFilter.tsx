@@ -26,7 +26,10 @@ export function GridTextFilter({ label, value, onValueChange }: GridTextFilterPr
       value={draft}
       onValueChange={change}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') flush();
+        if (event.key !== 'Enter') return;
+        // A filter never submits a form the grid sits in.
+        event.preventDefault();
+        flush();
       }}
       onBlur={flush}
     />

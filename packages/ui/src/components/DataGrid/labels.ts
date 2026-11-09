@@ -9,6 +9,12 @@ export interface DataGridLabels {
   matchAny: string;
   /** Names a column's control in the filter strip. */
   filterBy: (columnName: string) => string;
+  /** The choice filters' first item, which clears the filter, and their text with nothing chosen. */
+  filterAll: string;
+  /** A multi-select filter's text with more than one option chosen. */
+  filterSelectedCount: (count: number) => string;
+  /** A choice filter's list when what is typed matches no option. */
+  filterNoOptions: string;
   rowCount: (count: number) => string;
   loadedRowCount: (loaded: number, total: number) => string;
   /** Client mode while filters or search are active: the rows shown of every row. */
@@ -38,6 +44,9 @@ export const defaultDataGridLabels: DataGridLabels = {
   matchAll: 'All',
   matchAny: 'Any',
   filterBy: (columnName) => `Filter by ${columnName}`,
+  filterAll: 'All',
+  filterSelectedCount: (count) => `${numberFormat.format(count)} selected`,
+  filterNoOptions: 'No matching options',
   rowCount: (count) => `${numberFormat.format(count)} ${count === 1 ? 'row' : 'rows'}`,
   loadedRowCount: (loaded, total) =>
     `Showing ${numberFormat.format(loaded)} of ${numberFormat.format(total)} rows`,
