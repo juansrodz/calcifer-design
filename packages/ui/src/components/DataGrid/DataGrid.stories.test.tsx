@@ -1,13 +1,25 @@
 import { composeStories } from '@storybook/react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
 import * as stories from './DataGrid.stories';
+import { makeInventoryRows } from './fixtures';
 
 const composedStories = composeStories(stories);
-const { FileList } = composedStories;
+const { FileList, ViewAllLink, FilteredEmpty } = composedStories;
+
+/** The text of one column's cell in each rendered body row, top to bottom. */
+function textOfEachRow(columnName: string): string[] {
+  const columnIndex = screen
+    .getAllByRole('columnheader')
+    .findIndex((header) => header.textContent === columnName);
+  return screen
+    .getAllByRole('row')
+    .filter((row) => row.closest('tbody') !== null)
+    .map((row) => within(row).queryAllByRole('gridcell')[columnIndex]?.textContent ?? '');
+}
 
 let restoreElementSize: () => void;
 
@@ -45,5 +57,30 @@ describe('DataGrid stories', () => {
     render(<FileList />);
     await user.click(screen.getByRole('button', { name: 'Open Folder 1' }));
     expect(screen.getByText('Opened Folder 1.')).toBeInTheDocument();
+  });
+
+  it('the view all link story opens filtered and sorted', () => {
+    render(<ViewAllLink />);
+    const lowCount = makeInventoryRows(240).filter((row) => row.status === 'low').length;
+    expect(screen.getByText(`${lowCount} of 240 rows`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
+    expect(textOfEachRow('Status').every((status) => status === 'low')).toBe(true);
+    expect(screen.getByRole('columnheader', { name: 'Quantity' })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    const quantities = textOfEachRow('Quantity').map(Number);
+    expect(quantities).toEqual([...quantities].sort((first, second) => first - second));
+  });
+
+  it('the filtered-empty story clears its filters', async () => {
+    const user = userEvent.setup();
+    render(<FilteredEmpty />);
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
+    expect(textOfEachRow('Name').length).toBeGreaterThan(0);
   });
 });

@@ -1,5 +1,6 @@
-import type { SortingState } from '@tanstack/react-table';
 import { createDataGridColumnHelper } from './columns';
+import { createQueryMatcher } from './query';
+import type { DataGridQuery } from './types';
 
 export type InventoryStatus = 'in stock' | 'low' | 'out';
 
@@ -112,6 +113,7 @@ export const filterableInventoryColumns = columnHelper.columns([
 ]);
 
 export interface MockInventoryServerOptions {
+  /** How many rows the server holds. */
   total: number;
   pageSize: number;
   /** How long each fetch takes. Defaults to none. */
@@ -122,6 +124,7 @@ export interface MockInventoryServerOptions {
 
 export interface InventoryPage {
   rows: InventoryRow[];
+  /** How many rows match the query, on every page. */
   total: number;
 }
 
@@ -131,8 +134,9 @@ function compareValues(first: unknown, second: unknown): number {
 }
 
 /**
- * A stand-in for a back end: it sorts all of its rows by the given sorting, and returns one page of
- * them. The first fetch of `failOnPage` rejects, to show a failed load and its retry.
+ * A stand-in for a back end: it keeps the rows that match the given query, with the filters and
+ * search of `filterableInventoryColumns`, sorts them by its sorting, and returns one page of them.
+ * The first fetch of `failOnPage` rejects, to show a failed load and its retry.
  */
 export function createMockInventoryServer({
   total,
@@ -145,26 +149,28 @@ export function createMockInventoryServer({
 
   async function fetchPage({
     page,
-    sorting,
+    query,
   }: {
     page: number;
-    sorting: SortingState;
+    query: DataGridQuery;
   }): Promise<InventoryPage> {
     await new Promise((resolve) => setTimeout(resolve, delayMs));
     if (failurePending && page === failOnPage) {
       failurePending = false;
       throw new Error(`Page ${page} could not be loaded`);
     }
+    const matcher = createQueryMatcher(filterableInventoryColumns, query);
+    const matched = matcher ? allRows.filter(matcher) : [...allRows];
     // Array#sort is stable, so equal rows keep the order the server holds them in.
-    const sorted = [...allRows].sort((first, second) => {
-      for (const { id, desc } of sorting) {
+    matched.sort((first, second) => {
+      for (const { id, desc } of query.sorting) {
         const key = id as keyof InventoryRow;
         const result = compareValues(first[key], second[key]);
         if (result !== 0) return desc ? -result : result;
       }
       return 0;
     });
-    return { rows: sorted.slice(page * pageSize, (page + 1) * pageSize), total };
+    return { rows: matched.slice(page * pageSize, (page + 1) * pageSize), total: matched.length };
   }
 
   return { fetchPage };

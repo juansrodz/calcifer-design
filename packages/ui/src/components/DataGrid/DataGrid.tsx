@@ -12,6 +12,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { Button } from '../Button/Button';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
@@ -88,6 +89,7 @@ export function DataGrid<Row extends RowData>({
   loadingMore = false,
   loadError,
   onLoadMore,
+  loadMoreTrigger = 'scroll',
   onQueryChange,
   initialQuery,
   query,
@@ -422,7 +424,7 @@ export function DataGrid<Row extends RowData>({
   const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
   // Annotated for the query handler above, which resets the guard before this line has run.
   const loadMore: ReturnType<typeof useLoadMore> = useLoadMore({
-    enabled: serverMode && !awaitingNewRows,
+    enabled: serverMode && loadMoreTrigger === 'scroll' && !awaitingNewRows,
     loading,
     loadedCount: rows.length,
     lastRenderedIndex:
@@ -548,6 +550,16 @@ export function DataGrid<Row extends RowData>({
     stateReplacement = filteredEmptyState?.(gridQuery.clearFilters);
     clearFiltersButton = { label: resolvedLabels.clearFilters, onClick: gridQuery.clearFilters };
   }
+  // The button stands aside for the error row's retry and for the first load. It waits, as
+  // loading on scroll does, while the rows answer an old query.
+  const showsMoreButton =
+    serverMode && loadMoreTrigger === 'button' && hasMore && loadError === undefined && !loading;
+  const moreButtonBusy = loadingMore || awaitingNewRows;
+  // The rows left to load, when the total says how many; else the button reads "Show more".
+  const remainingRowCount =
+    totalRowCount !== undefined && totalRowCount > rows.length
+      ? totalRowCount - rows.length
+      : undefined;
   let rowCountText = resolvedLabels.rowCount(rows.length);
   if (serverMode && totalRowCount !== undefined) {
     rowCountText = resolvedLabels.loadedRowCount(rows.length, totalRowCount);
@@ -666,19 +678,31 @@ export function DataGrid<Row extends RowData>({
                 columnCount={columnCount}
                 message={loadError}
                 retryLabel={resolvedLabels.retry}
-                onRetry={loadMore.retry}
+                onRetry={loadMore.request}
                 getCellProps={keyboard.getCellProps}
               />
             ) : null}
           </tbody>
         </table>
       </div>
+      {showsMoreButton ? (
+        <div className={styles.showMore}>
+          <Button variant="secondary" size="sm" loading={moreButtonBusy} onClick={loadMore.request}>
+            {moreButtonBusy
+              ? resolvedLabels.loadingMore
+              : resolvedLabels.showMore(remainingRowCount)}
+          </Button>
+        </div>
+      ) : null}
       {hideFooter ? null : (
         <footer className={styles.footer}>
           {selection.selectedIds.size > 0 ? (
             <span>{resolvedLabels.selectedCount(selection.selectedIds.size)}</span>
           ) : null}
-          {serverMode && loadingMore ? <span>{resolvedLabels.loadingMore}</span> : null}
+          {/* The Show more button says it while it shows. */}
+          {serverMode && loadingMore && !showsMoreButton ? (
+            <span>{resolvedLabels.loadingMore}</span>
+          ) : null}
           <span className={styles.rowCount}>{rowCountText}</span>
         </footer>
       )}

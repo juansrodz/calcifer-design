@@ -543,6 +543,13 @@
   border: 0;
 }
 
+/* Server mode's Show more button, centred between the body and the footer. */
+.showMore {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) var(--space-5);
+}
+
 .footer {
   display: flex;
   align-items: center;
