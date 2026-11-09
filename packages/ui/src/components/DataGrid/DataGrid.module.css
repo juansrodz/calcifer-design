@@ -417,6 +417,11 @@
   gap: var(--space-3);
 }
 
+/* Filtered to nothing: the message over its Clear filters button. */
+.filteredEmpty {
+  flex-direction: column;
+}
+
 .spacerCell {
   padding: 0;
   border: 0;

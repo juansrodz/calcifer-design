@@ -33,8 +33,9 @@ export interface DataGridProps<Row extends RowData> {
   getRowLabel?: (row: Row) => string;
   actions?: ReactNode;
   /**
-   * `'client'` (the default) sorts the given rows itself. `'server'` leaves sorting to the app and
-   * asks for rows page by page; there, headers sort only when `onQueryChange` is given.
+   * `'client'` (the default) sorts, filters and searches the given rows itself. `'server'` leaves
+   * the query to the app and asks for rows page by page; there, sorting, filters and search are
+   * available only when `onQueryChange` is given.
    */
   mode?: DataGridMode;
   totalRowCount?: number;
@@ -43,15 +44,27 @@ export interface DataGridProps<Row extends RowData> {
   loadError?: string;
   onLoadMore?: () => void;
   /**
-   * Server mode: the user changed the sort, so load the first page of rows for this query. Without
-   * it, server mode's headers are not sortable and carry no `aria-sort`.
+   * The user changed the query: the sort, a filter, the match mode or the search. In client mode it
+   * reports the query for the app to keep, for example in the URL; in server mode it is the cue to
+   * load the first page of rows for this query. Without it, server mode offers no sorting, filters
+   * or search, and its headers carry no `aria-sort`.
    */
   onQueryChange?: (query: DataGridQuery) => void;
   /**
-   * The sort the grid starts with. The planned `initialQuery` prop will win over it when both are
-   * given.
+   * The query the grid starts with: filters, sort, match mode and search, as a "view all" link
+   * would set them. Its `sorting` wins over `initialSorting`. Read once, on mount.
    */
+  initialQuery?: Partial<DataGridQuery>;
+  /**
+   * Makes the query controlled: the grid shows this query and reports every change through
+   * `onQueryChange`, for an app whose own search field or tabs sit outside the grid. Normalised
+   * against `columns` on every render. Without it the grid keeps its own query.
+   */
+  query?: DataGridQuery;
+  /** The sort the grid starts with, unless `initialQuery` gives one. Read once, on mount. */
   initialSorting?: SortingState;
+  /** Adds the search button to the toolbar. */
+  enableSearch?: boolean;
   enableSorting?: boolean;
   multiSort?: boolean;
   loading?: boolean;
@@ -60,6 +73,11 @@ export interface DataGridProps<Row extends RowData> {
    * this node, so set `labels.empty` to match your message.
    */
   emptyState?: ReactNode;
+  /**
+   * Replaces the message shown when filters or search match nothing. It receives the grid's
+   * "clear filters and search" action. The grid announces `labels.filteredEmpty`.
+   */
+  filteredEmptyState?: (clearFilters: () => void) => ReactNode;
   density?: DataGridDensity;
   /**
    * The tallest the scrolling body grows before it scrolls, as a CSS length. Defaults to the

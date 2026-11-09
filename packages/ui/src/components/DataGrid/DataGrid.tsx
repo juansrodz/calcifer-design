@@ -1,4 +1,4 @@
-import { useTable, type RowData, type SortingState } from '@tanstack/react-table';
+import { useTable, type RowData } from '@tanstack/react-table';
 import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import {
   useCallback,
@@ -19,9 +19,11 @@ import { GridHeaderRow } from './GridHeaderRow';
 import { GridDetailRow, GridRow, GridSpacerRow } from './GridRow';
 import { GridErrorRow, GridStateRow, type GridStateKind } from './GridStateRows';
 import { resolveDataGridLabels } from './labels';
-import type { DataGridProps, DataGridQuery, DataGridRowEvent } from './types';
+import { createQueryMatcher } from './query';
+import type { DataGridProps, DataGridRowEvent } from './types';
 import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
+import { useGridQuery } from './useGridQuery';
 import { useGridMetrics } from './useGridMetrics';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 import { useLoadMore } from './useLoadMore';
@@ -80,7 +82,9 @@ export function DataGrid<Row extends RowData>({
   loadError,
   onLoadMore,
   onQueryChange,
-  initialSorting = [],
+  initialQuery,
+  query,
+  initialSorting,
   enableSorting = true,
   multiSort = false,
   density = 'comfortable',
@@ -89,6 +93,7 @@ export function DataGrid<Row extends RowData>({
   hideFooter = false,
   loading = false,
   emptyState,
+  filteredEmptyState,
   onRefresh,
   refreshing = false,
   highlightOnClick = false,
@@ -114,13 +119,35 @@ export function DataGrid<Row extends RowData>({
   const serverMode = mode === 'server';
   // In server mode only the app can sort, so without its query handler nothing sorts.
   const sortingEnabled = enableSorting && (!serverMode || onQueryChange !== undefined);
-  const [sorting, setSorting] = useState<SortingState>(initialSorting);
   // The rows the grid held when the query last changed. Until the app replaces them the loaded
   // rows answer the old query, so nothing more is asked of them.
   const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
   const awaitingNewRows = rowsOfOldQuery === rows;
+  const gridQuery = useGridQuery({
+    columns,
+    initialQuery,
+    initialSorting,
+    query,
+    onQueryChange,
+    // Called from event handlers and layout effects only, after everything below exists.
+    onChange: () => {
+      // Rows that move under the selection would make it hard to see what it covers.
+      selection.clear();
+      virtualizer.scrollToOffset(0);
+      if (serverMode) {
+        // The app starts again from the first page.
+        setRowsOfOldQuery(rows);
+        loadMore.reset();
+      }
+    },
+  });
+  // In server mode the app has already filtered and searched the rows.
+  const shownRows = useMemo(() => {
+    const matcher = serverMode ? null : createQueryMatcher(columns, gridQuery.query);
+    return matcher ? rows.filter(matcher) : rows;
+  }, [serverMode, rows, columns, gridQuery.query]);
   const { highlightedId, setHighlightedId } = useGridHighlight({
-    rows,
+    rows: shownRows,
     getRowId,
     loading,
     highlightedRowId,
@@ -141,10 +168,12 @@ export function DataGrid<Row extends RowData>({
   // Annotated: the table needs the selection, and the callback below needs the table's entries.
   const selection: RowSelection = useRowSelection({
     enabled: selecting,
-    rows,
+    rows: shownRows,
     getRowId,
     isRowSelectable,
-    loading,
+    // A query the app changed clears the selection in a layout effect. Rows it hid must not be
+    // dropped from the selection before then, or that report would land after the clear.
+    loading: loading || gridQuery.pendingChange,
     selectedRowIds,
     defaultSelectedRowIds,
     onSelectedRowIdsChange,
@@ -158,29 +187,15 @@ export function DataGrid<Row extends RowData>({
 
   const table = useTable({
     features: dataGridFeatures,
-    data: rows,
+    data: shownRows,
     columns,
     getRowId,
-    state: { sorting, rowSelection: selection.rowSelection },
+    state: { sorting: gridQuery.query.sorting, rowSelection: selection.rowSelection },
     manualSorting: serverMode,
-    onSortingChange: (updater) => {
-      const nextSorting = typeof updater === 'function' ? updater(sorting) : updater;
-      setSorting(nextSorting);
-      // Rows that move under the selection would make it hard to see what it covers.
-      selection.clear();
-      if (serverMode) {
-        // The app starts again from the first page; the view goes back to where that page lands.
-        setRowsOfOldQuery(rows);
-        loadMore.reset();
-        virtualizer.scrollToOffset(0);
-        onQueryChange?.({
-          sorting: nextSorting,
-          filters: {},
-          matchMode: 'all',
-          search: '',
-        } satisfies DataGridQuery);
-      }
-    },
+    onSortingChange: (updater) =>
+      gridQuery.setSorting(
+        typeof updater === 'function' ? updater(gridQuery.query.sorting) : updater,
+      ),
     enableRowSelection: (row) => isRowSelectable?.(row.original) ?? true,
     enableSorting: sortingEnabled,
     enableMultiSort: multiSort,
@@ -206,13 +221,15 @@ export function DataGrid<Row extends RowData>({
   const leafHeaders = table.getHeaderGroups()[0]?.headers ?? [];
   const leafColumns = table.getAllLeafColumns();
   const columnCount = columnOffset + leafColumns.length + (renderRowActions ? 1 : 0);
-  // Stable across sorts: TanStack's row index is the row's place in `rows`.
+  // Stable across sorts: TanStack's row index is the row's place in the shown rows.
   const panelIdOf = (row: { index: number }) => `${panelIdPrefix}-detail-${row.index}`;
   // A failed first page is the error row alone, with no 'no rows' message beside it.
   const showsLoadError = serverMode && loadError !== undefined && !loading;
   let stateKind: GridStateKind | null = null;
   if (loading) stateKind = 'loading';
-  else if (entries.length === 0 && !showsLoadError) stateKind = 'empty';
+  else if (entries.length === 0 && !showsLoadError) {
+    stateKind = gridQuery.activeCount > 0 ? 'filteredEmpty' : 'empty';
+  }
   const rowHeight = estimatedRowHeight[density];
   const rowsPerViewport = Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight));
   const rowsClickable = Boolean(onRowClick || highlightOnClick);
@@ -379,7 +396,7 @@ export function DataGrid<Row extends RowData>({
     rangeExtractor: (range) => extractRange(range, pinnedIndexes, entries),
   });
   const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
-  // Annotated for the sort handler above, which resets the guard before this line has run.
+  // Annotated for the query handler above, which resets the guard before this line has run.
   const loadMore: ReturnType<typeof useLoadMore> = useLoadMore({
     enabled: serverMode && !awaitingNewRows,
     loading,
@@ -481,7 +498,9 @@ export function DataGrid<Row extends RowData>({
   const errorRowIndex = entries.length + 2;
   // Every row the app has, not only those loaded.
   const knownRowCount =
-    serverMode && totalRowCount !== undefined ? Math.max(totalRowCount, rows.length) : rows.length;
+    serverMode && totalRowCount !== undefined
+      ? Math.max(totalRowCount, rows.length)
+      : shownRows.length;
   // The header, every known row and the open panels. The error row follows the last entry,
   // whatever the grid knows of rows it has not loaded.
   let ariaRowCount = Math.max(
@@ -493,10 +512,14 @@ export function DataGrid<Row extends RowData>({
   // The header and the state row.
   if (stateKind) ariaRowCount = 2;
   // One region that is always mounted: a live region announces reliably only when its text
-  // changes, not when it appears with its text.
-  let stateLabel = '';
-  if (stateKind === 'loading') stateLabel = resolvedLabels.loading;
-  if (stateKind === 'empty') stateLabel = resolvedLabels.empty;
+  // changes, not when it appears with its text. Each state kind is named after its label.
+  const stateLabel = stateKind ? resolvedLabels[stateKind] : '';
+  let rowCountText = resolvedLabels.rowCount(rows.length);
+  if (serverMode && totalRowCount !== undefined) {
+    rowCountText = resolvedLabels.loadedRowCount(rows.length, totalRowCount);
+  } else if (!serverMode && gridQuery.activeCount > 0) {
+    rowCountText = resolvedLabels.filteredRowCount(shownRows.length, rows.length);
+  }
 
   return (
     <section
@@ -569,7 +592,15 @@ export function DataGrid<Row extends RowData>({
               <GridStateRow
                 kind={stateKind}
                 label={stateLabel}
-                emptyState={emptyState}
+                replacement={
+                  stateKind === 'filteredEmpty'
+                    ? filteredEmptyState?.(gridQuery.clearFilters)
+                    : emptyState
+                }
+                clearFilters={{
+                  label: resolvedLabels.clearFilters,
+                  onClick: gridQuery.clearFilters,
+                }}
                 columnCount={columnCount}
               />
             ) : null}
@@ -596,11 +627,7 @@ export function DataGrid<Row extends RowData>({
             <span>{resolvedLabels.selectedCount(selection.selectedIds.size)}</span>
           ) : null}
           {serverMode && loadingMore ? <span>{resolvedLabels.loadingMore}</span> : null}
-          <span className={styles.rowCount}>
-            {serverMode && totalRowCount !== undefined
-              ? resolvedLabels.loadedRowCount(rows.length, totalRowCount)
-              : resolvedLabels.rowCount(rows.length)}
-          </span>
+          <span className={styles.rowCount}>{rowCountText}</span>
         </footer>
       )}
     </section>

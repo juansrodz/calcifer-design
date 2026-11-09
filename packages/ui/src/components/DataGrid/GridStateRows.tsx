@@ -4,34 +4,60 @@ import { Spinner } from '../Spinner/Spinner';
 import styles from './DataGrid.module.css';
 import type { GetCellProps } from './useGridKeyboard';
 
-export type GridStateKind = 'loading' | 'empty';
+/** `filteredEmpty`: there are rows, or may be, but the filters and search match none of them. */
+export type GridStateKind = 'loading' | 'empty' | 'filteredEmpty';
 
 export interface GridStateRowProps {
   kind: GridStateKind;
-  /** The message for `kind`. */
+  /** The message for `kind`, which the grid also announces. */
   label: string;
-  /** Shown in place of the empty message. */
-  emptyState?: ReactNode;
+  /** The app's own content in place of an empty or filtered-empty message. */
+  replacement?: ReactNode;
+  /** The filtered-empty message's button. */
+  clearFilters: { label: string; onClick: () => void };
   columnCount: number;
 }
 
-/** The body's only row while it loads or has no rows: one cell across every column. */
-export function GridStateRow({ kind, label, emptyState, columnCount }: GridStateRowProps) {
+/**
+ * The body's only row while it loads, has no rows or shows none: one cell across every column.
+ * The live region speaks the message, so the visible copy is hidden from assistive technology;
+ * the Clear filters button beside it is not, and stays a tab stop, as the row is no keyboard row.
+ */
+export function GridStateRow({
+  kind,
+  label,
+  replacement,
+  clearFilters,
+  columnCount,
+}: GridStateRowProps) {
+  let content: ReactNode;
+  if (kind === 'loading') {
+    content = (
+      <div className={styles.state} aria-hidden="true">
+        <Spinner size="md" />
+        {label}
+      </div>
+    );
+  } else if (kind === 'empty') {
+    content = replacement ?? (
+      <div className={styles.state} aria-hidden="true">
+        {label}
+      </div>
+    );
+  } else {
+    content = replacement ?? (
+      <div className={`${styles.state} ${styles.filteredEmpty}`}>
+        <span aria-hidden="true">{label}</span>
+        <Button variant="secondary" size="sm" onClick={clearFilters.onClick}>
+          {clearFilters.label}
+        </Button>
+      </div>
+    );
+  }
   return (
     <tr aria-rowindex={2}>
       <td role="gridcell" className={styles.stateCell} colSpan={columnCount} aria-colindex={1}>
-        {kind === 'loading' ? (
-          <div className={styles.state} aria-hidden="true">
-            <Spinner size="md" />
-            {label}
-          </div>
-        ) : (
-          (emptyState ?? (
-            <div className={styles.state} aria-hidden="true">
-              {label}
-            </div>
-          ))
-        )}
+        {content}
       </td>
     </tr>
   );
