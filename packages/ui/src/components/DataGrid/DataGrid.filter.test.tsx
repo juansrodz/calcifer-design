@@ -1,13 +1,19 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
 import { DataGrid } from './DataGrid';
-import { filterableInventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
+import {
+  filterableInventoryColumns,
+  inventoryColumns,
+  makeInventoryRows,
+  type InventoryRow,
+} from './fixtures';
 import { emptyDataGridQuery } from './query';
 import type { DataGridQuery } from './types';
+import { useDebouncedDraft } from './useDebouncedDraft';
 
 type GridProps = React.ComponentProps<typeof DataGrid<InventoryRow>>;
 
@@ -242,6 +248,11 @@ describe('the filtered-empty state', () => {
     const user = userEvent.setup();
     renderGrid({ initialQuery: matchesNothing });
 
+    // The toolbar is one tab stop, ahead of the grid.
+    await user.tab();
+    expect(screen.getByRole('toolbar', { name: 'Grid tools' })).toContainElement(
+      document.activeElement as HTMLElement,
+    );
     await user.tab();
     expect(screen.getByRole('columnheader', { name: 'SKU' })).toHaveFocus();
     await user.tab();
@@ -438,5 +449,286 @@ describe('a controlled query', () => {
 
     // The shown rows are the same rows, so the hidden highlight is not reported again.
     expect(onHighlightChange).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useDebouncedDraft', () => {
+  const searchDelay = 400;
+
+  // Plain fake timers: the clock moves only when a test moves it, so the 399ms boundary is exact.
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function renderDraft(initialCommitted = '') {
+    const commit = vi.fn();
+    const view = renderHook(({ committed }) => useDebouncedDraft(committed, commit, searchDelay), {
+      initialProps: { committed: initialCommitted },
+    });
+    return { commit, ...view };
+  }
+
+  it('commits 400ms after the last change, not before', () => {
+    const { commit, result } = renderDraft();
+
+    act(() => result.current.change('b'));
+    act(() => vi.advanceTimersByTime(300));
+    act(() => result.current.change('bo'));
+    act(() => vi.advanceTimersByTime(399));
+
+    expect(result.current.draft).toBe('bo');
+    expect(commit).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(1));
+
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledWith('bo');
+  });
+
+  it('commits a pending change at once on flush, and only once', () => {
+    const { commit, result } = renderDraft();
+    act(() => result.current.change('bolt'));
+
+    act(() => result.current.flush());
+
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledWith('bolt');
+    act(() => vi.advanceTimersByTime(1000));
+    expect(commit).toHaveBeenCalledTimes(1);
+
+    // Nothing is pending now, so a second flush has nothing to say.
+    act(() => result.current.flush());
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets the draft and commits at once on commitNow, dropping the pending change', () => {
+    const { commit, result } = renderDraft();
+    act(() => result.current.change('bol'));
+
+    act(() => result.current.commitNow(''));
+
+    expect(result.current.draft).toBe('');
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledWith('');
+    act(() => vi.advanceTimersByTime(1000));
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a pending change when the committed value is reset elsewhere', () => {
+    const { commit, result, rerender } = renderDraft('zzz');
+    expect(result.current.draft).toBe('zzz');
+    act(() => result.current.change('zzzx'));
+
+    // "Clear filters" empties the query before the delay ends.
+    rerender({ committed: '' });
+
+    expect(result.current.draft).toBe('');
+    act(() => vi.advanceTimersByTime(1000));
+    expect(commit).not.toHaveBeenCalled();
+    expect(result.current.draft).toBe('');
+  });
+
+  it('takes a committed value that changes while nothing is pending', () => {
+    const { result, rerender } = renderDraft('bolt');
+
+    rerender({ committed: 'washer' });
+
+    expect(result.current.draft).toBe('washer');
+  });
+
+  it('keeps the typed draft when the committed value is its own, trimmed', () => {
+    const { commit, result, rerender } = renderDraft();
+    act(() => result.current.change('hex '));
+    act(() => vi.advanceTimersByTime(searchDelay));
+    expect(commit).toHaveBeenCalledWith('hex ');
+
+    // The query holds the term trimmed, and the draft keeps the space the user typed.
+    rerender({ committed: 'hex' });
+    expect(result.current.draft).toBe('hex ');
+
+    act(() => result.current.change('hex b'));
+    expect(result.current.draft).toBe('hex b');
+  });
+
+  it('adopts a later reset to a value it once committed', () => {
+    const { result, rerender } = renderDraft();
+    act(() => result.current.change('bolt'));
+    act(() => vi.advanceTimersByTime(searchDelay));
+    rerender({ committed: 'bolt' });
+    rerender({ committed: '' });
+    expect(result.current.draft).toBe('');
+
+    rerender({ committed: 'bolt' });
+
+    expect(result.current.draft).toBe('bolt');
+  });
+
+  it('flushes a pending change on unmount, once, and nothing after', () => {
+    const { commit, result, unmount } = renderDraft();
+    act(() => result.current.change('bolt'));
+
+    unmount();
+
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledWith('bolt');
+    vi.advanceTimersByTime(1000);
+    expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it('commits nothing on unmount when nothing is pending', () => {
+    const { commit, unmount } = renderDraft('bolt');
+
+    unmount();
+
+    expect(commit).not.toHaveBeenCalled();
+  });
+});
+
+describe('the filters button and match mode', () => {
+  it('counts filters and search on the filters button', async () => {
+    const user = userEvent.setup();
+    renderGrid({
+      initialQuery: { filters: { name: 'Hex', status: 'out' }, search: 'bolt' },
+    });
+
+    const filtersButton = screen.getByRole('button', { name: 'Filters, 3 active' });
+    expect(within(filtersButton).getByText('3')).toBeInTheDocument();
+    expect(filtersButton).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(filtersButton);
+
+    expect(filtersButton).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(filtersButton);
+
+    expect(filtersButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows no count on the filters button when nothing is active', () => {
+    renderGrid();
+
+    const filtersButton = screen.getByRole('button', { name: 'Filters' });
+    expect(filtersButton).toHaveTextContent('');
+    expect(filtersButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('counts a search as one criterion', () => {
+    renderGrid({ initialQuery: { search: 'bolt' } });
+
+    const filtersButton = screen.getByRole('button', { name: 'Filters, 1 active' });
+    expect(within(filtersButton).getByText('1')).toBeInTheDocument();
+  });
+
+  it('shows match mode while filtering and reports it', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    const { container } = renderGrid({
+      initialQuery: { filters: { status: 'out' } },
+      onQueryChange,
+    });
+
+    const matchMode = screen.getByRole('group', { name: 'Match filters' });
+    expect(within(matchMode).getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(matchMode).getByRole('button', { name: 'Any' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(await axe(container)).toHaveNoViolations();
+
+    await user.click(within(matchMode).getByRole('button', { name: 'Any' }));
+
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+    expect(onQueryChange).toHaveBeenLastCalledWith(expect.objectContaining({ matchMode: 'any' }));
+    expect(within(matchMode).getByRole('button', { name: 'Any' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await user.click(within(matchMode).getByRole('button', { name: 'All' }));
+
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(expect.objectContaining({ matchMode: 'all' }));
+  });
+
+  it('hides match mode with no column filter and the strip closed, and shows it when open', async () => {
+    const user = userEvent.setup();
+    // A search is not a column filter, so it does not bring match mode.
+    renderGrid({ initialQuery: { search: 'bolt' } });
+    expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
+
+    expect(screen.getByRole('group', { name: 'Match filters' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
+
+    expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+  });
+
+  it('orders the toolbar: match mode, then filters, then refresh', () => {
+    renderGrid({ initialQuery: { filters: { status: 'out' } }, onRefresh: vi.fn() });
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
+    expect(
+      within(toolbar)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label') ?? button.textContent),
+    ).toEqual(['All', 'Any', 'Filters, 1 active', 'Refresh']);
+  });
+
+  it('offers no filters when no column has a filter', () => {
+    renderGrid({ columns: inventoryColumns });
+
+    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Filters/ })).not.toBeInTheDocument();
+  });
+
+  it('offers no filters in server mode without onQueryChange', () => {
+    renderGrid({
+      mode: 'server',
+      initialQuery: { filters: { status: 'out' } },
+      onRefresh: vi.fn(),
+    });
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
+    expect(within(toolbar).getAllByRole('button')).toHaveLength(1);
+    expect(within(toolbar).getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Filters/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+  });
+
+  it('offers filters in server mode once onQueryChange is given', () => {
+    renderGrid({
+      mode: 'server',
+      initialQuery: { filters: { status: 'out' } },
+      onQueryChange: vi.fn(),
+    });
+
+    expect(screen.getByRole('button', { name: 'Filters, 1 active' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Match filters' })).toBeInTheDocument();
+  });
+
+  it('takes its words from labels', () => {
+    renderGrid({
+      initialQuery: { filters: { status: 'out' } },
+      labels: {
+        filters: (activeCount) => `Filtros, ${activeCount}`,
+        matchMode: 'Coincidir',
+        matchAll: 'Todos',
+        matchAny: 'Alguno',
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'Filtros, 1' })).toBeInTheDocument();
+    const matchMode = screen.getByRole('group', { name: 'Coincidir' });
+    expect(within(matchMode).getByRole('button', { name: 'Todos' })).toBeInTheDocument();
+    expect(within(matchMode).getByRole('button', { name: 'Alguno' })).toBeInTheDocument();
   });
 });

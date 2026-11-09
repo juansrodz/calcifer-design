@@ -1,6 +1,12 @@
 export interface DataGridLabels {
   toolbar: string;
   refresh: string;
+  /** The filters button's name; the count of active filters and search is in it from 1 up. */
+  filters: (activeCount: number) => string;
+  /** Names the All / Any switch that says how the column filters combine. */
+  matchMode: string;
+  matchAll: string;
+  matchAny: string;
   rowCount: (count: number) => string;
   loadedRowCount: (loaded: number, total: number) => string;
   /** Client mode while filters or search are active: the rows shown of every row. */
@@ -25,6 +31,10 @@ const numberFormat = new Intl.NumberFormat('en-US');
 export const defaultDataGridLabels: DataGridLabels = {
   toolbar: 'Grid tools',
   refresh: 'Refresh',
+  filters: (activeCount) => (activeCount === 0 ? 'Filters' : `Filters, ${activeCount} active`),
+  matchMode: 'Match filters',
+  matchAll: 'All',
+  matchAny: 'Any',
   rowCount: (count) => `${numberFormat.format(count)} ${count === 1 ? 'row' : 'rows'}`,
   loadedRowCount: (loaded, total) =>
     `Showing ${numberFormat.format(loaded)} of ${numberFormat.format(total)} rows`,

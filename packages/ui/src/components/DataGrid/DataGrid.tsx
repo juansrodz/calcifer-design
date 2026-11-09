@@ -127,6 +127,8 @@ export function DataGrid<Row extends RowData>({
   // grid does none of them, and starts with no filters or search whatever `initialQuery` says.
   const queryEnabled = !serverMode || onQueryChange !== undefined;
   const sortingEnabled = enableSorting && queryEnabled;
+  const filtering = queryEnabled && columns.some((column) => column.filter !== undefined);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // The rows the grid held when the query last changed. Until the app replaces them the loaded
   // rows answer the old query, so nothing more is asked of them.
   const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
@@ -559,6 +561,18 @@ export function DataGrid<Row extends RowData>({
         refreshing={refreshing}
         toolbarLabel={resolvedLabels.toolbar}
         refreshLabel={resolvedLabels.refresh}
+        onToggleFilters={filtering ? () => setFiltersOpen((open) => !open) : undefined}
+        filtersOpen={filtersOpen}
+        filtersLabel={resolvedLabels.filters(gridQuery.activeCount)}
+        filterCount={gridQuery.activeCount}
+        showMatchMode={
+          filtering && (filtersOpen || Object.keys(gridQuery.query.filters).length > 0)
+        }
+        matchMode={gridQuery.query.matchMode}
+        onMatchModeChange={gridQuery.setMatchMode}
+        matchModeLabel={resolvedLabels.matchMode}
+        matchAllLabel={resolvedLabels.matchAll}
+        matchAnyLabel={resolvedLabels.matchAny}
       />
       <LiveRegion message={stateLabel} politeness="polite" />
       <div
