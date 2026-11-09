@@ -86,7 +86,7 @@ describe('dataGridSearchPattern', () => {
     expect(pattern?.test('a.b')).toBe(true);
   });
 
-  it.each(['(x', '[1]', 'c:\\temp', '50%+', 'a|b', '^$', '{2}'])(
+  it.each(['(x', '[abc', ')', '[1]', 'c:\\temp', 'abc\\', '50%+', 'a|b', '^$', '{2}'])(
     'matches %s as its own text without throwing',
     (term) => {
       expect(dataGridSearchPattern(term)?.test(`before ${term} after`)).toBe(true);
@@ -96,6 +96,60 @@ describe('dataGridSearchPattern', () => {
   it('keeps * a wildcard after a literal backslash', () => {
     expect(dataGridSearchPattern('x\\*')?.test('x\\anything')).toBe(true);
     expect(dataGridSearchPattern('x\\*')?.test('xanything')).toBe(false);
+  });
+
+  it('keeps the segments in order and reads each one the same wherever it falls', () => {
+    expect(dataGridSearchPattern('a*b')?.test('xaQQbx')).toBe(true);
+    expect(dataGridSearchPattern('a*b')?.test('a\nb')).toBe(true);
+    expect(dataGridSearchPattern('a*b*c')?.test('abc')).toBe(true);
+    expect(dataGridSearchPattern('a*b*c')?.test('a-b-c')).toBe(true);
+    expect(dataGridSearchPattern('a*b*c')?.test('acb')).toBe(false);
+    // The earliest place for a segment must not hide a later one that would also fit.
+    expect(dataGridSearchPattern('a*ab')?.test('aab')).toBe(true);
+    expect(dataGridSearchPattern('a*b*b')?.test('abb')).toBe(true);
+    expect(dataGridSearchPattern('a*b*b')?.test('ab')).toBe(false);
+  });
+
+  it('reads ? as one character, even a new line or a code point of two units', () => {
+    expect(dataGridSearchPattern('a?b')?.test('a😀b')).toBe(true);
+    expect(dataGridSearchPattern('a?b')?.test('a\nb')).toBe(true);
+    expect(dataGridSearchPattern('a?b')?.test('a😀😀b')).toBe(false);
+    expect(dataGridSearchPattern('a?b')?.test('ab')).toBe(false);
+  });
+
+  it('matches every text, the empty one too, when the term is only stars', () => {
+    for (const term of ['*', '**', '***', ' * ']) {
+      const pattern = dataGridSearchPattern(term);
+      expect(pattern).not.toBeNull();
+      expect(pattern?.test('')).toBe(true);
+      expect(pattern?.test('anything at all')).toBe(true);
+    }
+  });
+
+  it('ignores stars at either end of the term, which is unanchored anyway', () => {
+    expect(dataGridSearchPattern('*ab*')?.test('xxabxx')).toBe(true);
+    expect(dataGridSearchPattern('*ab*')?.test('ba')).toBe(false);
+    expect(dataGridSearchPattern('**a**b**')?.test('a-b')).toBe(true);
+  });
+
+  it('reads escapes and stars together', () => {
+    const pattern = dataGridSearchPattern('(x*[1]');
+    expect(pattern?.test('(x and [1]')).toBe(true);
+    expect(pattern?.test('(x and 1')).toBe(false);
+    expect(pattern?.test('[1] then (x')).toBe(false);
+  });
+
+  // Each of these once took between half a second and a minute, and a search runs on every
+  // keystroke. The text is chosen so that the term cannot match, the slowest case.
+  it.each([
+    { term: `${'*'.repeat(10)}x`, text: 'Cable tie 200 mm (3)' },
+    { term: `a${'*'.repeat(12)}b`, text: 'a'.repeat(40) },
+    { term: `${'a*'.repeat(10)}b`, text: 'a'.repeat(40) },
+  ])('answers quickly for $term against $text', ({ term, text }) => {
+    const started = performance.now();
+    const matched = dataGridSearchPattern(term)?.test(text);
+    expect(performance.now() - started).toBeLessThan(50);
+    expect(matched).toBe(false);
   });
 
   it('does not match other text when the term holds RegExp syntax', () => {
@@ -292,6 +346,8 @@ describe('isSameQuery', () => {
 describe('createQueryMatcher', () => {
   const rows = makeInventoryRows(40);
   const columns = filterableInventoryColumns;
+  // The rows "sku-100?" finds: SKU-1000 to SKU-1009.
+  const skuRows = rows.filter((row) => /^SKU-100\d$/.test(row.sku));
 
   function matching(query: DataGridQuery) {
     const matcher = createQueryMatcher(columns, query);
@@ -351,19 +407,19 @@ describe('createQueryMatcher', () => {
   });
 
   it('searches with wildcards, unanchored and in any case', () => {
-    expect(matching(queryWith({ search: 'sku-100?' })).map((row) => row.sku)).toEqual(
-      rows.slice(0, 10).map((row) => row.sku),
-    );
-    expect(matching(queryWith({ search: ' HEX*M6 ' }))).toEqual(
-      rows.filter((row) => row.name.startsWith('Hex bolt M6')),
-    );
+    expect(skuRows.length).toBeGreaterThan(0);
+    expect(skuRows.length).toBeLessThan(rows.length);
+    expect(matching(queryWith({ search: 'sku-100?' }))).toEqual(skuRows);
+    const hexRows = rows.filter((row) => row.name.startsWith('Hex bolt M6'));
+    expect(hexRows.length).toBeGreaterThan(0);
+    expect(matching(queryWith({ search: ' HEX*M6 ' }))).toEqual(hexRows);
   });
 
   it('combines the search and the filters with AND, whatever the match mode', () => {
     const hasBolt = (name: string) => name.toLowerCase().includes('bolt');
-    const firstTen = new Set(rows.slice(0, 10).map((row) => row.id));
+    const skuRowIds = new Set(skuRows.map((row) => row.id));
     const expected = rows.filter(
-      (row) => (hasBolt(row.name) || row.status === 'out') && firstTen.has(row.id),
+      (row) => (hasBolt(row.name) || row.status === 'out') && skuRowIds.has(row.id),
     );
     expect(expected.length).toBeGreaterThan(0);
     expect(
@@ -378,8 +434,8 @@ describe('createQueryMatcher', () => {
   });
 
   it('searches alone in either match mode', () => {
-    expect(matching(queryWith({ search: 'sku-100?', matchMode: 'any' }))).toHaveLength(10);
-    expect(matching(queryWith({ search: 'sku-100?', matchMode: 'all' }))).toHaveLength(10);
+    expect(matching(queryWith({ search: 'sku-100?', matchMode: 'any' }))).toEqual(skuRows);
+    expect(matching(queryWith({ search: 'sku-100?', matchMode: 'all' }))).toEqual(skuRows);
   });
 
   it('ignores a filter on a column that is not there or has no filter', () => {

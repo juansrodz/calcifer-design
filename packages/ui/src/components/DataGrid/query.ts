@@ -25,18 +25,35 @@ export function columnNameOf<Row extends RowData, Value = unknown>(
 
 /**
  * A search term as a case-insensitive, unanchored RegExp: `*` is any run of characters, `?` is one
- * character, everything else is literal. The term is trimmed; an empty term gives null.
+ * character (a new line or a code point of two units too), everything else is literal. The term
+ * is trimmed; an empty term gives null. A term of only stars matches every text, the empty one
+ * included.
  */
 export function dataGridSearchPattern(term: string): RegExp | null {
   const trimmed = term.trim();
   if (trimmed === '') return null;
-  // One pass, so a backslash in the term can never be mistaken for the escape of a wildcard.
-  const source = trimmed.replace(/[.*+?^${}()|[\]\\]/g, (character) => {
-    if (character === '*') return '.*';
-    if (character === '?') return '.';
-    return `\\${character}`;
-  });
-  return new RegExp(source, 'i');
+  // The text between the stars. The match is unanchored, so stars at either end add nothing, and a
+  // run of stars is one step. Escaping happens in one pass, so a backslash in the term can never be
+  // mistaken for the escape of a wildcard; every character it escapes is one the `u` flag allows.
+  const segments = trimmed
+    .split(/\*+/)
+    .filter((segment) => segment !== '')
+    .map((segment) =>
+      segment.replace(/[.+?^${}()|[\]\\]/g, (character) =>
+        character === '?' ? '.' : `\\${character}`,
+      ),
+    );
+  const [first = '', ...rest] = segments;
+  // Joining the segments with `.*` would let the engine retry each star with every length, which
+  // costs n to the power of the stars on text that fails to match. Instead each later segment is
+  // found by a lookahead for its earliest occurrence, which the engine never reopens, and the
+  // backreference then consumes exactly what the lookahead found. Segments have a fixed length, so
+  // the earliest occurrence leaves the most text for the segments after it: no match is lost.
+  const source = rest.reduce(
+    (pattern, segment, index) => `${pattern}(?=([^]*?${segment}))\\${index + 1}`,
+    first,
+  );
+  return new RegExp(source, 'isu');
 }
 
 export const emptyDataGridQuery: DataGridQuery = {
