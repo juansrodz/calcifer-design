@@ -71,6 +71,33 @@ and search", "States" and "Keyboard and screen readers" first. This plan covers 
    the highlight, the selection is cleared by the query change, and select-all afterwards selects only
    the matching rows. Test in Task 3.
 
+## Fit with the WBW redesign
+
+The Who's Bringing What redesign (mock frozen in the app repo at `docs/design/mock-v3/`; redesign spec
+`docs/superpowers/specs/2026-11-08-whosbringingwhat-redesign-design.md` on the portfolio's
+`redesign/docs` branch) is the first real consumer in sight. Its Users screen (9a, dark 10o, no-matches
+9e) is a sorted table with an outside search field and counted role tabs, a row menu, a "Show N more"
+button and an illustrated no-matches state. This plan is shaped to serve it:
+
+- **Order.** The user answered the redesign's Q4 on 2026-11-09: the theme layer and the redesign's
+  new library components go first, and the DataGrid releases follow. Execute this plan only after that
+  library release is merged to `main`; then rebase this branch onto it.
+- **Tokens.** That release adds a selected/active colour family distinct from the accent (purple in
+  WBW, where the accent is the coral call to action). Pressed toolbar buttons and the grid's selected
+  and highlighted rows read the selected family, not the accent. Use the token names that release
+  defines; this release still adds no tokens of its own.
+- **An app-owned query.** 9a's search field and role tabs sit in the page header, outside the card. A
+  controlled `query` prop (Task 3) lets an app's own `SearchField` and `Segmented` drive the grid's
+  matching, footer count and filtered-empty state.
+- **Shared parts.** The grid's search field is the library's `SearchField` (Task 4); its default
+  filtered-empty content is the library's `EmptyState` (Task 3), and `filteredEmptyState` lets WBW
+  draw its characters and a "Clear search" button.
+- **"Show N more".** A load-more button mode for server mode (Task 7).
+- **Not in this plan.** 9a's uppercase, tracked column headers and its divider-free rows with a
+  rounded hover tint are not expressible with today's tokens; whether the grid gets purpose tokens
+  for them is the theme layer's call, raised there. The phone list (9c) stays the app's: a stacked
+  layout is a DataGrid non-goal.
+
 ---
 
 ## File Structure
@@ -83,7 +110,7 @@ All under `packages/ui/`:
 | `src/components/DataGrid/query.ts` (new)                                                                               | Pure query logic: column ids, the search pattern, normalising, counting and matching |
 | `src/components/DataGrid/useGridQuery.ts` (new)                                                                        | The grid's query state and its one change routine                                    |
 | `src/components/DataGrid/useDebouncedDraft.ts` (new)                                                                   | A typed value that commits after a delay, and adopts outside changes                 |
-| `src/components/DataGrid/GridSearch.tsx` (new)                                                                         | The search field and its clear button                                                |
+| `src/components/DataGrid/GridSearch.tsx` (new)                                                                         | The search field, on the library's `SearchField`                                     |
 | `src/components/DataGrid/GridFilterRow.tsx` (new)                                                                      | The filter strip: keyboard row 1 while it shows                                      |
 | `src/components/DataGrid/GridTextFilter.tsx` (new)                                                                     | A debounced text filter                                                              |
 | `src/components/DataGrid/GridChoiceFilter.tsx` (new)                                                                   | The select and multi-select filters, on Base UI `Combobox`                           |
@@ -103,7 +130,8 @@ Modified at the end: `src/index.ts`, `test/dist/ui-dist.test.ts`, root `README.m
 **Files:**
 
 - Modify: `src/components/IconButton/IconButton.tsx`, `IconButton.module.css`,
-  `IconButton.stories.tsx`, `IconButton.test.tsx`
+  `IconButton.stories.tsx`, `IconButton.test.tsx`, `src/components/DataGrid/DataGrid.module.css`
+  (row tints)
 
 **Interfaces:**
 
@@ -141,8 +169,10 @@ export interface IconButtonProps {
 - [ ] **Step 3: Implement.** `pressed` sets `aria-pressed={pressed}` and `data-pressed` when true.
       The badge is a `<span className={styles.badge} aria-hidden="true">` inside the button,
       absolutely placed at the top-end corner (logical properties), `--text-2xs`, `--radius-full`,
-      `--color-accent` background with `--color-accent-text`. Pressed state for every variant:
-      `--color-accent-soft` background and `--color-accent` icon colour, kept on hover. The root
+      `--color-accent` background with `--color-accent-text`. Pressed state for every variant: the
+      selected family's soft background and selected icon colour (see "Fit with the WBW
+      redesign"), kept on hover. In the same task, move the grid's selected and highlighted row
+      tints from the accent to the selected family. The root
       gets `position: relative`. The badge must not change the button's size.
 - [ ] **Step 4: Run** the IconButton tests and `cd packages/ui && bunx vitest run src/components/Toolbar`
       — expect PASS.
@@ -318,6 +348,12 @@ export function useGridQuery<Row extends RowData>(options: UseGridQueryOptions<R
  * would set them. Its `sorting` wins over `initialSorting`. Read once, on mount.
  */
 initialQuery?: Partial<DataGridQuery>;
+/**
+ * Makes the query controlled: the grid shows this query and reports every change through
+ * `onQueryChange`, for an app whose own search field or tabs sit outside the grid. Normalised
+ * against `columns` on every render. Without it the grid keeps its own query.
+ */
+query?: DataGridQuery;
 /** Adds the search button to the toolbar. */
 enableSearch?: boolean;
 /**
@@ -350,11 +386,21 @@ Behaviour:
   everywhere.
 - Footer in client mode with `activeCount > 0`: `filteredRowCount(shownRows.length, rows.length)`.
 - A new state kind `'filteredEmpty'`: not loading, no entries, no load error, and `activeCount > 0`.
-  Its row shows `labels.filteredEmpty` and a `Button` (`variant="secondary"`, `size="sm"`) labelled `labels.clearFilters` that calls `clearFilters`; or `filteredEmptyState(clearFilters)`
-  when given. The live region announces `labels.filteredEmpty`. Unlike the other state messages the
+  Its row shows the library's `EmptyState` with `labels.filteredEmpty` and a `Button`
+  (`variant="secondary"`, `size="sm"`) labelled `labels.clearFilters` that calls `clearFilters`; or
+  `filteredEmptyState(clearFilters)` when given. The live region announces `labels.filteredEmpty`. Unlike the other state messages the
   row's content is not `aria-hidden` (the button must be reachable); the message text inside it is.
 - `initialQuery` is normalised against `columns` once, on mount, and its `sorting` (when given) wins
   over `initialSorting`. Update `initialSorting`'s doc comment to say so (remove "planned").
+- With a controlled `query`, the setters only call `onQueryChange`; the shown query is the prop. The
+  change routine (clear the selection, scroll to the top, restart server paging) runs whenever the
+  shown query changes, whichever side changed it: `useGridQuery` keeps the last query it acted on
+  and, when the prop differs from it by `isSameQuery`, runs the routine from a layout effect.
+  `initialQuery` is ignored when `query` is given.
+- Test it: `it('follows a controlled query from outside the grid')` — a wrapper with its own text
+  input outside the grid that sets `query.search`: rows narrow, the footer shows the filtered count,
+  a selection made before is cleared, and the grid's Clear filters button calls `onQueryChange` with
+  an empty search (the wrapper then applies it).
 
 - [ ] **Step 1: Write the failing tests** in `DataGrid.filter.test.tsx` (inventory rows and
       `filterableInventoryColumns`; the UI to change filters arrives in Tasks 4 to 6, so these drive the
@@ -445,8 +491,9 @@ toolbar.
 
 - **Search.** An `IconButton` toggle, `pressed` while the search field is open. Opening shows the
   field to the toolbar's inline start, inside the header cluster, and moves focus into it. The field
-  is a `TextInput` (`type="search"`, `aria-label={labels.searchField}`) with an `IconButton` labelled
-  `labels.clearSearch` beside it while it has text. Typing commits through `useDebouncedDraft` with
+  is the library's `SearchField` (from the redesign's library release; read its props from source),
+  named `labels.searchField`, its clear button named `labels.clearSearch` if it takes a label.
+  Typing commits through `useDebouncedDraft` with
   400ms; Enter flushes; the clear button commits `''` at once and returns focus to the field. Escape
   in the field: with text, commits `''` at once; when empty, closes the field and focuses the search
   button. Pressing the search button while open commits `''` at once (when there is a search) and
@@ -480,8 +527,9 @@ toolbar.
   - `it('offers neither search nor filters in server mode without onQueryChange')`.
   - Compose a new `Search` story (client, `enableSearch`) with `axe` in the stories test file.
 - [ ] **Step 2: Run** — expect FAIL.
-- [ ] **Step 3: Implement.** Draw both icons like the existing ones in `src/icons/` (24px viewBox,
-      `currentColor` stroke, `aria-hidden`): a magnifying glass and a funnel. `GridCardHeader` takes
+- [ ] **Step 3: Implement.** Reuse a search icon if the redesign's library release added one;
+      otherwise draw it, and the funnel, like the existing ones in `src/icons/` (24px viewBox,
+      `currentColor` stroke, `aria-hidden`). `GridCardHeader` takes
       the new pieces as props; keep its props flat and named, as it has them today.
 - [ ] **Step 4: Run** the whole `DataGrid` folder and the `IconButton` tests — expect PASS.
 - [ ] **Step 5: Commit** `feat(ui): DataGrid search, filters button and match mode`.
@@ -659,7 +707,8 @@ Behaviour:
 **Files:**
 
 - Modify: `fixtures.ts`, `DataGrid.stories.tsx`, `DataGrid.stories.test.tsx`,
-  `DataGrid.server.test.tsx`
+  `DataGrid.server.test.tsx`, `DataGrid.tsx`, `useLoadMore.ts`, `types.ts`, `labels.ts`,
+  `DataGrid.module.css`
 
 **Interfaces:**
 
@@ -688,8 +737,29 @@ Stories (each composed with `axe` in `DataGrid.stories.test.tsx`):
   - `it('shows the filtered-empty state in server mode')`: a search that the server answers with no
     rows shows "No rows match the filters." and its button clears the search and reloads.
 - [ ] **Step 2: Run** — expect FAIL.
-- [ ] **Step 3: Implement** the mock server change and the stories. Story descriptions are one or two
-      plain sentences, like the existing ones.
+  - `it('loads more from a "Show N more" button')`: with `loadMoreTrigger="button"`, scrolling to the
+    end calls nothing; the footer button reads "Show 190 more" (total 240, 50 loaded) and calls
+    `onLoadMore` once per press; it shows "Loading more rows…" and is disabled while `loadingMore`,
+    and is gone once `hasMore` is false. Without a total it reads "Show more".
+
+Added for "Show N more" (9a), server mode only:
+
+```ts
+// types.ts — added to DataGridProps
+/** How server mode asks for more rows: as the user scrolls (the default), or from a button. */
+loadMoreTrigger?: 'scroll' | 'button';
+
+// labels.ts — added
+showMore: (remaining: number | undefined) => string; // 'Show 190 more', or 'Show more'
+```
+
+The button is a `Button` (`variant="secondary"`, `size="sm"`) centred under the body, inside the
+card and above the footer, shown while `hasMore` and no `loadError`. In button mode `useLoadMore`
+never fires on its own, including when the loaded rows do not fill the view. Add a
+`ServerShowMore` story.
+
+- [ ] **Step 3: Implement** the mock server change, the button mode and the stories. Story
+      descriptions are one or two plain sentences, like the existing ones.
 - [ ] **Step 4: Run** the whole `DataGrid` folder — expect PASS.
 - [ ] **Step 5: Commit** `feat(ui): DataGrid finding-rows stories and server-mode filtering`.
 
@@ -714,9 +784,9 @@ Stories (each composed with `axe` in `DataGrid.stories.test.tsx`):
 - [ ] **Step 3: Implement** the exports, add `dataGridSearchPattern` to the README table's ui row
       after `createDataGridColumnHelper`, and write the changeset: `'@calcifer-design/ui': minor`,
       body "DataGrid can now find rows: a filter strip with text, select and multi-select filters,
-      all/any matching, wildcard search, `initialQuery`, and a filtered-empty state. `IconButton`
-      gains an optional pressed state and count badge. `onQueryChange` now also fires in client
-      mode."
+      all/any matching, wildcard search, `initialQuery` and a controlled `query`, a filtered-empty
+      state, and a "Show N more" button for server mode. `IconButton` gains an optional pressed
+      state and count badge. `onQueryChange` now also fires in client mode."
 - [ ] **Step 4: Run** `bun run check` from the repo root — expect exit 0 (lint, typecheck, unit, dist,
       Storybook build).
 - [ ] **Step 5: Commit** `chore(ui): export DataGrid search helper and add the release 2 changeset`.
