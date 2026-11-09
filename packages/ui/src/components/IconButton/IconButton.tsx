@@ -25,14 +25,29 @@ export interface IconButtonProps extends Omit<
   size?: IconButtonSize;
   /** Swaps the icon for a spinner, keeps the button focusable, and blocks activation. */
   loading?: boolean;
+  /**
+   * Makes the button a toggle: sets `aria-pressed` and, when true, draws the accent state. Leave it
+   * undefined for a plain button, which then carries no `aria-pressed` at all.
+   */
+  pressed?: boolean;
+  /**
+   * A small count in the button's top-end corner, hidden from assistive technology. Put the count
+   * in `label` as well ("Filters, 2 active"). Nothing shows for 0 or undefined; above 99 it reads
+   * "99+".
+   */
+  badge?: number;
   className?: string;
 }
+
+const BADGE_CAP = 99;
 
 export function IconButton({
   label,
   variant = 'ghost',
   size = 'md',
   loading = false,
+  pressed,
+  badge,
   disabled,
   className,
   children,
@@ -51,12 +66,19 @@ export function IconButton({
       data-variant={variant}
       data-size={size}
       data-loading={loading ? '' : undefined}
+      data-pressed={pressed ? '' : undefined}
       disabled={isDisabled}
       focusableWhenDisabled={loading}
       aria-label={label}
       aria-busy={loading || undefined}
+      aria-pressed={pressed}
     >
       <span className={styles.icon}>{loading ? <Spinner size="sm" /> : children}</span>
+      {badge !== undefined && badge > 0 ? (
+        <span className={styles.badge} aria-hidden="true">
+          {badge > BADGE_CAP ? `${BADGE_CAP}+` : badge}
+        </span>
+      ) : null}
     </BaseButton>
   );
 }

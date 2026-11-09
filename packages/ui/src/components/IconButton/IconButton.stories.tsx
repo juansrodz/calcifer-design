@@ -41,3 +41,13 @@ export const Disabled: Story = { args: { disabled: true } };
 export const Loading: Story = { args: { loading: true } };
 /** A quiet filled circle; its glyph draws at 16px in both sizes. */
 export const Soft: Story = { args: { variant: 'soft' } };
+
+export const PressedAndBadge: Story = {
+  args: { label: 'Filters, 2 active', pressed: true, badge: 2 },
+  render: (args) => (
+    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+      <IconButton {...args} />
+      <IconButton {...args} label="Filters" pressed={false} badge={undefined} />
+    </div>
+  ),
+};

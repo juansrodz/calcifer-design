@@ -2,6 +2,7 @@
    rather than to a text label, and with no room for one. `soft` is the quiet filled circle: a
    surface fill with no border, and a consumer hook for the one shadow the mock draws on a photo. */
 .root {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -44,6 +45,13 @@
   box-shadow: var(--icon-button-shadow, none);
 }
 
+/* A toggle that is on, in every variant. It sits after the variants so it wins over them, and its
+   hover rule below keeps it from falling back to the variant's own hover colours. */
+.root[data-pressed] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
 @media (hover: hover) {
   .root[data-variant='ghost']:hover:not([data-disabled]) {
     background: var(--color-surface-2);
@@ -60,6 +68,11 @@
 
   .root[data-variant='soft']:hover:not([data-disabled]) {
     background: var(--color-surface-3);
+  }
+
+  .root[data-pressed]:hover:not([data-disabled]) {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
   }
 }
 
@@ -90,4 +103,36 @@
 .root[data-variant='soft'] .icon > svg {
   width: 1rem;
   height: 1rem;
+}
+
+/* Out of flow, so a count never changes the button's size. */
+.badge {
+  --badge-size: calc(var(--text-2xs) * 1.5);
+
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--badge-size);
+  min-block-size: var(--badge-size);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The primary button is already accent-coloured, so the badge swaps its pair to stay visible. */
+.root[data-variant='primary'] .badge {
+  background: var(--color-accent-text);
+  color: var(--color-accent);
+}
+
+.root[data-variant='primary'][data-pressed] .badge {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
 }
