@@ -61,10 +61,18 @@ describe('DataGrid stories', () => {
 
   it('the view all link story opens filtered and sorted', () => {
     render(<ViewAllLink />);
-    const lowCount = makeInventoryRows(240).filter((row) => row.status === 'low').length;
-    expect(screen.getByText(`${lowCount} of 240 rows`)).toBeInTheDocument();
+    const inStockRows = makeInventoryRows(240).filter((row) => row.status === 'in stock');
+    const presetCategories = ['Packaging', 'Safety'];
+    const shownCount = inStockRows.filter((row) => presetCategories.includes(row.category)).length;
+    // Both filters narrow the rows: the categories leave out some of the rows in stock.
+    expect(shownCount).toBeGreaterThan(0);
+    expect(shownCount).toBeLessThan(inStockRows.length);
+    expect(screen.getByText(`${shownCount} of 240 rows`)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
-    expect(textOfEachRow('Status').every((status) => status === 'low')).toBe(true);
+    expect(textOfEachRow('Status').every((status) => status === 'in stock')).toBe(true);
+    expect(textOfEachRow('Category').every((category) => presetCategories.includes(category))).toBe(
+      true,
+    );
     expect(screen.getByRole('columnheader', { name: 'Quantity' })).toHaveAttribute(
       'aria-sort',
       'ascending',

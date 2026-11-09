@@ -248,20 +248,20 @@ export const ViewAllLink: Story = {
     docs: {
       description: {
         story:
-          'Shows how a "view all" link opens a filtered grid: the link sets the initial query, here low stock in two categories, sorted by quantity.',
+          'Shows how a "view all" link opens a filtered grid: the link sets the initial query, here items in stock in two categories, sorted by quantity.',
       },
     },
   },
   render: () => (
     <DataGrid<InventoryRow>
       gridId="inventory-view-all-story"
-      heading="Low stock"
+      heading="In stock"
       rows={filteringRows}
       columns={filterableInventoryColumns}
       getRowId={(row) => row.id}
       maxHeight="25rem"
       initialQuery={{
-        filters: { status: 'low', category: ['Safety', 'Tools'] },
+        filters: { status: 'in stock', category: ['Packaging', 'Safety'] },
         sorting: [{ id: 'quantity', desc: false }],
       }}
     />

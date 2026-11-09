@@ -30,6 +30,7 @@ vi.mock('./fixtures', async (importOriginal) => {
     createMockInventoryServer: (options: FixturesModule.MockInventoryServerOptions) => {
       const server = fixtures.createMockInventoryServer(options);
       return {
+        ...server,
         fetchPage: (request: Parameters<typeof server.fetchPage>[0]) => {
           fetchPageRequests(request);
           return server.fetchPage(request);
@@ -702,6 +703,102 @@ describe('the Show more button', () => {
 
     rerender(buttonGrid({ rows: [], onLoadMore, loading: true }));
     expect(screen.queryByRole('button', { name: /^Show/ })).not.toBeInTheDocument();
+  });
+
+  describe('focus when the button goes away', () => {
+    function gridBetweenButtons(overrides: Partial<GridProps> = {}) {
+      return (
+        <>
+          {buttonGrid({ totalRowCount: 240, ...overrides })}
+          <button type="button">After</button>
+        </>
+      );
+    }
+
+    function focusedRowIndex(): string | null | undefined {
+      return document.activeElement?.closest('tr')?.getAttribute('aria-rowindex');
+    }
+
+    it('moves to the first row the last press loaded, in the held column', async () => {
+      const user = userEvent.setup();
+      const rows = makeInventoryRows(200);
+      const { rerender } = render(gridBetweenButtons({ rows }));
+      emulateScrollTo();
+      // The held cell is item-2's Location, the fourth column.
+      const secondRow = screen.getByRole('gridcell', { name: 'Washer 8 mm' }).closest('tr');
+      await user.click(within(secondRow as HTMLElement).getByRole('gridcell', { name: 'B-07' }));
+      await user.click(screen.getByRole('button', { name: 'Show 40 more' }));
+      rerender(gridBetweenButtons({ rows, loadingMore: true }));
+
+      // The last page lands: item-201 is the first row it brought, after the header and 200 rows.
+      rerender(gridBetweenButtons({ rows: makeInventoryRows(240), hasMore: false }));
+      expect(screen.queryByRole('button', { name: /^Show/ })).not.toBeInTheDocument();
+      expect(focusedRowIndex()).toBe('202');
+      expect(document.activeElement).toHaveAttribute('aria-colindex', '4');
+      expect(document.activeElement).toHaveAttribute('tabindex', '0');
+    });
+
+    it('moves to the first column when the held cell is in the header', async () => {
+      const user = userEvent.setup();
+      const rows = makeInventoryRows(200);
+      const { rerender } = render(gridBetweenButtons({ rows }));
+      await user.click(screen.getByRole('button', { name: 'Show 40 more' }));
+      rerender(gridBetweenButtons({ rows: makeInventoryRows(240), hasMore: false }));
+      expect(focusedRowIndex()).toBe('202');
+      expect(document.activeElement).toHaveAttribute('aria-colindex', '1');
+    });
+
+    it('moves to the last row when the last press loaded nothing', async () => {
+      const user = userEvent.setup();
+      const rows = makeInventoryRows(200);
+      const { rerender } = render(gridBetweenButtons({ rows }));
+      await user.click(screen.getByRole('button', { name: 'Show 40 more' }));
+      rerender(gridBetweenButtons({ rows, hasMore: false }));
+      expect(focusedRowIndex()).toBe('201');
+      expect(document.activeElement).toHaveAttribute('aria-colindex', '1');
+    });
+
+    it('moves to the error row when the press fails', async () => {
+      const user = userEvent.setup();
+      const onLoadMore = vi.fn();
+      const { rerender } = render(gridBetweenButtons({ onLoadMore }));
+      await user.click(screen.getByRole('button', { name: 'Show 190 more' }));
+      rerender(gridBetweenButtons({ onLoadMore, loadingMore: true }));
+
+      rerender(gridBetweenButtons({ onLoadMore, loadError: 'Could not load rows' }));
+      const errorCell = screen.getByText('Could not load rows').closest('td');
+      expect(errorCell).toHaveFocus();
+      // The Try again button is a keystroke away, as in any cell with controls.
+      await user.keyboard('{Enter}');
+      expect(screen.getByRole('button', { name: 'Try again' })).toHaveFocus();
+      await user.keyboard('{Enter}');
+      expect(onLoadMore).toHaveBeenCalledTimes(2);
+    });
+
+    it('leaves focus that has moved elsewhere alone', async () => {
+      const user = userEvent.setup();
+      const rows = makeInventoryRows(200);
+      const { rerender } = render(gridBetweenButtons({ rows }));
+      await user.click(screen.getByRole('button', { name: 'Show 40 more' }));
+      await user.tab();
+      const after = screen.getByRole('button', { name: 'After' });
+      expect(after).toHaveFocus();
+
+      rerender(gridBetweenButtons({ rows: makeInventoryRows(240), hasMore: false }));
+      expect(after).toHaveFocus();
+
+      // Nor does a failed load pull focus back into the grid.
+      rerender(gridBetweenButtons({ rows, loadError: 'Could not load rows' }));
+      expect(after).toHaveFocus();
+    });
+
+    it('moves nothing when the button goes away without focus', () => {
+      const rows = makeInventoryRows(200);
+      const { rerender } = render(gridBetweenButtons({ rows }));
+      expect(document.activeElement).toBe(document.body);
+      rerender(gridBetweenButtons({ rows: makeInventoryRows(240), hasMore: false }));
+      expect(document.activeElement).toBe(document.body);
+    });
   });
 
   it('holds the button while the rows answer an old query', async () => {

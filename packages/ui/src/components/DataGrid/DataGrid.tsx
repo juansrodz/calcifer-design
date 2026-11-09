@@ -33,7 +33,8 @@ import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
 import { useGridQuery } from './useGridQuery';
 import { useGridMetrics } from './useGridMetrics';
-import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
+import { cellControlSelector, useGridKeyboard, type GridCellPosition } from './useGridKeyboard';
+import { useLatest } from './useLatest';
 import { useLoadMore } from './useLoadMore';
 import { useRowExpansion } from './useRowExpansion';
 import { useRowSelection, type RowSelection } from './useRowSelection';
@@ -560,6 +561,32 @@ export function DataGrid<Row extends RowData>({
     totalRowCount !== undefined && totalRowCount > rows.length
       ? totalRowCount - rows.length
       : undefined;
+  // Whether the button has focus, and the loaded count at its last press. React fires no blur for
+  // an element it removes, so the record still says so once the button has gone.
+  const moreButtonFocusedRef = useRef(false);
+  const countAtPressRef = useRef(0);
+  // Where focus goes when the button leaves with it: the error row's cell after a failed load,
+  // else the first row the last press brought, or the last row if it brought none, in the held
+  // cell's column (the first column while the held cell is in the head rows).
+  const cellAfterMoreButton = (): GridCellPosition => {
+    if (showsLoadError) return { rowIndex: entries.length + headRowCount, columnIndex: 0 };
+    const { focusedCell } = keyboard;
+    const rowIndex = Math.min(countAtPressRef.current, rows.length - 1);
+    const entryIndex = entries.findIndex(
+      (entry) => entry.kind === 'row' && entry.rowIndex === rowIndex,
+    );
+    if (entryIndex === -1) return focusedCell;
+    const columnIndex = focusedCell.rowIndex >= headRowCount ? focusedCell.columnIndex : 0;
+    return { rowIndex: entryIndex + headRowCount, columnIndex };
+  };
+  const refocusRef = useLatest(() => keyboard.focusCell(cellAfterMoreButton()));
+  useLayoutEffect(() => {
+    if (showsMoreButton || !moreButtonFocusedRef.current) return;
+    moreButtonFocusedRef.current = false;
+    // Focus fell to the page with the button, unless something has taken it since.
+    const active = document.activeElement;
+    if (active === null || active === document.body) refocusRef.current();
+  }, [showsMoreButton, refocusRef]);
   let rowCountText = resolvedLabels.rowCount(rows.length);
   if (serverMode && totalRowCount !== undefined) {
     rowCountText = resolvedLabels.loadedRowCount(rows.length, totalRowCount);
@@ -687,7 +714,21 @@ export function DataGrid<Row extends RowData>({
       </div>
       {showsMoreButton ? (
         <div className={styles.showMore}>
-          <Button variant="secondary" size="sm" loading={moreButtonBusy} onClick={loadMore.request}>
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={moreButtonBusy}
+            onClick={() => {
+              countAtPressRef.current = rows.length;
+              loadMore.request();
+            }}
+            onFocus={() => {
+              moreButtonFocusedRef.current = true;
+            }}
+            onBlur={() => {
+              moreButtonFocusedRef.current = false;
+            }}
+          >
             {moreButtonBusy
               ? resolvedLabels.loadingMore
               : resolvedLabels.showMore(remainingRowCount)}
