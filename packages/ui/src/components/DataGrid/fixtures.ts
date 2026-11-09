@@ -87,6 +87,30 @@ export const inventoryColumns = columnHelper.columns([
   columnHelper.accessor('updated', { header: 'Updated' }),
 ]);
 
+const categoryOptions = categories.map((category) => ({ value: category, label: category }));
+const statusOptions = [
+  { value: 'in stock', label: 'In stock' },
+  { value: 'low', label: 'Low' },
+  { value: 'out', label: 'Out' },
+];
+
+/** The inventory columns with filters; search skips the date column. */
+export const filterableInventoryColumns = columnHelper.columns([
+  columnHelper.accessor('sku', { header: 'SKU' }),
+  columnHelper.accessor('name', { header: 'Name', filter: { type: 'text' } }),
+  columnHelper.accessor('category', {
+    header: 'Category',
+    filter: { type: 'multiSelect', options: categoryOptions },
+  }),
+  columnHelper.accessor('location', { header: 'Location', filter: { type: 'text' } }),
+  columnHelper.accessor('quantity', { header: 'Quantity' }),
+  columnHelper.accessor('status', {
+    header: 'Status',
+    filter: { type: 'select', options: statusOptions },
+  }),
+  columnHelper.accessor('updated', { header: 'Updated', searchable: false }),
+]);
+
 export interface MockInventoryServerOptions {
   total: number;
   pageSize: number;

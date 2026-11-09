@@ -32,9 +32,24 @@ export const dataGridFeatures = tableFeatures({
   sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text, datetime: sortFn_datetime },
 });
 
-export interface TextValueOption<Row extends RowData> {
-  /** Plain text for a cell: the row label, compact-density titles, and later search and export. */
+export interface DataGridFilterOption {
+  /** Compared with the column's text value for a row. */
+  value: string;
+  label: string;
+}
+
+export type DataGridColumnFilter =
+  | { type: 'text' }
+  | { type: 'select'; options: readonly DataGridFilterOption[] }
+  | { type: 'multiSelect'; options: readonly DataGridFilterOption[] };
+
+export interface DataGridColumnOptions<Row extends RowData> {
+  /** Plain text for a cell: the row label, compact titles, filtering, search and later export. */
   textValue?: (row: Row) => string;
+  /** The column's filter in the filter strip. Without one, the column has no filter. */
+  filter?: DataGridColumnFilter;
+  /** Whether search reads this column. Defaults to true; a column with no text is never matched. */
+  searchable?: boolean;
 }
 
 export type DataGridColumnDef<Row extends RowData, Value = unknown> = TanStackColumnDef<
@@ -42,7 +57,7 @@ export type DataGridColumnDef<Row extends RowData, Value = unknown> = TanStackCo
   Row,
   Value
 > &
-  TextValueOption<Row>;
+  DataGridColumnOptions<Row>;
 
 export type DataGridFeatures = typeof dataGridFeatures;
 type Features = DataGridFeatures;
@@ -60,11 +75,11 @@ export interface DataGridColumnHelper<Row extends RowData> {
     column: (Accessor extends AccessorFn<Row>
       ? DisplayColumnDef<Features, Row, Value>
       : IdentifiedColumnDef<Features, Row, Value>) &
-      TextValueOption<Row>,
+      DataGridColumnOptions<Row>,
   ) => (Accessor extends AccessorFn<Row>
     ? AccessorFnColumnDef<Features, Row, Value>
     : AccessorKeyColumnDef<Features, Row, Value>) &
-    TextValueOption<Row>;
+    DataGridColumnOptions<Row>;
   /**
    * Wrap the array in this, not a plain literal: it keeps each column's own value type. The
    * `any` is TanStack's own signature for the same helper.
@@ -75,14 +90,14 @@ export interface DataGridColumnHelper<Row extends RowData> {
   ) => Array<DataGridColumnDef<Row, any>> & [...Columns];
   /* eslint-enable @typescript-eslint/no-explicit-any */
   display: (
-    column: DisplayColumnDef<Features, Row> & TextValueOption<Row>,
-  ) => DisplayColumnDef<Features, Row, unknown> & TextValueOption<Row>;
+    column: DisplayColumnDef<Features, Row> & DataGridColumnOptions<Row>,
+  ) => DisplayColumnDef<Features, Row, unknown> & DataGridColumnOptions<Row>;
 }
 
 /**
- * The TanStack v9 column helper, typed to the grid's feature set, with one extra column option:
- * `textValue`. At runtime TanStack's helper only returns the definition objects it is given, so
- * the extra option passes straight through.
+ * The TanStack v9 column helper, typed to the grid's feature set, with extra column options:
+ * `textValue`, `filter` and `searchable`. At runtime TanStack's helper only returns the definition
+ * objects it is given, so the extra options pass straight through.
  */
 export function createDataGridColumnHelper<Row extends RowData>(): DataGridColumnHelper<Row> {
   return createTanStackColumnHelper<Features, Row>() as unknown as DataGridColumnHelper<Row>;
