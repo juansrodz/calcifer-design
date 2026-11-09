@@ -58,7 +58,7 @@ and search", "States" and "Keyboard and screen readers" first. This plan covers 
 1. **A pending debounce racing a reset.** The user types in a text filter or the search field, and
    before the delay ends presses "Clear filters" (or the query resets another way): the stale text
    must not come back when the timer fires, and the field shows the cleared value. Test in Task 4
-   (search) and Task 5 (text filter).
+   (the hook), Task 5 (text filter) and Task 9 (search).
 2. **Server rows for an old query.** After a filter or search change in server mode, the old rows stay
    visible, `onLoadMore` does not fire for them, and the grid waits for a new `rows` array, exactly as
    a sort change does in release 1. Test in Task 7.
@@ -80,8 +80,14 @@ The Who's Bringing What redesign (mock frozen in the app repo at `docs/design/mo
 button and an illustrated no-matches state. This plan is shaped to serve it:
 
 - **Order.** The user answered the redesign's Q4 on 2026-11-09: the theme layer and the redesign's
-  new library components go first, and the DataGrid releases follow. Execute this plan only after that
-  library release is merged to `main`; then rebase this branch onto it.
+  new library components go first, and the DataGrid releases follow. That library work has not
+  started, so this plan runs in two phases and merges only after that release:
+  - **Phase A, now, on `main` as it is:** Tasks 1 to 7, in order. Nothing in them needs the
+    redesign's release: pressed buttons use the accent for now, the filtered-empty state is a plain
+    state row like release 1's, and the toolbar has no search field yet.
+  - **Phase B, once the redesign's library release is merged to `main`:** rebase this branch onto
+    it, then Task 9 (adopt `SearchField`, `EmptyState` and the selected colours, and build search),
+    then Task 8 (exports, changeset, check, browser check). Then the branch is ready to merge.
 - **Tokens.** That release adds a selected/active colour family distinct from the accent (purple in
   WBW, where the accent is the coral call to action). Pressed toolbar buttons and the grid's selected
   and highlighted rows read the selected family, not the accent. Use the token names that release
@@ -89,8 +95,8 @@ button and an illustrated no-matches state. This plan is shaped to serve it:
 - **An app-owned query.** 9a's search field and role tabs sit in the page header, outside the card. A
   controlled `query` prop (Task 3) lets an app's own `SearchField` and `Segmented` drive the grid's
   matching, footer count and filtered-empty state.
-- **Shared parts.** The grid's search field is the library's `SearchField` (Task 4); its default
-  filtered-empty content is the library's `EmptyState` (Task 3), and `filteredEmptyState` lets WBW
+- **Shared parts.** The grid's search field is the library's `SearchField` (Task 9); its default
+  filtered-empty content is the library's `EmptyState` (Task 9), and `filteredEmptyState` lets WBW
   draw its characters and a "Clear search" button.
 - **"Show N more".** A load-more button mode for server mode (Task 7).
 - **Not in this plan.** 9a's uppercase, tracked column headers and its divider-free rows with a
@@ -169,10 +175,9 @@ export interface IconButtonProps {
 - [ ] **Step 3: Implement.** `pressed` sets `aria-pressed={pressed}` and `data-pressed` when true.
       The badge is a `<span className={styles.badge} aria-hidden="true">` inside the button,
       absolutely placed at the top-end corner (logical properties), `--text-2xs`, `--radius-full`,
-      `--color-accent` background with `--color-accent-text`. Pressed state for every variant: the
-      selected family's soft background and selected icon colour (see "Fit with the WBW
-      redesign"), kept on hover. In the same task, move the grid's selected and highlighted row
-      tints from the accent to the selected family. The root
+      `--color-accent` background with `--color-accent-text`. Pressed state for every variant:
+      `--color-accent-soft` background and `--color-accent` icon colour, kept on hover (Task 9
+      moves it to the redesign's selected family). The root
       gets `position: relative`. The badge must not change the button's size.
 - [ ] **Step 4: Run** the IconButton tests and `cd packages/ui && bunx vitest run src/components/Toolbar`
       — expect PASS.
@@ -386,7 +391,8 @@ Behaviour:
   everywhere.
 - Footer in client mode with `activeCount > 0`: `filteredRowCount(shownRows.length, rows.length)`.
 - A new state kind `'filteredEmpty'`: not loading, no entries, no load error, and `activeCount > 0`.
-  Its row shows the library's `EmptyState` with `labels.filteredEmpty` and a `Button`
+  Its row shows (until Task 9 moves it onto the library's `EmptyState`) `labels.filteredEmpty` and a
+  `Button`
   (`variant="secondary"`, `size="sm"`) labelled `labels.clearFilters` that calls `clearFilters`; or
   `filteredEmptyState(clearFilters)` when given. The live region announces `labels.filteredEmpty`. Unlike the other state messages the
   row's content is not `aria-hidden` (the button must be reachable); the message text inside it is.
@@ -437,12 +443,11 @@ Behaviour:
 
 ---
 
-### Task 4: Toolbar search, the filters button and match mode
+### Task 4: The filters button, match mode and the debounced draft
 
 **Files:**
 
-- Create: `src/components/DataGrid/useDebouncedDraft.ts`, `src/components/DataGrid/GridSearch.tsx`,
-  `src/icons/SearchIcon.tsx`, `src/icons/FilterIcon.tsx`
+- Create: `src/components/DataGrid/useDebouncedDraft.ts`, `src/icons/FilterIcon.tsx`
 - Modify: `GridCardHeader.tsx`, `DataGrid.tsx`, `labels.ts`, `DataGrid.module.css`,
   `DataGrid.filter.test.tsx`
 
@@ -474,30 +479,18 @@ export function useDebouncedDraft(
 ): DebouncedDraft;
 
 // labels.ts — added, with these defaults
-search: string; // 'Search'
-searchField: string; // 'Search rows'
-clearSearch: string; // 'Clear search'
 filters: (activeCount: number) => string; // 'Filters' for 0, else 'Filters, 2 active'
 matchMode: string; // 'Match filters'
 matchAll: string; // 'All'
 matchAny: string; // 'Any'
 ```
 
-Toolbar, in this order inside the existing labelled `Toolbar`: search button (when `enableSearch`),
-the match-mode `Segmented` (while filtering, see below), the filters button (when any column has a
+Toolbar, in this order inside the existing labelled `Toolbar`: search button (when `enableSearch`;
+Task 9 builds it, so leave its place first in the order), the match-mode `Segmented` (while filtering, see below), the filters button (when any column has a
 `filter`), refresh (when `onRefresh`). The toolbar renders when any of them does. In server mode
 without `onQueryChange` neither search nor filters render. The `actions` slot stays after the
 toolbar.
 
-- **Search.** An `IconButton` toggle, `pressed` while the search field is open. Opening shows the
-  field to the toolbar's inline start, inside the header cluster, and moves focus into it. The field
-  is the library's `SearchField` (from the redesign's library release; read its props from source),
-  named `labels.searchField`, its clear button named `labels.clearSearch` if it takes a label.
-  Typing commits through `useDebouncedDraft` with
-  400ms; Enter flushes; the clear button commits `''` at once and returns focus to the field. Escape
-  in the field: with text, commits `''` at once; when empty, closes the field and focuses the search
-  button. Pressing the search button while open commits `''` at once (when there is a search) and
-  closes the field: an active search is never hidden. `initialQuery.search` opens the field on mount.
 - **Filters button.** `IconButton` with `pressed` = strip open (the strip itself is Task 5; here the
   button only toggles the `filtersOpen` state in `DataGrid`), `badge={activeCount}`,
   `label={labels.filters(activeCount)}`.
@@ -510,29 +503,20 @@ toolbar.
       each):
   - `useDebouncedDraft` unit tests in `DataGrid.filter.test.tsx` via `renderHook`: commits once 400ms
     after the last change, not before; `flush` commits at once; an outside change of `committed`
-    cancels a pending commit and replaces the draft (Review Focus 1, search half); unmount flushes.
-  - `it('opens search with focus in the field and filters after the pause')`: typing `bolt` with
-    `enableSearch` filters nothing at 399ms and filters at 400ms; `onQueryChange` fires once.
-  - `it('searches at once on Enter and on clearing')`.
-  - `it('clears, then closes, on Escape')`: first Escape empties the field and the search; the second
-    closes it and focuses the search button.
-  - `it('never hides an active search')`: pressing the pressed search button with a search clears it
-    and closes the field.
+    cancels a pending commit and replaces the draft (Review Focus 1); unmount flushes.
   - `it('counts filters and search on the filters button')`: `initialQuery` with two filters and a
     search gives a button named "Filters, 3 active" showing the badge `3`, not pressed; clicking it
     sets `aria-pressed="true"`.
   - `it('shows match mode while filtering and reports it')`: hidden with no filters and the strip
     closed; with one active filter it shows, and choosing "Any" calls `onQueryChange` with
     `matchMode: 'any'`.
-  - `it('offers neither search nor filters in server mode without onQueryChange')`.
-  - Compose a new `Search` story (client, `enableSearch`) with `axe` in the stories test file.
+  - `it('offers no filters in server mode without onQueryChange')`.
 - [ ] **Step 2: Run** — expect FAIL.
-- [ ] **Step 3: Implement.** Reuse a search icon if the redesign's library release added one;
-      otherwise draw it, and the funnel, like the existing ones in `src/icons/` (24px viewBox,
+- [ ] **Step 3: Implement.** Draw the funnel like the existing icons in `src/icons/` (24px viewBox,
       `currentColor` stroke, `aria-hidden`). `GridCardHeader` takes
       the new pieces as props; keep its props flat and named, as it has them today.
 - [ ] **Step 4: Run** the whole `DataGrid` folder and the `IconButton` tests — expect PASS.
-- [ ] **Step 5: Commit** `feat(ui): DataGrid search, filters button and match mode`.
+- [ ] **Step 5: Commit** `feat(ui): DataGrid filters button and match mode`.
 
 ---
 
@@ -720,7 +704,6 @@ Behaviour:
 Stories (each composed with `axe` in `DataGrid.stories.test.tsx`):
 
 - `Filtering`: client mode, `filterableInventoryColumns`, 240 rows, `selectionMode="multiple"`.
-- `Search`: (added in Task 4) client mode with `enableSearch`.
 - `ViewAllLink`: `initialQuery` presetting `status: 'low'`, a `category` multi-select and a sort; its
   description says it shows how a "view all" link opens a filtered grid.
 - `FilteredEmpty`: `initialQuery` that matches nothing.
@@ -762,6 +745,69 @@ never fires on its own, including when the loaded rows do not fill the view. Add
       descriptions are one or two plain sentences, like the existing ones.
 - [ ] **Step 4: Run** the whole `DataGrid` folder — expect PASS.
 - [ ] **Step 5: Commit** `feat(ui): DataGrid finding-rows stories and server-mode filtering`.
+
+---
+
+### Task 9: Adopt the redesign's library parts, and search (Phase B)
+
+Runs after the branch is rebased onto the redesign's library release, and before Task 8.
+
+**Files:**
+
+- Create: `src/components/DataGrid/GridSearch.tsx`
+- Modify: `GridCardHeader.tsx`, `DataGrid.tsx`, `GridStateRows.tsx`, `labels.ts`,
+  `DataGrid.module.css`, `src/components/IconButton/IconButton.module.css`,
+  `DataGrid.filter.test.tsx`, `DataGrid.stories.tsx`, `DataGrid.stories.test.tsx`
+
+**Interfaces:**
+
+- Consumes: the redesign release's `SearchField`, `EmptyState`, its search icon (or draw
+  `src/icons/SearchIcon.tsx` like the others if it has none) and its selected colour tokens; read
+  each from source. Task 4's `useDebouncedDraft` and toolbar order.
+- Produces:
+
+```ts
+// labels.ts — added, with these defaults
+search: string; // 'Search'
+searchField: string; // 'Search rows'
+clearSearch: string; // 'Clear search'
+```
+
+Behaviour:
+
+- **Search.** An `IconButton` toggle, `pressed` while the search field is open. Opening shows the
+  field to the toolbar's inline start, inside the header cluster, and moves focus into it. The field
+  is the library's `SearchField` (from the redesign's library release; read its props from source),
+  named `labels.searchField`, its clear button named `labels.clearSearch` if it takes a label.
+  Typing commits through `useDebouncedDraft` with
+  400ms; Enter flushes; the clear button commits `''` at once and returns focus to the field. Escape
+  in the field: with text, commits `''` at once; when empty, closes the field and focuses the search
+  button. Pressing the search button while open commits `''` at once (when there is a search) and
+  closes the field: an active search is never hidden. `initialQuery.search` opens the field on mount.
+- **Colours.** `IconButton`'s pressed state and the grid's selected and highlighted row tints move
+  from the accent to the selected family, by the token names that release defines.
+- **Empty states.** The filtered-empty state's default content is the library's `EmptyState`
+  (heading `labels.filteredEmpty`, the Clear filters button as its action). The announcement and
+  `filteredEmptyState` stay as Task 3 has them.
+
+- [ ] **Step 1: Write the failing tests** (fake timers as in Task 4):
+  - `it('opens search with focus in the field and filters after the pause')`: typing `bolt` with
+    `enableSearch` filters nothing at 399ms and filters at 400ms; `onQueryChange` fires once.
+  - `it('searches at once on Enter and on clearing')`.
+  - `it('clears, then closes, on Escape')`: first Escape empties the field and the search; the second
+    closes it and focuses the search button.
+  - `it('never hides an active search')`: pressing the pressed search button with a search clears it
+    and closes the field.
+  - Review Focus 1, search half: type in the search field, then before 400ms press "Clear filters"
+    from a filtered-empty grid: after 500ms the field is empty and every row shows.
+  - `it('offers no search in server mode without onQueryChange')`.
+  - Compose a new `Search` story (client, `enableSearch`) with `axe` in the stories test file.
+- [ ] **Step 2: Run** — expect FAIL.
+- [ ] **Step 3: Implement** the search field, the colour move and the `EmptyState` default. Re-run
+      Task 1's and Task 3's tests: their assertions must not depend on the colour or the empty
+      state's inner markup beyond its text and button.
+- [ ] **Step 4: Run** the whole `DataGrid` folder and the `IconButton` tests — expect PASS.
+- [ ] **Step 5: Commit** `feat(ui): DataGrid search on SearchField, and the redesign's colours and empty state`.
 
 ---
 
