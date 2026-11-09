@@ -81,8 +81,10 @@ export interface GridRowExpander {
 
 export interface GridRowProps<Row extends RowData> {
   row: TableRow<DataGridFeatures, Row>;
-  /** The row's place among the grid's entries; its keyboard row is one more. */
+  /** The row's place among the grid's entries; its keyboard row is `firstEntryRow` more. */
   entryIndex: number;
+  /** The keyboard row of entry 0: the grid's `headRowCount`. */
+  firstEntryRow: number;
   measureRef: (element: HTMLTableRowElement | null) => void;
   density: DataGridDensity;
   /** The columns the grid renders before the row's own cells. */
@@ -110,6 +112,7 @@ export interface GridRowProps<Row extends RowData> {
 export function GridRow<Row extends RowData>({
   row,
   entryIndex,
+  firstEntryRow,
   measureRef,
   density,
   columnOffset,
@@ -123,7 +126,7 @@ export function GridRow<Row extends RowData>({
   onDoubleClick,
   onContextMenu,
 }: GridRowProps<Row>) {
-  const rowIndex = entryIndex + 1;
+  const rowIndex = entryIndex + firstEntryRow;
   const selecting = checkbox !== undefined;
   const expandColumn = selecting ? 1 : 0;
   const cells = row.getAllCells();
@@ -224,8 +227,10 @@ export function GridRow<Row extends RowData>({
 }
 
 export interface GridDetailRowProps {
-  /** The panel's place among the grid's entries; its keyboard row is one more. */
+  /** The panel's place among the grid's entries; its keyboard row is `firstEntryRow` more. */
   entryIndex: number;
+  /** The keyboard row of entry 0: the grid's `headRowCount`. */
+  firstEntryRow: number;
   measureRef: (element: HTMLTableRowElement | null) => void;
   columnCount: number;
   panelId: string;
@@ -236,13 +241,14 @@ export interface GridDetailRowProps {
 /** An expanded row's detail panel: one cell across every column, measured like any row. */
 export function GridDetailRow({
   entryIndex,
+  firstEntryRow,
   measureRef,
   columnCount,
   panelId,
   getCellProps,
   children,
 }: GridDetailRowProps) {
-  const rowIndex = entryIndex + 1;
+  const rowIndex = entryIndex + firstEntryRow;
   return (
     <tr
       ref={measureRef}

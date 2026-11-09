@@ -16,6 +16,7 @@ import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
 import { GridCardHeader } from './GridCardHeader';
+import { GridFilterRow } from './GridFilterRow';
 import { GridHeaderRow } from './GridHeaderRow';
 import { GridDetailRow, GridRow, GridSpacerRow } from './GridRow';
 import {
@@ -129,6 +130,10 @@ export function DataGrid<Row extends RowData>({
   const sortingEnabled = enableSorting && queryEnabled;
   const filtering = queryEnabled && columns.some((column) => column.filter !== undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const showsFilterStrip = filtering && filtersOpen;
+  // The header, then the filter strip while it shows; body entry `n` is keyboard row
+  // `n + headRowCount`. The header stays keyboard row 0.
+  const headRowCount = showsFilterStrip ? 2 : 1;
   // The rows the grid held when the query last changed. Until the app replaces them the loaded
   // rows answer the old query, so nothing more is asked of them.
   const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
@@ -289,8 +294,8 @@ export function DataGrid<Row extends RowData>({
     event: KeyboardEvent<HTMLElement>,
   ) => {
     // In the expand column Enter or Space opens or closes the row.
-    if (rowIndex > 0 && expanding && columnIndex === expandColumn) {
-      const entry = entries[rowIndex - 1];
+    if (rowIndex >= headRowCount && expanding && columnIndex === expandColumn) {
+      const entry = entries[rowIndex - headRowCount];
       if (entry?.kind === 'row' && isExpandable(entry.row.original)) {
         event.preventDefault();
         expansion.toggleRow(entry.row.id);
@@ -307,7 +312,7 @@ export function DataGrid<Row extends RowData>({
         selection.toggleAll();
         return;
       }
-      const entry = entries[rowIndex - 1];
+      const entry = entries[rowIndex - headRowCount];
       if (entry?.kind !== 'row' || !selection.isSelectable(entry.row.id)) return;
       event.preventDefault();
       selection.toggleRow(entry.row.id, { range: event.shiftKey });
@@ -322,7 +327,7 @@ export function DataGrid<Row extends RowData>({
       }
       return;
     }
-    const entry = entries[rowIndex - 1];
+    const entry = entries[rowIndex - headRowCount];
     // A cell with controls is entered instead; that is the hook's part.
     if (entry?.kind !== 'row' || event.currentTarget.querySelector(cellControlSelector)) return;
     if (rowsClickable) {
@@ -344,7 +349,7 @@ export function DataGrid<Row extends RowData>({
     _columnIndex: number,
     event: KeyboardEvent<HTMLElement>,
   ) => {
-    const entry = entries[rowIndex - 1];
+    const entry = entries[rowIndex - headRowCount];
     if (entry?.kind !== 'row' || !onRowContextMenu) return;
     event.preventDefault();
     // Some browsers follow this key with a contextmenu event of their own on the same cell.
@@ -362,7 +367,8 @@ export function DataGrid<Row extends RowData>({
   };
 
   const keyboard = useGridKeyboard({
-    rowCount: stateKind ? 1 : entries.length + 1 + (showsLoadError ? 1 : 0),
+    rowCount: stateKind ? headRowCount : entries.length + headRowCount + (showsLoadError ? 1 : 0),
+    headRowCount,
     columnCount,
     onActivate: handleActivate,
     onContextMenu: handleContextMenuKey,
@@ -374,7 +380,7 @@ export function DataGrid<Row extends RowData>({
       return range ? Math.max(1, range.endIndex - range.startIndex + 1) : rowsPerViewport;
     },
   });
-  const focusedEntryIndex = keyboard.focusedCell.rowIndex - 1;
+  const focusedEntryIndex = keyboard.focusedCell.rowIndex - headRowCount;
   const pinnedIndexes = useMemo(
     () => new Set(focusedEntryIndex >= 0 ? [focusedEntryIndex] : []),
     [focusedEntryIndex],
@@ -450,6 +456,7 @@ export function DataGrid<Row extends RowData>({
         <GridDetailRow
           key={`detail:${row.id}`}
           entryIndex={virtualItem.index}
+          firstEntryRow={headRowCount}
           measureRef={virtualizer.measureElement}
           columnCount={columnCount}
           panelId={panelIdOf(row)}
@@ -465,6 +472,7 @@ export function DataGrid<Row extends RowData>({
         key={row.id}
         row={row}
         entryIndex={virtualItem.index}
+        firstEntryRow={headRowCount}
         measureRef={virtualizer.measureElement}
         density={density}
         columnOffset={columnOffset}
@@ -512,23 +520,23 @@ export function DataGrid<Row extends RowData>({
     // A cell the browser scrolls to on focus lands below the sticky header band too.
     scrollPaddingBlockStart: headerHeight || undefined,
   };
-  // The error row comes after the last entry, as the header is row 1.
-  const errorRowIndex = entries.length + 2;
+  // The error row's aria-rowindex: it comes after the last entry, which follows the head rows.
+  const errorRowIndex = entries.length + headRowCount + 1;
   // Every row the app has, not only those loaded.
   const knownRowCount =
     serverMode && totalRowCount !== undefined
       ? Math.max(totalRowCount, rows.length)
       : shownRows.length;
-  // The header, every known row and the open panels. The error row follows the last entry,
+  // The head rows, every known row and the open panels. The error row follows the last entry,
   // whatever the grid knows of rows it has not loaded.
   let ariaRowCount = Math.max(
-    knownRowCount + openPanelCount + 1,
+    knownRowCount + openPanelCount + headRowCount,
     showsLoadError ? errorRowIndex : 0,
   );
   // ARIA's "unknown total" is -1: more rows exist than the app has said how many.
   if (serverMode && totalRowCount === undefined && hasMore) ariaRowCount = -1;
-  // The header and the state row.
-  if (stateKind) ariaRowCount = 2;
+  // The head rows and the state row.
+  if (stateKind) ariaRowCount = headRowCount + 1;
   // One region that is always mounted: a live region announces reliably only when its text
   // changes, not when it appears with its text. Each state kind is named after its label.
   const stateLabel = stateKind ? resolvedLabels[stateKind] : '';
@@ -624,6 +632,17 @@ export function DataGrid<Row extends RowData>({
                 getCellProps={keyboard.getCellProps}
               />
             ))}
+            {showsFilterStrip ? (
+              <GridFilterRow
+                headers={leafHeaders}
+                columnCount={columnCount}
+                columnOffset={columnOffset}
+                hasRowActions={renderRowActions !== undefined}
+                query={gridQuery}
+                labels={resolvedLabels}
+                getCellProps={keyboard.getCellProps}
+              />
+            ) : null}
           </thead>
           <tbody>
             {stateKind ? (
@@ -633,6 +652,7 @@ export function DataGrid<Row extends RowData>({
                 replacement={stateReplacement}
                 clearFilters={clearFiltersButton}
                 columnCount={columnCount}
+                firstEntryRow={headRowCount}
               />
             ) : null}
             {bodyRows}
@@ -642,6 +662,7 @@ export function DataGrid<Row extends RowData>({
             {showsLoadError ? (
               <GridErrorRow
                 entryIndex={entries.length}
+                firstEntryRow={headRowCount}
                 columnCount={columnCount}
                 message={loadError}
                 retryLabel={resolvedLabels.retry}

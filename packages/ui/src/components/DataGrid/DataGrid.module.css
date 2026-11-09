@@ -137,6 +137,24 @@
   color: var(--color-link);
 }
 
+/*
+ * The filter strip: the band's second row while the filters show, with a hairline under it. Its
+ * cells paint nothing of their own but the pinned ones, below, over the band's surface.
+ */
+.filterCell {
+  position: relative;
+  padding: var(--space-2) var(--space-3);
+}
+
+.filterCell::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  border-block-end: 1px solid var(--color-border);
+  pointer-events: none;
+}
+
 .row {
   border-bottom: 1px solid var(--color-border);
   transition-property: background-color;
@@ -198,11 +216,13 @@
 
 /* The outer columns line up with the card's own inset. */
 .headerCell:first-child,
+.filterCell:first-child,
 .cell:first-child {
   padding-inline-start: var(--space-5);
 }
 
 .headerCell:last-child,
+.filterCell:last-child,
 .cell:last-child {
   padding-inline-end: var(--space-5);
 }
@@ -214,15 +234,17 @@
  * the outer-column padding above.
  */
 .headerCell.pinnedHeader,
+.filterCell.pinnedFilter,
 .cell.pinnedCell {
   position: sticky;
   padding-inline: 0;
   text-align: center;
 }
 
-/* Header cells are positioned for their hairlines, so without a z-index the later ones would
-   paint over a pinned one as the columns pass under it. */
-.headerCell.pinnedHeader {
+/* Header and strip cells are positioned for their hairlines, so without a z-index the later ones
+   would paint over a pinned one as the columns pass under it. */
+.headerCell.pinnedHeader,
+.filterCell.pinnedFilter {
   z-index: 1;
   background: var(--color-surface-1);
 }
@@ -269,6 +291,16 @@
 
 .selectHeader + .expandHeader,
 .selectCell + .expandCell {
+  inset-inline-start: calc(var(--space-2) * 5);
+}
+
+/* The strip's cells under the checkbox and expand columns, which take their width from the header
+   cells above them. Two of them are the checkbox column, then the expand column after it. */
+.filterCell.leadingFilter {
+  inset-inline-start: 0;
+}
+
+.leadingFilter + .leadingFilter {
   inset-inline-start: calc(var(--space-2) * 5);
 }
 
@@ -324,6 +356,7 @@
  * joins its top and bottom ones, which are pseudo-elements for the reason given above.
  */
 .headerCell.actionsHeader,
+.filterCell.actionsFilter,
 .cell.actionsCell {
   inset-inline-end: 0;
   width: calc(var(--space-5) * 3);
@@ -344,6 +377,11 @@
   inset-block-start: 0;
   border-inline-start: 1px solid var(--color-border);
   border-block-end: 1px solid var(--color-border);
+}
+
+.filterCell.actionsFilter::after {
+  inset-block-start: 0;
+  border-inline-start: 1px solid var(--color-border);
 }
 
 /*
@@ -380,6 +418,7 @@
  * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
  */
 .headerCell:focus-visible,
+.filterCell:focus-visible,
 .cell:focus-visible,
 .detailCell:focus-visible,
 .errorCell:focus-visible {

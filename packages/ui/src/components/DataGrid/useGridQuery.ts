@@ -32,6 +32,8 @@ export interface GridQuery {
   pendingChange: boolean;
   /** `countActiveCriteria(query)`. */
   activeCount: number;
+  // The setters below build on each other: one called after another in the same event starts from
+  // the query the earlier one made, not from the one this render shows.
   setSorting: (sorting: SortingState) => void;
   /** An empty value (after trimming) removes the filter. */
   setFilter: (columnId: string, value: DataGridFilterValue | undefined) => void;
@@ -78,9 +80,16 @@ export function useGridQuery<Row extends RowData>({
     if (pendingChange) actOnRef.current(shownQuery);
   }, [pendingChange, shownQuery, actOnRef]);
 
+  // What the next setter builds on: the shown query as of the last commit, then within an event
+  // each setter's result. Two setters in one event, such as two filters' drafts committed as the
+  // strip closes, then both apply; built on this render's query, the second would undo the first.
+  const latestQueryRef = useLatest(shownQuery);
+
   const update = (change: Partial<DataGridQuery>) => {
-    const nextQuery = normaliseQuery({ ...shownQuery, ...change }, columns);
-    if (isSameQuery(nextQuery, shownQuery)) return;
+    const latestQuery = latestQueryRef.current;
+    const nextQuery = normaliseQuery({ ...latestQuery, ...change }, columns);
+    if (isSameQuery(nextQuery, latestQuery)) return;
+    latestQueryRef.current = nextQuery;
     // A controlled query changes when the app passes the new one.
     if (query === undefined) {
       setShownQuery(nextQuery);
@@ -95,7 +104,7 @@ export function useGridQuery<Row extends RowData>({
     activeCount: countActiveCriteria(shownQuery),
     setSorting: (sorting) => update({ sorting }),
     setFilter: (columnId, value) => {
-      const { [columnId]: _replaced, ...otherFilters } = shownQuery.filters;
+      const { [columnId]: _replaced, ...otherFilters } = latestQueryRef.current.filters;
       update({
         filters: value === undefined ? otherFilters : { ...otherFilters, [columnId]: value },
       });

@@ -8,7 +8,10 @@ import {
 } from 'react';
 
 export interface GridCellPosition {
-  /** 0 is the header row; body entry `n` is row `n + 1`. */
+  /**
+   * 0 is the header row and 1 the filter strip while it shows; body entry `n` is row
+   * `n + headRowCount`.
+   */
   rowIndex: number;
   /** Counts every rendered column. */
   columnIndex: number;
@@ -21,8 +24,14 @@ export type GridCellKeyHandler = (
 ) => void;
 
 export interface UseGridKeyboardOptions {
-  /** The rows focus can reach, the header row included. */
+  /** The rows focus can reach, the head rows included. */
   rowCount: number;
+  /**
+   * The rows before the first body entry: 1 (the header), or 2 while the filter strip shows. Body
+   * entry `n` is keyboard row `n + headRowCount`. When it changes, a held position in the body moves
+   * with its row.
+   */
+  headRowCount: number;
   columnCount: number;
   /** How many rows Page Up and Page Down move; called from key handlers only. */
   getPageSize: () => number;
@@ -34,7 +43,7 @@ export interface UseGridKeyboardOptions {
   onActivate: GridCellKeyHandler;
   /** The context menu key or Shift+F10 on a focused cell. */
   onContextMenu: GridCellKeyHandler;
-  /** Scrolls a body entry (`rowIndex - 1`) into view, so that it renders. */
+  /** Scrolls a body entry (`rowIndex - headRowCount`) into view, so that it renders. */
   scrollToEntry: (entryIndex: number) => void;
 }
 
@@ -60,8 +69,8 @@ export type GetCellProps = (
 export const cellControlSelector =
   'button, a[href], input, select, textarea, [role="button"], [tabindex]';
 
-/** The cells focus moves between: header cells and the cells of rendered entries. */
-const navigableCellSelector = 'thead th, tbody tr[data-index] > td';
+/** The cells focus moves between: the head rows' cells and the cells of rendered entries. */
+const navigableCellSelector = 'thead th, thead td, tbody tr[data-index] > td';
 
 /** A control hidden from assistive technology, such as a checkbox's mirror input, is no tab stop. */
 function isHiddenControl(control: HTMLElement): boolean {
@@ -176,6 +185,7 @@ function syncControlTabIndexes(grid: HTMLElement, enteredCell: HTMLElement | nul
  */
 export function useGridKeyboard({
   rowCount,
+  headRowCount,
   columnCount,
   getPageSize,
   onActivate,
@@ -188,6 +198,8 @@ export function useGridKeyboard({
 } {
   const gridRef = useRef<HTMLTableElement>(null);
   const [heldCell, setHeldCell] = useState<GridCellPosition>({ rowIndex: 0, columnIndex: 0 });
+  // The head row count the held position is counted in. State, not a ref: it is read in render.
+  const [heldHeadRowCount, setHeldHeadRowCount] = useState(headRowCount);
   // True while focus is on one of the focused cell's controls rather than on the cell.
   const [inside, setInside] = useState(false);
   // React fires no blur for an element it removes, so this still says focus was in the grid when
@@ -201,7 +213,16 @@ export function useGridKeyboard({
     rowIndex: clamp(position.rowIndex, 0, lastRow),
     columnIndex: clamp(position.columnIndex, 0, lastColumn),
   });
-  const focusedCell = clampToGrid(heldCell);
+  let shiftedCell = heldCell;
+  if (headRowCount !== heldHeadRowCount) {
+    // The filter strip opened or closed, moving every body row: a held body row moves with its
+    // row. A held strip cell, when the strip closes, stays at row 1, the first body row now.
+    if (heldCell.rowIndex >= heldHeadRowCount) {
+      shiftedCell = { ...heldCell, rowIndex: heldCell.rowIndex + headRowCount - heldHeadRowCount };
+    }
+    setHeldHeadRowCount(headRowCount);
+  }
+  const focusedCell = clampToGrid(shiftedCell);
   if (!isSamePosition(focusedCell, heldCell)) {
     // Kept clamped, not just shown clamped: rows that grow back must not pull focus to the
     // position they once shrank away from.
@@ -247,11 +268,11 @@ export function useGridKeyboard({
   const moveTo = (target: GridCellPosition) => {
     const next = clampToGrid(target);
     if (isSamePosition(next, focusedCell)) return;
-    if (next.rowIndex > 0) {
-      scrollToEntry(next.rowIndex - 1);
-    } else if (focusedCell.rowIndex > 0) {
-      // The header row stays in place while the body scrolls, so arriving at it from a row brings
-      // the first entry into view; a move along the header leaves the body where it is.
+    if (next.rowIndex >= headRowCount) {
+      scrollToEntry(next.rowIndex - headRowCount);
+    } else if (focusedCell.rowIndex >= headRowCount) {
+      // The head rows stay in place while the body scrolls, so arriving at one from a body row
+      // brings the first entry into view; a move within the head rows leaves the body where it is.
       scrollToEntry(0);
     }
     pendingFocusRef.current = true;

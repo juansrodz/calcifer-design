@@ -1,4 +1,4 @@
-import { render, renderHook, screen, within } from '@testing-library/react';
+import { fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -46,7 +46,7 @@ function cellTextsOf(columnName: string): string[] {
     .findIndex((header) => header.textContent === columnName);
   return screen
     .getAllByRole('row')
-    .slice(1)
+    .filter((row) => row.closest('tbody') !== null)
     .flatMap((row) => {
       const cells = within(row).queryAllByRole('gridcell');
       // The state row is one cell across every column.
@@ -730,5 +730,303 @@ describe('the filters button and match mode', () => {
     const matchMode = screen.getByRole('group', { name: 'Coincidir' });
     expect(within(matchMode).getByRole('button', { name: 'Todos' })).toBeInTheDocument();
     expect(within(matchMode).getByRole('button', { name: 'Alguno' })).toBeInTheDocument();
+  });
+});
+
+describe('the filter strip', () => {
+  const textFilterDelay = 300;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /**
+   * The timed tests use plain fake timers, so the clock moves only when a test moves it. They drive
+   * the grid with `fireEvent`: user-event waits on Testing Library's async wrapper, which drains
+   * with a `setTimeout` that plain fake timers never fire.
+   */
+  function openStrip(filtersButtonName = 'Filters') {
+    fireEvent.click(screen.getByRole('button', { name: filtersButtonName }));
+  }
+
+  /** A click on a button: focus moves to it first, as a press of the pointer moves it. */
+  function clickButton(name: string) {
+    const button = screen.getByRole('button', { name });
+    act(() => button.focus());
+    fireEvent.click(button);
+  }
+
+  function stripRow(): HTMLElement {
+    const strip = document.querySelector<HTMLElement>('thead tr[aria-rowindex="2"]');
+    if (strip === null) throw new Error('the filter strip is not rendered');
+    return strip;
+  }
+
+  function filterField(columnName: string): HTMLElement {
+    return screen.getByRole('searchbox', { name: `Filter by ${columnName}` });
+  }
+
+  function bodyRows(): HTMLElement[] {
+    return screen.getAllByRole('row').filter((row) => row.closest('tbody') !== null);
+  }
+
+  /** An app holding the query itself, as the grid reports it. */
+  function ControlledGrid({ onQueryChange }: { onQueryChange: (query: DataGridQuery) => void }) {
+    const [query, setQuery] = useState<DataGridQuery>(emptyDataGridQuery);
+    return (
+      <DataGrid<InventoryRow>
+        gridId="controlled-strip-grid"
+        heading="Inventory"
+        rows={makeInventoryRows(rowTotal)}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        query={query}
+        onQueryChange={(nextQuery) => {
+          onQueryChange(nextQuery);
+          setQuery(nextQuery);
+        }}
+      />
+    );
+  }
+
+  it('opens the strip with a labelled filter for each filterable column', async () => {
+    const user = userEvent.setup();
+    const { container } = renderGrid({
+      selectionMode: 'multiple',
+      renderExpandedRow: (row) => <p>{row.name}</p>,
+      renderRowActions: (row) => <button type="button">Edit {row.name}</button>,
+    });
+    const grid = screen.getByRole('grid');
+    expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 1));
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+
+    const stripCells = within(stripRow()).getAllByRole('gridcell');
+    // The checkbox and expand columns, the seven columns, then the row actions column.
+    expect(stripCells.map((cell) => cell.getAttribute('aria-colindex'))).toEqual(
+      Array.from({ length: 10 }, (_unused, index) => String(index + 1)),
+    );
+    // Name and Location are the second and fourth columns, after the checkbox and expand ones.
+    expect(stripCells[3]).toContainElement(filterField('Name'));
+    expect(stripCells[5]).toContainElement(filterField('Location'));
+    expect(screen.getAllByRole('searchbox')).toHaveLength(2);
+    for (const [index, cell] of stripCells.entries()) {
+      if (index !== 3 && index !== 5) expect(cell).toBeEmptyDOMElement();
+    }
+    expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
+    expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '3');
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('filters 300ms after typing stops, at once on Enter', () => {
+    vi.useFakeTimers();
+    renderGrid();
+    openStrip();
+    const nameFilter = filterField('Name');
+    act(() => nameFilter.focus());
+
+    // Each change starts the wait again.
+    fireEvent.change(nameFilter, { target: { value: '(' } });
+    act(() => vi.advanceTimersByTime(textFilterDelay - 1));
+    fireEvent.change(nameFilter, { target: { value: '(2)' } });
+    act(() => vi.advanceTimersByTime(textFilterDelay - 1));
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1));
+    const secondCycleIds = idsOfRowsWhere((row) => row.name.includes('(2)'));
+    expect(screen.getByText(`${secondCycleIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(cellTextsOf('Name').every((name) => name.includes('(2)'))).toBe(true);
+
+    const locationFilter = filterField('Location');
+    act(() => locationFilter.focus());
+    fireEvent.change(locationFilter, { target: { value: 'B-07' } });
+    fireEvent.keyDown(locationFilter, { key: 'Enter' });
+
+    const bothIds = idsOfRowsWhere((row) => row.name.includes('(2)') && row.location === 'B-07');
+    expect(bothIds.length).toBeLessThan(secondCycleIds.length);
+    expect(screen.getByText(`${bothIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
+  });
+
+  it('keeps filtering while the strip is closed', async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.type(filterField('Name'), 'Washer{Enter}');
+    const washerCount = idsOfRowsWhere((row) => row.name.startsWith('Washer')).length;
+    expect(screen.getByText(`${washerCount} of ${rowTotal} rows`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
+
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.getByText(`${washerCount} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(cellTextsOf('Name').every((name) => name.startsWith('Washer'))).toBe(true);
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', String(washerCount + 1));
+    expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '2');
+
+    await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
+
+    expect(filterField('Name')).toHaveValue('Washer');
+  });
+
+  it('removes a text filter when its field is cleared', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    renderGrid({ onQueryChange });
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.type(filterField('Name'), 'Washer{Enter}');
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: { name: 'Washer' } }),
+    );
+    expect(screen.getByRole('button', { name: 'Filters, 1 active' })).toBeInTheDocument();
+
+    await user.clear(filterField('Name'));
+    await user.keyboard('{Enter}');
+
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    const lastQuery = onQueryChange.mock.lastCall?.[0] as DataGridQuery;
+    expect(lastQuery.filters).not.toHaveProperty('name');
+    expect(lastQuery.filters).toEqual({});
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('drops a pending filter when the query is cleared', () => {
+    vi.useFakeTimers();
+    renderGrid({ initialQuery: { filters: { name: 'Nothing like this' } } });
+    openStrip('Filters, 1 active');
+    const nameFilter = filterField('Name');
+    expect(nameFilter).toHaveValue('Nothing like this');
+
+    act(() => nameFilter.focus());
+    fireEvent.change(nameFilter, { target: { value: 'Nothing like this at all' } });
+    act(() => vi.advanceTimersByTime(textFilterDelay / 3));
+    clickButton('Clear filters');
+    act(() => vi.advanceTimersByTime(400));
+
+    expect(nameFilter).toHaveValue('');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
+  });
+
+  it("drops a pending filter when Clear filters clears another column's filter", () => {
+    vi.useFakeTimers();
+    // No row is at this location, so the grid is empty before anything is typed in Name, and the
+    // Name filter's committed value is empty before and after Clear filters.
+    renderGrid({ initialQuery: { filters: { location: 'Nowhere' } } });
+    openStrip('Filters, 1 active');
+    const nameFilter = filterField('Name');
+
+    act(() => nameFilter.focus());
+    fireEvent.change(nameFilter, { target: { value: 'Hex' } });
+    act(() => vi.advanceTimersByTime(textFilterDelay / 3));
+    clickButton('Clear filters');
+    act(() => vi.advanceTimersByTime(400));
+
+    expect(nameFilter).toHaveValue('');
+    expect(filterField('Location')).toHaveValue('');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
+  });
+
+  it('applies every pending filter when the strip closes', async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    const filtersButton = screen.getByRole('button', { name: 'Filters' });
+    await user.click(filtersButton);
+    // Two drafts at once: typed without focus moving off the filters button.
+    fireEvent.change(filterField('Name'), { target: { value: '(2)' } });
+    fireEvent.change(filterField('Location'), { target: { value: 'B-07' } });
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+
+    await user.click(filtersButton);
+
+    const bothIds = idsOfRowsWhere((row) => row.name.includes('(2)') && row.location === 'B-07');
+    expect(screen.getByText(`${bothIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
+  });
+
+  it('reports every pending filter of a controlled query when the strip closes', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    render(<ControlledGrid onQueryChange={onQueryChange} />);
+    const filtersButton = screen.getByRole('button', { name: 'Filters' });
+    await user.click(filtersButton);
+    fireEvent.change(filterField('Name'), { target: { value: '(2)' } });
+    fireEvent.change(filterField('Location'), { target: { value: 'B-07' } });
+
+    await user.click(filtersButton);
+
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filters: { name: '(2)', location: 'B-07' } }),
+    );
+    const bothIds = idsOfRowsWhere((row) => row.name.includes('(2)') && row.location === 'B-07');
+    expect(screen.getByText(`${bothIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('selects only matching rows after filtering', async () => {
+    const user = userEvent.setup();
+    const onSelectedRowIdsChange = vi.fn();
+    renderGrid({ selectionMode: 'multiple', onSelectedRowIdsChange });
+    // item-1 is a hex bolt and stays in view; item-2 is a washer and leaves it.
+    await user.click(screen.getByRole('checkbox', { name: 'Select SKU-1000' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Select SKU-1001' }));
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.type(filterField('Name'), 'Hex{Enter}');
+
+    expect(onSelectedRowIdsChange).toHaveBeenLastCalledWith([]);
+    expect(screen.queryByText(/selected$/)).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Select SKU-1000' })).not.toBeChecked();
+    onSelectedRowIdsChange.mockClear();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Select all rows' }));
+
+    const hexBoltIds = idsOfRowsWhere((row) => row.name.startsWith('Hex'));
+    expect(onSelectedRowIdsChange).toHaveBeenCalledTimes(1);
+    expect(onSelectedRowIdsChange).toHaveBeenCalledWith(hexBoltIds);
+    expect(screen.getByText(`${hexBoltIds.length} selected`)).toBeInTheDocument();
+  });
+
+  it('counts the strip in the places of the state row and the error row', async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderGrid({ initialQuery: { filters: { location: 'Nowhere' } } });
+    await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
+
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '3');
+    const stateMessage = within(screen.getByRole('grid')).getByText('No rows match the filters.');
+    expect(stateMessage.closest('tr')).toHaveAttribute('aria-rowindex', '3');
+    unmount();
+
+    const loadedRows = 10;
+    renderGrid({
+      mode: 'server',
+      rows: makeInventoryRows(loadedRows),
+      totalRowCount: rowTotal,
+      onQueryChange: vi.fn(),
+      loadError: 'Could not load rows',
+    });
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+
+    const errorCell = screen.getByText('Could not load rows').closest('td') as HTMLElement;
+    // The header, the strip and the loaded rows come before it.
+    expect(errorCell.closest('tr')).toHaveAttribute('aria-rowindex', String(loadedRows + 3));
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
+    await user.tab();
+    await user.keyboard('{Control>}{End}{/Control}');
+    expect(errorCell).toHaveFocus();
+  });
+
+  it('takes its filter names from labels', async () => {
+    const user = userEvent.setup();
+    renderGrid({ labels: { filterBy: (columnName) => `Filtrar por ${columnName}` } });
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+
+    expect(screen.getByRole('searchbox', { name: 'Filtrar por Name' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Filtrar por Location' })).toBeInTheDocument();
   });
 });

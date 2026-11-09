@@ -5,7 +5,8 @@ export type GridEntry<Row> =
 
 /**
  * Flattens rows and the detail panels of expanded rows into the one list the virtualiser walks.
- * `aria-rowindex` of an entry is 2 plus its position here (row 1 is the header). A row gets a panel
+ * `aria-rowindex` of an entry is its position here plus one more than the head rows (the header,
+ * and the filter strip while it shows). A row gets a panel
  * when its id is in `expandedIds` and `canExpand` allows it.
  */
 export function useGridEntries<Row extends { id: string }>(

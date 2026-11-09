@@ -7,6 +7,8 @@ export interface DataGridLabels {
   matchMode: string;
   matchAll: string;
   matchAny: string;
+  /** Names a column's control in the filter strip. */
+  filterBy: (columnName: string) => string;
   rowCount: (count: number) => string;
   loadedRowCount: (loaded: number, total: number) => string;
   /** Client mode while filters or search are active: the rows shown of every row. */
@@ -35,6 +37,7 @@ export const defaultDataGridLabels: DataGridLabels = {
   matchMode: 'Match filters',
   matchAll: 'All',
   matchAny: 'Any',
+  filterBy: (columnName) => `Filter by ${columnName}`,
   rowCount: (count) => `${numberFormat.format(count)} ${count === 1 ? 'row' : 'rows'}`,
   loadedRowCount: (loaded, total) =>
     `Showing ${numberFormat.format(loaded)} of ${numberFormat.format(total)} rows`,

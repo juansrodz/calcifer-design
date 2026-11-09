@@ -16,6 +16,8 @@ export interface GridStateRowProps {
   /** For `filteredEmpty`: the button beside the message. Without it the message shows alone. */
   clearFilters?: { label: string; onClick: () => void };
   columnCount: number;
+  /** The keyboard row of entry 0: the grid's `headRowCount`. The state row sits where it would. */
+  firstEntryRow: number;
 }
 
 /**
@@ -29,6 +31,7 @@ export function GridStateRow({
   replacement,
   clearFilters,
   columnCount,
+  firstEntryRow,
 }: GridStateRowProps) {
   let content: ReactNode;
   if (kind === 'loading') {
@@ -57,7 +60,7 @@ export function GridStateRow({
     );
   }
   return (
-    <tr aria-rowindex={2}>
+    <tr aria-rowindex={firstEntryRow + 1}>
       <td role="gridcell" className={styles.stateCell} colSpan={columnCount} aria-colindex={1}>
         {content}
       </td>
@@ -66,8 +69,10 @@ export function GridStateRow({
 }
 
 export interface GridErrorRowProps {
-  /** The row's place after the grid's entries; its keyboard row is one more. */
+  /** The row's place after the grid's entries; its keyboard row is `firstEntryRow` more. */
   entryIndex: number;
+  /** The keyboard row of entry 0: the grid's `headRowCount`. */
+  firstEntryRow: number;
   columnCount: number;
   message: string;
   retryLabel: string;
@@ -78,13 +83,14 @@ export interface GridErrorRowProps {
 /** A failed load in server mode: the error and a retry button, after the last entry. */
 export function GridErrorRow({
   entryIndex,
+  firstEntryRow,
   columnCount,
   message,
   retryLabel,
   onRetry,
   getCellProps,
 }: GridErrorRowProps) {
-  const rowIndex = entryIndex + 1;
+  const rowIndex = entryIndex + firstEntryRow;
   return (
     <tr data-index={entryIndex} aria-rowindex={rowIndex + 1}>
       <td
