@@ -48,23 +48,36 @@ export interface DataGridProps<Row extends RowData> {
   /**
    * The user changed the query: the sort, a filter, the match mode or the search. In client mode it
    * reports the query for the app to keep, for example in the URL; in server mode it is the cue to
-   * load the first page of rows for this query. Without it, server mode offers no sorting, filters
-   * or search, and its headers carry no `aria-sort`.
+   * load the first page of rows for this query. Without it, server mode and a controlled `query`
+   * offer no sorting, filters or search, and their headers carry no `aria-sort`. A text filter
+   * still waiting out its delay when the grid unmounts is committed then, and reported here.
    */
   onQueryChange?: (query: DataGridQuery) => void;
   /**
    * The query the grid starts with: filters, sort, match mode and search, as a "view all" link
-   * would set them. Its `sorting` wins over `initialSorting`. Read once, on mount. In server mode
-   * its filters and search apply only with `onQueryChange`.
+   * would set them. Its `sorting` wins over `initialSorting`. Read once, on mount; filters the grid
+   * cannot apply (an unknown column, one without a filter, a value of the wrong shape) are dropped.
+   * In server mode its filters and search apply only with `onQueryChange`. The grid does not call
+   * `onQueryChange` on mount, so a server-mode app's first fetch must use this same query.
    */
   initialQuery?: Partial<DataGridQuery>;
   /**
    * Makes the query controlled: the grid shows this query and reports every change through
    * `onQueryChange`, for an app whose own search field or tabs sit outside the grid. Normalised
    * against `columns` on every render. Without it the grid keeps its own query.
+   *
+   * Adopt a change synchronously, in the handler: once the grid renders again it builds the next
+   * change on the query it shows, so a second change made before an asynchronous adoption lands
+   * can drop the first. To reject a change, render the grid again with the old query; until it
+   * renders, the next change builds on the rejected one. Without `onQueryChange` the query is
+   * read-only: its filters and search apply, but the grid offers no sorting (so its `sorting` does
+   * not apply), no filters button or strip, and no Clear filters button.
    */
   query?: DataGridQuery;
-  /** The sort the grid starts with, unless `initialQuery` gives one. Read once, on mount. */
+  /**
+   * The sort the grid starts with, unless `initialQuery` gives one or `query` makes the query
+   * controlled. Read once, on mount.
+   */
   initialSorting?: SortingState;
   /** Adds the search button to the toolbar. */
   enableSearch?: boolean;

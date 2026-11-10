@@ -23,6 +23,10 @@ export interface UseGridQueryOptions<Row extends RowData> {
   onQueryChange?: (query: DataGridQuery) => void;
 }
 
+/**
+ * The shown query and its setters. The setters build on each other: one called after another in
+ * the same event starts from the query the earlier one made, not from the one this render shows.
+ */
 export interface GridQuery {
   query: DataGridQuery;
   /**
@@ -32,8 +36,6 @@ export interface GridQuery {
   pendingChange: boolean;
   /** `countActiveCriteria(query)`. */
   activeCount: number;
-  // The setters below build on each other: one called after another in the same event starts from
-  // the query the earlier one made, not from the one this render shows.
   setSorting: (sorting: SortingState) => void;
   /** An empty value (after trimming) removes the filter. */
   setFilter: (columnId: string, value: DataGridFilterValue | undefined) => void;

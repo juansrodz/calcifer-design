@@ -23,7 +23,8 @@ interface PendingCommit {
  *
  * What this hook committed may come back changed: the grid's query holds text trimmed, so "hex "
  * comes back as "hex". That echo leaves the draft alone, or the space the user just typed would
- * vanish under their cursor.
+ * vanish under their cursor. Trimming is all `normaliseQuery` does to text; if it ever does more,
+ * the echo rule here must follow.
  */
 export function useDebouncedDraft(
   committed: string,

@@ -333,7 +333,8 @@ export function DataGrid<Row extends RowData>({
       return;
     }
     const entry = entries[rowIndex - headRowCount];
-    // A cell with controls is entered instead; that is the hook's part.
+    // A cell with controls is entered instead; that is the hook's part. A cell whose only control
+    // is a button by its role alone, with no tabindex, is neither entered nor a click on the row.
     if (entry?.kind !== 'row' || event.currentTarget.querySelector(cellControlSelector)) return;
     if (rowsClickable) {
       event.preventDefault();
@@ -377,7 +378,8 @@ export function DataGrid<Row extends RowData>({
     columnCount,
     onActivate: handleActivate,
     onContextMenu: handleContextMenuKey,
-    // Both called from key handlers only, after the virtualiser below exists.
+    // Both called after the virtualiser below exists: from key handlers, and this one from
+    // `focusCell` too, which the Show more button's layout effect calls.
     scrollToEntry: (entryIndex) => virtualizer.scrollToIndex(entryIndex),
     // The rows the virtualiser measured in view; before it has, the estimate.
     getPageSize: () => {

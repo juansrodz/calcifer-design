@@ -97,6 +97,9 @@ function usableFilterValue(
  * trimmed, empty values dropped, and filters dropped whose column is unknown, has no filter, or
  * whose value has the wrong shape (a string for `text` and `select`, a non-empty string array for
  * `multiSelect`).
+ *
+ * `useDebouncedDraft` tells the echo of its own commit from a reset elsewhere by this trimming
+ * alone ("hex " comes back as "hex"): a change to how text is normalised here must change it too.
  */
 export function normaliseQuery<Row extends RowData>(
   query: Partial<DataGridQuery> | undefined,
