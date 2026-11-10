@@ -44,6 +44,39 @@ const lightColor = {
   chartPhase2: '#3B6FE0',
   chartPhase3: '#8FAAEB',
   chartPhase4: '#1F8A5B',
+  // The theme layer's role colours. Each default is the literal of the role it replaces in this mode.
+  selected: '#3B6FE0',
+  selectedText: '#FFFFFF',
+  selectedSoft: 'rgba(59, 111, 224, 0.14)',
+  selectedSoftText: '#1C1917',
+  inverse: '#1C1917',
+  inverseText: '#FFFFFF',
+  inverseSoft: 'rgba(255, 255, 255, 0.22)',
+  inverseSoftText: '#FFFFFF',
+  navText: '#57534E',
+  navSelected: 'transparent',
+  navSelectedText: '#1C1917',
+  tabBar: '#FFFFFF',
+  tabBarText: '#57534E',
+  tabBarActive: '#3B6FE0',
+  tabBarActiveText: '#FFFFFF',
+  sheetHandle: 'rgba(28, 25, 23, 0.18)',
+  segmentedTrack: '#F4F2EE',
+  segmentedBorder: 'rgba(28, 25, 23, 0.18)',
+  scrimSheet: 'rgba(28, 25, 23, 0.45)',
+  avatarRing: '#FFFFFF',
+  avatarFill1: '#ECE9E3',
+  avatarFill2: '#ECE9E3',
+  avatarFill3: '#ECE9E3',
+  avatarFill4: '#ECE9E3',
+  avatarFill5: '#ECE9E3',
+  avatarFill6: '#ECE9E3',
+  avatarInk1: '#57534E',
+  avatarInk2: '#57534E',
+  avatarInk3: '#57534E',
+  avatarInk4: '#57534E',
+  avatarInk5: '#57534E',
+  avatarInk6: '#57534E',
 } as const;
 
 export type ColorName = keyof typeof lightColor;
@@ -82,36 +115,121 @@ const darkColor = {
   chartPhase2: '#7FA4F5',
   chartPhase3: '#4E6BB0',
   chartPhase4: '#4FC38A',
+  selected: '#7FA4F5',
+  selectedText: '#0B0D12',
+  selectedSoft: 'rgba(127, 164, 245, 0.18)',
+  selectedSoftText: '#EDEEF2',
+  inverse: '#EDEEF2',
+  inverseText: '#0B0D12',
+  inverseSoft: 'rgba(11, 13, 18, 0.22)',
+  inverseSoftText: '#0B0D12',
+  navText: '#A8ADB8',
+  navSelected: 'transparent',
+  navSelectedText: '#EDEEF2',
+  tabBar: '#111420',
+  tabBarText: '#A8ADB8',
+  tabBarActive: '#7FA4F5',
+  tabBarActiveText: '#0B0D12',
+  sheetHandle: 'rgba(255, 255, 255, 0.18)',
+  segmentedTrack: '#171B28',
+  segmentedBorder: 'rgba(255, 255, 255, 0.18)',
+  scrimSheet: 'rgba(3, 4, 6, 0.6)',
+  avatarRing: '#111420',
+  avatarFill1: '#1F2434',
+  avatarFill2: '#1F2434',
+  avatarFill3: '#1F2434',
+  avatarFill4: '#1F2434',
+  avatarFill5: '#1F2434',
+  avatarFill6: '#1F2434',
+  avatarInk1: '#A8ADB8',
+  avatarInk2: '#A8ADB8',
+  avatarInk3: '#A8ADB8',
+  avatarInk4: '#A8ADB8',
+  avatarInk5: '#A8ADB8',
+  avatarInk6: '#A8ADB8',
 } as const satisfies Record<ColorName, string>;
+
+const lightElevation = {
+  1: '0 2px 8px rgba(28, 25, 23, 0.05), 0 8px 24px rgba(28, 25, 23, 0.05)',
+  2: '0 6px 16px rgba(28, 25, 23, 0.07), 0 20px 48px rgba(28, 25, 23, 0.08)',
+  3: '0 16px 40px rgba(28, 25, 23, 0.10), 0 2px 6px rgba(28, 25, 23, 0.06)',
+} as const;
+
+const darkElevation = {
+  1: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+  2: 'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.18)',
+  3: 'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 40px rgba(0, 0, 0, 0.5)',
+} as const;
+
+export type ElevationName = keyof typeof lightElevation;
+
+/** The shadows components name by role. Each default is the elevation step it replaces. */
+const lightShadow = {
+  soft: lightElevation[1],
+  chip: lightElevation[1],
+  raised: lightElevation[2],
+  dialog: lightElevation[3],
+  drawer: lightElevation[3],
+  sheet: lightElevation[3],
+  tabBar: lightElevation[2],
+  action: 'none',
+  actionInverse: 'none',
+  segmented: 'none',
+} as const;
+
+export type ShadowName = keyof typeof lightShadow;
+
+const darkShadow = {
+  soft: darkElevation[1],
+  chip: darkElevation[1],
+  raised: darkElevation[2],
+  dialog: darkElevation[3],
+  drawer: darkElevation[3],
+  sheet: darkElevation[3],
+  tabBar: darkElevation[2],
+  action: 'none',
+  actionInverse: 'none',
+  segmented: 'none',
+} as const satisfies Record<ShadowName, string>;
 
 export const themes = {
   light: {
     color: lightColor,
-    elevation: {
-      1: '0 2px 8px rgba(28, 25, 23, 0.05), 0 8px 24px rgba(28, 25, 23, 0.05)',
-      2: '0 6px 16px rgba(28, 25, 23, 0.07), 0 20px 48px rgba(28, 25, 23, 0.08)',
-      3: '0 16px 40px rgba(28, 25, 23, 0.10), 0 2px 6px rgba(28, 25, 23, 0.06)',
-    },
+    elevation: lightElevation,
+    shadow: lightShadow,
     material: { glassBg: 'rgba(251, 250, 248, 0.78)' },
   },
   dark: {
     color: darkColor,
-    elevation: {
-      1: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
-      2: 'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.18)',
-      3: 'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 40px rgba(0, 0, 0, 0.5)',
-    },
+    elevation: darkElevation,
+    shadow: darkShadow,
     material: { glassBg: 'rgba(11, 13, 18, 0.78)' },
   },
 } as const;
 
 export type ThemeName = keyof typeof themes;
 
+const sansStack =
+  '"Geist Variable", "Geist", -apple-system, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif';
+
 export const shared = {
   font: {
-    sans: '"Geist Variable", "Geist", -apple-system, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif',
+    sans: sansStack,
     mono: '"Geist Mono Variable", "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+    display: sansStack,
+    body: sansStack,
   },
+  fontWeight: {
+    body: '400',
+    label: '500',
+    button: '500',
+    heading: '600',
+    nav: '400',
+    navSelected: '500',
+    display: '600',
+  },
+  fontStretch: { display: 'normal' },
+  textTransform: { display: 'none' },
   text: {
     '2xs': '0.6875rem',
     xs: '0.75rem',
@@ -144,7 +262,19 @@ export const shared = {
     /** Page side padding at the wide tier: the mock's clamp(64px, 5vw, 128px). */
     pageInlineWide: 'clamp(4rem, 5vw, 8rem)',
   },
-  radius: { sm: '0.5rem', md: '0.625rem', lg: '0.75rem', xl: '1rem', full: '999px' },
+  radius: {
+    sm: '0.5rem',
+    md: '0.625rem',
+    lg: '0.75rem',
+    xl: '1rem',
+    full: '999px',
+    control: '0.625rem',
+    option: '0.5rem',
+    panel: '0.625rem',
+    popup: '0.75rem',
+    card: '1rem',
+    dialog: '1rem',
+  },
   /**
    * Border widths above the hairline default: `emphasis` is the active/selected indicator
    * (nav underline, selected tab), `strong` the accent rail down the side of a block.
@@ -168,11 +298,22 @@ export const shared = {
     pageMax: '75rem',
     /** Page frame max width at the wide tier: the mock's min(1800px, 90vw). */
     pageMaxWide: 'min(112.5rem, 90vw)',
+    drawer: '28rem',
+    control: '44px',
+    controlSm: '2.5rem',
   },
   measure: '65ch',
   focusRingWidth: '2px',
   focusRingOffset: '2px',
 } as const;
+
+export type SharedTokens = typeof shared;
+export type ThemeTokens = (typeof themes)['light'];
+export type FontName = keyof typeof shared.font;
+export type FontWeightName = keyof typeof shared.fontWeight;
+export type TextSizeName = keyof typeof shared.text;
+export type RadiusName = keyof typeof shared.radius;
+export type SizeName = keyof typeof shared.size;
 
 /** Text roles on the surfaces they sit on: must meet WCAG AA 4.5:1 in every theme. */
 export const textContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
@@ -195,6 +336,15 @@ export const textContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> =
   ['accentText', 'accent'],
   ['accentText', 'accentHover'],
   ['textInverse', 'surfaceInverse'],
+  ['selectedText', 'selected'],
+  ['inverseText', 'inverse'],
+  ['tabBarActiveText', 'tabBarActive'],
+  ['avatarInk1', 'avatarFill1'],
+  ['avatarInk2', 'avatarFill2'],
+  ['avatarInk3', 'avatarFill3'],
+  ['avatarInk4', 'avatarFill4'],
+  ['avatarInk5', 'avatarFill5'],
+  ['avatarInk6', 'avatarFill6'],
 ];
 
 /** Non-text UI roles (fills, dots, rings) on the surfaces they sit on: WCAG 1.4.11 asks 3:1. */
@@ -221,6 +371,9 @@ export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
   ['danger', 'surfaceRaised'],
   ['neutral', 'surface1'],
   ['neutral', 'surface2'],
+  ['selected', 'surface1'],
+  ['selected', 'surfaceRaised'],
+  ['tabBarText', 'tabBar'],
 ];
 
 export const tokens = { breakpoint, themes, shared } as const;

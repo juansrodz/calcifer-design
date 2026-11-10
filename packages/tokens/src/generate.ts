@@ -30,6 +30,9 @@ function block(selector: string, lines: string[], indent = ''): string {
 export function tokensToCss(tokens: Tokens): string {
   const sharedLines: string[] = ['  color-scheme: light dark;'];
   flatten('--font', tokens.shared.font, sharedLines);
+  flatten('--font-weight', tokens.shared.fontWeight, sharedLines);
+  flatten('--font-stretch', tokens.shared.fontStretch, sharedLines);
+  flatten('--text-transform', tokens.shared.textTransform, sharedLines);
   flatten('--text', tokens.shared.text, sharedLines);
   flatten('--leading', tokens.shared.leading, sharedLines);
   flatten('--tracking', tokens.shared.tracking, sharedLines);
@@ -46,11 +49,13 @@ export function tokensToCss(tokens: Tokens): string {
   const lightLines: string[] = [];
   flatten('--color', tokens.themes.light.color, lightLines);
   flatten('--elevation', tokens.themes.light.elevation, lightLines);
+  flatten('--shadow', tokens.themes.light.shadow, lightLines);
   flatten('--material', tokens.themes.light.material, lightLines);
 
   const darkLines: string[] = ['  color-scheme: dark;'];
   flatten('--color', tokens.themes.dark.color, darkLines);
   flatten('--elevation', tokens.themes.dark.elevation, darkLines);
+  flatten('--shadow', tokens.themes.dark.shadow, darkLines);
   flatten('--material', tokens.themes.dark.material, darkLines);
 
   const reducedMotionLines = [
