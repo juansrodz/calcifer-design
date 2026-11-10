@@ -12,7 +12,6 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react';
-import { Button } from '../Button/Button';
 import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
@@ -33,8 +32,7 @@ import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
 import { useGridQuery } from './useGridQuery';
 import { useGridMetrics } from './useGridMetrics';
-import { cellControlSelector, useGridKeyboard, type GridCellPosition } from './useGridKeyboard';
-import { useLatest } from './useLatest';
+import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 import { useLoadMore } from './useLoadMore';
 import { useRowExpansion } from './useRowExpansion';
 import { useRowSelection, type RowSelection } from './useRowSelection';
@@ -90,7 +88,6 @@ export function DataGrid<Row extends RowData>({
   loadingMore = false,
   loadError,
   onLoadMore,
-  loadMoreTrigger = 'scroll',
   onQueryChange,
   initialQuery,
   query,
@@ -378,8 +375,7 @@ export function DataGrid<Row extends RowData>({
     columnCount,
     onActivate: handleActivate,
     onContextMenu: handleContextMenuKey,
-    // Both called after the virtualiser below exists: from key handlers, and this one from
-    // `focusCell` too, which the Show more button's layout effect calls.
+    // Both called from key handlers only, after the virtualiser below exists.
     scrollToEntry: (entryIndex) => virtualizer.scrollToIndex(entryIndex),
     // The rows the virtualiser measured in view; before it has, the estimate.
     getPageSize: () => {
@@ -429,7 +425,7 @@ export function DataGrid<Row extends RowData>({
   const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
   // Annotated for the query handler above, which resets the guard before this line has run.
   const loadMore: ReturnType<typeof useLoadMore> = useLoadMore({
-    enabled: serverMode && loadMoreTrigger === 'scroll' && !awaitingNewRows,
+    enabled: serverMode && !awaitingNewRows,
     loading,
     loadedCount: rows.length,
     lastRenderedIndex:
@@ -558,46 +554,6 @@ export function DataGrid<Row extends RowData>({
       clearFiltersButton = { label: resolvedLabels.clearFilters, onClick: gridQuery.clearFilters };
     }
   }
-  // The button stands aside for the error row's retry and for the first load. It waits, as
-  // loading on scroll does, while the rows answer an old query.
-  const showsMoreButton =
-    serverMode && loadMoreTrigger === 'button' && hasMore && loadError === undefined && !loading;
-  const moreButtonBusy = loadingMore || awaitingNewRows;
-  // The rows left to load, when the total says how many; else the button reads "Show more".
-  const remainingRowCount =
-    totalRowCount !== undefined && totalRowCount > rows.length
-      ? totalRowCount - rows.length
-      : undefined;
-  // While the rows answer an old query, what is on its way is the new query's first page.
-  let moreButtonText = resolvedLabels.showMore(remainingRowCount);
-  if (awaitingNewRows) moreButtonText = resolvedLabels.loading;
-  else if (loadingMore) moreButtonText = resolvedLabels.loadingMore;
-  // Whether the button has focus, and the loaded count at its last press. React fires no blur for
-  // an element it removes, so the record still says so once the button has gone.
-  const moreButtonFocusedRef = useRef(false);
-  const countAtPressRef = useRef(0);
-  // Where focus goes when the button leaves with it: the error row's cell after a failed load,
-  // else the first row the last press brought, or the last row if it brought none, in the held
-  // cell's column (the first column while the held cell is in the head rows).
-  const cellAfterMoreButton = (): GridCellPosition => {
-    if (showsLoadError) return { rowIndex: entries.length + headRowCount, columnIndex: 0 };
-    const { focusedCell } = keyboard;
-    const rowIndex = Math.min(countAtPressRef.current, rows.length - 1);
-    const entryIndex = entries.findIndex(
-      (entry) => entry.kind === 'row' && entry.rowIndex === rowIndex,
-    );
-    if (entryIndex === -1) return focusedCell;
-    const columnIndex = focusedCell.rowIndex >= headRowCount ? focusedCell.columnIndex : 0;
-    return { rowIndex: entryIndex + headRowCount, columnIndex };
-  };
-  const refocusRef = useLatest(() => keyboard.focusCell(cellAfterMoreButton()));
-  useLayoutEffect(() => {
-    if (showsMoreButton || !moreButtonFocusedRef.current) return;
-    moreButtonFocusedRef.current = false;
-    // Focus fell to the page with the button, unless something has taken it since.
-    const active = document.activeElement;
-    if (active === null || active === document.body) refocusRef.current();
-  }, [showsMoreButton, refocusRef]);
   let rowCountText = resolvedLabels.rowCount(rows.length);
   if (serverMode && totalRowCount !== undefined) {
     rowCountText = resolvedLabels.loadedRowCount(rows.length, totalRowCount);
@@ -716,43 +672,19 @@ export function DataGrid<Row extends RowData>({
                 columnCount={columnCount}
                 message={loadError}
                 retryLabel={resolvedLabels.retry}
-                onRetry={loadMore.request}
+                onRetry={loadMore.retry}
                 getCellProps={keyboard.getCellProps}
               />
             ) : null}
           </tbody>
         </table>
       </div>
-      {showsMoreButton ? (
-        <div className={styles.showMore}>
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={moreButtonBusy}
-            onClick={() => {
-              countAtPressRef.current = rows.length;
-              loadMore.request();
-            }}
-            onFocus={() => {
-              moreButtonFocusedRef.current = true;
-            }}
-            onBlur={() => {
-              moreButtonFocusedRef.current = false;
-            }}
-          >
-            {moreButtonText}
-          </Button>
-        </div>
-      ) : null}
       {hideFooter ? null : (
         <footer className={styles.footer}>
           {selection.selectedIds.size > 0 ? (
             <span>{resolvedLabels.selectedCount(selection.selectedIds.size)}</span>
           ) : null}
-          {/* The Show more button says it while it shows. */}
-          {serverMode && loadingMore && !showsMoreButton ? (
-            <span>{resolvedLabels.loadingMore}</span>
-          ) : null}
+          {serverMode && loadingMore ? <span>{resolvedLabels.loadingMore}</span> : null}
           <span className={styles.rowCount}>{rowCountText}</span>
         </footer>
       )}

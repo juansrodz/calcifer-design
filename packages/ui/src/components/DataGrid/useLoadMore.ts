@@ -2,10 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLatest } from './useLatest';
 
 export interface UseLoadMoreOptions {
-  /**
-   * Whether it asks on its own: false outside server mode, when a button asks instead, and while
-   * the rows answer an old query.
-   */
+  /** False outside server mode, and while a pending query rules. */
   enabled: boolean;
   /** A first load or a reload: the rows start again, so nothing is asked and what was is forgotten. */
   loading: boolean;
@@ -22,11 +19,8 @@ export interface UseLoadMoreOptions {
 }
 
 export interface LoadMore {
-  /**
-   * A press of the retry or Show more button: asks at once, though the guard may already have
-   * asked at this count.
-   */
-  request: () => void;
+  /** The retry button: asks again at once, though the guard has already asked at this count. */
+  retry: () => void;
   /** Forgets what was asked, for rows that start again from the first page. */
   reset: () => void;
 }
@@ -71,7 +65,7 @@ export function useLoadMore({
   }, [enabled, loading, hasMore, loadingMore, failed, nearEnd, loadedCount, requestRef]);
 
   return {
-    request,
+    retry: request,
     reset: () => {
       requestedCountRef.current = null;
     },

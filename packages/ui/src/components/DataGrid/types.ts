@@ -43,8 +43,6 @@ export interface DataGridProps<Row extends RowData> {
   loadingMore?: boolean;
   loadError?: string;
   onLoadMore?: () => void;
-  /** How server mode asks for more rows: as the user scrolls (the default), or from a button. */
-  loadMoreTrigger?: 'scroll' | 'button';
   /**
    * The user changed the query: the sort, a filter, the match mode or the search. In client mode it
    * reports the query for the app to keep, for example in the URL; in server mode it is the cue to

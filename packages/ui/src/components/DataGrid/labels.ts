@@ -22,8 +22,6 @@ export interface DataGridLabels {
   selectedCount: (count: number) => string;
   loading: string;
   loadingMore: string;
-  /** Server mode's load-more button; `remaining` is undefined when the count left is not known. */
-  showMore: (remaining: number | undefined) => string;
   retry: string;
   empty: string;
   filteredEmpty: string;
@@ -57,8 +55,6 @@ export const defaultDataGridLabels: DataGridLabels = {
   selectedCount: (count) => `${numberFormat.format(count)} selected`,
   loading: 'Loading rows…',
   loadingMore: 'Loading more rows…',
-  showMore: (remaining) =>
-    remaining === undefined ? 'Show more' : `Show ${numberFormat.format(remaining)} more`,
   retry: 'Try again',
   empty: 'No rows to show.',
   filteredEmpty: 'No rows match the filters.',

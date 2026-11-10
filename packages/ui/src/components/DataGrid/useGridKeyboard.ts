@@ -200,7 +200,6 @@ export function useGridKeyboard({
 }: UseGridKeyboardOptions): {
   focusedCell: GridCellPosition;
   getCellProps: GetCellProps;
-  focusCell: (target: GridCellPosition) => void;
   gridRef: RefObject<HTMLTableElement | null>;
 } {
   const gridRef = useRef<HTMLTableElement>(null);
@@ -284,21 +283,6 @@ export function useGridKeyboard({
     }
     pendingFocusRef.current = true;
     setHeldCell(next);
-  };
-
-  /**
-   * Brings focus into the grid from outside the table, as when the focused Show more button below
-   * it goes away: holds the cell at `target`, scrolls its entry into view, and focuses it now if it
-   * is rendered, else once it renders.
-   */
-  const focusCell = (target: GridCellPosition) => {
-    const next = clampToGrid(target);
-    if (next.rowIndex >= headRowCount) scrollToEntry(next.rowIndex - headRowCount);
-    setInside(false);
-    setHeldCell(next);
-    const cell = gridRef.current === null ? null : cellAt(gridRef.current, next);
-    if (cell === null) pendingFocusRef.current = true;
-    else cell.focus();
   };
 
   /**
@@ -416,5 +400,5 @@ export function useGridKeyboard({
     };
   };
 
-  return { focusedCell, getCellProps, focusCell, gridRef };
+  return { focusedCell, getCellProps, gridRef };
 }

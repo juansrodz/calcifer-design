@@ -13,7 +13,7 @@ import {
   type InventoryRow,
 } from './fixtures';
 import { emptyDataGridQuery } from './query';
-import type { DataGridProps, DataGridQuery } from './types';
+import type { DataGridQuery } from './types';
 
 const meta = {
   title: 'Data/DataGrid',
@@ -297,7 +297,6 @@ interface ServerModeGridProps {
   heading: string;
   columns?: DataGridColumnDef<InventoryRow, unknown>[];
   enableSearch?: boolean;
-  loadMoreTrigger?: DataGridProps<InventoryRow>['loadMoreTrigger'];
 }
 
 /** An app's side of server mode: it holds the loaded rows and answers the grid's two callbacks. */
@@ -306,7 +305,6 @@ function ServerModeGrid({
   heading,
   columns = inventoryColumns,
   enableSearch,
-  loadMoreTrigger,
 }: ServerModeGridProps) {
   const [server] = useState(() =>
     createMockInventoryServer({
@@ -366,7 +364,6 @@ function ServerModeGrid({
       getRowId={(row) => row.id}
       mode="server"
       enableSearch={enableSearch}
-      loadMoreTrigger={loadMoreTrigger}
       maxHeight="25rem"
       loading={total === undefined && loadError === undefined}
       totalRowCount={total}
@@ -406,24 +403,6 @@ export const ServerFindingRows: Story = {
       heading="Server inventory with filters"
       columns={filterableInventoryColumns}
       enableSearch
-    />
-  ),
-};
-
-export const ServerShowMore: Story = {
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Server mode with a Show more button under the rows in place of loading on scroll. Each press asks for the next fifty rows, and the third page fails once to show the retry.',
-      },
-    },
-  },
-  render: () => (
-    <ServerModeGrid
-      gridId="inventory-show-more-story"
-      heading="Server inventory, page by page"
-      loadMoreTrigger="button"
     />
   ),
 };
