@@ -450,6 +450,49 @@ describe('a controlled query', () => {
     // The shown rows are the same rows, so the hidden highlight is not reported again.
     expect(onHighlightChange).toHaveBeenCalledTimes(1);
   });
+
+  it('is read-only without onQueryChange', async () => {
+    const user = userEvent.setup();
+    const rows = makeInventoryRows(rowTotal);
+    const readOnlyGrid = (query: DataGridQuery) => (
+      <DataGrid<InventoryRow>
+        gridId="read-only-query-grid"
+        heading="Inventory"
+        rows={rows}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        query={query}
+      />
+    );
+    const outRows = rows.filter((row) => row.status === 'out');
+    const { rerender } = render(
+      readOnlyGrid({
+        ...emptyDataGridQuery,
+        filters: { status: 'out' },
+        sorting: [{ id: 'name', desc: true }],
+      }),
+    );
+
+    // The filter applies, but nothing offers to change the query.
+    expect(screen.getByText(`${outRows.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Filters/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+    for (const header of screen.getAllByRole('columnheader')) {
+      expect(header).not.toHaveAttribute('aria-sort');
+      expect(header).not.toHaveAttribute('data-sortable');
+    }
+    // A header that cannot sort claims no order, so the rows keep theirs.
+    expect(cellTextsOf('Name')).toEqual(outRows.map((row) => row.name));
+    await user.click(screen.getByRole('columnheader', { name: 'Name' }));
+    expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort');
+
+    // Filtered to nothing, it says so, with no Clear filters button that would do nothing.
+    rerender(
+      readOnlyGrid({ ...emptyDataGridQuery, filters: { status: 'out' }, search: 'Hex bolt' }),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+  });
 });
 
 describe('useDebouncedDraft', () => {
@@ -585,6 +628,33 @@ describe('useDebouncedDraft', () => {
     unmount();
 
     expect(commit).not.toHaveBeenCalled();
+  });
+
+  it('commits through the newest commit, from its timer and on unmount', () => {
+    const firstCommit = vi.fn();
+    const { result, rerender, unmount } = renderHook(
+      ({ commit }) => useDebouncedDraft('', commit, searchDelay),
+      { initialProps: { commit: firstCommit } },
+    );
+
+    // The timer was set while the first commit was current.
+    act(() => result.current.change('bolt'));
+    const secondCommit = vi.fn();
+    rerender({ commit: secondCommit });
+    act(() => vi.advanceTimersByTime(searchDelay));
+
+    expect(firstCommit).not.toHaveBeenCalled();
+    expect(secondCommit).toHaveBeenCalledTimes(1);
+    expect(secondCommit).toHaveBeenCalledWith('bolt');
+
+    act(() => result.current.change('bolts'));
+    const lastCommit = vi.fn();
+    rerender({ commit: lastCommit });
+    unmount();
+
+    expect(lastCommit).toHaveBeenCalledTimes(1);
+    expect(lastCommit).toHaveBeenCalledWith('bolts');
+    expect(secondCommit).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -1176,18 +1246,113 @@ describe('the choice filters', () => {
     expect(optionNames()).toEqual(['Tools']);
     expect(lastFilters(onQueryChange)).toEqual({ status: 'low', category: ['Tools'] });
 
-    // Emptying a select's text is no choice: the filter stays until an item is chosen, and the
-    // text comes back as the list closes.
+    // What is typed over a select's text narrows its list too. Neither typing nor emptying the
+    // text is a choice: the filter stays until an item is chosen, and the text comes back as the
+    // list closes.
     await user.keyboard('{Escape}');
     const statusFilter = choiceFilter('Status');
-    await user.clear(statusFilter);
     await user.type(statusFilter, 'ow');
     expect(optionNames()).toEqual(['Low']);
+    await user.clear(statusFilter);
+    expect(optionNames()).toEqual(['All', 'In stock', 'Low', 'Out']);
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
     expect(statusFilter).toHaveValue('Low');
     expect(onQueryChange).toHaveBeenCalledTimes(1);
   });
+
+  it("replaces a select's text with what is typed, entered by a click or from its cell", async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    await openStrip(user);
+    const statusFilter = choiceFilter('Status');
+    const statusCell = statusFilter.closest('td') as HTMLElement;
+
+    // A click focuses the input with its text selected, so typing replaces "All".
+    await user.type(statusFilter, 'lo');
+
+    expect(statusFilter).toHaveValue('lo');
+    expect(optionNames()).toEqual(['Low']);
+    expect(screen.queryByText('No matching options')).not.toBeInTheDocument();
+
+    // Closing the list puts the choice back; a second Escape leaves the cell.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(statusFilter).toHaveValue('All');
+    await user.keyboard('{Escape}');
+    expect(statusCell).toHaveFocus();
+
+    // Entering the cell from the keyboard selects the text too.
+    await user.keyboard('{Enter}');
+    expect(statusFilter).toHaveFocus();
+    await user.keyboard('lo');
+
+    expect(statusFilter).toHaveValue('lo');
+    expect(optionNames()).toEqual(['Low']);
+    expect(screen.queryByText('No matching options')).not.toBeInTheDocument();
+  });
+
+  it("selects a select's text again once a pointer's press has placed its caret", async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    await openStrip(user);
+    const statusFilter = choiceFilter('Status') as HTMLInputElement;
+
+    // A browser focuses the input as the press begins, then puts the caret where it landed.
+    fireEvent.pointerDown(statusFilter);
+    act(() => statusFilter.focus());
+    statusFilter.setSelectionRange(1, 1);
+    await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+
+    expect(statusFilter.selectionStart).toBe(0);
+    expect(statusFilter.selectionEnd).toBe('All'.length);
+  });
+
+  interface OpeningKeystrokeCase {
+    columnName: string;
+    /** The column's place in the grid, counted from 0. */
+    columnIndex: number;
+    filters: DataGridQuery['filters'];
+    typed: string;
+    shownOptions: string[];
+  }
+
+  const statusCase = { columnName: 'Status', columnIndex: 5, typed: 'l', shownOptions: ['Low'] };
+  const categoryCase = {
+    columnName: 'Category',
+    columnIndex: 2,
+    typed: 'p',
+    shownOptions: ['Packaging'],
+  };
+
+  it.each<[string, OpeningKeystrokeCase]>([
+    ['a select whose value no option offers', { ...statusCase, filters: { status: 'gone' } }],
+    [
+      'a multi-select whose value no option offers',
+      { ...categoryCase, filters: { category: ['Gone'] } },
+    ],
+    ['a multi-select with nothing chosen', { ...categoryCase, filters: {} }],
+  ])(
+    'keeps the keystroke that opens the list of %s',
+    async (_case, { columnName, columnIndex, filters, typed, shownOptions }) => {
+      const user = userEvent.setup();
+      renderGrid({ initialQuery: { filters } });
+      await user.click(screen.getByRole('button', { name: /^Filters/ }));
+      // Into the strip from the header, along to the column, and into its cell: no click, so the
+      // list is closed until the key below opens it.
+      await user.tab();
+      await user.keyboard(`{ArrowDown}{ArrowRight>${columnIndex}/}{Enter}`);
+      const filter = choiceFilter(columnName);
+      expect(filter).toHaveFocus();
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+      await user.keyboard(typed);
+
+      expect(filter).toHaveValue(typed);
+      expect(await screen.findByRole('listbox')).toBeInTheDocument();
+      expect(optionNames()).toEqual(shownOptions);
+    },
+  );
 
   it('says when no option matches', async () => {
     const user = userEvent.setup();

@@ -294,17 +294,38 @@ describe('isSameQuery', () => {
     expect(isSameQuery(emptyDataGridQuery, queryWith({}))).toBe(true);
   });
 
-  it('ignores the order of the filters, not of an array inside one', () => {
+  it('ignores the order of the filters, and of the values of a multi-select', () => {
     const reordered: DataGridQuery = {
       ...build(),
       filters: { category: ['Tools', 'Safety'], name: 'bolt' },
     };
     expect(isSameQuery(build(), reordered)).toBe(true);
+    // A multi-select's values combine with OR, so their order means nothing.
     const reversed: DataGridQuery = {
       ...build(),
       filters: { name: 'bolt', category: ['Safety', 'Tools'] },
     };
-    expect(isSameQuery(build(), reversed)).toBe(false);
+    expect(isSameQuery(build(), reversed)).toBe(true);
+    expect(
+      isSameQuery(
+        { ...build(), filters: { category: ['a', 'b'] } },
+        { ...build(), filters: { category: ['b', 'a'] } },
+      ),
+    ).toBe(true);
+    expect(
+      isSameQuery(
+        { ...build(), filters: { category: ['a', 'b'] } },
+        { ...build(), filters: { category: ['a', 'c'] } },
+      ),
+    ).toBe(false);
+  });
+
+  it('leaves the arrays it compares in their own order', () => {
+    const first: DataGridQuery = { ...build(), filters: { category: ['Tools', 'Safety'] } };
+    const second: DataGridQuery = { ...build(), filters: { category: ['Safety', 'Tools'] } };
+    isSameQuery(first, second);
+    expect(first.filters.category).toEqual(['Tools', 'Safety']);
+    expect(second.filters.category).toEqual(['Safety', 'Tools']);
   });
 
   it('is false when one filter array differs in one item or in length', () => {

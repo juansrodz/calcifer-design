@@ -779,16 +779,26 @@ describe('the Show more button', () => {
       const user = userEvent.setup();
       const rows = makeInventoryRows(200);
       const { rerender } = render(gridBetweenButtons({ rows }));
+      const after = screen.getByRole('button', { name: 'After' });
+
+      // A failed load does not pull focus back into the grid.
       await user.click(screen.getByRole('button', { name: 'Show 40 more' }));
       await user.tab();
-      const after = screen.getByRole('button', { name: 'After' });
       expect(after).toHaveFocus();
-
-      rerender(gridBetweenButtons({ rows: makeInventoryRows(240), hasMore: false }));
-      expect(after).toHaveFocus();
-
-      // Nor does a failed load pull focus back into the grid.
+      rerender(gridBetweenButtons({ rows, loadingMore: true }));
+      expect(screen.getByRole('button', { name: 'Loading more rows…' })).toBeInTheDocument();
       rerender(gridBetweenButtons({ rows, loadError: 'Could not load rows' }));
+      expect(screen.getByText('Could not load rows')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^(Show|Loading)/ })).not.toBeInTheDocument();
+      expect(after).toHaveFocus();
+
+      // Nor do the rows a later press brings.
+      rerender(gridBetweenButtons({ rows }));
+      await user.click(screen.getByRole('button', { name: 'Show 40 more' }));
+      await user.tab();
+      expect(after).toHaveFocus();
+      rerender(gridBetweenButtons({ rows: makeInventoryRows(240), hasMore: false }));
+      expect(screen.queryByRole('button', { name: /^Show/ })).not.toBeInTheDocument();
       expect(after).toHaveFocus();
     });
 
@@ -808,8 +818,10 @@ describe('the Show more button', () => {
     const { rerender } = render(buttonGrid({ totalRowCount: 240, onLoadMore, onQueryChange }));
 
     await user.click(screen.getByRole('columnheader', { name: 'Name' }));
-    const showMore = screen.getByRole('button', { name: 'Loading more rows…' });
+    // The rows on their way are the new query's first page, not more of the old one's.
+    const showMore = screen.getByRole('button', { name: 'Loading rows…' });
     expect(showMore).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByText('Loading more rows…')).not.toBeInTheDocument();
     await user.click(showMore);
     expect(onLoadMore).not.toHaveBeenCalled();
 

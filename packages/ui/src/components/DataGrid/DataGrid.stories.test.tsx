@@ -61,18 +61,22 @@ describe('DataGrid stories', () => {
 
   it('the view all link story opens filtered and sorted', () => {
     render(<ViewAllLink />);
-    const inStockRows = makeInventoryRows(240).filter((row) => row.status === 'in stock');
-    const presetCategories = ['Packaging', 'Safety'];
-    const shownCount = inStockRows.filter((row) => presetCategories.includes(row.category)).length;
-    // Both filters narrow the rows: the categories leave out some of the rows in stock.
-    expect(shownCount).toBeGreaterThan(0);
-    expect(shownCount).toBeLessThan(inStockRows.length);
-    expect(screen.getByText(`${shownCount} of 240 rows`)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
-    expect(textOfEachRow('Status').every((status) => status === 'in stock')).toBe(true);
-    expect(textOfEachRow('Category').every((category) => presetCategories.includes(category))).toBe(
-      true,
+    const rows = makeInventoryRows(240);
+    const presetCategories = ['Packaging', 'Fasteners'];
+    const isBox = (name: string) => name.toLowerCase().includes('box');
+    const boxRows = rows.filter((row) => isBox(row.name));
+    const shownRows = boxRows.filter((row) => presetCategories.includes(row.category));
+    // Both filters narrow the rows: the categories leave out some of the boxes, and the name some
+    // of the rows in those categories. Each category the link names has rows among them.
+    expect(shownRows.length).toBeLessThan(boxRows.length);
+    expect(shownRows.length).toBeLessThan(
+      rows.filter((row) => presetCategories.includes(row.category)).length,
     );
+    expect(new Set(shownRows.map((row) => row.category))).toEqual(new Set(presetCategories));
+    expect(screen.getByText(`${shownRows.length} of 240 rows`)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters, 2 active' })).toBeInTheDocument();
+    expect(textOfEachRow('Name').every(isBox)).toBe(true);
+    expect(new Set(textOfEachRow('Category'))).toEqual(new Set(presetCategories));
     expect(screen.getByRole('columnheader', { name: 'Quantity' })).toHaveAttribute(
       'aria-sort',
       'ascending',

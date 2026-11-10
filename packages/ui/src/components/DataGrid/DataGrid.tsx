@@ -127,9 +127,11 @@ export function DataGrid<Row extends RowData>({
   labels,
 }: DataGridProps<Row>) {
   const serverMode = mode === 'server';
-  // In server mode only the app can sort, filter and search, so without its query handler the
-  // grid does none of them, and starts with no filters or search whatever `initialQuery` says.
-  const queryEnabled = !serverMode || onQueryChange !== undefined;
+  // Whether the user can change the query. Without the query handler the app hears of no change:
+  // in server mode only it can sort, filter and search, so the grid does none of them and starts
+  // with no filters or search whatever `initialQuery` says; a controlled query it would never
+  // replace. Only the grid's own query in client mode needs no handler.
+  const queryEnabled = (!serverMode && query === undefined) || onQueryChange !== undefined;
   const sortingEnabled = enableSorting && queryEnabled;
   const filtering = queryEnabled && columns.some((column) => column.filter !== undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -549,7 +551,10 @@ export function DataGrid<Row extends RowData>({
   if (stateKind === 'empty') stateReplacement = emptyState;
   if (stateKind === 'filteredEmpty') {
     stateReplacement = filteredEmptyState?.(gridQuery.clearFilters);
-    clearFiltersButton = { label: resolvedLabels.clearFilters, onClick: gridQuery.clearFilters };
+    // A query the user cannot change offers no button to clear it.
+    if (queryEnabled) {
+      clearFiltersButton = { label: resolvedLabels.clearFilters, onClick: gridQuery.clearFilters };
+    }
   }
   // The button stands aside for the error row's retry and for the first load. It waits, as
   // loading on scroll does, while the rows answer an old query.
@@ -561,6 +566,10 @@ export function DataGrid<Row extends RowData>({
     totalRowCount !== undefined && totalRowCount > rows.length
       ? totalRowCount - rows.length
       : undefined;
+  // While the rows answer an old query, what is on its way is the new query's first page.
+  let moreButtonText = resolvedLabels.showMore(remainingRowCount);
+  if (awaitingNewRows) moreButtonText = resolvedLabels.loading;
+  else if (loadingMore) moreButtonText = resolvedLabels.loadingMore;
   // Whether the button has focus, and the loaded count at its last press. React fires no blur for
   // an element it removes, so the record still says so once the button has gone.
   const moreButtonFocusedRef = useRef(false);
@@ -729,9 +738,7 @@ export function DataGrid<Row extends RowData>({
               moreButtonFocusedRef.current = false;
             }}
           >
-            {moreButtonBusy
-              ? resolvedLabels.loadingMore
-              : resolvedLabels.showMore(remainingRowCount)}
+            {moreButtonText}
           </Button>
         </div>
       ) : null}

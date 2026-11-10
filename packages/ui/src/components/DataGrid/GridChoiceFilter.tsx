@@ -1,5 +1,5 @@
 import { Combobox } from '@base-ui/react/combobox';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import a11yStyles from '../../styles/a11y.module.css';
@@ -60,16 +60,19 @@ export function GridChoiceFilter({
   // A stable list: Base UI resets a select's text to its choice whenever the list changes.
   const items = useMemo<ChoiceItem[]>(() => [allItem, ...options], [allItem, options]);
 
-  const chosenValues: readonly string[] =
-    value === undefined ? [] : typeof value === 'string' ? [value] : value;
-  // A value no option offers, as a query from a link can hold, still shows as itself.
-  const chosenItems: ChoiceItem[] = chosenValues.map(
-    (chosenValue) =>
-      options.find((option) => option.value === chosenValue) ?? {
-        value: chosenValue,
-        label: chosenValue,
-      },
-  );
+  // Stable too, for the same reason: Base UI tells a new value by reference, and the reset would
+  // lose the keystroke that opens the list.
+  const chosenItems = useMemo<ChoiceItem[]>(() => {
+    const chosenValues = value === undefined ? [] : typeof value === 'string' ? [value] : value;
+    // A value no option offers, as a query from a link can hold, still shows as itself.
+    return chosenValues.map(
+      (chosenValue) =>
+        options.find((option) => option.value === chosenValue) ?? {
+          value: chosenValue,
+          label: chosenValue,
+        },
+    );
+  }, [value, options]);
   const [firstChosen] = chosenItems;
   const summary =
     firstChosen === undefined
@@ -78,11 +81,14 @@ export function GridChoiceFilter({
         ? firstChosen.label
         : selectedCountLabel(chosenItems.length);
   // "All" is the choice while nothing else is, so it shows as chosen.
-  const selected = multiple
-    ? firstChosen === undefined
-      ? [allItem]
-      : chosenItems
-    : (firstChosen ?? allItem);
+  const selected = useMemo(() => {
+    if (!multiple) return chosenItems[0] ?? allItem;
+    return chosenItems.length === 0 ? [allItem] : chosenItems;
+  }, [multiple, chosenItems, allItem]);
+
+  // Whether a pointer's press is what focuses the input. The press places the caret after focus
+  // has moved, so it would undo a selection made as the input gains focus.
+  const pointerFocusingRef = useRef(false);
 
   const reportChoice = (next: ChoiceItem | ChoiceItem[] | null) => {
     if (!Array.isArray(next)) {
@@ -91,7 +97,7 @@ export function GridChoiceFilter({
     }
     // "All" joins the choice when it is picked over other options; picked again on its own, it
     // leaves the choice empty. Either way the filter goes.
-    const pickedAll = chosenValues.length > 0 && next.some((item) => item.value === null);
+    const pickedAll = chosenItems.length > 0 && next.some((item) => item.value === null);
     const nextValues = next.flatMap((item) => (item.value === null ? [] : [item.value]));
     onValueChange(pickedAll || nextValues.length === 0 ? undefined : nextValues);
   };
@@ -129,6 +135,24 @@ export function GridChoiceFilter({
           aria-label={label}
           placeholder={multiple ? summary : undefined}
           aria-describedby={multiple ? summaryId : undefined}
+          onPointerDown={(event) => {
+            pointerFocusingRef.current = document.activeElement !== event.currentTarget;
+          }}
+          onFocus={(event) => {
+            const focusedByPointer = pointerFocusingRef.current;
+            pointerFocusingRef.current = false;
+            // A select's input holds its choice. Selected, that text gives way to what is typed,
+            // so the list narrows to it rather than to the choice with the typing after it.
+            if (multiple) return;
+            const input = event.currentTarget;
+            input.select();
+            if (!focusedByPointer) return;
+            const textAtFocus = input.value;
+            // After the press has placed its caret; not once the user has typed or moved on.
+            requestAnimationFrame(() => {
+              if (document.activeElement === input && input.value === textAtFocus) input.select();
+            });
+          }}
           onKeyDown={(event) => {
             // A filter never submits a form the grid sits in. Base UI claims an Enter that picks
             // a highlighted item, but leaves the others to the form.

@@ -121,12 +121,18 @@ export function countActiveCriteria(query: DataGridQuery): number {
   return Object.keys(query.filters).length + (query.search.trim() === '' ? 0 : 1);
 }
 
+/**
+ * A multi-select's values combine with OR, so they are compared in any order: an app that hands
+ * back the same values reordered has not changed the query.
+ */
 function isSameFilterValue(first: DataGridFilterValue, second: DataGridFilterValue): boolean {
   if (typeof first === 'string' || typeof second === 'string') return first === second;
-  return first.length === second.length && first.every((item, index) => item === second[index]);
+  if (first.length !== second.length) return false;
+  const sortedSecond = [...second].sort();
+  return [...first].sort().every((item, index) => item === sortedSecond[index]);
 }
 
-/** Whether two queries are the same, value for value. */
+/** Whether two queries are the same, value for value; a multi-select's values in any order. */
 export function isSameQuery(first: DataGridQuery, second: DataGridQuery): boolean {
   if (first.matchMode !== second.matchMode || first.search !== second.search) return false;
   const sameSorting =

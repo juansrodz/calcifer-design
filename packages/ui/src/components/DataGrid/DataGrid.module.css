@@ -267,10 +267,12 @@
   }
 }
 
-/* Forced colours erase the tint, so an outline in the text colour marks the row instead. */
+/* Forced colours erase the tint, so an outline in the text colour marks the row instead, and the
+   option a choice filter's list has highlighted for the keyboard. */
 @media (forced-colors: active) {
   .row[data-highlighted],
-  .row[aria-selected='true'] {
+  .row[aria-selected='true'],
+  .choiceOption[data-highlighted] {
     outline-style: solid;
     outline-width: var(--focus-ring-width);
     outline-offset: calc(var(--focus-ring-width) * -1);

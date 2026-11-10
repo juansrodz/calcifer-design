@@ -4,7 +4,7 @@ import styles from './DataGrid.module.css';
 import { GridChoiceFilter } from './GridChoiceFilter';
 import { GridTextFilter } from './GridTextFilter';
 import type { DataGridLabels } from './labels';
-import { columnIdOf, columnNameOf } from './query';
+import { columnNameOf } from './query';
 import type { DataGridFilterValue } from './types';
 import type { GetCellProps } from './useGridKeyboard';
 import type { GridQuery } from './useGridQuery';
@@ -91,7 +91,7 @@ export function GridFilterRow<Row extends RowData>({
       {headers.map((header, index) => {
         const columnIndex = index + columnOffset;
         const column = header.column.columnDef as DataGridColumnDef<Row>;
-        const columnId = columnIdOf(column);
+        const columnId = header.column.id;
         return (
           <td
             key={header.id}
@@ -100,7 +100,7 @@ export function GridFilterRow<Row extends RowData>({
             aria-colindex={columnIndex + 1}
             {...getCellProps(stripRow, columnIndex)}
           >
-            {column.filter !== undefined && columnId !== undefined ? (
+            {column.filter !== undefined ? (
               <ColumnFilter
                 filter={column.filter}
                 label={labels.filterBy(columnNameOf(column))}
