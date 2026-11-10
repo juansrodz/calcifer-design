@@ -27,7 +27,7 @@ export interface IconButtonProps extends Omit<
   loading?: boolean;
   /**
    * Makes the button a toggle: sets `aria-pressed` and, when true, draws the accent state. Leave it
-   * undefined for a plain button, which then carries no `aria-pressed` at all.
+   * undefined for a plain button, which then carries no `aria-pressed` but one you pass yourself.
    */
   pressed?: boolean;
   /**
@@ -71,7 +71,8 @@ export function IconButton({
       focusableWhenDisabled={loading}
       aria-label={label}
       aria-busy={loading || undefined}
-      aria-pressed={pressed}
+      // A caller's own `aria-pressed`, written before `pressed` existed, stands until it is given.
+      aria-pressed={pressed ?? rest['aria-pressed']}
     >
       <span className={styles.icon}>{loading ? <Spinner size="sm" /> : children}</span>
       {badge !== undefined && badge > 0 ? (

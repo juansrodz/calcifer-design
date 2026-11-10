@@ -96,6 +96,18 @@ describe('IconButton', () => {
     expect(button).toHaveAttribute('data-pressed');
   });
 
+  it("keeps a caller's own aria-pressed, unless pressed is given", () => {
+    const { rerender } = render(<Ghost aria-pressed="true" />);
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    // The accent state follows `pressed` alone.
+    expect(button).not.toHaveAttribute('data-pressed');
+
+    rerender(<Ghost aria-pressed="true" pressed={false} />);
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button).not.toHaveAttribute('data-pressed');
+  });
+
   it('shows a badge hidden from assistive technology', () => {
     render(<Ghost badge={3} />);
     const badge = screen.getByText('3');
@@ -103,9 +115,16 @@ describe('IconButton', () => {
     expect(screen.getByRole('button', { name: 'Delete remote' })).toBeInTheDocument();
   });
 
-  it('shows no badge for zero and caps it at 99+', () => {
+  it('shows no badge for zero or undefined, 99 as itself, and caps it at 99+', () => {
     const { container, rerender } = render(<Ghost badge={0} />);
     expect(container.querySelector('span[aria-hidden="true"]')).toBeNull();
+
+    rerender(<Ghost badge={undefined} />);
+    expect(container.querySelector('span[aria-hidden="true"]')).toBeNull();
+
+    rerender(<Ghost badge={99} />);
+    expect(screen.getByText('99')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByText('99+')).not.toBeInTheDocument();
 
     rerender(<Ghost badge={120} />);
     expect(screen.getByText('99+')).toHaveAttribute('aria-hidden', 'true');

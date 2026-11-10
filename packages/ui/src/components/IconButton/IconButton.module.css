@@ -136,3 +136,27 @@
   background: var(--color-accent);
   color: var(--color-accent-text);
 }
+
+/* Forced colours replace the accent tint and so erase the pressed state; system colours survive,
+   as in Segmented. `forced-color-adjust: none` because Chromium otherwise paints its Canvas
+   backplate behind the icon. Last in the file, so that the pressed hover and the primary badge
+   rules above do not win back their tokens; the badge takes the same pair the other way round. */
+@media (forced-colors: active) {
+  .root[data-pressed],
+  .root[data-pressed]:hover:not([data-disabled]) {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    outline-color: CanvasText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-variant][data-pressed] .badge {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: HighlightText;
+    color: Highlight;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+}
