@@ -77,7 +77,7 @@ The Who's Bringing What redesign (mock frozen in the app repo at `docs/design/mo
 `docs/superpowers/specs/2026-11-08-whosbringingwhat-redesign-design.md` on the portfolio's
 `redesign/docs` branch) is the first real consumer in sight. Its Users screen (9a, dark 10o, no-matches
 9e) is a sorted table with an outside search field and counted role tabs, a row menu, a "Show N more"
-button and an illustrated no-matches state. This plan is shaped to serve it:
+button (overruled by the user on 2026-11-10, see below) and an illustrated no-matches state. This plan is shaped to serve it:
 
 - **Order.** The user answered the redesign's Q4 on 2026-11-09: the theme layer and the redesign's
   new library components go first, and the DataGrid releases follow. That library work has not
@@ -98,7 +98,9 @@ button and an illustrated no-matches state. This plan is shaped to serve it:
 - **Shared parts.** The grid's search field is the library's `SearchField` (Task 9); its default
   filtered-empty content is the library's `EmptyState` (Task 9), and `filteredEmptyState` lets WBW
   draw its characters and a "Clear search" button.
-- **"Show N more".** A load-more button mode for server mode (Task 7).
+- **Loading more: infinite scroll only.** Task 7 first added a "Show N more" button mode for 9a. On
+  2026-11-10 the user overruled the mock ("The idea is to have infinite scrolling"), and amendment A1
+  (commit 9a5ba86) removed the button mode: server mode loads more as the user scrolls, as in release 1.
 - **Not in this plan.** 9a's uppercase, tracked column headers and its divider-free rows with a
   rounded hover tint are not expressible with today's tokens; whether the grid gets purpose tokens
   for them is the theme layer's call, raised there. The phone list (9c) stays the app's: a stacked
@@ -725,6 +727,10 @@ Stories (each composed with `axe` in `DataGrid.stories.test.tsx`):
     `onLoadMore` once per press; it shows "Loading more rows…" and is disabled while `loadingMore`,
     and is gone once `hasMore` is false. Without a total it reads "Show more".
 
+> **Removed by amendment A1 (2026-11-10).** The user chose infinite scrolling, so the button mode below
+> (its test above, the `loadMoreTrigger` prop, the `showMore` label and the `ServerShowMore` story) was
+> built in Phase A and then removed in commit 9a5ba86. It stays here as the record; do not rebuild it.
+
 Added for "Show N more" (9a), server mode only:
 
 ```ts
@@ -830,9 +836,8 @@ Behaviour:
 - [ ] **Step 3: Implement** the exports, add `dataGridSearchPattern` to the README table's ui row
       after `createDataGridColumnHelper`, and write the changeset: `'@calcifer-design/ui': minor`,
       body "DataGrid can now find rows: a filter strip with text, select and multi-select filters,
-      all/any matching, wildcard search, `initialQuery` and a controlled `query`, a filtered-empty
-      state, and a "Show N more" button for server mode. `IconButton` gains an optional pressed
-      state and count badge. `onQueryChange` now also fires in client mode."
+      all/any matching, wildcard search, `initialQuery`, a controlled `query`, and a filtered-empty
+      state. `IconButton` gains an optional pressed state and count badge. `onQueryChange` now also fires in client mode."
 - [ ] **Step 4: Run** `bun run check` from the repo root — expect exit 0 (lint, typecheck, unit, dist,
       Storybook build).
 - [ ] **Step 5: Commit** `chore(ui): export DataGrid search helper and add the release 2 changeset`.
