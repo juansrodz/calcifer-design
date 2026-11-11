@@ -28,3 +28,5 @@ export type {
   TokenOverrides,
   TokenValues,
 } from './theme';
+export { checkThemeContrast } from './theme-contrast';
+export type { ContrastViolation, ExtraContrastPairs } from './theme-contrast';
