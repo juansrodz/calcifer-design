@@ -44,8 +44,12 @@ describe('ThemeScope', () => {
     ['PinnedDark', PinnedDark],
     ['Nested', Nested],
     ['PortalsStayInside', PortalsStayInside],
-  ])('%s has no axe violations', async (_name, Story) => {
+  ])('%s has no axe violations', async (name, Story) => {
     render(<Story />);
+    if (name === 'PortalsStayInside') {
+      // So axe covers the toast surface, which the story raises in an effect after mount.
+      await screen.findByText('Remote removed');
+    }
     expect(await axeDocument()).toHaveNoViolations();
   });
 
@@ -79,10 +83,9 @@ describe('ThemeScope', () => {
     await waitFor(() =>
       expect(host).toContainElement(screen.getByRole('dialog', { name: 'Remove the remote?' })),
     );
+    // The open modal Dialog marks its sibling portal nodes `aria-hidden`: correct modal semantics.
     expect(host).toContainElement(screen.getByRole('menu', { hidden: true }));
-    expect(host).toContainElement(
-      screen.getByRole('region', { name: 'Notifications', hidden: true }),
-    );
+    expect(host).toContainElement(screen.getByRole('region', { name: 'Notifications' }));
     expect(await screen.findByText('Remote removed')).toBeInTheDocument();
   });
 

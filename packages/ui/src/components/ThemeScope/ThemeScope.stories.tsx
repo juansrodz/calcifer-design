@@ -15,6 +15,8 @@ const storyToastManager = createToastManager();
 const meta = {
   title: 'Layout/ThemeScope',
   component: ThemeScope,
+  // The stories close over `demoTheme` (an arg copy would drop its brand), so controls are inert.
+  parameters: { controls: { disable: true } },
   // The generated sheet on the page, as a consumer's build puts it there: proves `defineTheme` and
   // `themeToCss` end to end. The theme itself is closed over by each story rather than passed as
   // an arg, so Storybook's arg mapping never copies it and drops the brand.
