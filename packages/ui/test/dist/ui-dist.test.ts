@@ -177,6 +177,22 @@ describe('@calcifer-design/ui dist', () => {
     expect(sites.length).toBeGreaterThanOrEqual(9);
   });
 
+  // R5: a dialog, a sheet and the toast stack size from their fixed viewport (a percentage of
+  // the grid area, or of the stack's own box), never the window, so an embedded scope's overlays
+  // stay in its box. The rule is per file: `popup_module.css` carries the surfaces, `Dialog_module.css`
+  // the viewport they sit in, `ToastRegion_module.css` the stack.
+  it('sizes dialogs, sheets and toasts without a viewport unit', async () => {
+    const files = [
+      'styles/popup_module.css',
+      'components/Dialog/Dialog_module.css',
+      'components/ToastRegion/ToastRegion_module.css',
+    ];
+    for (const file of files) {
+      const css = await readFile(path.join(distRoot, file), 'utf8');
+      expect(css, file).not.toMatch(/\d(dvh|vh|vw)\b/);
+    }
+  });
+
   // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would
   // make every theme fail the check.
   it('reads the theme brand from the tokens package and mints no symbol of its own', async () => {

@@ -110,3 +110,38 @@ export const PortalsStayInside: Story = {
     </ThemeScope>
   ),
 };
+
+/**
+ * A scope inside a box that is a containing block for fixed descendants (`transform`), the way a
+ * remote sits in a host app's frame: a drawer docked to the end edge and a bottom sheet behind a
+ * trigger. Both overlays are fixed-position, so each is meant to follow the box rather than the
+ * window; judge that in a real browser. The box is a story-only wrapper, so its inline style sits
+ * outside the library's token rules.
+ */
+export const EmbeddedInABox: Story = {
+  render: () => (
+    <div
+      style={{
+        position: 'relative',
+        height: '80dvh',
+        minHeight: 560,
+        overflow: 'hidden',
+        transform: 'translateZ(0)',
+      }}
+    >
+      <ThemeScope theme={demoTheme}>
+        <Dialog variant="sheet" side="end" defaultOpen heading="Drawer">
+          <p>A full-height panel, as tall as the box rather than the window.</p>
+        </Dialog>
+        <Dialog
+          variant="sheet"
+          side="bottom"
+          heading="Sheet"
+          trigger={<Button>Open the sheet</Button>}
+        >
+          <p>A bottom sheet, docked to the box’s lower edge.</p>
+        </Dialog>
+      </ThemeScope>
+    </div>
+  ),
+};

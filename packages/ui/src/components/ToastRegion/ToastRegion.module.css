@@ -8,7 +8,7 @@
   right: var(--space-5);
   bottom: var(--space-5);
   left: auto;
-  width: min(22rem, calc(100vw - var(--space-6)));
+  width: min(22rem, calc(100% - var(--space-6)));
 }
 
 .toast {

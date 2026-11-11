@@ -13,7 +13,7 @@ import { usePortalContainer } from './PortalContainerContext';
 import { ThemeScope } from './ThemeScope';
 import * as stories from './ThemeScope.stories';
 
-const { Default, PinnedDark, Nested, PortalsStayInside } = composeStories(stories);
+const { Default, PinnedDark, Nested, PortalsStayInside, EmbeddedInABox } = composeStories(stories);
 
 const brandMessage = 'ThemeScope: theme must come from defineTheme';
 
@@ -44,6 +44,7 @@ describe('ThemeScope', () => {
     ['PinnedDark', PinnedDark],
     ['Nested', Nested],
     ['PortalsStayInside', PortalsStayInside],
+    ['EmbeddedInABox', EmbeddedInABox],
   ])('%s has no axe violations', async (name, Story) => {
     render(<Story />);
     if (name === 'PortalsStayInside') {
@@ -104,6 +105,21 @@ describe('ThemeScope', () => {
     expect(innerHost).not.toBe(outerHost);
     expect(innerHost).toContainElement(dialog);
     expect(outerHost).not.toContainElement(dialog);
+  });
+
+  it('EmbeddedInABox opens its drawer and then its sheet inside the portal host', async () => {
+    render(<EmbeddedInABox />);
+    const host = portalHost();
+    const drawer = await screen.findByRole('dialog', { name: 'Drawer' });
+    expect(host).toContainElement(drawer);
+
+    // The drawer is modal, so it must close before the trigger behind it can be pressed.
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Drawer' })).toBeNull());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open the sheet' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Sheet' });
+    expect(host).toContainElement(sheet);
   });
 
   describe('R19: a portal mounted in the scope’s first commit lands in the host', () => {
