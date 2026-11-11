@@ -18,10 +18,14 @@ interface Expectation {
 // Read as plain text via the filesystem for the reason `base.test.ts` records.
 const sourceRoot = join(import.meta.dirname, '..');
 
-const anyWeightLiteral = /font-weight:\s*\d/;
+// Any `font-weight` that is not a `var(...)` read: a number, a keyword (`bold`, `bolder`, `inherit`).
+// The lookahead sits right after the colon so `\s*` cannot backtrack to zero and let
+// `font-weight: var(--x)` through as if the space were the value.
+const anyWeightLiteral = /font-weight:(?!\s*var\()/;
 
-// The display role on a library heading is these four, never more (plan ruling L1-1): each reader
-// keeps its own letter-spacing and line-height.
+// The display role on a library heading is these four (plan ruling L1-1). Each reader keeps its own
+// letter-spacing and line-height; PageHeading's size variants read `--tracking-display` and
+// `--leading-display` themselves.
 const displayRole = [
   'font-family: var(--font-display);',
   'font-weight: var(--font-weight-display);',
