@@ -17,6 +17,7 @@ export type {
 export { themeToCss, tokensToCss, toKebab } from './generate';
 export { contrastRatio, relativeLuminance } from './contrast';
 export { findWidthQueryViolations } from './breakpoint-scan';
+export { customPropertyNamesOf, findUnknownCustomProperties } from './custom-property-scan';
 export { defineTheme, themeBrand } from './theme';
 export type {
   ContrastPair,
