@@ -6,6 +6,26 @@ import { checkThemeContrast } from '../src/theme-contrast';
 
 const surfaceNames = ['surface1', 'surface2', 'surface3', 'surfaceRaised'] as const;
 
+/** What a light `accent` that is not an opaque six-digit hex reports, in list order (text list first). */
+const accentNotHexViolations = [
+  {
+    mode: 'light',
+    foreground: 'accentText',
+    background: 'accent',
+    kind: 'not-hex',
+    ratio: null,
+    required: 4.5,
+  },
+  ...surfaceNames.map((background) => ({
+    mode: 'light',
+    foreground: 'accent',
+    background,
+    kind: 'not-hex',
+    ratio: null,
+    required: 3,
+  })),
+];
+
 describe('checkThemeContrast', () => {
   it('reports nothing for the house theme', () => {
     expect(checkThemeContrast(defineTheme({ className: 'theme-house' }))).toEqual([]);
@@ -51,24 +71,30 @@ describe('checkThemeContrast', () => {
       light: { color: { accent: 'rgba(0, 0, 0, 0.5)' } },
     });
 
-    expect(checkThemeContrast(theme)).toEqual([
-      {
-        mode: 'light',
-        foreground: 'accentText',
-        background: 'accent',
-        kind: 'not-hex',
-        ratio: null,
-        required: 4.5,
-      },
-      ...surfaceNames.map((background) => ({
-        mode: 'light',
-        foreground: 'accent',
-        background,
-        kind: 'not-hex',
-        ratio: null,
-        required: 3,
-      })),
-    ]);
+    expect(checkThemeContrast(theme)).toEqual(accentNotHexViolations);
+  });
+
+  it.each(['#FFF', '#12345678'])(
+    'treats %s as not-hex: only an opaque six-digit hex is measured',
+    (accentValue) => {
+      const theme = defineTheme({
+        className: 'theme-hex-shape',
+        light: { color: { accent: accentValue } },
+      });
+
+      expect(checkThemeContrast(theme)).toEqual(accentNotHexViolations);
+    },
+  );
+
+  it('measures a lowercase six-digit hex', () => {
+    const theme = defineTheme({
+      className: 'theme-lowercase',
+      light: { color: { accent: '#1f7a3e' } },
+    });
+
+    const violations = checkThemeContrast(theme);
+
+    expect(violations.filter((violation) => violation.kind === 'not-hex')).toEqual([]);
   });
 
   it('skips an exempt pair in both modes and still reports the others', () => {
@@ -311,11 +337,13 @@ describe('checkThemeContrast', () => {
 
     const violations = checkThemeContrast(theme, { text: [['textMuted', 'surface1']] });
 
-    expect(
-      violations.filter(
-        (violation) => violation.foreground === 'textMuted' && violation.background === 'surface1',
-      ),
-    ).toHaveLength(2);
+    const occurrences = violations.filter(
+      (violation) => violation.foreground === 'textMuted' && violation.background === 'surface1',
+    );
+    expect(occurrences).toHaveLength(2);
+    for (const occurrence of occurrences) {
+      expect(occurrence).toMatchObject({ mode: 'light', kind: 'ratio', required: 4.5 });
+    }
   });
 
   it('throws for an object defineTheme did not make', () => {
