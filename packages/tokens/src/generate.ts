@@ -1,4 +1,6 @@
-import type { Tokens } from './tokens';
+import { themeBrand } from './theme';
+import type { Theme, TokenValues } from './theme';
+import type { SharedTokens, ThemeTokens, Tokens } from './tokens';
 
 export function toKebab(name: string): string {
   return name
@@ -27,46 +29,59 @@ function block(selector: string, lines: string[], indent = ''): string {
   return `${indent}${selector} {\n${body}\n${indent}}`;
 }
 
-export function tokensToCss(tokens: Tokens): string {
-  const sharedLines: string[] = ['  color-scheme: light dark;'];
-  flatten('--font', tokens.shared.font, sharedLines);
-  flatten('--font-weight', tokens.shared.fontWeight, sharedLines);
-  flatten('--font-stretch', tokens.shared.fontStretch, sharedLines);
-  flatten('--text-transform', tokens.shared.textTransform, sharedLines);
-  flatten('--text', tokens.shared.text, sharedLines);
-  flatten('--leading', tokens.shared.leading, sharedLines);
-  flatten('--tracking', tokens.shared.tracking, sharedLines);
-  flatten('--space', tokens.shared.space, sharedLines);
-  flatten('--radius', tokens.shared.radius, sharedLines);
-  flatten('--border-width', tokens.shared.borderWidth, sharedLines);
-  flatten('--motion', tokens.shared.motion, sharedLines);
-  flatten('--size', tokens.shared.size, sharedLines);
-  flatten('--material', tokens.shared.material, sharedLines);
-  sharedLines.push(`  --measure: ${tokens.shared.measure};`);
-  sharedLines.push(`  --focus-ring-width: ${tokens.shared.focusRingWidth};`);
-  sharedLines.push(`  --focus-ring-offset: ${tokens.shared.focusRingOffset};`);
+/** The mode-independent declarations, one per line, without `color-scheme`. */
+export function sharedLinesOf(shared: TokenValues<SharedTokens> | SharedTokens): string[] {
+  const lines: string[] = [];
+  flatten('--font', shared.font, lines);
+  flatten('--font-weight', shared.fontWeight, lines);
+  flatten('--font-stretch', shared.fontStretch, lines);
+  flatten('--text-transform', shared.textTransform, lines);
+  flatten('--text', shared.text, lines);
+  flatten('--leading', shared.leading, lines);
+  flatten('--tracking', shared.tracking, lines);
+  flatten('--space', shared.space, lines);
+  flatten('--radius', shared.radius, lines);
+  flatten('--border-width', shared.borderWidth, lines);
+  flatten('--motion', shared.motion, lines);
+  flatten('--size', shared.size, lines);
+  flatten('--material', shared.material, lines);
+  lines.push(`  --measure: ${shared.measure};`);
+  lines.push(`  --focus-ring-width: ${shared.focusRingWidth};`);
+  lines.push(`  --focus-ring-offset: ${shared.focusRingOffset};`);
+  return lines;
+}
 
-  const lightLines: string[] = [];
-  flatten('--color', tokens.themes.light.color, lightLines);
-  flatten('--elevation', tokens.themes.light.elevation, lightLines);
-  flatten('--shadow', tokens.themes.light.shadow, lightLines);
-  flatten('--material', tokens.themes.light.material, lightLines);
+/** One mode's declarations, one per line, without `color-scheme`. */
+export function modeLinesOf(mode: TokenValues<ThemeTokens> | ThemeTokens): string[] {
+  const lines: string[] = [];
+  flatten('--color', mode.color, lines);
+  flatten('--elevation', mode.elevation, lines);
+  flatten('--shadow', mode.shadow, lines);
+  flatten('--material', mode.material, lines);
+  return lines;
+}
 
-  const darkLines: string[] = ['  color-scheme: dark;'];
-  flatten('--color', tokens.themes.dark.color, darkLines);
-  flatten('--elevation', tokens.themes.dark.elevation, darkLines);
-  flatten('--shadow', tokens.themes.dark.shadow, darkLines);
-  flatten('--material', tokens.themes.dark.material, darkLines);
-
-  const reducedMotionLines = [
-    ...Object.keys(tokens.shared.motion.duration).map(
-      (step) => `  --motion-duration-${step}: 0ms;`,
-    ),
+export function reducedMotionLinesOf(shared: TokenValues<SharedTokens> | SharedTokens): string[] {
+  return [
+    ...Object.keys(shared.motion.duration).map((step) => `  --motion-duration-${step}: 0ms;`),
     // Springs default to an overshooting damping ratio (0.8); reduced motion needs the
     // critically-damped value (1) so entrances settle without any spring bounce.
     '  --motion-spring-default-damping: 1;',
     '  --motion-spring-momentum-damping: 1;',
   ];
+}
+
+/** A brand's own tokens as `--<prefix>-<kebab(name)>` lines; a theme without custom tokens has no prefix and none. */
+function customLinesOf(prefix: string | null, values: Readonly<Record<string, string>>): string[] {
+  const lines: string[] = [];
+  if (prefix !== null) flatten(`--${prefix}`, values, lines);
+  return lines;
+}
+
+export function tokensToCss(tokens: Tokens): string {
+  const sharedLines = ['  color-scheme: light dark;', ...sharedLinesOf(tokens.shared)];
+  const lightLines = modeLinesOf(tokens.themes.light);
+  const darkLines = ['  color-scheme: dark;', ...modeLinesOf(tokens.themes.dark)];
 
   return [
     '/* Generated from packages/tokens/src/tokens.ts. Do not edit. */',
@@ -74,7 +89,48 @@ export function tokensToCss(tokens: Tokens): string {
     block(':root[data-theme="dark"]', darkLines),
     block(':root[data-theme="light"]', ['  color-scheme: light;']),
     `@media (prefers-color-scheme: dark) {\n${block(':root:not([data-theme="light"])', darkLines, '  ')}\n}`,
-    `@media (prefers-reduced-motion: reduce) {\n${block(':root', reducedMotionLines, '  ')}\n}`,
+    `@media (prefers-reduced-motion: reduce) {\n${block(':root', reducedMotionLinesOf(tokens.shared), '  ')}\n}`,
     '',
   ].join('\n\n');
+}
+
+/**
+ * The complete stylesheet for one brand, scoped to its class: the whole shared set and the light
+ * mode on the scope, the dark mode under the host's `data-theme`, the OS preference and a pin on the
+ * scope element, and reduced motion. Custom tokens ride in the blocks of their mode.
+ */
+export function themeToCss(theme: Theme): string {
+  if (theme[themeBrand] !== true) {
+    throw new Error('themeToCss: not a theme made by defineTheme');
+  }
+  const scope = `.${theme.className}`;
+  const { prefix } = theme.custom;
+  const lightModeLines = modeLinesOf(theme.light);
+  const customLightLines = customLinesOf(prefix, theme.custom.light);
+  const darkLines = [
+    '  color-scheme: dark;',
+    ...modeLinesOf(theme.dark),
+    ...customLinesOf(prefix, theme.custom.dark),
+  ];
+
+  const sections = [
+    `/* Generated by @calcifer-design/tokens themeToCss for "${scope}". Do not edit. */`,
+    block(scope, [
+      '  color-scheme: light;',
+      ...sharedLinesOf(theme.shared),
+      ...lightModeLines,
+      ...customLinesOf(prefix, theme.custom.shared),
+      ...customLightLines,
+    ]),
+    block(`:root[data-theme="dark"] ${scope}`, darkLines),
+    `@media (prefers-color-scheme: dark) {\n${block(`:root:not([data-theme="light"]) ${scope}`, darkLines, '  ')}\n}`,
+    block(`:root ${scope}[data-theme="light"]`, [
+      '  color-scheme: light;',
+      ...lightModeLines,
+      ...customLightLines,
+    ]),
+    block(`:root ${scope}[data-theme="dark"]`, darkLines),
+    `@media (prefers-reduced-motion: reduce) {\n${block(scope, reducedMotionLinesOf(theme.shared), '  ')}\n}`,
+  ];
+  return `${sections.join('\n\n')}\n`;
 }
