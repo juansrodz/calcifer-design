@@ -120,6 +120,7 @@ describe('ThemeScope', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Open the sheet' }));
     const sheet = await screen.findByRole('dialog', { name: 'Sheet' });
     expect(host).toContainElement(sheet);
+    expect(await axeDocument()).toHaveNoViolations();
   });
 
   describe('R19: a portal mounted in the scope’s first commit lands in the host', () => {

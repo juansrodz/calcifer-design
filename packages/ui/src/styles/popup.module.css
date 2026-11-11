@@ -78,8 +78,7 @@
 /* The dialog and the sheets size in percentages of their grid area, never in viewport units: the
    area belongs to `Dialog.module.css`'s `.viewport` (`position: fixed; inset: 0`), whose
    containing block is the browser viewport standalone and the nearest transformed ancestor when
-   the scope is embedded, which is what sizes an embedded scope's overlays by its box and not the
-   window. */
+   the scope is embedded, which is meant to let an embedded scope's overlays follow its box. */
 .surface[data-popup='dialog'] {
   gap: var(--space-4);
   width: min(32rem, 100%);

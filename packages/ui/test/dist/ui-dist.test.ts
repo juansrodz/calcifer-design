@@ -177,20 +177,27 @@ describe('@calcifer-design/ui dist', () => {
     expect(sites.length).toBeGreaterThanOrEqual(9);
   });
 
-  // R5: a dialog, a sheet and the toast stack size from their fixed viewport (a percentage of
-  // the grid area, or of the stack's own box), never the window, so an embedded scope's overlays
-  // stay in its box. The rule is per file: `popup_module.css` carries the surfaces, `Dialog_module.css`
-  // the viewport they sit in, `ToastRegion_module.css` the stack.
+  // R5: a dialog, a sheet and the toast stack size from percentages, never a viewport unit, so an
+  // embedded scope's overlays are meant to follow its box rather than the window. A dialog or
+  // sheet resolves against the grid area of its fixed `.viewport`; the toast width,
+  // `calc(100% - …)`, against the fixed stack's containing block. The scan is per file:
+  // `popup_module.css` carries the surfaces, `Dialog_module.css` the viewport they sit in,
+  // `ToastRegion_module.css` the stack. The unit pattern covers the dynamic, small and large
+  // variants, the logical axes, `vmin` and `vmax`; the two positive guards keep the scan from
+  // passing vacuously if a rule moves out of its file.
   it('sizes dialogs, sheets and toasts without a viewport unit', async () => {
     const files = [
       'styles/popup_module.css',
       'components/Dialog/Dialog_module.css',
       'components/ToastRegion/ToastRegion_module.css',
     ];
+    const css: Record<string, string> = {};
     for (const file of files) {
-      const css = await readFile(path.join(distRoot, file), 'utf8');
-      expect(css, file).not.toMatch(/\d(dvh|vh|vw)\b/);
+      css[file] = await readFile(path.join(distRoot, file), 'utf8');
+      expect(css[file], file).not.toMatch(/\d(?:[sld]?v(?:h|w|i|b)|vmin|vmax)\b/);
     }
+    expect(css['styles/popup_module.css']).toContain('max-height: 85%');
+    expect(css['components/ToastRegion/ToastRegion_module.css']).toContain('calc(100% -');
   });
 
   // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would

@@ -115,8 +115,9 @@ export const PortalsStayInside: Story = {
  * A scope inside a box that is a containing block for fixed descendants (`transform`), the way a
  * remote sits in a host app's frame: a drawer docked to the end edge and a bottom sheet behind a
  * trigger. Both overlays are fixed-position, so each is meant to follow the box rather than the
- * window; judge that in a real browser. The box is a story-only wrapper, so its inline style sits
- * outside the library's token rules.
+ * window; judge that in a real browser. The open drawer is modal, so close it before using "Open the
+ * sheet". The box is a story-only wrapper, so its inline style sits outside the library's token
+ * rules.
  */
 export const EmbeddedInABox: Story = {
   render: () => (
