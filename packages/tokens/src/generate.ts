@@ -61,6 +61,7 @@ export function modeLinesOf(mode: TokenValues<ThemeTokens> | ThemeTokens): strin
   return lines;
 }
 
+/** The declarations that stop motion under `prefers-reduced-motion`: zero durations, critically damped springs. */
 export function reducedMotionLinesOf(shared: TokenValues<SharedTokens> | SharedTokens): string[] {
   return [
     ...Object.keys(shared.motion.duration).map((step) => `  --motion-duration-${step}: 0ms;`),
@@ -132,5 +133,6 @@ export function themeToCss(theme: Theme): string {
     block(`:root ${scope}[data-theme="dark"]`, darkLines),
     `@media (prefers-reduced-motion: reduce) {\n${block(scope, reducedMotionLinesOf(theme.shared), '  ')}\n}`,
   ];
+  // Ends with one newline; tokensToCss keeps its `}\n\n` ending so tokens.css stays byte-identical.
   return `${sections.join('\n\n')}\n`;
 }

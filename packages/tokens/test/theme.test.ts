@@ -232,6 +232,11 @@ describe('themeToCss', () => {
     return [...body.matchAll(/^\s*color-scheme: ([a-z ]+);$/gm)].map((match) => match[1] ?? '');
   }
 
+  /** The header and the six blocks, joined by blank lines: a blank line anywhere inside a block adds a part. */
+  function expectNoStrayBlankLine(sheet: string): void {
+    expect(sheet.split('\n\n')).toHaveLength(7);
+  }
+
   function declaredNamesIn(sheet: string): Set<string> {
     return new Set([...sheet.matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((match) => match[1] ?? ''));
   }
@@ -265,6 +270,12 @@ describe('themeToCss', () => {
     expect(colorSchemesIn(bodyOf(css, baseSelector, '  '))).toEqual([]);
   });
 
+  it('puts the zeroed durations and the critically damped springs in the reduced-motion block', () => {
+    const reducedMotion = bodyOf(css, baseSelector, '  ');
+    expect(reducedMotion).toContain('--motion-duration-1: 0ms;');
+    expect(reducedMotion).toContain('--motion-spring-default-damping: 1;');
+  });
+
   it('puts the whole shared set, the light mode and the custom tokens in the base block', () => {
     const base = bodyOf(css, baseSelector);
     expect(base).toContain('--color-accent: #1F7A3E;');
@@ -295,16 +306,18 @@ describe('themeToCss', () => {
 
   it('declares exactly the names tokens.css declares in the base block (C13)', () => {
     const baseOfDefault = bodyOf(themeToCss(defineTheme({ className: 'theme-x' })), baseSelector);
-    const scoped = declaredNamesIn(baseOfDefault);
-    const global = declaredNamesIn(tokensToCss(tokens));
-    expect([...global].filter((name) => !scoped.has(name))).toEqual([]);
-    expect([...scoped].filter((name) => !global.has(name))).toEqual([]);
+    const scopedNames = declaredNamesIn(baseOfDefault);
+    const tokensCssNames = declaredNamesIn(tokensToCss(tokens));
+    expect(scopedNames.size).toBeGreaterThan(0);
+    expect(tokensCssNames.size).toBeGreaterThan(0);
+    expect([...tokensCssNames].filter((name) => !scopedNames.has(name))).toEqual([]);
+    expect([...scopedNames].filter((name) => !tokensCssNames.has(name))).toEqual([]);
   });
 
   it('emits no custom line for a theme without custom tokens', () => {
     const plain = themeToCss(defineTheme({ className: 'theme-x' }));
     expect(plain).not.toContain('null');
-    expect(plain).not.toMatch(/\n\n\n|\{\n\n|\n\n\s*\}/);
+    expectNoStrayBlankLine(plain);
   });
 
   it('leaves no blank line behind an empty custom set', () => {
@@ -315,7 +328,7 @@ describe('themeToCss', () => {
       }),
     );
     expect(bodyOf(onlyShared, baseSelector)).toContain('--demo-glow: 0 0 4px red;');
-    expect(onlyShared).not.toMatch(/\n\n\n|\{\n\n|\n\n\s*\}/);
+    expectNoStrayBlankLine(onlyShared);
     expect(bodyOf(onlyShared, hostDarkSelector)).not.toContain('--demo-');
     expect(bodyOf(onlyShared, pinnedLightSelector)).not.toContain('--demo-');
 
@@ -326,7 +339,7 @@ describe('themeToCss', () => {
       }),
     );
     expect(onlyLightAndDark).toContain('--demo-halo: #FDE68A;');
-    expect(onlyLightAndDark).not.toMatch(/\n\n\n|\{\n\n|\n\n\s*\}/);
+    expectNoStrayBlankLine(onlyLightAndDark);
     expect(onlyLightAndDark).not.toContain('--demo-glow');
   });
 
