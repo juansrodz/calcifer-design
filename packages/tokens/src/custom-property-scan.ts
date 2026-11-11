@@ -3,14 +3,14 @@ const declarationPattern = /(?:^|[\s;{])(--[A-Za-z0-9_-]+)\s*:/g;
 
 /** Every `var(--name…)` read in `css` whose name is not in `defined`, deduplicated and sorted. */
 export function findUnknownCustomProperties(css: string, defined: ReadonlySet<string>): string[] {
-  const unknown = new Set<string>();
+  const unknownNames = new Set<string>();
 
   for (const match of css.matchAll(readPattern)) {
     const name = match[1] ?? '';
-    if (!defined.has(name)) unknown.add(name);
+    if (!defined.has(name)) unknownNames.add(name);
   }
 
-  return [...unknown].sort();
+  return [...unknownNames].sort();
 }
 
 /** Every `--name:` declaration in `css` (a generated sheet or a stylesheet). */

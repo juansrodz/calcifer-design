@@ -40,7 +40,7 @@ describe('@calcifer-design/tokens dist', () => {
       '--color-selected',
       '--size-drawer',
     ]) {
-      expect(css).toContain(name);
+      expect(css).toContain(`${name}:`);
     }
     const declarations = await readFile(path.join(distRoot, 'index.d.ts'), 'utf8');
     expect(declarations).toContain('tokensToCss');
