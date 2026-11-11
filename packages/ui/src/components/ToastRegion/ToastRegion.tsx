@@ -2,6 +2,7 @@ import { Toast as BaseToast } from '@base-ui/react/toast';
 import type { ToastManager as BaseToastManager } from '@base-ui/react/toast';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { IconButton } from '../IconButton/IconButton';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './ToastRegion.module.css';
 
@@ -140,9 +141,10 @@ export function ToastRegion({
   timeout = 5000,
   closeLabel = 'Close',
 }: ToastRegionProps) {
+  const container = usePortalContainer();
   return (
     <BaseToast.Provider toastManager={manager.baseManager} limit={limit} timeout={timeout}>
-      <BaseToast.Portal>
+      <BaseToast.Portal container={container}>
         <BaseToast.Viewport
           className={[popupStyles.toastLayer, styles.viewport].join(' ')}
           aria-label={label}

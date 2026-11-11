@@ -1,0 +1,11 @@
+/* The scope reads as the brand inside any page; `color-scheme` comes from the generated sheet. */
+.root {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-surface-1);
+}
+
+/* Takes no space while empty; its portalled children (all positioned) render as the wrapper's. */
+.portalHost {
+  display: contents;
+}

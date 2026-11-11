@@ -1,5 +1,6 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
 import { Fragment, type ReactElement } from 'react';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import type { PopupAlign, PopupSide } from '../Popover/Popover';
 import styles from './Menu.module.css';
@@ -49,10 +50,11 @@ export function Menu({
   defaultOpen,
   onOpenChange,
 }: MenuProps) {
+  const container = usePortalContainer();
   return (
     <BaseMenu.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} modal={modal}>
       <BaseMenu.Trigger render={trigger} />
-      <BaseMenu.Portal>
+      <BaseMenu.Portal container={container}>
         <BaseMenu.Positioner
           className={popupStyles.layer}
           side={side}

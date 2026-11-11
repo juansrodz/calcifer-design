@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const distRoot = path.resolve(import.meta.dirname, '../../dist');
+const componentsSource = path.resolve(import.meta.dirname, '../../src/components');
 
 async function collectCssFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -16,6 +17,14 @@ async function collectCssFiles(directory: string): Promise<string[]> {
     }
   }
   return files;
+}
+
+/** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
+async function collectComponentSources(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { recursive: true });
+  return entries
+    .filter((entry) => entry.endsWith('.tsx') && !/\.(test|stories)\.tsx$/.test(entry))
+    .map((entry) => path.join(directory, entry));
 }
 
 describe('@calcifer-design/ui dist', () => {
@@ -69,6 +78,8 @@ describe('@calcifer-design/ui dist', () => {
       'Timeline',
       'DataGrid',
       'createDataGridColumnHelper',
+      'ThemeScope',
+      'usePortalContainer',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
@@ -147,5 +158,33 @@ describe('@calcifer-design/ui dist', () => {
       const css = await readFile(file, 'utf8');
       expect(css, file).not.toContain('var(--color-surface-input)');
     }
+  });
+
+  // Contract §2.1, L1-12: a portal without `container` goes to `<body>` and leaves the theme scope.
+  // The scan reads the source, where the element is still `<X.Portal …>`; it must find the nine
+  // sites L1 wired, so an empty scan (a moved folder, a broken pattern) cannot pass.
+  it('passes the scope’s portal container to every Portal', async () => {
+    const portalPattern = /<([A-Za-z]+)\.Portal\b([^>]*)>/g;
+    const sites: string[] = [];
+    for (const file of await collectComponentSources(componentsSource)) {
+      const source = await readFile(file, 'utf8');
+      for (const match of source.matchAll(portalPattern)) {
+        const site = `${path.relative(componentsSource, file)}: ${match[0]}`;
+        sites.push(site);
+        expect(match[2], site).toContain('container={container}');
+      }
+    }
+    expect(sites.length).toBeGreaterThanOrEqual(9);
+  });
+
+  // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would
+  // make every theme fail the check.
+  it('reads the theme brand from the tokens package and mints no symbol of its own', async () => {
+    const themeScope = await readFile(
+      path.join(distRoot, 'components/ThemeScope/ThemeScope.js'),
+      'utf8',
+    );
+    expect(themeScope).toContain('from "@calcifer-design/tokens"');
+    expect(themeScope).not.toContain('Symbol(');
   });
 });

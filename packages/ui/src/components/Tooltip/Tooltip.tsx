@@ -1,5 +1,6 @@
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import type { ReactElement } from 'react';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import type { PopupAlign, PopupSide } from '../Popover/Popover';
 
@@ -42,10 +43,11 @@ export function Tooltip({
   sideOffset = 8,
   delay,
 }: TooltipProps) {
+  const container = usePortalContainer();
   return (
     <BaseTooltip.Root>
       <BaseTooltip.Trigger render={trigger} aria-label={label} delay={delay} />
-      <BaseTooltip.Portal>
+      <BaseTooltip.Portal container={container}>
         <BaseTooltip.Positioner
           className={popupStyles.layer}
           side={side}

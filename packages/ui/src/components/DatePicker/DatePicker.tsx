@@ -1,6 +1,7 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import { useRef, useState, type ReactNode } from 'react';
 import { CalendarIcon } from '../../icons/CalendarIcon';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import { Button } from '../Button/Button';
 import type { FieldFrameProps } from '../Field/Field';
@@ -117,6 +118,7 @@ export function DatePicker({
   labels,
 }: DatePickerProps) {
   const gridRef = useRef<HTMLTableElement>(null);
+  const container = usePortalContainer();
   const [heldValue, setHeldValue] = useState(() => parseIsoDate(defaultValue));
   const [open, setOpen] = useState(false);
   if (open && disabled) {
@@ -173,7 +175,7 @@ export function DatePicker({
       onOpenChange={setOpen}
       modal="trap-focus"
     >
-      <BasePopover.Portal>
+      <BasePopover.Portal container={container}>
         <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
           <BasePopover.Popup
             className={[popupStyles.surface, styles.popup].join(' ')}
