@@ -3,8 +3,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The component CSS reads the type tokens (`--font-display`, `--font-body`, `--font-sans` and the
-// weight, stretch and transform tokens) instead of naming a face, a weight or a case, so a theme
-// restyles type without touching library DOM. Each row below pins the declarations a rule gained
+// weight, stretch and transform tokens) instead of naming a face, a weight or a case, and the
+// purpose radii and control sizes (`--radius-control`, `--size-control` and their siblings) instead
+// of a scale step or a literal, so a theme restyles type and shape without touching library DOM.
+// Each row below pins the declarations a rule gained
 // (`contains`) and the literals it lost (`lacks`). A row with no `rule` asserts on the whole file;
 // with a `rule` it asserts on the rule's body only, the regex's first capture group, and a rule
 // that matches nothing fails the row rather than skipping it.
@@ -350,9 +352,228 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [sansFamily],
     lacks: [],
   },
+
+  // The purpose radii (R4) and the control floors (R17). A control reads `--radius-control` and
+  // `--size-control` (`--size-control-sm` for the `sm` step), an option inside a track
+  // `--radius-option`, a panel `--radius-panel`, a floating surface `--radius-popup`, a card
+  // `--radius-card`, a dialog and a sheet `--radius-dialog`; every default equals the step it
+  // replaces. Readers this plan leaves alone keep their size tokens (Checkbox `sm`, Menu and Select
+  // items `md`, Avatar square `md`, Skeleton, Tag `full`, DatePicker day `md`, Button primary
+  // `full`), and a field keeps `--size-touch` as its floor.
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      'min-height: var(--size-control);',
+      'min-height: var(--size-control-sm);',
+      'min-width: var(--size-touch);',
+    ],
+    lacks: ['2.5rem', '--radius-md', 'min-height: var(--size-touch);'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control);', 'min-width: var(--size-touch);'],
+    lacks: ['min-height: var(--size-touch);'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-size='sm'\] \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control-sm);'],
+    lacks: ['2.5rem'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='secondary'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-control);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='ghost'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-control);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    contains: [
+      'min-height: var(--size-control);',
+      'min-width: var(--size-control);',
+      'min-height: var(--size-control-sm);',
+      'min-width: var(--size-control-sm);',
+      'border-radius: var(--radius-control);',
+    ],
+    lacks: ['2.5rem', '--radius-md', '--size-touch'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control);', 'min-width: var(--size-control);'],
+    lacks: ['--size-touch'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-size='sm'\] \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control-sm);', 'min-width: var(--size-control-sm);'],
+    lacks: ['2.5rem'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='secondary'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-control);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    contains: [
+      'border-radius: var(--radius-control);',
+      'border-radius: var(--radius-option);',
+      'min-height: var(--size-control);',
+      'min-width: var(--size-control);',
+      'min-height: var(--size-control-sm);',
+      'min-width: var(--size-control-sm);',
+    ],
+    lacks: ['2.5rem', '--radius-md', '--radius-sm', '--size-touch'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-control);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option \{([^}]*)\}/m,
+    contains: [
+      'min-height: var(--size-control);',
+      'min-width: var(--size-control);',
+      'border-radius: var(--radius-option);',
+    ],
+    lacks: ['--size-touch', '--radius-sm'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root\[data-size='sm'\] \.option \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control-sm);', 'min-width: var(--size-control-sm);'],
+    lacks: ['2.5rem'],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    contains: [
+      'border-radius: var(--radius-option);',
+      'border-radius: var(--radius-control);',
+      'min-height: var(--size-control);',
+      'width: var(--size-control);',
+      'height: var(--size-control);',
+    ],
+    lacks: ['--radius-md', '--radius-sm', '--size-touch'],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.link \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control);', 'border-radius: var(--radius-option);'],
+    lacks: ['--size-touch', '--radius-sm'],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.trigger \{([^}]*)\}/m,
+    contains: [
+      'width: var(--size-control);',
+      'height: var(--size-control);',
+      'border-radius: var(--radius-control);',
+    ],
+    lacks: ['--size-touch', '--radius-md'],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-control);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    // A field keeps `--size-touch` as its floor; only its radius moves to the control purpose.
+    file: 'styles/field.module.css',
+    rule: /^\.control \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-touch);', 'border-radius: var(--radius-control);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    // The type-qualified selector out-ranks `.control`, which `TextArea` puts on the same element.
+    file: 'components/TextArea/TextArea.module.css',
+    rule: /^textarea\.root \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-panel);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Alert/Alert.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-panel);'],
+    lacks: ['--radius-md'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    contains: ['border-radius: var(--radius-popup);', 'border-radius: var(--radius-dialog);'],
+    lacks: ['--radius-xl', '--radius-lg'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-popup);'],
+    lacks: ['--radius-lg'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='dialog'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-dialog);'],
+    lacks: ['--radius-xl'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='sheet'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;'],
+    lacks: ['--radius-xl'],
+  },
+  {
+    // R4: the end drawer rounds its free leading corners, and its width is the drawer token.
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='sheet'\]\[data-side='end'\] \{([^}]*)\}/m,
+    contains: [
+      'width: min(var(--size-drawer), 100%);',
+      'border-radius: var(--radius-dialog) 0 0 var(--radius-dialog);',
+    ],
+    lacks: ['min(28rem', 'border-radius: 0;'],
+  },
+  {
+    file: 'components/DataTable/DataTable.module.css',
+    rule: /^\.scroll \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-popup);'],
+    lacks: ['--radius-lg'],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.card \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-popup);'],
+    lacks: ['--radius-lg'],
+  },
+  {
+    file: 'components/ToastRegion/ToastRegion.module.css',
+    rule: /^\.toast \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-popup);'],
+    lacks: ['--radius-lg'],
+  },
+  {
+    file: 'components/Card/Card.module.css',
+    contains: ['border-radius: var(--radius-card);'],
+    lacks: ['--radius-xl'],
+  },
+  {
+    file: 'components/Card/Card.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['border-radius: var(--radius-card);'],
+    lacks: ['--radius-xl'],
+  },
 ];
 
-describe('the type tokens the component CSS reads', () => {
+describe('the theme tokens the component CSS reads', () => {
   for (const { file, rule, contains, lacks } of expectations) {
     it(rule ? `${file} ${rule.source}` : `${file} (whole file)`, () => {
       const contents = readFileSync(join(sourceRoot, file), 'utf-8');

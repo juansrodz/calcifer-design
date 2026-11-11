@@ -11,7 +11,7 @@
   max-width: 100%;
   padding: var(--space-1);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--color-surface-2);
 }
 
@@ -21,11 +21,11 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--size-touch);
-  min-width: var(--size-touch);
+  min-height: var(--size-control);
+  min-width: var(--size-control);
   padding: var(--space-1) var(--space-3);
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-option);
   background: transparent;
   color: var(--color-text-muted);
   font-family: var(--font-sans);
@@ -41,8 +41,8 @@
 
 /* The same step `Button`'s `sm` takes. */
 .root[data-size='sm'] .option {
-  min-height: 2.5rem;
-  min-width: 2.5rem;
+  min-height: var(--size-control-sm);
+  min-width: var(--size-control-sm);
   font-size: var(--text-sm);
 }
 

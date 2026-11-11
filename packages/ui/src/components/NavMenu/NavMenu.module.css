@@ -17,8 +17,8 @@
 .link {
   display: inline-flex;
   align-items: center;
-  min-height: var(--size-touch);
-  border-radius: var(--radius-sm);
+  min-height: var(--size-control);
+  border-radius: var(--radius-option);
   color: var(--color-text-muted);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -45,11 +45,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--size-touch);
-  height: var(--size-touch);
+  width: var(--size-control);
+  height: var(--size-control);
   padding: 0;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
@@ -62,7 +62,7 @@
 
 .item {
   padding-inline: var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   font-family: var(--font-sans);
   font-size: var(--text-md);
 }

@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: var(--size-touch);
+  min-height: var(--size-control);
   min-width: var(--size-touch);
   padding: var(--space-2) var(--space-5);
   border: 1px solid transparent;
@@ -25,7 +25,7 @@
 }
 
 .root[data-size='sm'] {
-  min-height: 2.5rem;
+  min-height: var(--size-control-sm);
   padding: var(--space-1) var(--space-4);
   font-size: var(--text-sm);
 }
@@ -36,7 +36,7 @@
 }
 
 .root[data-variant='secondary'] {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--color-surface-raised);
   color: var(--color-text);
   border-color: var(--color-border-strong);
@@ -44,7 +44,7 @@
 
 .root[data-variant='ghost'] {
   padding-inline: var(--space-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--color-link);
 }

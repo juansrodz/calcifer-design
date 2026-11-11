@@ -1,7 +1,7 @@
 .scroll {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-popup);
   background: var(--color-surface-raised);
 }
 
