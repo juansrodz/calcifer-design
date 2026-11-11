@@ -20,8 +20,9 @@
   min-height: var(--size-touch);
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 400;
+  font-weight: var(--font-weight-nav);
   text-decoration: none;
   white-space: nowrap;
   transition-property: color;
@@ -31,7 +32,7 @@
 
 .link[aria-current='page'] {
   color: var(--color-text);
-  font-weight: 500;
+  font-weight: var(--font-weight-nav-selected);
 }
 
 @media (hover: hover) {
@@ -62,6 +63,7 @@
 .item {
   padding-inline: var(--space-3);
   border-radius: var(--radius-md);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
 }
 

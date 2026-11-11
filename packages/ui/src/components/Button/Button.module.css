@@ -10,8 +10,9 @@
   padding: var(--space-2) var(--space-5);
   border: 1px solid transparent;
   border-radius: var(--radius-full);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
-  font-weight: 500;
+  font-weight: var(--font-weight-button);
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-body);
   cursor: pointer;

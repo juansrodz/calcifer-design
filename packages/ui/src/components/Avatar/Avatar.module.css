@@ -9,8 +9,9 @@
   border-radius: var(--radius-full);
   background: var(--color-surface-3);
   color: var(--color-text-muted);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-heading);
   line-height: var(--leading-tight);
   user-select: none;
 }

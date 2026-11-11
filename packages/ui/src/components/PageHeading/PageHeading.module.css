@@ -15,7 +15,10 @@
 /* `page` is the mock's --d2 title (Projects, About): 56px desktop, line-height 1.04. */
 .heading {
   font-size: var(--text-h1);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-display);
+  font-stretch: var(--font-stretch-display);
+  text-transform: var(--text-transform-display);
   letter-spacing: var(--tracking-h1);
   line-height: var(--leading-display);
   text-wrap: balance;

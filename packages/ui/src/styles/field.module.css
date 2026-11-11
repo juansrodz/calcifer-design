@@ -35,8 +35,9 @@
   align-items: center;
   gap: var(--space-1);
   color: var(--color-text);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: var(--font-weight-label);
   line-height: var(--leading-snug);
 }
 
@@ -73,6 +74,7 @@
   align-items: center;
   gap: var(--space-3);
   color: var(--color-text);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
   line-height: var(--leading-snug);
   cursor: pointer;
@@ -103,6 +105,8 @@
 .description {
   margin: 0;
   color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-sm);
   line-height: var(--leading-prose);
 }
@@ -123,6 +127,8 @@
   border-radius: var(--radius-md);
   background: var(--color-surface-input);
   color: var(--color-text);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-md);
   line-height: var(--leading-snug);
   transition-property: border-color, background-color;

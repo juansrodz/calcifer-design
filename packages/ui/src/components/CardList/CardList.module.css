@@ -18,6 +18,8 @@
 
 .empty {
   color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-md);
   line-height: var(--leading-prose);
 }

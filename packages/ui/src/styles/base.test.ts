@@ -20,3 +20,21 @@ describe('reduced-motion base styles', () => {
     expect(reducedMotionBlock?.[1]).toContain('animation-iteration-count: 1 !important;');
   });
 });
+
+describe('heading type', () => {
+  it('sets the display family on every heading level, and only the family', () => {
+    // Plan ruling L1-8: `h4` to `h6` are a new rule, family only, so a theme's display face
+    // reaches every heading a consumer writes without touching the spacing the `h1`-`h3` rule owns.
+    const allLevelsRule = baseCssContents.match(/^h1,\nh2,\nh3,\nh4,\nh5,\nh6 \{([^}]*)\}/m);
+    expect(allLevelsRule).not.toBeNull();
+    expect(allLevelsRule?.[1]?.trim()).toBe('font-family: var(--font-display);');
+  });
+
+  it('keeps the h1 to h3 rule as it was', () => {
+    const upperLevelsRule = baseCssContents.match(/^h1,\nh2,\nh3 \{([^}]*)\}/m);
+    expect(upperLevelsRule).not.toBeNull();
+    expect(upperLevelsRule?.[1]).toContain('line-height: var(--leading-tight);');
+    expect(upperLevelsRule?.[1]).toContain('letter-spacing: var(--tracking-heading);');
+    expect(upperLevelsRule?.[1]).toContain('margin: 0;');
+  });
+});

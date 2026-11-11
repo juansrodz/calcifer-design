@@ -8,6 +8,10 @@
   margin: 0;
   color: var(--color-text);
   font-size: var(--text-h3);
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-display);
+  font-stretch: var(--font-stretch-display);
+  text-transform: var(--text-transform-display);
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-heading);
 }

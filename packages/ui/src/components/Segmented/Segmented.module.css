@@ -28,8 +28,9 @@
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-muted);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
-  font-weight: 500;
+  font-weight: var(--font-weight-label);
   line-height: var(--leading-snug);
   cursor: pointer;
   transition-property: background-color, color;
@@ -55,6 +56,7 @@
 .option[data-pressed] {
   background: var(--color-accent);
   color: var(--color-accent-text);
+  font-weight: var(--font-weight-button);
 }
 
 /* Forced colours replace the accent fill and so erase the chosen option; system colours survive.

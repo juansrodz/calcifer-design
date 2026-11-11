@@ -3,13 +3,16 @@
    `src/styles/popup.module.css`, which Dialog, Menu and Tooltip wear too. */
 .heading {
   color: var(--color-text);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-heading);
   line-height: var(--leading-snug);
 }
 
 .description {
   color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-sm);
   line-height: var(--leading-prose);
 }

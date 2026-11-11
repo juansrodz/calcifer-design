@@ -26,8 +26,9 @@
   border: 0;
   background: transparent;
   color: var(--color-text-muted);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-heading);
   cursor: pointer;
   transition-property: color;
   transition-duration: var(--motion-duration-1);
