@@ -17,3 +17,14 @@ export type {
 export { tokensToCss, toKebab } from './generate';
 export { contrastRatio, relativeLuminance } from './contrast';
 export { findWidthQueryViolations } from './breakpoint-scan';
+export { defineTheme, themeBrand } from './theme';
+export type {
+  ContrastPair,
+  CustomNameOf,
+  CustomTokens,
+  NoExtraKeys,
+  Theme,
+  ThemeDefinition,
+  TokenOverrides,
+  TokenValues,
+} from './theme';
