@@ -104,6 +104,11 @@ function mergeTree(base: PlainTree, overrides: unknown): PlainTree {
   return merged;
 }
 
+/** `RegExp.test` coerces its argument, so `undefined` would pass as the string "undefined". */
+function matchesPattern(value: unknown, pattern: RegExp): boolean {
+  return typeof value === 'string' && pattern.test(value);
+}
+
 function deepFreeze<Value>(value: Value): Value {
   if (typeof value === 'object' && value !== null) {
     for (const member of Object.values(value)) deepFreeze(member);
@@ -116,10 +121,10 @@ export function defineTheme<const Definition extends ThemeDefinition<string>>(
   definition: Definition & NoExtraKeys<Definition, ThemeDefinition<CustomNameOf<Definition>>>,
 ): Theme<CustomNameOf<Definition>> {
   const { className, custom, contrastExemptions } = definition;
-  if (!classNamePattern.test(className)) {
+  if (!matchesPattern(className, classNamePattern)) {
     throw new Error(`defineTheme: className "${className}" must match ${classNamePattern}`);
   }
-  if (custom !== undefined && !prefixPattern.test(custom.prefix)) {
+  if (custom !== undefined && !matchesPattern(custom.prefix, prefixPattern)) {
     throw new Error(`defineTheme: custom.prefix "${custom.prefix}" must match ${prefixPattern}`);
   }
   const theme: Theme<string> = {

@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { defineTheme, themeBrand } from '../src/theme';
-import type { Theme } from '../src/theme';
+import type { ContrastPair, Theme } from '../src/theme';
 import { tokens } from '../src/tokens';
 import type { ElevationName, FontName, RadiusName, ShadowName, SizeName } from '../src/tokens';
 
@@ -57,10 +57,12 @@ describe('defineTheme', () => {
   });
 
   it('deep-freezes the result', () => {
+    const exemptionPair: ContrastPair = ['text', 'surface1'];
+    const exemptions: ContrastPair[] = [exemptionPair];
     const theme = defineTheme({
       className: 'theme-x',
       custom: { prefix: 'demo', light: { halo: '#fff' }, dark: { halo: '#000' } },
-      contrastExemptions: [['text', 'surface1']],
+      contrastExemptions: exemptions,
     });
 
     expect(Object.isFrozen(theme)).toBe(true);
@@ -68,9 +70,21 @@ describe('defineTheme', () => {
     expect(Object.isFrozen(theme.shared.radius)).toBe(true);
     expect(Object.isFrozen(theme.custom)).toBe(true);
     expect(Object.isFrozen(theme.custom.light)).toBe(true);
+    expect(theme.contrastExemptions).toEqual([['text', 'surface1']]);
     expect(Object.isFrozen(theme.contrastExemptions)).toBe(true);
     expect(Object.isFrozen(theme.contrastExemptions[0])).toBe(true);
     expect(Object.isFrozen(tokens.shared.radius)).toBe(false);
+  });
+
+  it("leaves the caller's exemptions unfrozen", () => {
+    const exemptionPair: ContrastPair = ['text', 'surface1'];
+    const exemptions: ContrastPair[] = [exemptionPair];
+    const theme = defineTheme({ className: 'theme-x', contrastExemptions: exemptions });
+
+    expect(theme.contrastExemptions).not.toBe(exemptions);
+    expect(theme.contrastExemptions[0]).not.toBe(exemptionPair);
+    expect(Object.isFrozen(exemptions)).toBe(false);
+    expect(Object.isFrozen(exemptionPair)).toBe(false);
   });
 
   it('rejects a className outside /^[a-z][a-z0-9-]*$/', () => {
@@ -79,6 +93,28 @@ describe('defineTheme', () => {
     );
     expect(() => defineTheme({ className: '' })).toThrow(/className ""/);
     expect(() => defineTheme({ className: '1theme' })).toThrow(/className "1theme"/);
+  });
+
+  it('rejects a className that is not a string, with the same sentence', () => {
+    expect(() => defineTheme({ className: undefined as unknown as string })).toThrow(
+      new Error('defineTheme: className "undefined" must match /^[a-z][a-z0-9-]*$/'),
+    );
+    expect(() => defineTheme({ className: null as unknown as string })).toThrow(/className "null"/);
+  });
+
+  it('rejects a custom.prefix that is not a string, with the same sentence', () => {
+    expect(() =>
+      defineTheme({
+        className: 'theme-x',
+        custom: { prefix: 42 as unknown as string, light: {}, dark: {} },
+      }),
+    ).toThrow(new Error('defineTheme: custom.prefix "42" must match /^[a-z][a-z0-9]*$/'));
+    expect(() =>
+      defineTheme({
+        className: 'theme-x',
+        custom: { prefix: undefined as unknown as string, light: {}, dark: {} },
+      }),
+    ).toThrow(/custom\.prefix "undefined"/);
   });
 
   it('rejects a custom.prefix outside /^[a-z][a-z0-9]*$/', () => {
