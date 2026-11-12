@@ -9,7 +9,11 @@ export type ThemeMode = 'light' | 'dark';
 export interface ThemeScopeProps {
   /** From `defineTheme`; the generated sheet for it must be on the page (the consumer's build does that). */
   theme: Theme;
-  /** Pins the mode by writing `data-theme` on the wrapper. Absent, the scope follows `<html>`'s attribute, then the OS. */
+  /**
+   * Pins the mode by writing `data-theme` on the wrapper. Left unset, the scope follows `<html>`'s
+   * `data-theme` and then the OS preference. An unpinned scope nested in a pinned one does not
+   * inherit the outer pin (it resolves from `<html>` and the OS); pin the inner one too.
+   */
   mode?: ThemeMode;
   /** Joined after the theme's class on the wrapper (an app's own layout class). */
   className?: string;

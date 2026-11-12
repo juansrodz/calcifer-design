@@ -14,10 +14,11 @@
    property and there is no `--z-*` token, so these are literals.
 
    `.layer` and `.dialogLayer` now share the same z-index. Every Base UI portal is appended to
-   `document.body` when its popup opens and removed again when it closes, so with equal z-index
-   the open order decides which popup paints on top: a popup opened from inside an already-open
-   dialog is appended after it and paints above it, while a popup opened before the dialog stays
-   beneath the dialog's scrim once the dialog opens. The two class names stay distinct on
+   its container when its popup opens (the nearest `ThemeScope`'s portal host, or `<body>` when
+   there is none) and removed again when it closes, so with equal z-index the open order decides
+   which popup paints on top: a popup opened from inside an already-open dialog is appended after
+   it and paints above it, while a popup opened before the dialog stays beneath the dialog's
+   scrim once the dialog opens. The two class names stay distinct on
    purpose, so the two layers can diverge again later without touching every popup. Toasts keep
    70, above both, because a toast can report a failure that happened inside a dialog. A backdrop
    shares its popup's layer and sits below it on DOM order alone — Base UI's anatomy always
