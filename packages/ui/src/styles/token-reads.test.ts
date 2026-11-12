@@ -6,6 +6,9 @@ import { describe, expect, it } from 'vitest';
 // weight, stretch and transform tokens) instead of naming a face, a weight or a case, and the
 // purpose radii and control sizes (`--radius-control`, `--size-control` and their siblings) instead
 // of a scale step or a literal, so a theme restyles type and shape without touching library DOM.
+// Shadows read the surface roles (`--shadow-soft`, `--shadow-raised`, `--shadow-dialog` and their
+// siblings) instead of the elevation scale, and the chosen state, the navigation and the segmented
+// track read the selected, nav and segmented colours instead of the accent and the neutrals.
 // Each row below pins the declarations a rule gained
 // (`contains`) and the literals it lost (`lacks`). A row with no `rule` asserts on the whole file;
 // with a `rule` it asserts on the rule's body only, the regex's first capture group, and a rule
@@ -570,6 +573,167 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.root \{([^}]*)\}/m,
     contains: ['border-radius: var(--radius-card);'],
     lacks: ['--radius-xl'],
+  },
+
+  // Shadows by surface. Every default equals the elevation it replaces; the three roles that are
+  // new on their element (`--shadow-drawer`, `--shadow-segmented`, `--shadow-action`) default to
+  // what the element shows today.
+  {
+    file: 'components/Card/Card.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-soft);'],
+    lacks: ['--elevation-1'],
+  },
+  {
+    // The hover lift keeps the elevation scale: it is a motion, not a surface role.
+    file: 'components/Card/Card.module.css',
+    rule: /^ {2}\.root\[data-interactive\]:hover \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--elevation-2);'],
+    lacks: ['--shadow-'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    contains: [
+      'box-shadow: var(--shadow-raised);',
+      'box-shadow: var(--shadow-dialog);',
+      'box-shadow: var(--shadow-sheet);',
+      'box-shadow: var(--shadow-drawer);',
+    ],
+    lacks: ['--elevation-3'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-raised);'],
+    lacks: ['--elevation'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='dialog'\] \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-dialog);'],
+    lacks: ['--elevation'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='sheet'\] \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-sheet);'],
+    lacks: ['--elevation'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='sheet'\]\[data-side='end'\] \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-drawer);'],
+    lacks: ['--elevation'],
+  },
+  {
+    file: 'components/ToastRegion/ToastRegion.module.css',
+    contains: ['box-shadow: var(--shadow-raised);'],
+    lacks: ['--elevation-2'],
+  },
+  {
+    file: 'components/ToastRegion/ToastRegion.module.css',
+    rule: /^\.toast \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-raised);'],
+    lacks: ['--elevation'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-segmented);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\] \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--shadow-action);'],
+    lacks: [],
+  },
+
+  // The selected family: the chosen option, the tab indicator and the chosen day read
+  // `--color-selected` and `--color-selected-text`, not the accent pair. A theme can now colour a
+  // selection apart from a primary action. `aria-current` (today) keeps its accent border.
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected);',
+      'color: var(--color-selected-text);',
+      'font-weight: var(--font-weight-button);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    contains: [],
+    lacks: ['--color-accent'],
+  },
+  {
+    // The track and its border: the defaults are the neutrals they replace, and the width stays
+    // the 1px it was.
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'border: 1px solid var(--color-segmented-border);',
+      'background: var(--color-segmented-track);',
+    ],
+    lacks: ['--color-border-strong', '--color-surface-2'],
+  },
+  {
+    file: 'components/Tabs/Tabs.module.css',
+    rule: /^\.indicator \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected);'],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Tabs/Tabs.module.css',
+    contains: [],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^\.day\[aria-selected='true'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
+    lacks: ['--color-accent'],
+  },
+  {
+    // Today keeps its accent border: `aria-current` is not a selection.
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^\.day\[aria-current='date'\] \{([^}]*)\}/m,
+    contains: ['border: 1px solid var(--color-accent);'],
+    lacks: ['--color-selected'],
+  },
+
+  // The navigation colours. The current link's background defaults to `transparent`, so the link
+  // looks as it does today until a theme gives it a fill.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.link \{([^}]*)\}/m,
+    contains: ['color: var(--color-nav-text);'],
+    lacks: ['--color-text-muted'],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.link\[aria-current='page'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-nav-selected);',
+      'color: var(--color-nav-selected-text);',
+      'font-weight: var(--font-weight-nav-selected);',
+    ],
+    lacks: ['color: var(--color-text);'],
+  },
+
+  // The sheet's scrim has its own hook. The centred dialog and the end drawer keep `--color-scrim`.
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.scrim \{([^}]*)\}/m,
+    contains: ['background: var(--color-scrim);'],
+    lacks: ['--color-scrim-sheet'],
+  },
+  {
+    file: 'styles/popup.module.css',
+    rule: /^\.scrim\[data-variant='sheet'\]\[data-side='bottom'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-scrim-sheet);'],
+    lacks: [],
   },
 ];
 

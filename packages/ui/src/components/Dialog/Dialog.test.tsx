@@ -110,4 +110,34 @@ describe('Dialog', () => {
     expect(popup).not.toHaveAttribute('data-side');
     expect(popup.parentElement).not.toHaveAttribute('data-side');
   });
+
+  // The scrim carries the same two attributes as the viewport so `popup.module.css` can give the
+  // bottom sheet's backdrop its own colour. The backdrop is found by its class: the viewport also
+  // carries `data-variant` and `data-side`, so an attribute query would match both. The tests'
+  // `classNameStrategy: 'non-scoped'` keeps `popupStyles.scrim` as `scrim`.
+  it('marks the bottom sheet’s scrim with the variant and the side', async () => {
+    render(<Sheet />);
+    await screen.findByRole('dialog');
+    const scrim = document.querySelector('.scrim');
+    expect(scrim).not.toBeNull();
+    expect(scrim).toHaveAttribute('data-variant', 'sheet');
+    expect(scrim).toHaveAttribute('data-side', 'bottom');
+  });
+
+  it('marks the end drawer’s scrim with the end side', async () => {
+    render(<SideSheet />);
+    await screen.findByRole('dialog');
+    const scrim = document.querySelector('.scrim');
+    expect(scrim).toHaveAttribute('data-variant', 'sheet');
+    expect(scrim).toHaveAttribute('data-side', 'end');
+  });
+
+  it('marks the centred dialog’s scrim with the variant and no side', async () => {
+    render(<OpenOnLoad />);
+    await screen.findByRole('dialog');
+    const scrim = document.querySelector('.scrim');
+    expect(scrim).not.toBeNull();
+    expect(scrim).toHaveAttribute('data-variant', 'center');
+    expect(scrim).not.toHaveAttribute('data-side');
+  });
 });

@@ -51,7 +51,7 @@
   left: var(--active-tab-left);
   width: var(--active-tab-width);
   height: 2px;
-  background: var(--color-accent);
+  background: var(--color-selected);
   transition-property: left, width;
   transition-duration: var(--motion-duration-2);
   transition-timing-function: var(--motion-ease);

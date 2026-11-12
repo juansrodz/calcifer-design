@@ -33,6 +33,7 @@
 .root[data-variant='primary'] {
   background: var(--color-accent);
   color: var(--color-accent-text);
+  box-shadow: var(--shadow-action);
 }
 
 .root[data-variant='secondary'] {

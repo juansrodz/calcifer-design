@@ -1,5 +1,11 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  customPropertyNamesOf,
+  findUnknownCustomProperties,
+  tokens,
+  tokensToCss,
+} from '@calcifer-design/tokens';
 import { describe, expect, it } from 'vitest';
 
 const distRoot = path.resolve(import.meta.dirname, '../../dist');
@@ -18,6 +24,27 @@ async function collectCssFiles(directory: string): Promise<string[]> {
   }
   return files;
 }
+
+// Custom properties the package reads but never declares, on purpose. Base UI sets the first set
+// on the elements it positions or animates (the positioner's anchor and available box, the toast
+// stack's index and offset, the tab list's active-tab box); the second set are the ones a
+// component's own TSX writes into an inline `style`, so no stylesheet declares them.
+const BASE_UI_RUNTIME_PROPERTIES = [
+  '--anchor-width',
+  '--available-width',
+  '--available-height',
+  '--transform-origin',
+  '--toast-index',
+  '--toast-offset-y',
+  '--active-tab-left',
+  '--active-tab-width',
+] as const;
+
+const UI_INLINE_PROPERTIES = [
+  '--tree-level',
+  '--text-area-rows',
+  '--card-list-min-column',
+] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
 async function collectComponentSources(directory: string): Promise<string[]> {
@@ -198,6 +225,26 @@ describe('@calcifer-design/ui dist', () => {
     }
     expect(css['styles/popup_module.css']).toContain('max-height: 85%');
     expect(css['components/ToastRegion/ToastRegion_module.css']).toContain('calc(100% -');
+  });
+
+  // A `var(--name)` the package never declares resolves to nothing at runtime and fails silently
+  // (`--radius-contorl` would). `defined` is every name the tokens' generated sheet declares, every
+  // name any shipped stylesheet declares, and the two lists above. The guard keeps an empty scan
+  // (a moved dist folder) from passing.
+  it('reads no custom property that the package never declares', async () => {
+    const cssFiles = await collectCssFiles(distRoot);
+    expect(cssFiles.length).toBeGreaterThan(5);
+    const allDistCss = (await Promise.all(cssFiles.map((file) => readFile(file, 'utf8')))).join(
+      '\n',
+    );
+    const defined = new Set<string>([
+      ...customPropertyNamesOf(tokensToCss(tokens)),
+      ...customPropertyNamesOf(allDistCss),
+      ...BASE_UI_RUNTIME_PROPERTIES,
+      ...UI_INLINE_PROPERTIES,
+    ]);
+    expect(allDistCss).toContain('var(--');
+    expect(findUnknownCustomProperties(allDistCss, defined)).toEqual([]);
   });
 
   // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would

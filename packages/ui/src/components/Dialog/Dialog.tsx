@@ -85,7 +85,11 @@ export function Dialog({
     >
       {trigger === undefined ? null : <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>
-        <BaseDialog.Backdrop className={[popupStyles.dialogLayer, popupStyles.scrim].join(' ')} />
+        <BaseDialog.Backdrop
+          className={[popupStyles.dialogLayer, popupStyles.scrim].join(' ')}
+          data-variant={variant}
+          data-side={sheetSide}
+        />
         <BaseDialog.Viewport
           className={[popupStyles.dialogLayer, styles.viewport].join(' ')}
           data-variant={variant}

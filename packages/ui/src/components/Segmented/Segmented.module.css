@@ -1,6 +1,7 @@
-/* A quiet track with the chosen option filled in accent, the fill `Switch` uses for "on": the
-   state has to read at a glance, and a raised white chip on a pale track does not reach the 3:1
-   a state indicator needs. `aria-pressed` says the same to a screen reader.
+/* A quiet track with the chosen option filled in the selected colour (the accent by default), the
+   fill `Switch` uses for "on": the state has to read at a glance, and a raised white chip on a
+   pale track does not reach the 3:1 a state indicator needs. `aria-pressed` says the same to a
+   screen reader.
 
    `inline-flex` to hug its options and `flex-wrap` with `max-width` to fit a phone: a row too long
    for 390px takes a second row inside the track, and the page never scrolls sideways. */
@@ -10,9 +11,10 @@
   gap: var(--space-1);
   max-width: 100%;
   padding: var(--space-1);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-segmented-border);
   border-radius: var(--radius-control);
-  background: var(--color-surface-2);
+  background: var(--color-segmented-track);
+  box-shadow: var(--shadow-segmented);
 }
 
 .option {
@@ -54,8 +56,8 @@
 }
 
 .option[data-pressed] {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
+  background: var(--color-selected);
+  color: var(--color-selected-text);
   font-weight: var(--font-weight-button);
 }
 

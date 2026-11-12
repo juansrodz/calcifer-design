@@ -13,13 +13,14 @@
 }
 
 /* Plain text links, as in the mock: the current page is set in the text colour at weight
-   500, the rest sit in the muted colour; no pill behind either. */
+   500, the rest sit in the muted colour; no pill behind either until a theme gives the current
+   link a fill (`--color-nav-selected` is `transparent` by default). */
 .link {
   display: inline-flex;
   align-items: center;
   min-height: var(--size-control);
   border-radius: var(--radius-option);
-  color: var(--color-text-muted);
+  color: var(--color-nav-text);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-nav);
@@ -31,7 +32,8 @@
 }
 
 .link[aria-current='page'] {
-  color: var(--color-text);
+  background: var(--color-nav-selected);
+  color: var(--color-nav-selected-text);
   font-weight: var(--font-weight-nav-selected);
 }
 
