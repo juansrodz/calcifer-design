@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { customPropertyNamesOf } from '../src/custom-property-scan';
 import { tokensToCss, toKebab } from '../src/generate';
 import { tokens } from '../src/tokens';
 
@@ -172,5 +173,39 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--shadow-soft: ${tokens.themes.light.elevation[1]};`);
     expect(css).toContain(`--shadow-sheet: ${tokens.themes.dark.elevation[3]};`);
     expect(css).toContain('--shadow-action: none;');
+  });
+});
+
+/** The custom property of every leaf in `tree`, named the way the generator names it: `--` plus each key in kebab-case, joined by `-`. */
+function leafPropertyNamesOf(tree: object, path: readonly string[] = []): string[] {
+  const names: string[] = [];
+  for (const [key, value] of Object.entries(tree)) {
+    const keyPath = [...path, toKebab(key)];
+    if (typeof value === 'object' && value !== null) {
+      names.push(...leafPropertyNamesOf(value, keyPath));
+    } else {
+      names.push(`--${keyPath.join('-')}`);
+    }
+  }
+  return names;
+}
+
+describe('tokensToCss completeness', () => {
+  const declaredNames = customPropertyNamesOf(tokensToCss(tokens));
+
+  // `tokens.breakpoint` is not walked: it is not part of `shared` or either mode, and the
+  // generator never emits it (breakpoints are not custom properties; `findWidthQueryViolations`
+  // guards the media queries instead).
+  const trees = [
+    ['tokens.shared', tokens.shared],
+    ['tokens.themes.light', tokens.themes.light],
+    ['tokens.themes.dark', tokens.themes.dark],
+  ] as const;
+
+  it.each(trees)('declares a custom property for every leaf of %s', (_label, tree) => {
+    const leafNames = leafPropertyNamesOf(tree);
+    expect(leafNames.length).toBeGreaterThan(0);
+    const undeclared = leafNames.filter((name) => !declaredNames.has(name));
+    expect(undeclared).toEqual([]);
   });
 });

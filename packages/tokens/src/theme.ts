@@ -80,6 +80,19 @@ export interface Theme<CustomName extends string = string> {
 const classNamePattern = /^[a-z][a-z0-9-]*$/;
 const prefixPattern = /^[a-z][a-z0-9]*$/;
 
+/**
+ * The first segment of every custom property the library emits (`color`, `radius`, `shadow`, … and
+ * `font` for `--font-weight-*`), taken from the token tree's top-level keys: a key's first segment
+ * is its leading lowercase run. It reads the tree, not `tokensToCss`, because generate.ts imports
+ * `themeBrand` from this module and importing it back would be a cycle (`toKebab` lives there too).
+ * A test checks this set against the names the generator really emits.
+ */
+const libraryFamilyRoots: ReadonlySet<string> = new Set(
+  [...Object.keys(tokens.shared), ...Object.keys(tokens.themes.light)].map(
+    (key) => /^[a-z]+/.exec(key)?.[0] ?? key,
+  ),
+);
+
 type PlainTree = { readonly [key: string]: unknown };
 
 function isPlainTree(value: unknown): value is PlainTree {
@@ -126,6 +139,11 @@ export function defineTheme<const Definition extends ThemeDefinition<string>>(
   }
   if (custom !== undefined && !matchesPattern(custom.prefix, prefixPattern)) {
     throw new Error(`defineTheme: custom.prefix "${custom.prefix}" must match ${prefixPattern}`);
+  }
+  if (custom !== undefined && libraryFamilyRoots.has(custom.prefix)) {
+    throw new Error(
+      `defineTheme: custom.prefix "${custom.prefix}" would shadow the library's --${custom.prefix}-* tokens`,
+    );
   }
   const theme: Theme<string> = {
     className,

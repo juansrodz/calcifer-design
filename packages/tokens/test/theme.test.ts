@@ -125,6 +125,38 @@ describe('defineTheme', () => {
     ).toThrow(new Error('defineTheme: custom.prefix "my-brand" must match /^[a-z][a-z0-9]*$/'));
   });
 
+  it.each(['color', 'radius', 'shadow'])(
+    'rejects the custom.prefix "%s", which would shadow a library family',
+    (prefix) => {
+      expect(() =>
+        defineTheme({ className: 'theme-x', custom: { prefix, light: {}, dark: {} } }),
+      ).toThrow(
+        new Error(
+          `defineTheme: custom.prefix "${prefix}" would shadow the library's --${prefix}-* tokens`,
+        ),
+      );
+    },
+  );
+
+  it('rejects the first segment of every custom property the library emits as a custom.prefix', () => {
+    const familyRoots = new Set(
+      [...customPropertyNamesOf(tokensToCss(tokens))].map(
+        (name) => name.slice(2).split('-')[0] ?? '',
+      ),
+    );
+    expect(familyRoots.size).toBeGreaterThan(0);
+    for (const prefix of familyRoots) {
+      expect(() =>
+        defineTheme({ className: 'theme-x', custom: { prefix, light: {}, dark: {} } }),
+      ).toThrow(/would shadow the library's/);
+    }
+  });
+
+  it.each(['demo', 'wbw'])('accepts the custom.prefix "%s"', (prefix) => {
+    const theme = defineTheme({ className: 'theme-x', custom: { prefix, light: {}, dark: {} } });
+    expect(theme.custom.prefix).toBe(prefix);
+  });
+
   it('carries the custom tokens under custom.light and custom.dark', () => {
     const theme = defineTheme({
       className: 'theme-x',
