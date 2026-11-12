@@ -721,6 +721,21 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: ['color: var(--color-text);'],
   },
+  {
+    // The hover rule skips the current link: `.link:hover` ties `.link[aria-current='page']` on
+    // specificity and comes later, so a bare hover rule would repaint the current link in
+    // `--color-text` and lose `--color-nav-selected-text` the moment a theme sets them apart.
+    file: 'components/NavMenu/NavMenu.module.css',
+    contains: [".link:hover:not([aria-current='page'])"],
+    lacks: [/\.link:hover\s*\{/],
+  },
+  {
+    // Hover on the other links is unchanged.
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^ {2}\.link:hover:not\(\[aria-current='page'\]\) \{([^}]*)\}/m,
+    contains: ['color: var(--color-text);'],
+    lacks: ['--color-nav-selected'],
+  },
 
   // The sheet's scrim has its own hook. The centred dialog and the end drawer keep `--color-scrim`.
   {

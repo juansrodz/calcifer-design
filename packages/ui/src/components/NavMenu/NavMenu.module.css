@@ -12,9 +12,9 @@
   list-style: none;
 }
 
-/* Plain text links, as in the mock: the current page is set in the text colour at weight
-   500, the rest sit in the muted colour; no pill behind either until a theme gives the current
-   link a fill (`--color-nav-selected` is `transparent` by default). */
+/* Plain text links, as in the mock: by default (the nav tokens) the current page is set in the
+   text colour at weight 500 and the rest sit in the muted colour; no pill behind either until a
+   theme gives the current link a fill (`--color-nav-selected` is `transparent` by default). */
 .link {
   display: inline-flex;
   align-items: center;
@@ -37,8 +37,11 @@
   font-weight: var(--font-weight-nav-selected);
 }
 
+/* The current link is skipped: a bare `.link:hover` ties `.link[aria-current='page']` on
+   specificity and comes later, so it would repaint the current link in `--color-text` on hover and
+   drop `--color-nav-selected-text` as soon as a theme sets the two apart. */
 @media (hover: hover) {
-  .link:hover {
+  .link:hover:not([aria-current='page']) {
     color: var(--color-text);
   }
 }
