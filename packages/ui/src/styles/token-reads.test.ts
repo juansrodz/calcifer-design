@@ -9,10 +9,10 @@ import { describe, expect, it } from 'vitest';
 // Shadows read the surface roles (`--shadow-soft`, `--shadow-raised`, `--shadow-dialog` and their
 // siblings) instead of the elevation scale, and the chosen state, the navigation and the segmented
 // track read the selected, nav and segmented colours instead of the accent and the neutrals.
-// Each row below pins the declarations a rule gained
-// (`contains`) and the literals it lost (`lacks`). A row with no `rule` asserts on the whole file;
-// with a `rule` it asserts on the rule's body only, the regex's first capture group, and a rule
-// that matches nothing fails the row rather than skipping it.
+// Each row below pins the declarations a rule gained (`contains`) and the literals it lost
+// (`lacks`). A row with no `rule` asserts on the whole file; with a `rule` it asserts on the rule's
+// body only, the regex's first capture group, and a rule that matches nothing fails the row rather
+// than skipping it.
 interface Expectation {
   file: string;
   rule?: RegExp;
@@ -428,12 +428,12 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Segmented/Segmented.module.css',
     contains: [
-      'border-radius: var(--radius-control);',
-      'border-radius: var(--radius-option);',
       'min-height: var(--size-control);',
       'min-width: var(--size-control);',
       'min-height: var(--size-control-sm);',
       'min-width: var(--size-control-sm);',
+      'border-radius: var(--radius-control);',
+      'border-radius: var(--radius-option);',
     ],
     lacks: ['2.5rem', '--radius-md', '--radius-sm', '--size-touch'],
   },
@@ -462,11 +462,11 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/NavMenu/NavMenu.module.css',
     contains: [
-      'border-radius: var(--radius-option);',
-      'border-radius: var(--radius-control);',
       'min-height: var(--size-control);',
       'width: var(--size-control);',
       'height: var(--size-control);',
+      'border-radius: var(--radius-option);',
+      'border-radius: var(--radius-control);',
     ],
     lacks: ['--radius-md', '--radius-sm', '--size-touch'],
   },

@@ -84,8 +84,9 @@ export function checkThemeContrast(
     }
   }
 
-  for (const [foreground, background] of theme.contrastExemptions) {
-    if (!listedKeys.has(pairKey([foreground, background]))) {
+  for (const exemption of theme.contrastExemptions) {
+    if (!listedKeys.has(pairKey(exemption))) {
+      const [foreground, background] = exemption;
       violations.push({
         mode: 'light',
         foreground,
