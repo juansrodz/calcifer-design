@@ -7,9 +7,14 @@ import {
   tokensToCss,
 } from '@calcifer-design/tokens';
 import { describe, expect, it } from 'vitest';
+import packageJson from '../../package.json';
 
 const distRoot = path.resolve(import.meta.dirname, '../../dist');
 const componentsSource = path.resolve(import.meta.dirname, '../../src/components');
+
+// R7: every class name the build emits starts with `ui<version>-` (`rslib.config.ts` derives it
+// from the same `package.json`), so two ui versions on one page never share a class.
+const classPrefix = `ui${packageJson.version.replaceAll('.', '-')}-`;
 
 async function collectCssFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -118,7 +123,35 @@ describe('@calcifer-design/ui dist', () => {
     const buttonCss = cssFiles.find((file) => file.includes(`${path.sep}Button${path.sep}`));
     expect(buttonCss).toBeDefined();
     const css = await readFile(buttonCss ?? '', 'utf8');
-    expect(css).toMatch(/\.[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\b/);
+    expect(css).toMatch(new RegExp(`\\.${classPrefix}[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\\b`));
+  });
+
+  // R7: the class selectors are read from rule preludes only (the text before each `{` that does
+  // not start with `@`), so `@media` and `@keyframes` preludes and declaration values such as
+  // `scale(0.96)` are never scanned. The count guard keeps an empty scan from passing.
+  it('prefixes every class selector in every module stylesheet with the package version', async () => {
+    const moduleCssFiles = (await collectCssFiles(distRoot)).filter((file) =>
+      file.endsWith('_module.css'),
+    );
+    expect(moduleCssFiles.length).toBeGreaterThan(5);
+    const classSelectors: string[] = [];
+    const unprefixed: string[] = [];
+    for (const file of moduleCssFiles) {
+      const css = (await readFile(file, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const match of css.matchAll(/([^{}]*)\{/g)) {
+        const prelude = (match[1] ?? '').slice((match[1] ?? '').lastIndexOf(';') + 1).trim();
+        if (prelude.startsWith('@')) continue;
+        for (const selector of prelude.matchAll(/\.(-?[A-Za-z_][A-Za-z0-9_-]*)/g)) {
+          const className = selector[1] ?? '';
+          classSelectors.push(className);
+          if (!className.startsWith(classPrefix)) {
+            unprefixed.push(`${path.relative(distRoot, file)}: .${className}`);
+          }
+        }
+      }
+    }
+    expect(classSelectors.length).toBeGreaterThan(100);
+    expect(unprefixed).toEqual([]);
   });
 
   // Stories, tests and the sample data they share are for this repository, not for consumers.
@@ -167,9 +200,9 @@ describe('@calcifer-design/ui dist', () => {
     // One copy of the rule in the whole package: the reason the shared class is imported from
     // TSX rather than `composes`-d, which would inline it into every consuming stylesheet.
     const popupCss = await readFile(path.join(distRoot, 'styles/popup_module.css'), 'utf8');
-    expect(popupCss).toMatch(/\.surface-[A-Za-z0-9_-]{5}\b/);
+    expect(popupCss).toMatch(new RegExp(`\\.${classPrefix}surface-[A-Za-z0-9_-]{5}\\b`));
     const fieldCss = await readFile(path.join(distRoot, 'styles/field_module.css'), 'utf8');
-    expect(fieldCss).toMatch(/\.control-[A-Za-z0-9_-]{5}\b/);
+    expect(fieldCss).toMatch(new RegExp(`\\.${classPrefix}control-[A-Za-z0-9_-]{5}\\b`));
     const componentCss = await collectCssFiles(path.join(distRoot, 'components'));
     for (const file of componentCss) {
       const css = await readFile(file, 'utf8');
