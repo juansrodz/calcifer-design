@@ -1,9 +1,15 @@
 import { Button as BaseButton } from '@base-ui/react/button';
-import type { ComponentPropsWithoutRef } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import styles from './Button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-export type ButtonSize = 'md' | 'sm';
+export type ButtonSize = 'md' | 'sm' | 'lg';
+/**
+ * The colour family a filled button draws from. `accent` is the house look; `inverse` is the
+ * high-contrast fill for a button that sits on an accent or photo surface; `selected` is the chosen
+ * state's colour. Ghost has no tone rule.
+ */
+export type ButtonTone = 'accent' | 'inverse' | 'selected';
 
 export interface ButtonProps extends Omit<
   ComponentPropsWithoutRef<typeof BaseButton>,
@@ -11,14 +17,27 @@ export interface ButtonProps extends Omit<
 > {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  tone?: ButtonTone;
+  /**
+   * A count or short status shown after the label, such as the `2` in "Suggestions 2". It is part
+   * of the button's accessible name.
+   */
+  badge?: ReactNode;
   /** Shows a busy state, keeps the button focusable, and blocks activation. */
   loading?: boolean;
   className?: string;
 }
 
+/** `true`, `false`, `null` and `undefined` render nothing, so they must not leave an empty badge. */
+function hasContent(node: ReactNode) {
+  return node !== undefined && node !== null && typeof node !== 'boolean';
+}
+
 export function Button({
   variant = 'primary',
   size = 'md',
+  tone = 'accent',
+  badge,
   loading = false,
   disabled,
   className,
@@ -39,12 +58,21 @@ export function Button({
       className={[styles.root, className].filter(Boolean).join(' ')}
       data-variant={variant}
       data-size={size}
+      data-tone={tone}
       data-loading={loading ? '' : undefined}
       disabled={isDisabled}
       focusableWhenDisabled={loading}
       aria-busy={loading || undefined}
     >
       <span className={styles.label}>{children}</span>
+      {/* The space is rendered, not styled, so the accessible name joins the label and the count
+          ("Suggestions 2") with no stylesheet loaded; the flex row draws nothing for it. */}
+      {hasContent(badge) ? (
+        <>
+          {' '}
+          <span className={styles.badge}>{badge}</span>
+        </>
+      ) : null}
     </BaseButton>
   );
 }

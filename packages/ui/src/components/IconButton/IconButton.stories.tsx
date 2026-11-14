@@ -25,7 +25,7 @@ const meta = {
   component: IconButton,
   args: { label: 'Delete remote', children: <TrashIcon />, variant: 'ghost', size: 'md' },
   argTypes: {
-    variant: { control: 'radio', options: ['primary', 'secondary', 'ghost'] },
+    variant: { control: 'radio', options: ['primary', 'secondary', 'ghost', 'soft'] },
     size: { control: 'radio', options: ['md', 'sm'] },
   },
 } satisfies Meta<typeof IconButton>;
@@ -39,3 +39,5 @@ export const Primary: Story = { args: { variant: 'primary' } };
 export const Small: Story = { args: { size: 'sm' } };
 export const Disabled: Story = { args: { disabled: true } };
 export const Loading: Story = { args: { loading: true } };
+/** A quiet filled circle; its glyph draws at 16px in both sizes. */
+export const Soft: Story = { args: { variant: 'soft' } };

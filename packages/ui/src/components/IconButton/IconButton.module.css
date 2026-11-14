@@ -1,5 +1,6 @@
 /* A square sibling of Button: the same variants and transitions, but sized to the touch target
-   rather than to a text label, and with no room for one. */
+   rather than to a text label, and with no room for one. `soft` is the quiet filled circle: a
+   surface fill with no border, and a consumer hook for the one shadow the mock draws on a photo. */
 .root {
   display: inline-flex;
   align-items: center;
@@ -35,6 +36,14 @@
   color: var(--color-accent-text);
 }
 
+/* `--icon-button-shadow` is set by a consumer and never declared here; it defaults to no shadow. */
+.root[data-variant='soft'] {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-color: transparent;
+  box-shadow: var(--icon-button-shadow, none);
+}
+
 @media (hover: hover) {
   .root[data-variant='ghost']:hover:not([data-disabled]) {
     background: var(--color-surface-2);
@@ -47,6 +56,10 @@
 
   .root[data-variant='primary']:hover:not([data-disabled]) {
     background: var(--color-accent-hover);
+  }
+
+  .root[data-variant='soft']:hover:not([data-disabled]) {
+    background: var(--color-surface-3);
   }
 }
 
@@ -69,6 +82,12 @@
 }
 
 .root[data-size='sm'] .icon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* The soft circle holds a 16px glyph in both sizes (L2-12), not `md`'s 20px. */
+.root[data-variant='soft'] .icon > svg {
   width: 1rem;
   height: 1rem;
 }

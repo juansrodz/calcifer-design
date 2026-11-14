@@ -1,11 +1,12 @@
 import { useRender } from '@base-ui/react/use-render';
 import type { ComponentPropsWithRef } from 'react';
-import type { ButtonSize, ButtonVariant } from './Button';
+import type { ButtonSize, ButtonTone, ButtonVariant } from './Button';
 import styles from './Button.module.css';
 
 export interface LinkButtonProps extends ComponentPropsWithRef<'a'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  tone?: ButtonTone;
   /**
    * Replaces the rendered `<a>` so a router link can wear the button styling; the
    * element's own props are merged with the ones this component supplies.
@@ -22,6 +23,7 @@ export interface LinkButtonProps extends ComponentPropsWithRef<'a'> {
 export function LinkButton({
   variant = 'primary',
   size = 'md',
+  tone = 'accent',
   className,
   children,
   render,
@@ -37,6 +39,7 @@ export function LinkButton({
       className: [styles.root, className].filter(Boolean).join(' '),
       'data-variant': variant,
       'data-size': size,
+      'data-tone': tone,
       children: <span className={styles.label}>{children}</span>,
     },
   });

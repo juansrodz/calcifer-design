@@ -138,3 +138,4 @@ export { ThemeScope } from './components/ThemeScope/ThemeScope';
 export { usePortalContainer } from './components/ThemeScope/PortalContainerContext';
 export type { ThemeScopeProps, ThemeMode } from './components/ThemeScope/ThemeScope';
 export type { PortalContainer } from './components/ThemeScope/PortalContainerContext';
+export type { ButtonTone } from './components/Button/Button';

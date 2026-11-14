@@ -3,7 +3,7 @@ import type { ComponentPropsWithoutRef } from 'react';
 import { Spinner } from '../Spinner/Spinner';
 import styles from './IconButton.module.css';
 
-export type IconButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type IconButtonVariant = 'primary' | 'secondary' | 'ghost' | 'soft';
 export type IconButtonSize = 'md' | 'sm';
 
 export interface IconButtonProps extends Omit<

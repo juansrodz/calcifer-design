@@ -750,6 +750,157 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: var(--color-scrim-sheet);'],
     lacks: [],
   },
+
+  // `Button`'s tones (plan L2, Task 10). The inverse and selected fills read their colour families
+  // and the inverse primary its own shadow role; a toned fill keeps its colour on hover, so the
+  // two hover rules name the accent tone; the inverse primary's disabled state paints a dimmed fill
+  // and ink (L2-3: the two `color-mix` values live in local custom properties on that rule) in
+  // place of the house 0.45 opacity; and the `lg` size reads the display role (L2-17).
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      'var(--color-inverse)',
+      'var(--color-inverse-soft)',
+      'var(--shadow-action-inverse)',
+      'var(--color-selected-soft)',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      "[data-tone='inverse'][data-disabled]",
+      '--button-inverse-disabled-fill',
+      '--button-inverse-disabled-ink',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      "[data-size='lg']",
+      '--button-lg-padding-inline',
+      'var(--font-display)',
+      'var(--font-stretch-display)',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\]\[data-tone='inverse'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-inverse);',
+      'color: var(--color-inverse-text);',
+      'box-shadow: var(--shadow-action-inverse);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='secondary'\]\[data-tone='inverse'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-inverse-soft);',
+      'color: var(--color-inverse-soft-text);',
+      'border-color: transparent;',
+    ],
+    lacks: ['--color-border-strong'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\]\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='secondary'\]\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: [
+      '--button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);',
+      '--button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);',
+      'opacity: 1;',
+      'background: var(--button-inverse-disabled-fill);',
+      'color: var(--button-inverse-disabled-ink);',
+    ],
+    lacks: ['opacity: 0.45;'],
+  },
+  {
+    // Hover repaints the accent tone only; a toned fill keeps its colour.
+    file: 'components/Button/Button.module.css',
+    contains: [
+      ".root[data-variant='primary'][data-tone='accent']:hover:not([data-disabled])",
+      ".root[data-variant='secondary'][data-tone='accent']:hover:not([data-disabled])",
+    ],
+    lacks: [
+      ".root[data-variant='primary']:hover",
+      ".root[data-variant='secondary']:hover",
+      /\[data-tone='(?:inverse|selected)'\]:hover/,
+    ],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-size='lg'\] \{([^}]*)\}/m,
+    contains: [
+      '--button-lg-padding-inline: calc(var(--space-5) + var(--space-1));',
+      'min-height: 3rem;',
+      'padding: var(--space-3) var(--button-lg-padding-inline);',
+      'font-size: var(--text-lg);',
+      ...displayRole,
+    ],
+    lacks: [anyWeightLiteral, 'var(--font-sans)'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.badge \{([^}]*)\}/m,
+    contains: ['display: inline-flex;', 'margin-inline-start: var(--space-1);'],
+    lacks: [],
+  },
+
+  // `IconButton`'s `soft` variant: a quiet fill that reads the surface roles, a hover one step up,
+  // the one consumer hook (L2-17, `--icon-button-shadow`, on `soft` only) and the 16 px glyph in
+  // both sizes (L2-12).
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    contains: [
+      "[data-variant='soft']",
+      'var(--color-surface-3)',
+      "[data-variant='soft'] .icon > svg",
+      'var(--icon-button-shadow, none)',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='soft'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-surface-2);',
+      'color: var(--color-text);',
+      'border-color: transparent;',
+      'box-shadow: var(--icon-button-shadow, none);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='soft'\] \.icon > svg \{([^}]*)\}/m,
+    contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+  {
+    // The hook is read on `soft` alone: no other variant's rule, and not the base rule, reads it.
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--icon-button-shadow'],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {

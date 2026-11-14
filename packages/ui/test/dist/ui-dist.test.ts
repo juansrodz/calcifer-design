@@ -51,6 +51,9 @@ const UI_INLINE_PROPERTIES = [
   '--card-list-min-column',
 ] as const;
 
+// Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
+const UI_CONSUMER_HOOK_PROPERTIES = ['--icon-button-shadow'] as const;
+
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
 async function collectComponentSources(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { recursive: true });
@@ -275,6 +278,7 @@ describe('@calcifer-design/ui dist', () => {
       ...customPropertyNamesOf(allDistCss),
       ...BASE_UI_RUNTIME_PROPERTIES,
       ...UI_INLINE_PROPERTIES,
+      ...UI_CONSUMER_HOOK_PROPERTIES,
     ]);
     expect(allDistCss).toContain('var(--');
     expect(findUnknownCustomProperties(allDistCss, defined)).toEqual([]);

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import * as stories from './IconButton.stories';
 
-const { Ghost, Secondary, Primary, Small, Disabled, Loading } = composeStories(stories);
+const { Ghost, Secondary, Primary, Small, Disabled, Loading, Soft } = composeStories(stories);
 
 describe('IconButton', () => {
   it.each([
@@ -15,6 +15,7 @@ describe('IconButton', () => {
     ['Small', Small],
     ['Disabled', Disabled],
     ['Loading', Loading],
+    ['Soft', Soft],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -69,5 +70,12 @@ describe('IconButton', () => {
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('data-variant', 'ghost');
     expect(button).toHaveAttribute('data-size', 'sm');
+  });
+
+  it('takes the soft variant', () => {
+    render(<Soft />);
+    const button = screen.getByRole('button', { name: 'Delete remote' });
+    expect(button).toHaveAttribute('data-variant', 'soft');
+    expect(button).toHaveAttribute('data-size', 'md');
   });
 });

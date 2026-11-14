@@ -1,5 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { ReactNode } from 'react';
 import { LinkButton } from './LinkButton';
+
+/** The accent surface an inverse link is made for. */
+const onAccent = [
+  (Story: () => ReactNode) => (
+    <div
+      style={{
+        display: 'inline-block',
+        padding: 'var(--space-4)',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--color-accent)',
+      }}
+    >
+      <Story />
+    </div>
+  ),
+];
 
 const meta = {
   title: 'Primitives/LinkButton',
@@ -7,7 +24,8 @@ const meta = {
   args: { children: 'View projects', href: '#projects', variant: 'primary', size: 'md' },
   argTypes: {
     variant: { control: 'radio', options: ['primary', 'secondary', 'ghost'] },
-    size: { control: 'radio', options: ['md', 'sm'] },
+    size: { control: 'radio', options: ['md', 'sm', 'lg'] },
+    tone: { control: 'radio', options: ['accent', 'inverse', 'selected'] },
   },
 } satisfies Meta<typeof LinkButton>;
 
@@ -18,3 +36,6 @@ export const Primary: Story = {};
 export const Secondary: Story = { args: { variant: 'secondary' } };
 export const Ghost: Story = { args: { variant: 'ghost', children: 'About me ›' } };
 export const Small: Story = { args: { size: 'sm' } };
+/** The inverse tone reaches a link through the same stylesheet as a button. */
+export const Inverse: Story = { args: { tone: 'inverse' }, decorators: onAccent };
+export const Large: Story = { args: { size: 'lg', tone: 'inverse' }, decorators: onAccent };

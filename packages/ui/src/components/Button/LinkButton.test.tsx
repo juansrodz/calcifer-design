@@ -5,7 +5,7 @@ import { axe } from '../../../test/axe';
 import { LinkButton } from './LinkButton';
 import * as stories from './LinkButton.stories';
 
-const { Primary, Secondary, Ghost, Small } = composeStories(stories);
+const { Primary, Secondary, Ghost, Small, Inverse, Large } = composeStories(stories);
 
 describe('LinkButton', () => {
   it.each([
@@ -13,6 +13,8 @@ describe('LinkButton', () => {
     ['Secondary', Secondary],
     ['Ghost', Ghost],
     ['Small', Small],
+    ['Inverse', Inverse],
+    ['Large', Large],
   ])('%s story renders a link with no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(screen.getByRole('link')).toBeInTheDocument();
@@ -35,6 +37,24 @@ describe('LinkButton', () => {
     expect(link).toHaveAttribute('data-size', 'sm');
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it('writes the tone beside the variant on the anchor and wears the button class', () => {
+    render(<Inverse />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-tone', 'inverse');
+    expect(link).toHaveAttribute('data-variant', 'primary');
+    expect(link).toHaveClass('root');
+  });
+
+  it('defaults to the accent tone', () => {
+    render(<Primary />);
+    expect(screen.getByRole('link')).toHaveAttribute('data-tone', 'accent');
+  });
+
+  it('takes the large size', () => {
+    render(<Large />);
+    expect(screen.getByRole('link')).toHaveAttribute('data-size', 'lg');
   });
 
   it('renders the element given to `render` and keeps its own attributes', () => {

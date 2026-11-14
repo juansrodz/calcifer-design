@@ -1,5 +1,7 @@
 /* The mock's three button shapes: a filled pill (primary), a raised bordered rectangle
-   (secondary) and a bare link-coloured text button (ghost). */
+   (secondary) and a bare link-coloured text button (ghost). A tone (`data-tone`) recolours the two
+   filled shapes: `accent` is the default look, `inverse` and `selected` read their own colour
+   families. Ghost has no tone rule. */
 .root {
   display: inline-flex;
   align-items: center;
@@ -30,6 +32,21 @@
   font-size: var(--text-sm);
 }
 
+/* The mock's large call to action: the display face at the large step, on a 48px floor. The
+   padding's composed length lives in a local property because the token lint refuses a `calc()`
+   in the shorthand (L2-3). The tone rules below apply to it unchanged. */
+.root[data-size='lg'] {
+  --button-lg-padding-inline: calc(var(--space-5) + var(--space-1));
+
+  min-height: 3rem;
+  padding: var(--space-3) var(--button-lg-padding-inline);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-display);
+  font-stretch: var(--font-stretch-display);
+  text-transform: var(--text-transform-display);
+}
+
 .root[data-variant='primary'] {
   background: var(--color-accent);
   color: var(--color-accent-text);
@@ -50,12 +67,35 @@
   color: var(--color-link);
 }
 
+.root[data-variant='primary'][data-tone='inverse'] {
+  background: var(--color-inverse);
+  color: var(--color-inverse-text);
+  box-shadow: var(--shadow-action-inverse);
+}
+
+.root[data-variant='secondary'][data-tone='inverse'] {
+  background: var(--color-inverse-soft);
+  color: var(--color-inverse-soft-text);
+  border-color: transparent;
+}
+
+.root[data-variant='primary'][data-tone='selected'] {
+  background: var(--color-selected);
+  color: var(--color-selected-text);
+}
+
+.root[data-variant='secondary'][data-tone='selected'] {
+  background: var(--color-selected-soft);
+  color: var(--color-selected-soft-text);
+}
+
 @media (hover: hover) {
-  .root[data-variant='primary']:hover:not([data-disabled]) {
+  /* Only the accent tone repaints on hover: a toned fill keeps its colour. */
+  .root[data-variant='primary'][data-tone='accent']:hover:not([data-disabled]) {
     background: var(--color-accent-hover);
   }
 
-  .root[data-variant='secondary']:hover:not([data-disabled]) {
+  .root[data-variant='secondary'][data-tone='accent']:hover:not([data-disabled]) {
     background: var(--color-surface-2);
   }
 
@@ -73,8 +113,27 @@
   opacity: 0.45;
 }
 
+/* The inverse primary dims its own fill and ink instead of the whole button, so the dimmed state
+   keeps the surface behind it readable (the mock's 1f). The two mixes are local properties because
+   the token lint refuses `color-mix()` inline (L2-3). */
+.root[data-variant='primary'][data-tone='inverse'][data-disabled] {
+  --button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);
+  --button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);
+
+  opacity: 1;
+  background: var(--button-inverse-disabled-fill);
+  color: var(--button-inverse-disabled-ink);
+}
+
 .label {
   display: inline-block;
+}
+
+/* A count after the label. The component renders the space between them, so the margin is the
+   only gap this adds. */
+.badge {
+  display: inline-flex;
+  margin-inline-start: var(--space-1);
 }
 
 .root[data-loading] .label {
