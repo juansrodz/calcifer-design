@@ -60,7 +60,7 @@ export const Controlled: Story = {
   args: { open: true },
 };
 
-/** A disabled trigger still takes focus and is announced as dimmed, but it does not toggle. */
+/** A disabled trigger still takes focus and is announced as disabled, but it does not toggle. */
 export const Disabled: Story = { args: { disabled: true } };
 
 /**

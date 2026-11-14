@@ -6,7 +6,9 @@
 
 /* The heading is the display role (the four declarations every library heading reads) at the one
    size hook a consumer may set, `--collapsible-heading-size`, which is read here and never
-   declared. `base.css` resets `h1`–`h3` margins only, so `h4`–`h6` get theirs here. */
+   declared. `base.css` resets the margin of `h1`–`h3` and tracks them, so `h4`–`h6` get both
+   here: the tracking is the house heading's (`--tracking-heading`, as `Card` and `Descriptions`
+   read it) at every level, never `--tracking-display`. */
 .heading {
   margin: 0;
   color: var(--color-text);
@@ -15,12 +17,14 @@
   font-weight: var(--font-weight-display);
   font-stretch: var(--font-stretch-display);
   text-transform: var(--text-transform-display);
+  letter-spacing: var(--tracking-heading);
   line-height: var(--leading-snug);
 }
 
 /* The whole row is the button. It takes the heading's type, so the label, the aside and the
    chevron's colour are the heading's. */
 .trigger {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -35,6 +39,20 @@
   color: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* WCAG 2.5.8 (target size, minimum) asks 24 px. The row is as tall as the heading's line box, about
+   21 px at the default size and less at a smaller hook, and `padding: 0` keeps the visible header
+   at the mock's height, so this pseudo-element widens only the pointer target: it adds the missing
+   height, split above and below, and nothing when the row is already 24 px or more. It is not
+   `--size-touch`: 44 px would reach into the first item of an open panel, over its own target.
+   Between two stacked headings the later one in the DOM wins the seam. The 1.5rem is the WCAG
+   figure, not a design value. */
+.trigger::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: min(0px, calc((100% - 1.5rem) / 2));
 }
 
 .trigger[data-disabled] {

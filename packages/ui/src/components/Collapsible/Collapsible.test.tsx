@@ -131,9 +131,14 @@ describe('Collapsible', () => {
     expect(root?.className.split(' ').length).toBeGreaterThan(1);
   });
 
-  it('hides the chevron from assistive technology', () => {
+  it('hides the chevron, wrapper and icon alike, from assistive technology', () => {
     render(<Default />);
     const trigger = screen.getByRole('button', { name: 'Mains' });
-    expect(trigger.querySelector('svg')?.closest('[aria-hidden="true"]')).not.toBeNull();
+    const icon = trigger.querySelector('svg');
+    expect(icon).not.toBeNull();
+    // The wrapper is what the stylesheet turns; the icon's own `aria-hidden` is the icon's, so
+    // each is asserted on its own.
+    expect(icon?.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
   });
 });

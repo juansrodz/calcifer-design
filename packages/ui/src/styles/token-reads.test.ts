@@ -784,6 +784,7 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       ...displayRole,
       'font-size: var(--collapsible-heading-size, var(--text-md));',
+      'letter-spacing: var(--tracking-heading);',
       'line-height: var(--leading-snug);',
       'color: var(--color-text);',
     ],
@@ -793,6 +794,7 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Collapsible/Collapsible.module.css',
     rule: /^\.trigger \{([^}]*)\}/m,
     contains: [
+      'position: relative;',
       'display: flex;',
       'align-items: center;',
       'gap: var(--space-2);',
@@ -801,6 +803,19 @@ const expectations: ReadonlyArray<Expectation> = [
       'background: transparent;',
     ],
     lacks: [],
+  },
+  // The pointer target is at least 24 px tall (WCAG 2.5.8) without a taller row: the pseudo-element
+  // adds only what the row lacks, and the row keeps `padding: 0`.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger::before \{([^}]*)\}/m,
+    contains: [
+      "content: '';",
+      'position: absolute;',
+      'inset-inline: 0;',
+      'inset-block: min(0px, calc((100% - 1.5rem) / 2));',
+    ],
+    lacks: ['--size-touch'],
   },
   {
     file: 'components/Collapsible/Collapsible.module.css',
@@ -824,6 +839,13 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Collapsible/Collapsible.module.css',
     rule: /^\.trigger\[data-panel-open\] \.chevron \{([^}]*)\}/m,
     contains: ['transform: rotate(180deg);'],
+    lacks: [],
+  },
+  // The gap between the heading and what it opens. The visual check reads 12 px against the mock.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.panel \{([^}]*)\}/m,
+    contains: ['padding-block-start: var(--space-3);'],
     lacks: [],
   },
 ];
