@@ -52,7 +52,11 @@ const UI_INLINE_PROPERTIES = [
 ] as const;
 
 // Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
-const UI_CONSUMER_HOOK_PROPERTIES = ['--avatar-size', '--avatar-font-size'] as const;
+const UI_CONSUMER_HOOK_PROPERTIES = [
+  '--avatar-size',
+  '--avatar-font-size',
+  '--collapsible-heading-size',
+] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
 async function collectComponentSources(directory: string): Promise<string[]> {
@@ -116,6 +120,7 @@ describe('@calcifer-design/ui dist', () => {
       'createDataGridColumnHelper',
       'ThemeScope',
       'usePortalContainer',
+      'Collapsible',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

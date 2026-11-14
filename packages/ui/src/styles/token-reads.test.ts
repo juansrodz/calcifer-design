@@ -773,6 +773,59 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+
+  // `Collapsible`'s heading is a display reader (the four declarations and nothing else of the
+  // role: its tracking and leading stay its own) at one consumer hook, which is read here and
+  // never declared, so only this row and the dist scan's allow-list stand between a misspelt hook
+  // and a silent fallback. The chevron turns on the motion tokens.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.heading \{([^}]*)\}/m,
+    contains: [
+      ...displayRole,
+      'font-size: var(--collapsible-heading-size, var(--text-md));',
+      'line-height: var(--leading-snug);',
+      'color: var(--color-text);',
+    ],
+    lacks: [anyWeightLiteral, '--tracking-display', '--leading-display'],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger \{([^}]*)\}/m,
+    contains: [
+      'display: flex;',
+      'align-items: center;',
+      'gap: var(--space-2);',
+      'width: 100%;',
+      'padding: 0;',
+      'background: transparent;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.chevron \{([^}]*)\}/m,
+    contains: [
+      'width: 1rem;',
+      'height: 1rem;',
+      'margin-inline-start: auto;',
+      'transition-duration: var(--motion-duration-1);',
+      'transition-timing-function: var(--motion-ease);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-panel-open\] \.chevron \{([^}]*)\}/m,
+    contains: ['transform: rotate(180deg);'],
+    lacks: [],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {
