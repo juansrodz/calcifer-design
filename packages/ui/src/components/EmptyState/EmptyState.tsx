@@ -5,8 +5,9 @@ export interface EmptyStateProps {
   /**
    * A picture ahead of the heading. It is decorative and the slot is hidden from assistive
    * technology, so anything that must be read or operated belongs in `heading`, `children` or
-   * `actions` instead. The root is `position: relative`, so an absolutely positioned child is
-   * placed against the card and may spill over its edge.
+   * `actions` instead. The slot lays several in-flow children out in a row, so pass one element
+   * or wrap them. The root is `position: relative`, so an absolutely positioned child is placed
+   * against the card and may spill over its edge.
    */
   illustration?: ReactNode;
   /** The headline, on the display type. Its tag is `headingLevel`. */

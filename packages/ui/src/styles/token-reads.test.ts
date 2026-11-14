@@ -1069,6 +1069,14 @@ const expectations: ReadonlyArray<Expectation> = [
       'gap: var(--space-2);',
       'margin-top: var(--space-2);',
     ],
+    lacks: ['justify-content'],
+  },
+  // Only under `center`: the row shrink-wraps its buttons, so a wrapped line would otherwise
+  // start-align inside it. `start` keeps the default `flex-start`, which no rule restates.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-align='center'\] \.actions \{([^}]*)\}/m,
+    contains: ['justify-content: center;'],
     lacks: [],
   },
 ];

@@ -72,3 +72,9 @@
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
+
+/* The row shrink-wraps its buttons, so a wrapped second line would start-align under the first
+   inside it. Under `center` the lines centre; `start` keeps `flex-start`. */
+.root[data-align='center'] .actions {
+  justify-content: center;
+}
