@@ -1,6 +1,7 @@
 import { Toggle } from '@base-ui/react/toggle';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
 import { useContext, useState, type ReactNode } from 'react';
+import a11yStyles from '../../styles/a11y.module.css';
 import { InsideToolbarContext } from '../Toolbar/InsideToolbarContext';
 import styles from './Segmented.module.css';
 
@@ -11,6 +12,17 @@ export interface SegmentedOption {
   label: string;
   /** Sits before the label. Decorative: it stays out of the accessible name. */
   icon?: ReactNode;
+  /**
+   * A count or short status shown after the label, such as the `2` in "Requests 2". It is part of
+   * the option's accessible name, and pressing it chooses the option.
+   */
+  badge?: ReactNode;
+  /**
+   * Hides the label from the eye and keeps it for assistive technology, so the option is named by
+   * its label while `icon` is all that shows. Give such an option an `icon`: with neither, the
+   * option draws nothing.
+   */
+  hideLabel?: boolean;
   disabled?: boolean;
 }
 
@@ -29,6 +41,8 @@ interface SegmentedBaseProps {
    */
   onValueChange?: (value: string) => void;
   size?: 'sm' | 'md';
+  /** Stretches the group across its row and shares the row equally between the options. */
+  fill?: boolean;
 }
 
 interface SegmentedNamedByLabel extends SegmentedBaseProps {
@@ -52,6 +66,25 @@ function chosenIndexOf(options: SegmentedOption[], value: string | undefined): n
 }
 
 /**
+ * `true`, `false`, `null` and `undefined` render nothing, and `''` renders an empty text node, so
+ * none of them may leave an empty badge (or its space) behind. `0` is a count and stays.
+ */
+function hasContent(node: ReactNode) {
+  return node !== undefined && node !== null && node !== '' && typeof node !== 'boolean';
+}
+
+/**
+ * The label as the option renders it: the bare text for a default option, a visually hidden span
+ * for an icon-only one, and a plain span ahead of a badge so the label and the count are siblings.
+ */
+function renderLabel(option: SegmentedOption, hasBadge: boolean): ReactNode {
+  if (option.hideLabel) {
+    return <span className={a11yStyles.visuallyHidden}>{option.label}</span>;
+  }
+  return hasBadge ? <span>{option.label}</span> : option.label;
+}
+
+/**
  * Choose exactly one of a few options. Each is a toggle button, and the group is one tab stop
  * whose arrow keys, Home and End move focus without changing the choice.
  *
@@ -67,6 +100,7 @@ export function Segmented({
   defaultValue,
   onValueChange,
   size = 'md',
+  fill = false,
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
 }: SegmentedProps) {
@@ -82,6 +116,7 @@ export function Segmented({
     <ToggleGroup
       className={styles.root}
       data-size={size}
+      data-fill={fill ? '' : undefined}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       // Always controlled, so that what is pressed follows `options` past the first render and
@@ -104,23 +139,34 @@ export function Segmented({
         onValueChange?.(nextOption.value);
       }}
     >
-      {options.map((option, index) => (
-        <Toggle
-          key={option.value}
-          className={styles.option}
-          value={String(index)}
-          disabled={option.disabled}
-          onFocus={() => setFocusedValue(option.value)}
-          {...(placesTabStop ? { tabIndex: index === chosenIndex ? 0 : -1 } : null)}
-        >
-          {option.icon ? (
-            <span className={styles.icon} aria-hidden="true">
-              {option.icon}
-            </span>
-          ) : null}
-          {option.label}
-        </Toggle>
-      ))}
+      {options.map((option, index) => {
+        const hasBadge = hasContent(option.badge);
+        return (
+          <Toggle
+            key={option.value}
+            className={styles.option}
+            value={String(index)}
+            disabled={option.disabled}
+            onFocus={() => setFocusedValue(option.value)}
+            {...(placesTabStop ? { tabIndex: index === chosenIndex ? 0 : -1 } : null)}
+          >
+            {option.icon ? (
+              <span className={styles.icon} aria-hidden="true">
+                {option.icon}
+              </span>
+            ) : null}
+            {renderLabel(option, hasBadge)}
+            {/* The space is rendered, not styled, so the accessible name joins the label and the
+                count ("Requests 2") with no stylesheet loaded; the flex row draws nothing for it. */}
+            {hasBadge ? (
+              <>
+                {' '}
+                <span className={styles.badge}>{option.badge}</span>
+              </>
+            ) : null}
+          </Toggle>
+        );
+      })}
     </ToggleGroup>
   );
 }

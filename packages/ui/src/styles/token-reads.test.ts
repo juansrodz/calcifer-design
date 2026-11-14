@@ -926,6 +926,40 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: ['--icon-button-shadow'],
   },
+
+  // `Segmented`'s badge slot (contract §2.2, styled as `Button`'s badge), the full-width group
+  // (L2-17) and the one consumer hook on the chosen option, `--segmented-pressed-shadow`.
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.badge \{([^}]*)\}/m,
+    contains: ['display: inline-flex;', 'margin-inline-start: var(--space-1);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root\[data-fill\] \{([^}]*)\}/m,
+    contains: ['display: flex;', 'width: 100%;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root\[data-fill\] \.option \{([^}]*)\}/m,
+    contains: ['flex: 1 1 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-pressed\] \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--segmented-pressed-shadow, none);'],
+    lacks: [],
+  },
+  {
+    // The hook is read on the chosen option alone.
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--segmented-pressed-shadow'],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {
