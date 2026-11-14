@@ -61,6 +61,8 @@
   color: var(--color-tab-bar-active-text);
 }
 
+/* axe reports the current label as Inconclusive (pseudoContent): it cannot read a pseudo-element's
+   fill. The real contrast check is the `tabBarActiveText` / `tabBarActive` tokens pair. */
 .link[aria-current='page']::before {
   content: '';
   position: absolute;

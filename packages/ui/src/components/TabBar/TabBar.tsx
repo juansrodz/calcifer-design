@@ -58,8 +58,9 @@ export function TabBar<Item extends TabBarItem = TabBarItem>({
     <div className={styles.root}>
       {action}
       <nav className={styles.nav} aria-label={label}>
-        {/* `role="list"`: a `list-style: none` list loses its list role in Safari with VoiceOver,
-            so the count of tabs would go unannounced. */}
+        {/* `role="list"` is what the contract asks for here. (The house rule for restoring a
+            list's semantics is scoped to `list-style: none` lists outside a `nav`; this one is
+            inside one.) */}
         <ul className={styles.pill} role="list">
           {items.map((item) => {
             const isCurrent = isCurrentPath(item.href, currentPath);

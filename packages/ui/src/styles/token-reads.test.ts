@@ -890,6 +890,12 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.nav \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex: 1;', 'min-width: 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
     rule: /^\.pill \{([^}]*)\}/m,
     contains: [
       '--tab-bar-pill-padding-block: calc(var(--space-1) * 0.625);',
@@ -912,6 +918,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'isolation: isolate;',
       'min-height: var(--size-touch);',
       'min-width: var(--size-touch);',
+      'border-radius: var(--radius-full);',
       'color: var(--color-tab-bar-text);',
     ],
     lacks: [],
