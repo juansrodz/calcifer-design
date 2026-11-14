@@ -124,4 +124,14 @@ describe('AvatarGroup', () => {
     const sizes = screen.getAllByRole('list').map((list) => list.getAttribute('data-size'));
     expect(sizes).toEqual(['xs', 'sm', 'md', 'lg', 'xl']);
   });
+
+  // 96px boxes overlapping by 8px: three avatars and the chip would be 360px, wider than the 358px
+  // a 390px phone leaves, so the largest row shows two and the chip.
+  it('shows two avatars and a chip at xl, so the row fits a phone', () => {
+    render(<Sizes />);
+    const extraLarge = screen.getAllByRole('list').at(-1);
+    expect(extraLarge).toHaveAttribute('data-size', 'xl');
+    expect(within(extraLarge!).getAllByTestId('avatar')).toHaveLength(2);
+    expect(within(extraLarge!).getByText('+5')).toBeInTheDocument();
+  });
 });

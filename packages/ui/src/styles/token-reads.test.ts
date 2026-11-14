@@ -1116,28 +1116,31 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [`box-shadow: ${avatarGroupRing};`],
     lacks: [],
   },
-  // The chip: a pill as tall as the avatars beside it (`--avatar-group-size`, which the size test
-  // at the end of the file keeps equal to `Avatar`'s preset), on the raised-neutral fill with the
-  // muted ink, ringed as the avatars are and over the chip shadow. The two shadows are one local
-  // property, because a two-shadow value is not one the token lint accepts as a `box-shadow`
-  // declaration.
+  // The chip: a pill as tall as the avatars beside it, with its count at their initials size. Its
+  // box and text read the avatars' own two consumer hooks (`--avatar-size`, `--avatar-font-size`:
+  // read here, never declared) and fall back to the group's `--avatar-group-size` and
+  // `--avatar-group-font-size`, which the size test at the end of the file keeps equal to
+  // `Avatar`'s presets. A chip with no hook read would stay at the preset when a wrapper resizes
+  // the avatars. The fill is the raised neutral with the muted ink, ringed as the avatars are and
+  // over the chip shadow. The two shadows are one local property, because a two-shadow value is
+  // not one the token lint accepts as a `box-shadow` declaration.
   {
     file: 'components/AvatarGroup/AvatarGroup.module.css',
     rule: /^\.overflow \{([^}]*)\}/m,
     contains: [
       `${avatarGroupRing}, var(--shadow-chip);`,
       'box-shadow: var(--avatar-group-chip-shadow);',
-      'min-width: var(--avatar-group-size);',
-      'height: var(--avatar-group-size);',
+      'min-width: var(--avatar-size, var(--avatar-group-size));',
+      'height: var(--avatar-size, var(--avatar-group-size));',
       'padding-inline: var(--space-1);',
       'border-radius: var(--radius-full);',
       'background: var(--color-surface-3);',
       'color: var(--color-text-muted);',
       sansFamily,
-      'font-size: var(--text-2xs);',
+      'font-size: var(--avatar-font-size, var(--avatar-group-font-size));',
       'font-weight: var(--font-weight-heading);',
     ],
-    lacks: [anyWeightLiteral],
+    lacks: [anyWeightLiteral, 'font-size: var(--text-'],
   },
 
   // `ChoiceCard`: a radio group drawn as cards. The grid's column count is a local property set per
@@ -1288,11 +1291,12 @@ const expectations: ReadonlyArray<Expectation> = [
   },
 ];
 
-// The chip's height is `--avatar-group-size`, and each `data-size` on the list must set it to the
-// box `Avatar` draws for that size, or the chip is taller or shorter than the avatars beside it.
-// Both stylesheets declare one `[data-size='…'] { --name: value; }` rule per size; this reads the
-// two sets and requires them equal, so a size added to `Avatar` and not to the group (or a preset
-// changed in one place) fails here instead of drawing a chip that does not match.
+// The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each
+// `data-size` on the list must set them to what `Avatar` draws for that size (`--avatar-preset` and
+// `--avatar-preset-font`), or the chip is taller, shorter or smaller-typed than the avatars beside
+// it. Both stylesheets declare one `[data-size='…'] { --name: value; }` rule per size; this reads
+// the two sets and requires them equal, so a size added to `Avatar` and not to the group (or a
+// preset changed in one place) fails here instead of drawing a chip that does not match.
 function sizeDeclarations(file: string, property: string): Record<string, string> {
   const contents = readFileSync(join(sourceRoot, file), 'utf-8');
   const byRule: Record<string, string> = {};
@@ -1331,15 +1335,15 @@ describe('the theme tokens the component CSS reads', () => {
   }
 });
 
-describe('AvatarGroup’s chip height', () => {
-  it('equals Avatar’s preset at every size', () => {
-    const avatarPresets = sizeDeclarations(
-      'components/Avatar/Avatar.module.css',
-      '--avatar-preset',
-    );
+describe('AvatarGroup’s chip box', () => {
+  it.each([
+    ['--avatar-group-size', '--avatar-preset'],
+    ['--avatar-group-font-size', '--avatar-preset-font'],
+  ])('%s equals Avatar’s %s at every size', (groupProperty, avatarProperty) => {
+    const avatarPresets = sizeDeclarations('components/Avatar/Avatar.module.css', avatarProperty);
     const groupSizes = sizeDeclarations(
       'components/AvatarGroup/AvatarGroup.module.css',
-      '--avatar-group-size',
+      groupProperty,
     );
     // An empty read on both sides would pass the equality below, so the presets must be found.
     expect(Object.keys(avatarPresets).length).toBeGreaterThan(0);

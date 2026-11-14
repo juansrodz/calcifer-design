@@ -51,9 +51,17 @@ export const Overflow: Story = {
 
 const sizes: readonly AvatarSize[] = ['xs', 'sm', 'md', 'lg', 'xl'];
 
+// How many avatars each row shows before its chip. A row is its avatars and the chip, each tucked
+// 8px under the one before it, so at `xl` (96px) two avatars and the chip are 272px, where three
+// would be 360px and run past the 358px a 390px phone leaves. The sizes below it fit at four.
+const maxBySize: Readonly<Record<AvatarSize, number>> = { xs: 4, sm: 4, md: 4, lg: 4, xl: 2 };
+
 const column = { display: 'flex', flexDirection: 'column', gap: '1rem' } as const;
 
-/** Each of the five sizes, the chip drawn to the same height as the avatars beside it. */
+/**
+ * Each of the five sizes, the chip drawn to the same height as the avatars beside it and its count
+ * at their initials size. The largest size shows fewer avatars so that every row fits a phone.
+ */
 export const Sizes: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => (
@@ -62,7 +70,7 @@ export const Sizes: Story = {
         <AvatarGroup
           key={size}
           items={people}
-          max={4}
+          max={maxBySize[size]}
           size={size}
           label={`${args.label}, size ${size}`}
         />

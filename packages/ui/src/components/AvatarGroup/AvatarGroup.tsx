@@ -20,7 +20,10 @@ export interface AvatarGroupProps {
    * reads as 1, and the chip is drawn only when there are more items than this.
    */
   max?: number;
-  /** One of `Avatar`'s five sizes. Defaults to `sm`. */
+  /**
+   * One of `Avatar`'s five sizes. Defaults to `sm`. The chip is drawn at the same size. Like the
+   * avatars', it follows `--avatar-size` and `--avatar-font-size` when a wrapper sets them.
+   */
   size?: AvatarSize;
   /** Names the list. */
   label: string;

@@ -1,7 +1,8 @@
 /* The overlap is declared as a local property because `calc(-1 * var(--space-2))` is not a value
    the token lint accepts as a `margin` declaration, but it is as a custom property's. The
-   chip's height comes from `--avatar-group-size`, which each `data-size` sets to the same box
-   `Avatar`'s preset for that size draws, so the chip is as tall as the avatars beside it. */
+   chip's box and its text come from `--avatar-group-size` and `--avatar-group-font-size`, which
+   each `data-size` sets to the same two values `Avatar`'s preset for that size draws, so the chip
+   is as tall as the avatars beside it and its count reads at the avatars' initials size. */
 .list {
   --avatar-group-overlap: calc(-1 * var(--space-2));
 
@@ -14,22 +15,27 @@
 
 .list[data-size='xs'] {
   --avatar-group-size: 1.5rem;
+  --avatar-group-font-size: var(--text-2xs);
 }
 
 .list[data-size='sm'] {
   --avatar-group-size: 1.75rem;
+  --avatar-group-font-size: var(--text-2xs);
 }
 
 .list[data-size='md'] {
   --avatar-group-size: 2.5rem;
+  --avatar-group-font-size: var(--text-sm);
 }
 
 .list[data-size='lg'] {
   --avatar-group-size: 4rem;
+  --avatar-group-font-size: var(--text-lg);
 }
 
 .list[data-size='xl'] {
   --avatar-group-size: 6rem;
+  --avatar-group-font-size: var(--text-h3);
 }
 
 /* A flex box, so the inline-level avatar inside does not sit on a line box's baseline and leave a
@@ -51,9 +57,11 @@
 }
 
 /* A circle for one digit and a pill for more: never narrower than the avatars are, and the
-   padding keeps a longer count off the edge. The same ring as the avatars, over the chip's own
-   shadow; the pair is one local property because a two-shadow value is not one the token lint
-   accepts as a `box-shadow` declaration. */
+   padding keeps a longer count off the edge. The box and the text read the avatars' own two size
+   hooks first, so a wrapper that sets `--avatar-size` and `--avatar-font-size` to draw the avatars
+   at an exact size draws the chip at it too, and fall back to the group's size otherwise. The same
+   ring as the avatars, over the chip's own shadow; the pair is one local property because a
+   two-shadow value is not one the token lint accepts as a `box-shadow` declaration. */
 .overflow {
   --avatar-group-chip-shadow:
     0 0 0 var(--border-width-emphasis) var(--color-avatar-ring), var(--shadow-chip);
@@ -61,15 +69,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--avatar-group-size);
-  height: var(--avatar-group-size);
+  min-width: var(--avatar-size, var(--avatar-group-size));
+  height: var(--avatar-size, var(--avatar-group-size));
   padding-inline: var(--space-1);
   border-radius: var(--radius-full);
   background: var(--color-surface-3);
   box-shadow: var(--avatar-group-chip-shadow);
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: var(--text-2xs);
+  font-size: var(--avatar-font-size, var(--avatar-group-font-size));
   font-weight: var(--font-weight-heading);
   line-height: var(--leading-tight);
   user-select: none;
