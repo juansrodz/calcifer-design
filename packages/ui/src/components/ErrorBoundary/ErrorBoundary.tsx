@@ -22,8 +22,11 @@ export interface ErrorBoundaryProps {
   resetKeys?: readonly unknown[];
   /** The default fallback's heading. */
   heading?: string;
-  /** The heading's level. Match it to where the alert sits in the page's outline. */
-  headingLevel?: 2 | 3 | 4;
+  /**
+   * The heading's level. Match it to where the alert sits in the page's outline. Use 1 only when
+   * the boundary is the page's main heading, e.g. a full-page error.
+   */
+  headingLevel?: 1 | 2 | 3 | 4;
   /** The default fallback's retry control. */
   retryLabel?: string;
 }

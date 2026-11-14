@@ -10,8 +10,11 @@ export interface AlertProps {
   tone?: AlertTone;
   /** Rendered above the body as a heading. */
   heading?: ReactNode;
-  /** The heading's level. Match it to where the alert sits in the page's outline. */
-  headingLevel?: 2 | 3 | 4;
+  /**
+   * The heading's level. Match it to where the alert sits in the page's outline. Use 1 only when
+   * the alert is the page's main heading, e.g. a full-page error.
+   */
+  headingLevel?: 1 | 2 | 3 | 4;
   children: ReactNode;
   /**
    * Announce this alert to assistive technology. Off by default and deliberately so: an alert
@@ -34,7 +37,7 @@ const toneWords: Record<AlertTone, string> = {
   danger: 'Error',
 };
 
-const headingTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
+const headingTags = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4' } as const;
 
 /** Every glyph here is a 16px stroke drawing that takes its colour from the surrounding text. */
 const iconProps = {
@@ -100,7 +103,7 @@ export function Alert({
   const liveProps = announce
     ? { role: politeness === 'assertive' ? 'alert' : 'status', 'aria-live': politeness }
     : {};
-  // The `?? 'h3'` is for JavaScript callers, who are not held to the `2 | 3 | 4` union:
+  // The `?? 'h3'` is for JavaScript callers, who are not held to the `1 | 2 | 3 | 4` union:
   // an out-of-range level would otherwise resolve to `undefined` and throw in React as an
   // invalid element type. `@calcifer-design/ui` is consumed from JavaScript apps.
   const Heading = headingTags[headingLevel] ?? 'h3';

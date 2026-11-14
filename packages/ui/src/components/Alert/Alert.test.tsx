@@ -77,6 +77,29 @@ describe('Alert', () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the heading as an h1 when the alert is the page's main heading, and passes axe", async () => {
+    const { container } = render(
+      <Alert tone="danger" heading="Remote unavailable" headingLevel={1}>
+        Body copy.
+      </Alert>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Remote unavailable' }),
+    ).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('falls back to an h3 for a level outside 1 to 4, which a JavaScript caller can pass', () => {
+    render(
+      <Alert heading="Remote unavailable" headingLevel={5 as never}>
+        Body copy.
+      </Alert>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Remote unavailable' }),
+    ).toBeInTheDocument();
+  });
+
   it('has no dismiss control unless onDismiss is given', () => {
     render(<Info />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();

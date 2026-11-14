@@ -74,6 +74,18 @@ describe('ErrorBoundary', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders the default fallback heading as an h1 for a full-page error, and passes axe', async () => {
+    const { container } = render(
+      <ErrorBoundary headingLevel={1}>
+        <Flaky />
+      </ErrorBoundary>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Something went wrong' }),
+    ).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('renders its children again when a custom fallback calls reset', async () => {
     render(
       <ErrorBoundary
