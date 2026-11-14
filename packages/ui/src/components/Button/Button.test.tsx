@@ -1,8 +1,9 @@
 import { composeStories } from '@storybook/react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
+import { CheckIcon } from '../../icons/CheckIcon';
 import { Button } from './Button';
 import type { ButtonSize, ButtonTone, ButtonVariant } from './Button';
 import * as stories from './Button.stories';
@@ -31,6 +32,10 @@ const {
   Row,
   RowWithBadge,
   RowDisabled,
+  WithStartIcon,
+  Pending,
+  PendingNoIcon,
+  PendingInverse,
 } = composeStories(stories);
 
 describe('Button', () => {
@@ -51,6 +56,10 @@ describe('Button', () => {
     ['Row', Row],
     ['RowWithBadge', RowWithBadge],
     ['RowDisabled', RowDisabled],
+    ['WithStartIcon', WithStartIcon],
+    ['Pending', Pending],
+    ['PendingNoIcon', PendingNoIcon],
+    ['PendingInverse', PendingInverse],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -266,5 +275,181 @@ describe('Button', () => {
     render(<RowDisabled onClick={onClick} />);
     await userEvent.click(screen.getByRole('button'));
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('renders a leading icon before the label and outside the name', () => {
+    render(<WithStartIcon />);
+    const button = screen.getByRole('button', { name: 'Save changes' });
+    expect(Array.from(button.children).map((child) => child.className)).toEqual(['icon', 'label']);
+    expect(button.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(button.firstElementChild?.querySelector('svg')).not.toBeNull();
+    expect(button).not.toHaveAttribute('aria-busy');
+    expect(button).not.toHaveAttribute('data-pending');
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['false', false],
+    ['true', true],
+    ['an empty string', ''],
+  ])('renders no leading icon slot when the start icon is %s', (_name, startIcon) => {
+    render(<Button startIcon={startIcon}>Open projects</Button>);
+    expect(screen.getByRole('button').outerHTML).toBe(DEFAULT_BUTTON_HTML);
+  });
+
+  it('keeps the label as the name, marks the button busy and swaps the icon for the spinner', () => {
+    render(<Pending />);
+    const button = screen.getByRole('button', { name: 'Save changes' });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('data-pending', '');
+    expect(button).not.toHaveAttribute('disabled');
+    expect(Array.from(button.children).map((child) => child.className)).toEqual(['icon', 'label']);
+    expect(button.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(within(button).getByTestId('spinner')).toBeInTheDocument();
+    expect(button.querySelector('svg')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('puts the spinner over the label, keeping the label and the name, when there is no icon', () => {
+    render(<PendingNoIcon />);
+    const button = screen.getByRole('button', { name: 'Sign in' });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('data-pending', '');
+    expect(Array.from(button.children).map((child) => child.className)).toEqual([
+      'pendingOverlay',
+      'label',
+    ]);
+    const overlay = button.firstElementChild;
+    expect(overlay).toHaveAttribute('aria-hidden', 'true');
+    expect(within(overlay as HTMLElement).getByTestId('spinner')).toBeInTheDocument();
+    // The label is still in the DOM with its text, as in the idle button; the stylesheet only
+    // hides it, and the jsdom tests load no CSS (L2-14).
+    expect(button.lastElementChild).toHaveClass('label');
+    expect(button.lastElementChild?.textContent).toBe('Sign in');
+  });
+
+  it('keeps the inverse tone and marks it pending', () => {
+    render(<PendingInverse />);
+    const button = screen.getByRole('button', { name: 'Save changes' });
+    expect(button).toHaveAttribute('data-tone', 'inverse');
+    expect(button).toHaveAttribute('data-pending', '');
+  });
+
+  it.each([
+    ['with an icon', Pending, 'Save changes'],
+    ['with no icon', PendingNoIcon, 'Sign in'],
+  ])('blocks the click and the keys while pending, %s', async (_name, Story, name) => {
+    const onClick = vi.fn();
+    render(<Story onClick={onClick} />);
+    const button = screen.getByRole('button', { name });
+    await userEvent.tab();
+    expect(button).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard(' ');
+    await userEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(button).toHaveFocus();
+  });
+
+  it('keeps focus on the same element while pending starts and ends', async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(
+      <Button startIcon={<CheckIcon />} onClick={onClick}>
+        Save changes
+      </Button>,
+    );
+    await userEvent.tab();
+    const button = screen.getByRole('button', { name: 'Save changes' });
+    rerender(
+      <Button pending startIcon={<CheckIcon />} onClick={onClick}>
+        Save changes
+      </Button>,
+    );
+    expect(document.activeElement).toBe(button);
+    rerender(
+      <Button startIcon={<CheckIcon />} onClick={onClick}>
+        Save changes
+      </Button>,
+    );
+    expect(document.activeElement).toBe(button);
+    expect(button).not.toHaveAttribute('aria-busy');
+    expect(button.firstElementChild?.querySelector('svg')).not.toBeNull();
+    await userEvent.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  // The app's Log Out button (A0 Task 18b, A8): no icon, so the overlay path. No timer is advanced.
+  it('keeps the name, the busy state and the focus of an icon-less button while it is pending', async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(<Button onClick={onClick}>Log Out</Button>);
+    await userEvent.tab();
+    const button = screen.getByRole('button', { name: 'Log Out' });
+    rerender(
+      <Button pending onClick={onClick}>
+        Log Out
+      </Button>,
+    );
+    expect(screen.getByRole('button', { name: 'Log Out' })).toBe(button);
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveFocus();
+    await userEvent.click(button);
+    await userEvent.keyboard('{Enter}');
+    expect(onClick).not.toHaveBeenCalled();
+    rerender(<Button onClick={onClick}>Log Out</Button>);
+    expect(button).toHaveFocus();
+    expect(button).not.toHaveAttribute('aria-busy');
+    expect(button.outerHTML).toBe(DEFAULT_BUTTON_HTML.replace('Open projects', 'Log Out'));
+  });
+
+  it('paints and behaves as disabled, not as pending, when it is disabled and pending', async () => {
+    const onClick = vi.fn();
+    render(<Pending disabled onClick={onClick} />);
+    const button = screen.getByRole('button', { name: 'Save changes' });
+    // `data-pending` is what lifts the dimmed look back to full strength, so a button the caller
+    // disabled must not carry it (PF-13); it is still busy and still blocks activation.
+    expect(button).not.toHaveAttribute('data-pending');
+    expect(button).toHaveAttribute('data-disabled');
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('writes no pending marker or busy state when pending is false', () => {
+    render(
+      <Button pending={false} startIcon={<CheckIcon />}>
+        Save changes
+      </Button>,
+    );
+    const button = screen.getByRole('button', { name: 'Save changes' });
+    expect(button).not.toHaveAttribute('data-pending');
+    expect(button).not.toHaveAttribute('aria-busy');
+    expect(button.querySelector('[data-testid="spinner"]')).toBeNull();
+  });
+
+  it('falls back to the overlay when pending with an empty start icon', () => {
+    render(
+      <Button pending startIcon="">
+        Sign in
+      </Button>,
+    );
+    const button = screen.getByRole('button', { name: 'Sign in' });
+    expect(Array.from(button.children).map((child) => child.className)).toEqual([
+      'pendingOverlay',
+      'label',
+    ]);
+  });
+
+  it('keeps today’s DOM for loading: no pending marker, no spinner, the label alone', () => {
+    render(<Loading />);
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('data-loading', '');
+    expect(button).not.toHaveAttribute('data-pending');
+    expect(Array.from(button.children).map((child) => child.className)).toEqual(['label']);
+    expect(within(button).queryByTestId('spinner')).toBeNull();
   });
 });

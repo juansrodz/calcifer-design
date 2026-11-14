@@ -1,5 +1,6 @@
 import { Button as BaseButton } from '@base-ui/react/button';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { Spinner } from '../Spinner/Spinner';
 import styles from './Button.module.css';
 
 /**
@@ -30,12 +31,24 @@ export interface ButtonProps extends Omit<
    */
   badge?: ReactNode;
   /**
+   * A decorative glyph before the label, such as a check or a plus. It is hidden from assistive
+   * technology and never part of the accessible name. While the button is `pending`, a spinner
+   * takes its place.
+   */
+  startIcon?: ReactNode;
+  /**
    * A decorative glyph after the label (and after the badge), such as a row's chevron. It is hidden
    * from assistive technology and never part of the accessible name; a count goes in `badge`.
    */
   endIcon?: ReactNode;
   /** Shows a busy state, keeps the button focusable, and blocks activation. */
   loading?: boolean;
+  /**
+   * Shows a spinner in place of the leading icon and keeps the label, so the accessible name never
+   * changes. Sets `aria-busy` and `aria-disabled` and blocks activation, while the button stays
+   * focusable, so focus never drops to the page.
+   */
+  pending?: boolean;
   className?: string;
 }
 
@@ -53,20 +66,39 @@ export function Button({
   size = 'md',
   tone = 'accent',
   badge,
+  startIcon,
   endIcon,
   loading = false,
+  pending = false,
   disabled,
   className,
   children,
   nativeButton,
   ...rest
 }: ButtonProps) {
-  const isDisabled = Boolean(disabled) || loading;
+  const isBusy = loading || pending;
   // Base UI's Button defaults `nativeButton` to `true`, which assumes the `render` prop
   // (when given) still produces a native `<button>`. Most consumers use `render` to swap
   // in a non-button element (e.g. a router `Link`, which renders an `<a>`), so default to
   // `false` whenever `render` is supplied; an explicit `nativeButton` from the caller wins.
   const isNativeButton = nativeButton ?? !rest.render;
+  // The leading slot: the icon, or the spinner standing in for it while pending. With no icon a
+  // pending button lays the spinner over the label's box instead, and the label stays in the flow
+  // (hidden by the stylesheet, never removed) so the name and the width do not change.
+  let leading: ReactNode = null;
+  if (hasContent(startIcon)) {
+    leading = (
+      <span className={styles.icon} aria-hidden="true">
+        {pending ? <Spinner size="sm" /> : startIcon}
+      </span>
+    );
+  } else if (pending) {
+    leading = (
+      <span className={styles.pendingOverlay} aria-hidden="true">
+        <Spinner size="sm" />
+      </span>
+    );
+  }
   return (
     <BaseButton
       {...rest}
@@ -76,10 +108,14 @@ export function Button({
       data-size={size}
       data-tone={tone}
       data-loading={loading ? '' : undefined}
-      disabled={isDisabled}
-      focusableWhenDisabled={loading}
-      aria-busy={loading || undefined}
+      // A button the caller disabled keeps the disabled look: `data-pending` lifts the dimming so a
+      // spinner reads at full strength, which only a button that is merely busy should get.
+      data-pending={pending && !disabled ? '' : undefined}
+      disabled={Boolean(disabled) || isBusy}
+      focusableWhenDisabled={isBusy}
+      aria-busy={isBusy || undefined}
     >
+      {leading}
       <span className={styles.label}>{children}</span>
       {/* The space is rendered, not styled, so the accessible name joins the label and the count
           ("Suggestions 2") with no stylesheet loaded; the flex row draws nothing for it. */}

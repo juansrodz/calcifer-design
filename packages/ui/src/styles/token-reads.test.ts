@@ -836,7 +836,7 @@ const expectations: ReadonlyArray<Expectation> = [
     // instead of an unset fill at full opacity. The regex takes the `@supports` header and the rule
     // directly inside it, so a rule hoisted out of the block fails to match.
     file: 'components/Button/Button.module.css',
-    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{\n {2}\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\] \{([^}]*)\}\n\}/m,
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{\n {2}\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}\n\}/m,
     contains: [
       '--button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);',
       '--button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);',
@@ -942,16 +942,17 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // The end icon is a decorative holder the row's label pushes to the end; it sizes its glyph,
-    // and only the row draws it in the muted ink.
+    // The two icon slots share one rule: a decorative holder that never shrinks and sizes its glyph.
+    // The end icon is pushed to the row's end by the label, and only the row draws it in the muted
+    // ink.
     file: 'components/Button/Button.module.css',
-    rule: /^\.endIcon \{([^}]*)\}/m,
+    rule: /^\.icon,\n\.endIcon \{([^}]*)\}/m,
     contains: ['display: inline-flex;', 'flex: none;'],
     lacks: [],
   },
   {
     file: 'components/Button/Button.module.css',
-    rule: /^\.endIcon > svg \{([^}]*)\}/m,
+    rule: /^\.icon > svg,\n\.endIcon > svg \{([^}]*)\}/m,
     contains: ['width: 1rem;', 'height: 1rem;'],
     lacks: [],
   },
@@ -960,6 +961,84 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.root\[data-variant='row'\] \.endIcon \{([^}]*)\}/m,
     contains: ['color: var(--color-text-muted);'],
     lacks: [],
+  },
+
+  // `Button`'s leading icon and pending state (plan L2, Task 16; O-22, L2-20). A pending button
+  // keeps the label in the layout and the accessible name, so the label is hidden with `opacity`
+  // and a transparent ink, never `visibility`; the spinner's head reads the accent, which vanishes
+  // on the accent fill, so the primary variant hands it the button's own ink; the pending look
+  // lifts the disabled dimming; and the inverse primary's dimmed fill leaves a pending button
+  // alone. jsdom loads no CSS, so these rows pin it and Task 14 checks the name in the browser.
+  {
+    file: 'components/Button/Button.module.css',
+    contains: ['.icon > svg', '--color-accent: currentcolor', ':not([data-pending])'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\] \.icon \{([^}]*)\}/m,
+    contains: ['--color-accent: currentcolor;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\] \.pendingOverlay \{([^}]*)\}/m,
+    contains: ['--color-accent: currentcolor;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-pending\] \{([^}]*)\}/m,
+    contains: ['position: relative;', 'opacity: 1;', 'cursor: progress;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.pendingOverlay \{([^}]*)\}/m,
+    contains: [
+      'position: absolute;',
+      'inset: 0;',
+      'display: flex;',
+      'align-items: center;',
+      'justify-content: center;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.pendingOverlay \+ \.label \{([^}]*)\}/m,
+    contains: ['opacity: 0;', 'color: transparent;'],
+    lacks: ['visibility'],
+  },
+
+  // `Skeleton`'s radius hook (plan L2, Task 16; O-22): a consumer rounds the text and block bars
+  // through `--skeleton-radius`, each falling back to the step it read before; the circle keeps
+  // the full radius and never reads the hook.
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    contains: [
+      'var(--skeleton-radius, var(--radius-sm))',
+      'var(--skeleton-radius, var(--radius-md))',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['border-radius: var(--skeleton-radius, var(--radius-sm));'],
+    lacks: [],
+  },
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    rule: /^\.root\[data-variant='block'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--skeleton-radius, var(--radius-md));'],
+    lacks: [],
+  },
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    rule: /^\.root\[data-variant='circle'\] \{([^}]*)\}/m,
+    contains: ['var(--radius-full)'],
+    lacks: ['--skeleton-radius'],
   },
 
   // `IconButton`'s `soft` variant: a quiet fill that reads the surface roles, a hover one step up,

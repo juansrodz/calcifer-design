@@ -60,6 +60,7 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--dialog-heading-leading',
   '--sheet-handle-width',
   '--sheet-handle-height',
+  '--skeleton-radius',
 ] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
@@ -137,6 +138,8 @@ describe('@calcifer-design/ui dist', () => {
     expect(css).toMatch(new RegExp(`\\.${classPrefix}[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\\b`));
     // The list-row variant (O-21) survives the build, whatever quotes the minifier keeps.
     expect(css).toMatch(/\[data-variant=['"]?row['"]?\]/);
+    // The pending state (O-22) survives it too.
+    expect(css).toMatch(/\[data-pending\]/);
   });
 
   // R7: the class selectors are read from rule preludes only (the text before each `{` that does

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
+import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronRightIcon } from '../../icons/ChevronRightIcon';
 import { Button } from './Button';
 
@@ -108,17 +109,33 @@ export const SelectedSecondary: Story = { args: { variant: 'secondary', tone: 's
 export const WithBadge: Story = {
   args: { variant: 'secondary', children: 'Suggestions', badge: <span>2</span> },
 };
-/** The large size, with a leading icon in the children. */
+/** The large size, with its leading icon in `startIcon`. */
 export const Large: Story = {
   args: {
     size: 'lg',
     tone: 'inverse',
-    children: (
-      <>
-        <PlusIcon /> Add an event
-      </>
-    ),
+    startIcon: <PlusIcon />,
+    children: 'Add an event',
   },
+  decorators: onAccent,
+};
+/** A decorative glyph before the label; it is outside the accessible name. */
+export const WithStartIcon: Story = {
+  args: { startIcon: <CheckIcon />, children: 'Save changes' },
+};
+/**
+ * `pending` swaps the leading icon for a spinner and keeps the label, so the name stays "Save
+ * changes". The button is busy and cannot be activated, but it keeps focus.
+ */
+export const Pending: Story = { args: { ...WithStartIcon.args, pending: true } };
+/**
+ * With no leading icon the spinner sits over the label's box and the label stays in the layout,
+ * invisible but still the accessible name, so the button does not change width.
+ */
+export const PendingNoIcon: Story = { args: { pending: true, children: 'Sign in' } };
+/** The inverse fill keeps its colour while pending, and the spinner's head takes the button's ink. */
+export const PendingInverse: Story = {
+  args: { pending: true, tone: 'inverse', startIcon: <CheckIcon />, children: 'Save changes' },
   decorators: onAccent,
 };
 /**

@@ -147,9 +147,10 @@
    the token lint refuses `color-mix()` inline (L2-3). `color-mix()` is Baseline 2023, as
    `Timeline.module.css` assumes; the rule sits behind `@supports` so a browser without it keeps the
    plain 0.45 opacity of the `[data-disabled]` rule above, rather than an unset fill and undimmed
-   ink at full opacity. */
+   ink at full opacity. A pending button is exempt (`:not([data-pending])`): it keeps the regular
+   inverse fill, and the pending rule below lifts its opacity. */
 @supports (color: color-mix(in srgb, red, blue)) {
-  .root[data-variant='primary'][data-tone='inverse'][data-disabled] {
+  .root[data-variant='primary'][data-tone='inverse'][data-disabled]:not([data-pending]) {
     --button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);
     --button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);
 
@@ -157,6 +158,16 @@
     background: var(--button-inverse-disabled-fill);
     color: var(--button-inverse-disabled-ink);
   }
+}
+
+/* A pending button (`pending`) is busy, not dimmed: it is disabled to the platform, and its
+   spinner has to read at full strength, so this rule follows the disabled one and lifts the
+   opacity. The progress cursor replaces the not-allowed one. A button the caller disabled never
+   carries `data-pending`, so it keeps the disabled look. */
+.root[data-pending] {
+  position: relative;
+  opacity: 1;
+  cursor: progress;
 }
 
 .label {
@@ -170,15 +181,45 @@
   display: inline-flex;
 }
 
-/* The decorative end slot (`endIcon`): it never shrinks, and sizes the glyph it holds. */
+/* The decorative icon slots (`startIcon` before the label, `endIcon` after it): neither shrinks,
+   and each sizes the glyph it holds. While pending, the start slot holds the spinner. */
+.icon,
 .endIcon {
   display: inline-flex;
   flex: none;
 }
 
+.icon > svg,
 .endIcon > svg {
   width: 1rem;
   height: 1rem;
+}
+
+/* The spinner's head reads the accent, which vanishes on the accent fill of a primary button, so
+   the primary variant hands the spinner the button's own ink instead. */
+.root[data-variant='primary'] .icon {
+  --color-accent: currentcolor;
+}
+
+/* With no leading icon a pending button lays its spinner over the label's box. */
+.pendingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.root[data-variant='primary'] .pendingOverlay {
+  --color-accent: currentcolor;
+}
+
+/* The label is hidden with `opacity` and a transparent ink, never `visibility: hidden` or
+   `display: none`: those remove it from the accessible name, and the name must not change while
+   the button waits (L2-20). It keeps its width, so the button does not shrink either. */
+.pendingOverlay + .label {
+  opacity: 0;
+  color: transparent;
 }
 
 /* Inside a row the label takes the free width, so the badge and the end icon sit at the row's end,
