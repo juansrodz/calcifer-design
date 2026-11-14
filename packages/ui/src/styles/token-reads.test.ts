@@ -848,6 +848,117 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['padding-block-start: var(--space-3);'],
     lacks: [],
   },
+
+  // `NavMenu`'s sidebar form. `flex: 1 1 auto` is what makes the list span the sidebar: `.root` is
+  // a row flex container, so without it the list shrinks to its widest label. The link rule makes
+  // each link as wide as the list.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.list\[data-orientation='vertical'\] \{([^}]*)\}/m,
+    contains: [
+      'flex: 1 1 auto;',
+      'flex-direction: column;',
+      'align-items: stretch;',
+      'gap: var(--space-2);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.list\[data-orientation='vertical'\] \.link \{([^}]*)\}/m,
+    contains: ['display: flex;'],
+    lacks: [],
+  },
+
+  // `TabBar`'s measure. The pill is 44 + 2 x 2.5 = 49 px through its block padding alone (the mock
+  // draws 49; the items keep the 44 px target), and the current link's fill is its `::before`, 33 px
+  // high, so a 44 px link carries a smaller fill. A jsdom test sees none of this, so each declaration
+  // that produces a number is pinned here and the browser check measures the result.
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'position: fixed;',
+      'inset-inline: var(--space-4);',
+      'inset-block-end: var(--space-5);',
+      'display: flex;',
+      'gap: var(--space-3);',
+      'align-items: center;',
+      'z-index: 40;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.pill \{([^}]*)\}/m,
+    contains: [
+      '--tab-bar-pill-padding-block: calc(var(--space-1) * 0.625);',
+      'padding-block: var(--tab-bar-pill-padding-block);',
+      'padding-inline: var(--space-1);',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-tab-bar);',
+      'box-shadow: var(--shadow-tab-bar);',
+      'justify-content: space-around;',
+      'flex: 1;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link \{([^}]*)\}/m,
+    contains: [
+      '--tab-bar-current-inset: calc((var(--size-touch) - 1.0625rem) / 2 - var(--space-2));',
+      'position: relative;',
+      'isolation: isolate;',
+      'min-height: var(--size-touch);',
+      'min-width: var(--size-touch);',
+      'color: var(--color-tab-bar-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link\[aria-current='page'\] \{([^}]*)\}/m,
+    contains: [
+      'gap: var(--space-2);',
+      'padding-inline: var(--space-3);',
+      'color: var(--color-tab-bar-active-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link\[aria-current='page'\]::before \{([^}]*)\}/m,
+    contains: [
+      "content: '';",
+      'position: absolute;',
+      'inset-inline: 0;',
+      'inset-block: var(--tab-bar-current-inset);',
+      'z-index: -1;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-tab-bar-active);',
+      'box-shadow: var(--shadow-soft);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.icon > svg \{([^}]*)\}/m,
+    contains: ['width: 1.3125rem;', 'height: 1.3125rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link\[aria-current='page'\] \.icon > svg \{([^}]*)\}/m,
+    contains: ['width: 1.0625rem;', 'height: 1.0625rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.label \{([^}]*)\}/m,
+    contains: [sansFamily, 'font-size: var(--text-sm);', 'font-weight: var(--font-weight-button);'],
+    lacks: [anyWeightLiteral],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {

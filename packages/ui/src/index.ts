@@ -143,3 +143,5 @@ export type { AvatarColorIndex } from './components/Avatar/avatarColor';
 export type { AvatarSize } from './components/Avatar/Avatar';
 export { Collapsible } from './components/Collapsible/Collapsible';
 export type { CollapsibleProps } from './components/Collapsible/Collapsible';
+export { TabBar } from './components/TabBar/TabBar';
+export type { TabBarProps, TabBarItem } from './components/TabBar/TabBar';

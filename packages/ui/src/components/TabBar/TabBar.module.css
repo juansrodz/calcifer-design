@@ -1,0 +1,94 @@
+/* Fixed above the bottom edge. The `z-index` is a literal, as in `popup.module.css`, and sits
+   under the popup layers' 50, so an open sheet covers the bar. */
+.root {
+  position: fixed;
+  inset-inline: var(--space-4);
+  inset-block-end: var(--space-5);
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  z-index: 40;
+}
+
+/* The nav is the root's flex item, so it carries the growth that lets the pill span the bar. */
+.nav {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The pill is 49px high: a 44px link plus 2.5px above and below. The block padding is the one
+   place that measure comes from, so it is declared as a local property (a `calc` of a token is not
+   a value the token lint accepts as a declaration, but it is as a custom property's). */
+.pill {
+  --tab-bar-pill-padding-block: calc(var(--space-1) * 0.625);
+
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  padding-block: var(--tab-bar-pill-padding-block);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-tab-bar);
+  box-shadow: var(--shadow-tab-bar);
+  list-style: none;
+}
+
+/* The link keeps the 44px target. The current link's fill is its `::before`, so the fill can be
+   smaller than the target: `--tab-bar-current-inset` is how far the fill sits in from the link's
+   top and bottom, (44px - 17px icon) / 2 - 8px = 5.5px, which leaves a 33px fill around the 17px
+   icon. `isolation` keeps the fill's `z-index: -1` inside the link, behind its icon and label but
+   in front of the pill. */
+.link {
+  --tab-bar-current-inset: calc((var(--size-touch) - 1.0625rem) / 2 - var(--space-2));
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-touch);
+  min-width: var(--size-touch);
+  border-radius: var(--radius-full);
+  color: var(--color-tab-bar-text);
+  text-decoration: none;
+}
+
+.link[aria-current='page'] {
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--color-tab-bar-active-text);
+}
+
+.link[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: var(--tab-bar-current-inset);
+  z-index: -1;
+  border-radius: var(--radius-full);
+  background: var(--color-tab-bar-active);
+  box-shadow: var(--shadow-soft);
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.icon > svg {
+  width: 1.3125rem;
+  height: 1.3125rem;
+}
+
+.link[aria-current='page'] .icon > svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-button);
+  white-space: nowrap;
+}

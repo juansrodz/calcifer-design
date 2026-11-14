@@ -121,6 +121,7 @@ describe('@calcifer-design/ui dist', () => {
       'ThemeScope',
       'usePortalContainer',
       'Collapsible',
+      'TabBar',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
@@ -131,6 +132,15 @@ describe('@calcifer-design/ui dist', () => {
   it('exports the avatar colour count from dist/index.js', async () => {
     const uiModule = (await import(path.join(distRoot, 'index.js'))) as Record<string, unknown>;
     expect(uiModule['AVATAR_COLOR_COUNT']).toBe(6);
+  });
+
+  // L2-11: `TabBar` warns about its item count behind `process.env.NODE_ENV !== 'production'`,
+  // written as that literal expression because it is the one form a consumer's bundler replaces
+  // at build time. Rslib must leave it alone: a build that resolved it here would bake the
+  // library's own mode into every consumer's bar.
+  it('leaves TabBar’s `process.env.NODE_ENV` for the consumer’s bundler', async () => {
+    const tabBar = await readFile(path.join(distRoot, 'components/TabBar/TabBar.js'), 'utf8');
+    expect(tabBar).toContain('process.env.NODE_ENV');
   });
 
   it('emits per-component stylesheets with the hashed class-name pattern', async () => {

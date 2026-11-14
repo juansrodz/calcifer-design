@@ -3,6 +3,7 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 import { minWidth, useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
+import { isCurrentPath } from './currentPath';
 import styles from './NavMenu.module.css';
 
 export interface NavItem {
@@ -16,16 +17,30 @@ export interface LinkRenderProps {
   children: ReactNode;
 }
 
-export interface NavMenuProps {
-  items: NavItem[];
+/**
+ * `Item` is the shape of one entry: anything with an `href` and a `label`. The shell passes its own
+ * (a typed route, an icon) and gets the same object back in `renderLink`.
+ */
+export interface NavMenuProps<Item extends NavItem = NavItem> {
+  items: readonly Item[];
   currentPath: string;
   /** Accessible name for the navigation landmark. */
   label?: string;
   /** Lets the shell render router links; defaults to a plain anchor. */
-  renderLink?: (item: NavItem, props: LinkRenderProps) => ReactElement;
+  renderLink?: (item: Item, props: LinkRenderProps) => ReactElement;
+  /**
+   * `'vertical'` stacks the links for a sidebar, each one as wide as the list. It applies to the
+   * wide layout only: below `md` the links are already a column inside the menu, so it is ignored.
+   */
+  orientation?: 'horizontal' | 'vertical';
 }
 
-function defaultRenderLink(
+/**
+ * The plain anchor both `NavMenu` and `TabBar` fall back on when the shell passes no `renderLink`.
+ * Shared between the two components, so it is exported from this module, but it is not in the
+ * package's exports.
+ */
+export function defaultRenderLink(
   item: NavItem,
   { children, ...linkProps }: LinkRenderProps,
 ): ReactElement {
@@ -36,27 +51,21 @@ function defaultRenderLink(
   );
 }
 
-function isCurrent(item: NavItem, currentPath: string): boolean {
-  if (item.href === '/') {
-    return currentPath === '/';
-  }
-  return currentPath === item.href || currentPath.startsWith(`${item.href}/`);
-}
-
 function linkPropsFor(item: NavItem, currentPath: string): LinkRenderProps {
   return {
     className: styles.link,
-    'aria-current': isCurrent(item, currentPath) ? 'page' : undefined,
+    'aria-current': isCurrentPath(item.href, currentPath) ? 'page' : undefined,
     children: item.label,
   };
 }
 
-export function NavMenu({
+export function NavMenu<Item extends NavItem = NavItem>({
   items,
   currentPath,
   label = 'Primary',
   renderLink = defaultRenderLink,
-}: NavMenuProps) {
+  orientation = 'horizontal',
+}: NavMenuProps<Item>) {
   const isWide = useMediaQuery(minWidth('md'));
   const container = usePortalContainer();
   const [open, setOpen] = useState(false);
@@ -74,7 +83,7 @@ export function NavMenu({
   if (isWide) {
     return (
       <nav className={styles.root} aria-label={label}>
-        <ul className={styles.list}>
+        <ul className={styles.list} data-orientation={orientation}>
           {items.map((item) => (
             <li key={item.href}>{renderLink(item, linkPropsFor(item, currentPath))}</li>
           ))}
