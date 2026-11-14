@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { Avatar } from './Avatar';
 import type { AvatarSize } from './Avatar';
+import { avatarColorsTheme, avatarColorsThemeCss } from './fixtures';
 
 const meta = {
   title: 'Primitives/Avatar',
@@ -37,14 +39,23 @@ const people = [
 
 const row = { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' } as const;
 
-/** Six seeds, `uid-1` to `uid-6`: the same seed gives the same colour on every screen. */
+/**
+ * Six seeds, `uid-1` to `uid-6`: the same seed gives the same colour on every screen. The library's
+ * own theme gives all six colours one neutral pair, so the row sits in a scope whose theme gives
+ * each its own, with the theme's sheet on the page as a consumer's build puts it there.
+ */
 function SeededRow() {
   return (
-    <div style={row}>
-      {people.map((person) => (
-        <Avatar key={person.seed} name={person.name} colorSeed={person.seed} />
-      ))}
-    </div>
+    <>
+      <style>{avatarColorsThemeCss}</style>
+      <ThemeScope theme={avatarColorsTheme}>
+        <div style={row}>
+          {people.map((person) => (
+            <Avatar key={person.seed} name={person.name} colorSeed={person.seed} />
+          ))}
+        </div>
+      </ThemeScope>
+    </>
   );
 }
 

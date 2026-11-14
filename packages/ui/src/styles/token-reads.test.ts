@@ -750,6 +750,29 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: var(--color-scrim-sheet);'],
     lacks: [],
   },
+
+  // `Avatar` sizes from its two consumer hooks over the five presets, and wears the theme's six
+  // fill and ink pairs through `data-color`. The hooks are read, never declared, so only this row
+  // and the dist scan's allow-list stand between a misspelt one and a silent fallback.
+  {
+    file: 'components/Avatar/Avatar.module.css',
+    contains: [
+      'inline-size: var(--avatar-size, var(--avatar-preset));',
+      'block-size: var(--avatar-size, var(--avatar-preset));',
+      'font-size: var(--avatar-font-size, var(--avatar-preset-font));',
+      '--avatar-preset: 1.5rem;',
+      '--avatar-preset: 1.75rem;',
+      '--avatar-preset: 2.5rem;',
+      '--avatar-preset: 4rem;',
+      '--avatar-preset: 6rem;',
+      ...[1, 2, 3, 4, 5, 6].flatMap((index) => [
+        `.root[data-color='${index}']`,
+        `background: var(--color-avatar-fill-${index});`,
+        `color: var(--color-avatar-ink-${index});`,
+      ]),
+    ],
+    lacks: [],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {

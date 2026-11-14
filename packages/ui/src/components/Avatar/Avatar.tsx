@@ -13,7 +13,9 @@ export interface AvatarProps {
   shape?: 'circle' | 'square';
   /**
    * A class for the root, joined after the component's own. It is how a consumer sets the two size
-   * hooks, `--avatar-size` and `--avatar-font-size`, for a size the five presets do not draw.
+   * hooks, `--avatar-size` and `--avatar-font-size`, for a size the five presets do not draw. Like
+   * any custom property the hooks inherit, so a wrapper that sets `--avatar-size` resizes every
+   * avatar inside it.
    */
   className?: string;
   /**

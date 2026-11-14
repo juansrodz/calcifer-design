@@ -1,9 +1,11 @@
+import { checkThemeContrast } from '@calcifer-design/tokens';
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
 import { Avatar } from './Avatar';
 import * as stories from './Avatar.stories';
+import { avatarColorsTheme } from './fixtures';
 
 const {
   Initials,
@@ -113,11 +115,22 @@ describe('Avatar', () => {
     expect(screen.getByTestId('avatar')).toHaveClass('root', 'ring');
   });
 
-  it('sets the two size hooks from a class in ExactSize', () => {
-    const { container } = render(<ExactSize />);
-    expect(screen.getByTestId('avatar')).toHaveClass('avatar-exact-size');
-    const stylesheet = container.querySelector('style')?.textContent ?? '';
-    expect(stylesheet).toContain('--avatar-size');
-    expect(stylesheet).toContain('--avatar-font-size');
+  it.each([
+    ['ColorFromSeed', ColorFromSeed],
+    ['Dark', Dark],
+  ])('%s sits in the six-colour theme, whose sheet is on the page', (_name, Story) => {
+    const { container } = render(<Story />);
+    const scope = container.querySelector(`.${avatarColorsTheme.className}`);
+    expect(scope).not.toBeNull();
+    expect(scope?.querySelectorAll('[data-testid="avatar"]')).toHaveLength(6);
+    const sheet = container.querySelector('style')?.textContent ?? '';
+    expect(sheet).toContain('--color-avatar-fill-1: #BFDBFE');
+    expect(sheet).toContain('--color-avatar-fill-1: #1E40AF');
+  });
+
+  // The stories' colours only show because this theme gives the six pairs six distinct values;
+  // a pair under 4.5:1 would make the story it dresses a contrast failure.
+  it('gives the story theme six pairs that all pass the contrast check', () => {
+    expect(checkThemeContrast(avatarColorsTheme)).toEqual([]);
   });
 });
