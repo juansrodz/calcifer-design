@@ -19,8 +19,8 @@ export interface SegmentedOption {
   badge?: ReactNode;
   /**
    * Hides the label from the eye and keeps it for assistive technology, so the option is named by
-   * its label while `icon` is all that shows. Give such an option an `icon`: with neither, the
-   * option draws nothing.
+   * its label while `icon` is all that shows. It takes effect only on an option that has an
+   * `icon`: with none, the label stays visible rather than leave a blank button.
    */
   hideLabel?: boolean;
   disabled?: boolean;
@@ -75,10 +75,11 @@ function hasContent(node: ReactNode) {
 
 /**
  * The label as the option renders it: the bare text for a default option, a visually hidden span
- * for an icon-only one, and a plain span ahead of a badge so the label and the count are siblings.
+ * for an icon-only one (the label hides only when an icon shows in its place), and a plain span
+ * ahead of a badge so the label and the count are siblings.
  */
 function renderLabel(option: SegmentedOption, hasBadge: boolean): ReactNode {
-  if (option.hideLabel) {
+  if (option.hideLabel && option.icon) {
     return <span className={a11yStyles.visuallyHidden}>{option.label}</span>;
   }
   return hasBadge ? <span>{option.label}</span> : option.label;

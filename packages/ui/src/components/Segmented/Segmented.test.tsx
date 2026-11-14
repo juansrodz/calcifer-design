@@ -585,6 +585,18 @@ describe('Segmented', () => {
       expect(screen.getByRole('button', { name: 'Grid view 3' })).toBeInTheDocument();
     });
 
+    it('leaves the label visible when there is no icon to show instead', () => {
+      render(
+        <Segmented
+          aria-label="View"
+          options={[{ value: 'grid', label: 'Grid view', hideLabel: true }]}
+        />,
+      );
+      const button = screen.getByRole('button', { name: 'Grid view' });
+      expect(button.querySelector(`.${a11yStyles.visuallyHidden}`)).toBeNull();
+      expect(button.textContent).toBe('Grid view');
+    });
+
     it('does not hide the label of an option that does not ask', () => {
       render(<WithIcons />);
       const done = screen.getByRole('button', { name: 'Done' });
@@ -593,20 +605,23 @@ describe('Segmented', () => {
   });
 
   describe('fill', () => {
-    it('is written on the group root, and a default group has none', () => {
-      const { container: fillContainer } = render(<Fill />);
-      expect(fillContainer.firstElementChild?.firstElementChild).toHaveAttribute('data-fill', '');
-      const { container: defaultContainer } = render(<Default />);
-      expect(defaultContainer.firstElementChild).not.toHaveAttribute('data-fill');
+    it('is written on the group root', () => {
+      render(<Fill />);
+      expect(screen.getByRole('group', { name: 'Range' })).toHaveAttribute('data-fill', '');
     });
 
-    it('is off when fill is false', () => {
-      const { container } = render(<Segmented aria-label="Range" options={options} fill={false} />);
-      expect(container.firstElementChild).not.toHaveAttribute('data-fill');
+    it('is absent from a default group', () => {
+      render(<Default />);
+      expect(screen.getByRole('group', { name: 'Range' })).not.toHaveAttribute('data-fill');
+    });
+
+    it('is absent when fill is false', () => {
+      render(<Segmented aria-label="Range" options={options} fill={false} />);
+      expect(screen.getByRole('group', { name: 'Range' })).not.toHaveAttribute('data-fill');
     });
   });
 
-  it('draws the pressed shadow from the consumer hook, which the story sets', () => {
+  it('has the PressedShadow story set the consumer hook on a wrapper around the group', () => {
     const { container } = render(<PressedShadow />);
     expect(container.querySelector('style')?.textContent).toContain(
       '--segmented-pressed-shadow: var(--shadow-soft)',
