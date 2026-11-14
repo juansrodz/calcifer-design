@@ -1017,6 +1017,47 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // The mock centres every close-circle header row, so the row centres its children.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.header \{([^}]*)\}/m,
+    contains: ['display: flex;', 'align-items: center;'],
+    lacks: ['flex-start'],
+  },
+  {
+    // The body pads the focus ring's room and takes it back as a negative margin, so a focused
+    // control at its edge is not clipped by `overflow-y: auto` and the layout does not move.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.body \{([^}]*)\}/m,
+    contains: [
+      '--ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));',
+      '--ring-room-reach: calc(var(--ring-room) * -1);',
+      'margin: var(--ring-room-reach);',
+      'padding: var(--ring-room);',
+      'overflow-y: auto;',
+    ],
+    lacks: [],
+  },
+  {
+    // The sheet pin, one row per rule. The footer's own rule is told apart from the grouped one by
+    // what precedes it: the grouped rule's last selector follows a comma.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\[data-popup='sheet'\] > \.header,\n\[data-popup='sheet'\] > \.description,\n\[data-popup='sheet'\] > \.footer \{([^}]*)\}/m,
+    contains: ['flex: none;'],
+    lacks: ['margin-top', 'min-height'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\[data-popup='sheet'\] > \.body \{([^}]*)\}/m,
+    contains: ['flex: 1 1 auto;', 'min-height: 0;'],
+    lacks: ['flex: none'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /(?<!,\n)^\[data-popup='sheet'\] > \.footer \{([^}]*)\}/m,
+    contains: ['margin-top: auto;'],
+    lacks: ['flex: none'],
+  },
+  {
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.headerEnd \{([^}]*)\}/m,
     contains: ['margin-inline-start: auto;', 'display: flex;', 'gap: var(--space-2);'],

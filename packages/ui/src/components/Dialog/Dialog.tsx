@@ -33,8 +33,8 @@ export interface DialogProps {
   headerStart?: ReactNode;
   /**
    * Controls grouped at the end of the header, before the close control, such as a "More" menu
-   * button. They never take the opening focus: that goes to the close control (see `closeHidden`
-   * for the case with none).
+   * button. On open, focus lands on the close control, except with `closeHidden`, when it goes to
+   * the first tabbable control, which may be a `headerEnd` button.
    */
   headerEnd?: ReactNode;
   /** Sits under the heading and becomes the popup's `aria-describedby` target. */

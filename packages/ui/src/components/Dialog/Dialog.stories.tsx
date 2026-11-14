@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { expect, screen, userEvent, within } from 'storybook/test';
+import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
 import { IconButton } from '../IconButton/IconButton';
@@ -59,7 +59,8 @@ export const KeyboardOpen: Story = {
     canvas.getByRole('button', { name: 'Remove remote' }).focus();
     await userEvent.keyboard('{Enter}');
     const popup = await screen.findByRole('dialog', { name: 'Remove the showcase remote?' });
-    await expect(popup.contains(document.activeElement)).toBe(true);
+    // Base UI moves focus a frame after the popup mounts, so the assertion waits for it.
+    await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
   },
 };
 

@@ -22,9 +22,13 @@
   place-items: center end;
 }
 
+/* The header row centres its children on the cross axis, as the mock's close-circle rows all do: a
+   one-line heading, a `headerStart` tag and the end group (a 44 px "More" button, the 36 px close)
+   share one centre line. A heading that wraps to three lines or more takes the end group to the
+   middle of the block with it; the mock has no such case. */
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
 }
 
@@ -99,9 +103,17 @@ h4.heading {
 }
 
 /* The body is the only part that scrolls: the header and footer stay put, which is what makes a
-   long dialog usable on a short viewport. */
+   long dialog usable on a short viewport. Scrolling clips at the body's padding edge, and a focused
+   control at the body's edge draws its ring (the ring width plus its offset) outside the control, so
+   the body pads that much and takes it back as a negative margin: the ring shows, and the content
+   sits exactly where it did. */
 .body {
+  --ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));
+  --ring-room-reach: calc(var(--ring-room) * -1);
+
   min-height: 0;
+  margin: var(--ring-room-reach);
+  padding: var(--ring-room);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
