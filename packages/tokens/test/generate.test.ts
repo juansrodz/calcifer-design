@@ -153,6 +153,7 @@ describe('tokensToCss', () => {
     expect(css).toContain('--size-drawer: 28rem;');
     expect(css).toContain('--size-control: 44px;');
     expect(css).toContain('--size-control-sm: 2.5rem;');
+    expect(css).toContain('--size-close: 2.25rem;');
   });
 
   it('emits the selected colour roles in both themes', () => {
