@@ -4,8 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { Button } from './Button';
-import type { ButtonSize, ButtonTone } from './Button';
+import type { ButtonSize, ButtonTone, ButtonVariant } from './Button';
 import * as stories from './Button.stories';
+
+// Today's DOM for the two variants that predate the row, captured before the row variant and the
+// icon slots existed. Never edited: they guard "every default leaves today's DOM unchanged".
+const DEFAULT_BUTTON_HTML =
+  '<button type="button" tabindex="0" data-variant="primary" data-size="md" data-tone="accent" class="root"><span class="label">Open projects</span></button>';
+const GHOST_BUTTON_HTML =
+  '<button type="button" tabindex="0" data-variant="ghost" data-size="md" data-tone="accent" class="root"><span class="label">Open projects</span></button>';
 
 const {
   Primary,
@@ -21,6 +28,9 @@ const {
   SelectedSecondary,
   WithBadge,
   Large,
+  Row,
+  RowWithBadge,
+  RowDisabled,
 } = composeStories(stories);
 
 describe('Button', () => {
@@ -38,6 +48,9 @@ describe('Button', () => {
     ['SelectedSecondary', SelectedSecondary],
     ['WithBadge', WithBadge],
     ['Large', Large],
+    ['Row', Row],
+    ['RowWithBadge', RowWithBadge],
+    ['RowDisabled', RowDisabled],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -87,6 +100,7 @@ describe('Button', () => {
   it('types the tones and the sizes', () => {
     expectTypeOf<ButtonTone>().toEqualTypeOf<'accent' | 'inverse' | 'selected'>();
     expectTypeOf<ButtonSize>().toEqualTypeOf<'md' | 'sm' | 'lg'>();
+    expectTypeOf<ButtonVariant>().toEqualTypeOf<'primary' | 'secondary' | 'ghost' | 'row'>();
   });
 
   it('writes the tone as a data attribute', () => {
@@ -181,5 +195,76 @@ describe('Button', () => {
     expect(anchorButton).toHaveTextContent('Go');
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it('leaves the default DOM unchanged by the row variant and the icon slots', () => {
+    const { unmount } = render(<Button>Open projects</Button>);
+    expect(screen.getByRole('button').outerHTML).toBe(DEFAULT_BUTTON_HTML);
+    unmount();
+    render(<Button variant="ghost">Open projects</Button>);
+    expect(screen.getByRole('button').outerHTML).toBe(GHOST_BUTTON_HTML);
+  });
+
+  it('renders a row with its end icon after the label and outside the name', () => {
+    render(<Row />);
+    const button = screen.getByRole('button', { name: 'Change password' });
+    expect(button).toHaveAttribute('data-variant', 'row');
+    expect(Array.from(button.children).map((child) => child.className)).toEqual([
+      'label',
+      'endIcon',
+    ]);
+    expect(button.lastElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(button.lastElementChild?.querySelector('svg')).not.toBeNull();
+  });
+
+  it('puts the end icon after the badge and keeps the count, not the icon, in the name', () => {
+    render(<RowWithBadge />);
+    const button = screen.getByRole('button', { name: 'Sessions 2' });
+    expect(Array.from(button.children).map((child) => child.className)).toEqual([
+      'label',
+      'badge',
+      'endIcon',
+    ]);
+    expect(button.lastElementChild).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('gives every variant the same decorative end icon slot', () => {
+    for (const variant of ['primary', 'secondary', 'ghost'] as const) {
+      const { unmount } = render(
+        <Button variant={variant} endIcon={<svg data-testid="end-glyph" />}>
+          Next
+        </Button>,
+      );
+      const button = screen.getByRole('button', { name: 'Next' });
+      expect(button.lastElementChild).toHaveClass('endIcon');
+      expect(button.lastElementChild).toHaveAttribute('aria-hidden', 'true');
+      expect(screen.getByTestId('end-glyph').parentElement).toBe(button.lastElementChild);
+      unmount();
+    }
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['false', false],
+    ['true', true],
+    ['an empty string', ''],
+  ])('renders no end icon slot when the end icon is %s', (_name, endIcon) => {
+    render(<Button endIcon={endIcon}>Open projects</Button>);
+    expect(screen.getByRole('button').outerHTML).toBe(DEFAULT_BUTTON_HTML);
+  });
+
+  it('calls onClick once when a row is pressed', async () => {
+    const onClick = vi.fn();
+    render(<Row onClick={onClick} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls nothing when a disabled row is pressed', async () => {
+    const onClick = vi.fn();
+    render(<RowDisabled onClick={onClick} />);
+    await userEvent.click(screen.getByRole('button'));
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

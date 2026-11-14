@@ -5,7 +5,12 @@ import { axe } from '../../../test/axe';
 import { LinkButton } from './LinkButton';
 import * as stories from './LinkButton.stories';
 
-const { Primary, Secondary, Ghost, Small, Inverse, Large } = composeStories(stories);
+// Today's DOM for a default link button, captured before the row variant and the end icon
+// existed. Never edited: it guards "every default leaves today's DOM unchanged".
+const DEFAULT_LINK_BUTTON_HTML =
+  '<a href="/projects" class="root" data-variant="primary" data-size="md" data-tone="accent"><span class="label">Open projects</span></a>';
+
+const { Primary, Secondary, Ghost, Small, Inverse, Large, Row } = composeStories(stories);
 
 describe('LinkButton', () => {
   it.each([
@@ -15,6 +20,7 @@ describe('LinkButton', () => {
     ['Small', Small],
     ['Inverse', Inverse],
     ['Large', Large],
+    ['Row', Row],
   ])('%s story renders a link with no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(screen.getByRole('link')).toBeInTheDocument();
@@ -77,5 +83,35 @@ describe('LinkButton', () => {
   it('has no axe violations', async () => {
     const { container } = render(<LinkButton href="/projects">View projects</LinkButton>);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('leaves the default anchor unchanged by the row variant and the end icon', () => {
+    render(<LinkButton href="/projects">Open projects</LinkButton>);
+    expect(screen.getByRole('link').outerHTML).toBe(DEFAULT_LINK_BUTTON_HTML);
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['false', false],
+    ['true', true],
+    ['an empty string', ''],
+  ])('renders no end icon slot when the end icon is %s', (_name, endIcon) => {
+    render(
+      <LinkButton href="/projects" endIcon={endIcon}>
+        Open projects
+      </LinkButton>,
+    );
+    expect(screen.getByRole('link').outerHTML).toBe(DEFAULT_LINK_BUTTON_HTML);
+  });
+
+  it('renders a row link with its decorative end icon last, outside the name', () => {
+    render(<Row />);
+    const link = screen.getByRole('link', { name: 'Change password' });
+    expect(link).toHaveAttribute('data-variant', 'row');
+    expect(link).toHaveClass('root');
+    expect(Array.from(link.children).map((child) => child.className)).toEqual(['label', 'endIcon']);
+    expect(link.lastElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(link.lastElementChild?.querySelector('svg')).not.toBeNull();
   });
 });

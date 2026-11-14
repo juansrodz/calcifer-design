@@ -135,6 +135,8 @@ describe('@calcifer-design/ui dist', () => {
     expect(buttonCss).toBeDefined();
     const css = await readFile(buttonCss ?? '', 'utf8');
     expect(css).toMatch(new RegExp(`\\.${classPrefix}[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\\b`));
+    // The list-row variant (O-21) survives the build, whatever quotes the minifier keeps.
+    expect(css).toMatch(/\[data-variant=['"]?row['"]?\]/);
   });
 
   // R7: the class selectors are read from rule preludes only (the text before each `{` that does

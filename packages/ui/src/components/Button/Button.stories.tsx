@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
+import { ChevronRightIcon } from '../../icons/ChevronRightIcon';
 import { Button } from './Button';
 
 /**
@@ -59,12 +60,21 @@ function PlusIcon() {
   );
 }
 
+/** A row fills the box it sits in, so a story gives it one to fill. */
+const inRowBox = [
+  (Story: () => ReactNode) => (
+    <div style={{ width: '20rem' }}>
+      <Story />
+    </div>
+  ),
+];
+
 const meta = {
   title: 'Primitives/Button',
   component: Button,
   args: { children: 'Open projects', variant: 'primary', size: 'md' },
   argTypes: {
-    variant: { control: 'radio', options: ['primary', 'secondary', 'ghost'] },
+    variant: { control: 'radio', options: ['primary', 'secondary', 'ghost', 'row'] },
     size: { control: 'radio', options: ['md', 'sm', 'lg'] },
     tone: { control: 'radio', options: ['accent', 'inverse', 'selected'] },
   },
@@ -111,6 +121,25 @@ export const Large: Story = {
   },
   decorators: onAccent,
 };
+/**
+ * A list row: full width, start-aligned, quiet at rest and `--color-surface-2` on hover and press.
+ * The chevron is `endIcon`, decorative and outside the accessible name.
+ */
+export const Row: Story = {
+  args: { variant: 'row', endIcon: <ChevronRightIcon />, children: 'Change password' },
+  decorators: inRowBox,
+};
+/** The row's count is `badge`, so it is part of the name ("Sessions 2"); the chevron is not. */
+export const RowWithBadge: Story = {
+  args: {
+    variant: 'row',
+    endIcon: <ChevronRightIcon />,
+    badge: <span>2</span>,
+    children: 'Sessions',
+  },
+  decorators: inRowBox,
+};
+export const RowDisabled: Story = { ...Row, args: { ...Row.args, disabled: true } };
 
 /** Tabs to the button and checks it lands there with a visible focus ring. */
 export const FocusVisible: Story = {

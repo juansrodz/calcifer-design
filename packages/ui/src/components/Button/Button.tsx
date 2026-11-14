@@ -2,7 +2,11 @@ import { Button as BaseButton } from '@base-ui/react/button';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+/**
+ * `row` is a list row: as wide as the box it sits in, start-aligned, with no fill or border at rest
+ * and a quiet surface on hover and press. Pair it with `endIcon` for a trailing chevron.
+ */
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'row';
 export type ButtonSize = 'md' | 'sm' | 'lg';
 /**
  * The colour family a filled button draws from. `accent` is the house look; `inverse` is the
@@ -23,6 +27,11 @@ export interface ButtonProps extends Omit<
    * of the button's accessible name.
    */
   badge?: ReactNode;
+  /**
+   * A decorative glyph after the label (and after the badge), such as a row's chevron. It is hidden
+   * from assistive technology and never part of the accessible name; a count goes in `badge`.
+   */
+  endIcon?: ReactNode;
   /** Shows a busy state, keeps the button focusable, and blocks activation. */
   loading?: boolean;
   className?: string;
@@ -30,9 +39,10 @@ export interface ButtonProps extends Omit<
 
 /**
  * `true`, `false`, `null` and `undefined` render nothing, and `''` renders an empty text node, so
- * none of them may leave an empty badge (or its space) behind.
+ * none of them may leave an empty badge, end icon or space behind. Shared with `LinkButton`; the
+ * barrel does not export it.
  */
-function hasContent(node: ReactNode) {
+export function hasContent(node: ReactNode) {
   return node !== undefined && node !== null && node !== '' && typeof node !== 'boolean';
 }
 
@@ -41,6 +51,7 @@ export function Button({
   size = 'md',
   tone = 'accent',
   badge,
+  endIcon,
   loading = false,
   disabled,
   className,
@@ -75,6 +86,11 @@ export function Button({
           {' '}
           <span className={styles.badge}>{badge}</span>
         </>
+      ) : null}
+      {hasContent(endIcon) ? (
+        <span className={styles.endIcon} aria-hidden="true">
+          {endIcon}
+        </span>
       ) : null}
     </BaseButton>
   );

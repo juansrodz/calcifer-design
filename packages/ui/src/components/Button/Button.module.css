@@ -1,7 +1,7 @@
 /* The mock's three button shapes: a filled pill (primary), a raised bordered rectangle
-   (secondary) and a bare link-coloured text button (ghost). A tone (`data-tone`) recolours the two
-   filled shapes: `accent` is the default look, `inverse` and `selected` read their own colour
-   families. Ghost has no tone rule. */
+   (secondary) and a bare link-coloured text button (ghost), plus a list row (row). A tone
+   (`data-tone`) recolours the two filled shapes: `accent` is the default look, `inverse` and
+   `selected` read their own colour families. Ghost and row have no tone rule. */
 .root {
   display: inline-flex;
   align-items: center;
@@ -67,6 +67,24 @@
   color: var(--color-link);
 }
 
+/* A list row (O-21): as wide as the box it sits in, start-aligned, with no fill or border at rest.
+   It keeps the 44px touch target where R17 lowers `--size-control` for the other variants, whatever
+   the size step, and has no tone rule (as ghost). Its label and end icon rules follow the base
+   `.label` and `.endIcon` rules below. */
+.root[data-variant='row'] {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: start;
+  white-space: normal;
+  min-height: var(--size-touch);
+  padding: var(--space-2) var(--space-3);
+  border-color: transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+}
+
 .root[data-variant='primary'][data-tone='inverse'] {
   background: var(--color-inverse);
   color: var(--color-inverse-text);
@@ -102,10 +120,21 @@
   .root[data-variant='ghost']:hover:not([data-disabled]) {
     text-decoration: underline;
   }
+
+  .root[data-variant='row']:hover:not([data-disabled]) {
+    background: var(--color-surface-2);
+  }
 }
 
 .root:active:not([data-disabled]) {
   transform: scale(0.98);
+}
+
+/* A full-width row that shrank by 2% would move both of its edges, which a pill does not, so the
+   row paints its press and stays put. */
+.root[data-variant='row']:active:not([data-disabled]) {
+  background: var(--color-surface-2);
+  transform: none;
 }
 
 .root[data-disabled] {
@@ -139,6 +168,28 @@
    the gap is the whole of the distance. */
 .badge {
   display: inline-flex;
+}
+
+/* The decorative end slot (`endIcon`): it never shrinks, and sizes the glyph it holds. */
+.endIcon {
+  display: inline-flex;
+  flex: none;
+}
+
+.endIcon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Inside a row the label takes the free width, so the badge and the end icon sit at the row's end,
+   and the end icon reads the muted ink. */
+.root[data-variant='row'] .label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.root[data-variant='row'] .endIcon {
+  color: var(--color-text-muted);
 }
 
 .root[data-loading] .label {

@@ -370,7 +370,9 @@ const expectations: ReadonlyArray<Expectation> = [
       'min-height: var(--size-control-sm);',
       'min-width: var(--size-touch);',
     ],
-    lacks: ['2.5rem', '--radius-md', 'min-height: var(--size-touch);'],
+    // Whole-file: the row variant (O-21) reads `--radius-md` and `--size-touch`, so only the
+    // rule-scoped rows below pin each variant's own radius and floor.
+    lacks: ['2.5rem'],
   },
   {
     file: 'components/Button/Button.module.css',
@@ -877,6 +879,81 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.badge \{([^}]*)\}/m,
     contains: ['display: inline-flex;'],
     lacks: ['margin'],
+  },
+
+  // `Button`'s list-row variant (plan L2, Task 15; O-21, L2-19). A row is as wide as the box it
+  // sits in, start-aligned, with no fill or border at rest, the 44 px touch floor where R17 lowers
+  // `--size-control` for the other variants, and `--color-surface-2` on hover and press. jsdom
+  // loads no CSS, so these rows are where the full width is pinned; Task 14 measures it.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\] \{([^}]*)\}/m,
+    contains: [
+      'display: flex;',
+      'width: 100%;',
+      'justify-content: flex-start;',
+      'text-align: start;',
+      'white-space: normal;',
+      'min-height: var(--size-touch);',
+      'padding: var(--space-2) var(--space-3);',
+      'border-color: transparent;',
+      'border-radius: var(--radius-md);',
+      'background: transparent;',
+      'color: var(--color-text);',
+    ],
+    lacks: ['--size-control', '--radius-control', '--radius-full', '--color-link'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\] \.label \{([^}]*)\}/m,
+    contains: ['flex: 1 1 auto;', 'min-width: 0;'],
+    lacks: [],
+  },
+  {
+    // Hover sits inside the `@media (hover: hover)` block (two-space indent); the press is outside
+    // it, so a touch press paints too, and it also drops the 2 % shrink that would move both edges
+    // of a full-width row.
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root\[data-variant='row'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\]:active:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-2);', 'transform: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      "[data-variant='row']:hover:not([data-disabled])",
+      "[data-variant='row']:active:not([data-disabled])",
+      'var(--color-surface-2)',
+      '.endIcon',
+      'var(--color-text-muted)',
+    ],
+    lacks: [],
+  },
+  {
+    // The end icon is a decorative holder the row's label pushes to the end; it sizes its glyph,
+    // and only the row draws it in the muted ink.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.endIcon \{([^}]*)\}/m,
+    contains: ['display: inline-flex;', 'flex: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.endIcon > svg \{([^}]*)\}/m,
+    contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\] \.endIcon \{([^}]*)\}/m,
+    contains: ['color: var(--color-text-muted);'],
+    lacks: [],
   },
 
   // `IconButton`'s `soft` variant: a quiet fill that reads the surface roles, a hover one step up,
