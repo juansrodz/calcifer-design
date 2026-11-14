@@ -56,6 +56,7 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--avatar-size',
   '--avatar-font-size',
   '--collapsible-heading-size',
+  '--empty-state-heading-size',
 ] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
@@ -122,6 +123,7 @@ describe('@calcifer-design/ui dist', () => {
       'usePortalContainer',
       'Collapsible',
       'TabBar',
+      'EmptyState',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

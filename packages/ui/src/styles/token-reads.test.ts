@@ -966,6 +966,94 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [sansFamily, 'font-size: var(--text-sm);', 'font-weight: var(--font-weight-button);'],
     lacks: [anyWeightLiteral],
   },
+
+  // `EmptyState`'s card. The tone and the alignment are data attributes the component always
+  // writes, so each rule is pinned on its own: a misspelt attribute selector would fall silent.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'display: flex;',
+      'flex-direction: column;',
+      'gap: var(--space-3);',
+      'padding: var(--space-5);',
+      'border-radius: var(--radius-card);',
+      'background: var(--color-surface-raised);',
+      'box-shadow: var(--shadow-soft);',
+      'color: var(--color-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-align='center'\] \{([^}]*)\}/m,
+    contains: ['align-items: center;', 'text-align: center;'],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-align='start'\] \{([^}]*)\}/m,
+    contains: ['align-items: flex-start;', 'text-align: start;'],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
+    lacks: [],
+  },
+  // The picture's slot places nothing itself: a `position` here would make an absolutely
+  // positioned picture spill from the slot's box instead of the card's.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.illustration \{([^}]*)\}/m,
+    contains: ['display: flex;'],
+    lacks: ['position'],
+  },
+  // The headline is the display role at one consumer hook (read, never declared) and the one
+  // library reader of `--leading-display`; it reads no `--tracking-display`, and its tracking is
+  // the house heading's at every level.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.heading \{([^}]*)\}/m,
+    contains: [
+      ...displayRole,
+      'margin: 0;',
+      'font-size: var(--empty-state-heading-size, var(--text-h3));',
+      'letter-spacing: var(--tracking-heading);',
+      'line-height: var(--leading-display);',
+    ],
+    lacks: [anyWeightLiteral, '--tracking-display', '--leading-snug'],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.body \{([^}]*)\}/m,
+    contains: [
+      ...bodyRole,
+      'max-width: 28ch;',
+      'font-size: var(--text-md);',
+      'line-height: var(--leading-prose);',
+    ],
+    lacks: [anyWeightLiteral, 'color:'],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-tone='neutral'\] \.body \{([^}]*)\}/m,
+    contains: ['color: var(--color-text-muted);'],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.actions \{([^}]*)\}/m,
+    contains: [
+      'display: flex;',
+      'flex-wrap: wrap;',
+      'gap: var(--space-2);',
+      'margin-top: var(--space-2);',
+    ],
+    lacks: [],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {

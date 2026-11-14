@@ -1,0 +1,74 @@
+/* A raised card that says a list is empty and what to do about it. `data-tone` and `data-align`
+   are always written. The root is positioned so an illustration may be placed against it and
+   spill over the edge. */
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-soft);
+  color: var(--color-text);
+}
+
+.root[data-align='center'] {
+  align-items: center;
+  text-align: center;
+}
+
+.root[data-align='start'] {
+  align-items: flex-start;
+  text-align: start;
+}
+
+.root[data-tone='selected'] {
+  background: var(--color-selected);
+  color: var(--color-selected-text);
+}
+
+/* The slot is a flex box so an inline picture draws no line-box gap under it. It declares no
+   `position`: an absolutely positioned picture inside it is placed against the root. */
+.illustration {
+  display: flex;
+}
+
+/* The heading is the display role (the four declarations every library heading reads) at the one
+   size hook a consumer may set, `--empty-state-heading-size`, which is read here and never
+   declared. It is the one library reader of `--leading-display`: that token stays off the house
+   headings so none of them moves, and this component is new, so reading it moves nothing. The
+   headline is display type whose two-line box only that leading matches, and the size hook cannot
+   reach `line-height`. `base.css` resets the margin of `h1`–`h3` and tracks them, so `h4` gets
+   both here: the tracking is the house heading's (`--tracking-heading`) at every level, never
+   `--tracking-display`. The colour is the root's. */
+.heading {
+  margin: 0;
+  font-size: var(--empty-state-heading-size, var(--text-h3));
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-display);
+  font-stretch: var(--font-stretch-display);
+  text-transform: var(--text-transform-display);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-display);
+}
+
+/* Under `selected` the body keeps the root's colour, the selected text. */
+.body {
+  max-width: 28ch;
+  font-size: var(--text-md);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+  line-height: var(--leading-prose);
+}
+
+.root[data-tone='neutral'] .body {
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
