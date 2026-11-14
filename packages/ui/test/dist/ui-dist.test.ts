@@ -52,7 +52,15 @@ const UI_INLINE_PROPERTIES = [
 ] as const;
 
 // Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
-const UI_CONSUMER_HOOK_PROPERTIES = ['--icon-button-shadow', '--segmented-pressed-shadow'] as const;
+const UI_CONSUMER_HOOK_PROPERTIES = [
+  '--icon-button-shadow',
+  '--segmented-pressed-shadow',
+  '--dialog-heading-size',
+  '--dialog-heading-tracking',
+  '--dialog-heading-leading',
+  '--sheet-handle-width',
+  '--sheet-handle-height',
+] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
 async function collectComponentSources(directory: string): Promise<string[]> {

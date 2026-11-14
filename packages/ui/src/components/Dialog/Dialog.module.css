@@ -28,16 +28,66 @@
   gap: var(--space-3);
 }
 
+/* The three `--dialog-heading-*` hooks are set by a consumer on the popup or an ancestor and never
+   declared here; each defaults to the step this heading always drew (`--text-h3`, the heading
+   tracking, the snug leading), so a dialog with no hook set looks as it did. */
 .heading {
   flex: 1 1 auto;
   min-width: 0;
   color: var(--color-text);
-  font-size: var(--text-h3);
+  font-size: var(--dialog-heading-size, var(--text-h3));
   font-family: var(--font-display);
   font-weight: var(--font-weight-display);
   font-stretch: var(--font-stretch-display);
   text-transform: var(--text-transform-display);
-  line-height: var(--leading-snug);
+  letter-spacing: var(--dialog-heading-tracking, var(--tracking-heading));
+  line-height: var(--dialog-heading-leading, var(--leading-snug));
+}
+
+/* `base.css` tracks `h1` to `h3` only, so an `h4` heading has always drawn with the browser's
+   `normal` tracking. This keeps it there by default, and still lets the hook move it. */
+h4.heading {
+  letter-spacing: var(--dialog-heading-tracking, normal);
+}
+
+/* The end group: whatever the caller puts in `headerEnd`, then the close control. Its auto start
+   margin holds it at the end even when the heading is visually hidden and so leaves the row's
+   flow. Centred, because a 44 px "More" button and the 36 px close circle share the row. */
+.headerEnd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+/* The close control is drawn as the `--size-close` circle, never a bigger button (O-33, L2-21):
+   `IconButton`'s `sm` floor is 40 px (`--size-control-sm`), and this rule lowers it to 36 px. It
+   carries three classes' worth of weight (`.headerEnd`, `.close`, the attribute) so it beats
+   `.root[data-size='sm']` whichever stylesheet the bundle orders first. */
+.headerEnd > .close[data-variant] {
+  position: relative;
+  min-height: var(--size-close);
+  min-width: var(--size-close);
+}
+
+/* The 44 px pointer target: an invisible box centred on the circle, which grows the hit area to
+   `--size-touch` without changing what is drawn. Centred by percentages rather than a fixed inset
+   so the button's own 1 px border does not push it off by a pixel. */
+.headerEnd > .close[data-variant]::before {
+  content: '';
+  position: absolute;
+  inset: calc(50% - var(--size-touch) / 2);
+}
+
+/* The sheet's grab handle: a bottom sheet's first child, drawn only for that placement. Its size is
+   a consumer hook; the colour is the theme's. */
+.handle {
+  width: var(--sheet-handle-width, 2.5rem);
+  height: var(--sheet-handle-height, 0.3125rem);
+  align-self: center;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--color-sheet-handle);
 }
 
 .description {
@@ -61,4 +111,22 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+/* A sheet pins its footer: the header, the description and the footer keep their size, the body
+   takes the rest and is the only part that scrolls, and the footer rests at the foot of the sheet
+   (a full-height side panel with a short body) rather than under the last line of content. */
+[data-popup='sheet'] > .header,
+[data-popup='sheet'] > .description,
+[data-popup='sheet'] > .footer {
+  flex: none;
+}
+
+[data-popup='sheet'] > .body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+[data-popup='sheet'] > .footer {
+  margin-top: auto;
 }

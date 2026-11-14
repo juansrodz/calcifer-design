@@ -1,7 +1,31 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import { expect, screen, userEvent, within } from 'storybook/test';
 import { Button } from '../Button/Button';
+import { Field } from '../Field/Field';
+import { IconButton } from '../IconButton/IconButton';
+import { Tag } from '../Tag/Tag';
+import { TextInput } from '../TextInput/TextInput';
 import { Dialog } from './Dialog';
+
+/** A three-dot glyph for the header's "More" button; the library ships no such icon. */
+function MoreGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+      <circle cx="3" cy="8" r="1.25" />
+      <circle cx="8" cy="8" r="1.25" />
+      <circle cx="13" cy="8" r="1.25" />
+    </svg>
+  );
+}
+
+/** Enough paragraphs that a sheet's body has to scroll, so the pinned footer is the point. */
+const longBody = Array.from({ length: 24 }, (_unused, index) => (
+  <p key={index}>
+    Line {index + 1}: anyone already on /projects/showcase will get the not-found page until the
+    remote is registered again.
+  </p>
+));
 
 const meta = {
   title: 'Overlays/Dialog',
@@ -37,4 +61,105 @@ export const KeyboardOpen: Story = {
     const popup = await screen.findByRole('dialog', { name: 'Remove the showcase remote?' });
     await expect(popup.contains(document.activeElement)).toBe(true);
   },
+};
+
+/**
+ * The header takes a slot before the heading and a group of controls after it. The soft close sits
+ * beside a soft "More" button; the close stays the 36 px circle (the "More" button is `md`).
+ */
+export const HeaderSlots: Story = {
+  args: {
+    defaultOpen: true,
+    heading: 'Pasta night',
+    headerStart: <Tag>Draft</Tag>,
+    headerEnd: (
+      <IconButton variant="soft" label="More">
+        <MoreGlyph />
+      </IconButton>
+    ),
+    closeVariant: 'soft',
+  },
+};
+
+/** The heading names the dialog for assistive technology but is not drawn. */
+export const HiddenHeading: Story = {
+  args: { defaultOpen: true, headingHidden: true, headerStart: <Tag>Draft</Tag> },
+};
+
+/** A bottom sheet whose body scrolls under a footer that stays pinned to the sheet's foot. */
+export const SheetWithFooter: Story = {
+  args: {
+    variant: 'sheet',
+    defaultOpen: true,
+    children: longBody,
+    footer: <Button>Register the remote</Button>,
+  },
+};
+
+/** The same pinned footer in a full-height panel on the trailing edge. */
+export const SideSheetWithFooter: Story = {
+  args: {
+    variant: 'sheet',
+    side: 'end',
+    defaultOpen: true,
+    children: longBody,
+    footer: <Button>Register the remote</Button>,
+  },
+};
+
+/**
+ * A sheet with no header close: the footer's "Cancel" is the visible way out, and Escape and the
+ * scrim still close it. Focus opens on the text field, the first tabbable control.
+ */
+export const HiddenClose: Story = {
+  args: {
+    variant: 'sheet',
+    closeHidden: true,
+    heading: 'Rename the remote',
+    description: undefined,
+  },
+  render: function HiddenCloseRender(args) {
+    const [open, setOpen] = useState(false);
+    return (
+      <Dialog
+        {...args}
+        open={open}
+        onOpenChange={(nextOpen) => setOpen(nextOpen)}
+        footer={
+          <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        }
+      >
+        <Field label="Name">
+          <TextInput defaultValue="Showcase" />
+        </Field>
+      </Dialog>
+    );
+  },
+};
+
+/**
+ * A consumer restyles the heading and the sheet's grab handle through five custom properties set
+ * on the popup or an ancestor. The popup portals out of the story's own tree, so the story
+ * stylesheet reaches it by its `data-popup` attribute rather than by a wrapper class.
+ */
+export const HeadingHooks: Story = {
+  args: { variant: 'sheet', defaultOpen: true },
+  decorators: [
+    (Story) => (
+      <>
+        <style>
+          {`[data-popup='sheet'] {
+  --dialog-heading-size: var(--text-h2);
+  --dialog-heading-tracking: var(--tracking-display);
+  --dialog-heading-leading: var(--leading-display);
+  --sheet-handle-width: 2.75rem;
+  --sheet-handle-height: 0.25rem;
+}`}
+        </style>
+        <Story />
+      </>
+    ),
+  ],
 };

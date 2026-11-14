@@ -960,6 +960,80 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: ['--segmented-pressed-shadow'],
   },
+
+  // `Dialog`'s header slots, pinned sheet footer, grab handle and heading hooks (contract §2.2,
+  // L2-17, L2-21 / O-33): the close is drawn at the `--size-close` circle by a three-class rule that
+  // beats `IconButton`'s `.root[data-size='sm']`, and a `::before` grows its pointer target to
+  // `--size-touch` without changing the drawn size.
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    contains: [
+      'margin-top: auto',
+      'flex: 1 1 auto',
+      'var(--color-sheet-handle)',
+      'var(--dialog-heading-size, var(--text-h3))',
+      'var(--dialog-heading-tracking, var(--tracking-heading))',
+      'var(--dialog-heading-leading, var(--leading-snug))',
+      'h4.heading',
+      'var(--sheet-handle-width, 2.5rem)',
+      'var(--size-close)',
+      '.headerEnd > .close[data-variant]',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.headerEnd > \.close\[data-variant\] \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'min-height: var(--size-close);',
+      'min-width: var(--size-close);',
+    ],
+    lacks: ['--size-touch'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.headerEnd > \.close\[data-variant\]::before \{([^}]*)\}/m,
+    contains: ["content: '';", 'position: absolute;', 'inset: calc(50% - var(--size-touch) / 2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.headerEnd \{([^}]*)\}/m,
+    contains: ['margin-inline-start: auto;', 'display: flex;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.handle \{([^}]*)\}/m,
+    contains: [
+      'width: var(--sheet-handle-width, 2.5rem);',
+      'height: var(--sheet-handle-height, 0.3125rem);',
+      'align-self: center;',
+      'flex: none;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-sheet-handle);',
+    ],
+    lacks: [],
+  },
+  {
+    // `base.css` tracks `h1` to `h3` only, so an `h4` heading keeps the browser's `normal`; the hook
+    // still moves it (the default of the hook on `h4.heading` is `normal`, not the heading tracking).
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^h4\.heading \{([^}]*)\}/m,
+    contains: ['letter-spacing: var(--dialog-heading-tracking, normal);'],
+    lacks: ['--tracking-heading'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.heading \{([^}]*)\}/m,
+    contains: [
+      'font-size: var(--dialog-heading-size, var(--text-h3));',
+      'letter-spacing: var(--dialog-heading-tracking, var(--tracking-heading));',
+      'line-height: var(--dialog-heading-leading, var(--leading-snug));',
+    ],
+    lacks: [],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {
