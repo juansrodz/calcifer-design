@@ -1,0 +1,76 @@
+/* The overlap is declared as a local property because `calc(-1 * var(--space-2))` is not a value
+   the token lint accepts as a `margin` declaration, but it is as a custom property's. The
+   chip's height comes from `--avatar-group-size`, which each `data-size` sets to the same box
+   `Avatar`'s preset for that size draws, so the chip is as tall as the avatars beside it. */
+.list {
+  --avatar-group-overlap: calc(-1 * var(--space-2));
+
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list[data-size='xs'] {
+  --avatar-group-size: 1.5rem;
+}
+
+.list[data-size='sm'] {
+  --avatar-group-size: 1.75rem;
+}
+
+.list[data-size='md'] {
+  --avatar-group-size: 2.5rem;
+}
+
+.list[data-size='lg'] {
+  --avatar-group-size: 4rem;
+}
+
+.list[data-size='xl'] {
+  --avatar-group-size: 6rem;
+}
+
+/* A flex box, so the inline-level avatar inside does not sit on a line box's baseline and leave a
+   gap under itself. Each item after the first tucks under the one before it. */
+.item {
+  display: flex;
+  flex: none;
+}
+
+.item + .item {
+  margin-inline-start: var(--avatar-group-overlap);
+}
+
+/* The ring is the ground colour, so where two avatars overlap, the later one is cut from the
+   earlier one by a band of the page. It is a shadow, outside the avatar's own box, which the
+   avatar's `overflow: hidden` does not clip. */
+.ring {
+  box-shadow: 0 0 0 var(--border-width-emphasis) var(--color-avatar-ring);
+}
+
+/* A circle for one digit and a pill for more: never narrower than the avatars are, and the
+   padding keeps a longer count off the edge. The same ring as the avatars, over the chip's own
+   shadow; the pair is one local property because a two-shadow value is not one the token lint
+   accepts as a `box-shadow` declaration. */
+.overflow {
+  --avatar-group-chip-shadow:
+    0 0 0 var(--border-width-emphasis) var(--color-avatar-ring), var(--shadow-chip);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--avatar-group-size);
+  height: var(--avatar-group-size);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  box-shadow: var(--avatar-group-chip-shadow);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-heading);
+  line-height: var(--leading-tight);
+  user-select: none;
+}

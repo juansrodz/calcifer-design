@@ -147,3 +147,5 @@ export { TabBar } from './components/TabBar/TabBar';
 export type { TabBarProps, TabBarItem } from './components/TabBar/TabBar';
 export { EmptyState } from './components/EmptyState/EmptyState';
 export type { EmptyStateProps } from './components/EmptyState/EmptyState';
+export { AvatarGroup } from './components/AvatarGroup/AvatarGroup';
+export type { AvatarGroupProps, AvatarGroupItem } from './components/AvatarGroup/AvatarGroup';

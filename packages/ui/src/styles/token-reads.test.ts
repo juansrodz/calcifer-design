@@ -45,6 +45,10 @@ const bodyRole = [
 
 const sansFamily = 'font-family: var(--font-sans);';
 
+// The band `AvatarGroup` draws around each avatar and around its overflow chip: the one value both
+// rules are pinned to, so a ring on one and not the other cannot pass.
+const avatarGroupRing = '0 0 0 var(--border-width-emphasis) var(--color-avatar-ring)';
+
 const expectations: ReadonlyArray<Expectation> = [
   // Whole-file rows: every weight in these files is a token now.
   {
@@ -1079,7 +1083,81 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['justify-content: center;'],
     lacks: [],
   },
+
+  // `AvatarGroup`'s overlap and its ring. The overlap is a local property, because a `calc` of a
+  // token is not a value the token lint accepts as a `margin` declaration, and the avatars after
+  // the first read it. The ring is the ground colour, so where two avatars overlap a band of the
+  // page cuts the later one from the earlier one.
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.list \{([^}]*)\}/m,
+    contains: [
+      '--avatar-group-overlap: calc(-1 * var(--space-2));',
+      'display: flex;',
+      'list-style: none;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.item \+ \.item \{([^}]*)\}/m,
+    contains: ['margin-inline-start: var(--avatar-group-overlap);'],
+    lacks: [],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.ring \{([^}]*)\}/m,
+    contains: [`box-shadow: ${avatarGroupRing};`],
+    lacks: [],
+  },
+  // The chip: a pill as tall as the avatars beside it (`--avatar-group-size`, which the size test
+  // at the end of the file keeps equal to `Avatar`'s preset), on the raised-neutral fill with the
+  // muted ink, ringed as the avatars are and over the chip shadow. The two shadows are one local
+  // property, because a two-shadow value is not one the token lint accepts as a `box-shadow`
+  // declaration.
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.overflow \{([^}]*)\}/m,
+    contains: [
+      `${avatarGroupRing}, var(--shadow-chip);`,
+      'box-shadow: var(--avatar-group-chip-shadow);',
+      'min-width: var(--avatar-group-size);',
+      'height: var(--avatar-group-size);',
+      'padding-inline: var(--space-1);',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-3);',
+      'color: var(--color-text-muted);',
+      sansFamily,
+      'font-size: var(--text-2xs);',
+      'font-weight: var(--font-weight-heading);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
 ];
+
+// The chip's height is `--avatar-group-size`, and each `data-size` on the list must set it to the
+// box `Avatar` draws for that size, or the chip is taller or shorter than the avatars beside it.
+// Both stylesheets declare one `[data-size='…'] { --name: value; }` rule per size; this reads the
+// two sets and requires them equal, so a size added to `Avatar` and not to the group (or a preset
+// changed in one place) fails here instead of drawing a chip that does not match.
+function sizeDeclarations(file: string, property: string): Record<string, string> {
+  const contents = readFileSync(join(sourceRoot, file), 'utf-8');
+  const byRule: Record<string, string> = {};
+  for (const rule of contents.matchAll(/\[data-size='(\w+)'\] \{([^}]*)\}/g)) {
+    const [, size, body] = rule;
+    const value = body?.match(new RegExp(`${property}: ([^;]+);`))?.[1];
+    if (size !== undefined && value !== undefined) {
+      byRule[size] = value;
+    }
+  }
+  return byRule;
+}
 
 describe('the theme tokens the component CSS reads', () => {
   for (const { file, rule, contains, lacks } of expectations) {
@@ -1104,4 +1182,20 @@ describe('the theme tokens the component CSS reads', () => {
       }
     });
   }
+});
+
+describe('AvatarGroup’s chip height', () => {
+  it('equals Avatar’s preset at every size', () => {
+    const avatarPresets = sizeDeclarations(
+      'components/Avatar/Avatar.module.css',
+      '--avatar-preset',
+    );
+    const groupSizes = sizeDeclarations(
+      'components/AvatarGroup/AvatarGroup.module.css',
+      '--avatar-group-size',
+    );
+    // An empty read on both sides would pass the equality below, so the presets must be found.
+    expect(Object.keys(avatarPresets).length).toBeGreaterThan(0);
+    expect(groupSizes).toEqual(avatarPresets);
+  });
 });
