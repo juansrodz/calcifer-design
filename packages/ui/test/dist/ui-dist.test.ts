@@ -124,6 +124,7 @@ describe('@calcifer-design/ui dist', () => {
       'createDataGridColumnHelper',
       'ThemeScope',
       'usePortalContainer',
+      'SearchField',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

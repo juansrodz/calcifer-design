@@ -139,3 +139,5 @@ export { usePortalContainer } from './components/ThemeScope/PortalContainerConte
 export type { ThemeScopeProps, ThemeMode } from './components/ThemeScope/ThemeScope';
 export type { PortalContainer } from './components/ThemeScope/PortalContainerContext';
 export type { ButtonTone } from './components/Button/Button';
+export { SearchField } from './components/SearchField/SearchField';
+export type { SearchFieldProps } from './components/SearchField/SearchField';

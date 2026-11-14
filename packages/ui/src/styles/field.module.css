@@ -156,6 +156,59 @@
   opacity: 0.55;
 }
 
+/* The affix: a control that is a wrapper rather than the input itself, so a glyph or a button can
+   sit beside the text. The wrapper wears `.control` (the border, the radius, the surface, the
+   floor) together with `.affix`, and the input inside it wears `.affixInput`: borderless,
+   transparent and stretched across what the decorations leave. `SearchField` is the first
+   wearer; `TextInput` and `TimePicker` wear the same pieces when they are given a leading icon.
+
+   `.affix` adds only `gap`, which `.control` does not declare. A wearer that must change the
+   padding or the floor does it under a two-class selector of its own, for the reason in this
+   file's header: a second single-class rule would tie with `.control`. */
+.affix {
+  gap: var(--space-2);
+}
+
+/* The wrapper takes the input's focus, so the ring is drawn once, around the pill, and the input
+   draws none (`.affixInput:focus-visible` below). The accent border is `.control:focus-visible`'s,
+   which a wrapper that is never itself focused cannot match. */
+.affix:has(> .affixInput:focus-visible) {
+  border-color: var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.affixInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* `base.css` draws a ring on every `:focus-visible`, and a bare `.affixInput` would tie with it on
+   specificity, leaving the winner to the consumer's bundle order. The pseudo-class here makes
+   this rule the stronger one whatever the order, so the input never rings inside its own pill. */
+.affixInput:focus-visible {
+  outline: none;
+}
+
+/* The input has no `.control` to give it this colour. */
+.affixInput::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.affixIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.affixIcon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 /* The small control surface a checkbox's box and a radio's dot share: the same input
    background, the same strong border, the same accent fill once checked, the same danger
    border when the field is invalid and the same dimming when it is disabled. `.control` above

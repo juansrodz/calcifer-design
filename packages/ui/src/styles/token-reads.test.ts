@@ -1257,6 +1257,115 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+
+  // The affix pieces (`field.module.css`, PF-9): a wrapper that wears `.control` plus `.affix`, an
+  // input that wears `.affixInput`, a glyph that wears `.affixIcon`. One ring, drawn on the wrapper
+  // and never on the input; one placeholder colour, because the input has no `.control` to give it.
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix \{([^}]*)\}/m,
+    contains: ['gap: var(--space-2);'],
+    // The padding and the floor stay `.control`'s: a single-class re-declaration would tie with it.
+    lacks: ['padding', 'min-height'],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix:has\(> \.affixInput:focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      'border-color: var(--color-accent);',
+      'outline: var(--focus-ring-width) solid var(--color-focus);',
+      'outline-offset: var(--focus-ring-offset);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput \{([^}]*)\}/m,
+    contains: [
+      'flex: 1;',
+      'min-width: 0;',
+      'padding: 0;',
+      'border: 0;',
+      'background: transparent;',
+    ],
+    lacks: ['outline'],
+  },
+  {
+    // Two classes' worth of weight over `base.css`'s `:focus-visible` ring, whatever the bundle order.
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput:focus-visible \{([^}]*)\}/m,
+    contains: ['outline: none;'],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput::placeholder \{([^}]*)\}/m,
+    contains: ['color: var(--color-text-subtle);'],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixIcon \{([^}]*)\}/m,
+    contains: ['display: inline-flex;', 'flex: none;', 'color: var(--color-text-muted);'],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixIcon > svg \{([^}]*)\}/m,
+    contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+
+  // `SearchField` (L2-8, PF-8): the pill is one height with or without the clear control. Its
+  // padding-block is zero, so the `--size-touch` floor alone sets it (`.control`'s); the clear
+  // control is drawn at `--size-close` rather than a 40 px `IconButton` floor, and the 44 px hit
+  // area is an absolutely positioned `::before` that adds nothing to the layout.
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root \.box \{([^}]*)\}/m,
+    contains: ['padding-block: 0;', 'padding-inline: var(--space-4) var(--space-1);'],
+    lacks: ['min-height', 'gap'],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root\[data-size='sm'\] \.box \{([^}]*)\}/m,
+    contains: ['min-height: var(--size-control-sm);'],
+    lacks: ['padding'],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root \.clear\[data-size\] \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'min-height: var(--size-close);',
+      'min-width: var(--size-close);',
+    ],
+    lacks: ['--size-touch', '--size-control'],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root \.clear\[data-size\]::before \{([^}]*)\}/m,
+    contains: ["content: '';", 'position: absolute;', 'inset: calc(50% - var(--size-touch) / 2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.input \{([^}]*)\}/m,
+    contains: ['appearance: none;', ...bodyRole],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.input::-webkit-search-cancel-button \{([^}]*)\}/m,
+    contains: ['appearance: none;'],
+    lacks: [],
+  },
+  {
+    // No bare `.box` rule: every declaration the box adds sits under `.root`, out-ranking `.control`.
+    file: 'components/SearchField/SearchField.module.css',
+    contains: [],
+    lacks: [/^\.box\b/m],
+  },
 ];
 
 describe('the theme tokens the component CSS reads', () => {
