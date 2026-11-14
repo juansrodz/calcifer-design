@@ -134,11 +134,11 @@
   display: inline-block;
 }
 
-/* A count after the label. The component renders the space between them, so the margin is the
-   only gap this adds. */
+/* A count after the label, set apart from it by the button's own `gap`. The component renders a
+   space between the two for the accessible name; whitespace between flex items is not painted, so
+   the gap is the whole of the distance. */
 .badge {
   display: inline-flex;
-  margin-inline-start: var(--space-1);
 }
 
 .root[data-loading] .label {

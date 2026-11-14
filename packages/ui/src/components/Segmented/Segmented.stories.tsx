@@ -67,14 +67,17 @@ export const WithIcons: Story = {
   },
 };
 /**
- * A count after the label: a plain number on Going, a pill on Requests. The badge is part of the
- * option's accessible name ("Requests 2").
+ * A count after the label: a plain number on Going, an accent pill on Requests (the chosen option,
+ * where the pill is drawn as the option's inverse), a neutral pill on Maybe. The badge is part of
+ * the option's accessible name ("Requests 2").
  */
 export const WithBadges: Story = {
   args: {
+    defaultValue: 'requests',
     options: [
       { value: 'going', label: 'Going', badge: 12 },
       { value: 'requests', label: 'Requests', badge: <Tag tone="accent">2</Tag> },
+      { value: 'maybe', label: 'Maybe', badge: <Tag>5</Tag> },
       { value: 'declined', label: 'Declined' },
     ],
   },

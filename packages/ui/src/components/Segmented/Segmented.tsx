@@ -14,7 +14,10 @@ export interface SegmentedOption {
   icon?: ReactNode;
   /**
    * A count or short status shown after the label, such as the `2` in "Requests 2". It is part of
-   * the option's accessible name, and pressing it chooses the option.
+   * the option's accessible name, and pressing it chooses the option. In the chosen option it sits
+   * on `--color-selected`: a bare count keeps the option's text colour, and a pill made from the
+   * surface, accent-wash, border and text tokens (a `Tag`) is drawn as the option's inverse. A
+   * badge painted any other way is the consumer's to keep legible on that fill.
    */
   badge?: ReactNode;
   /**
@@ -41,7 +44,11 @@ interface SegmentedBaseProps {
    */
   onValueChange?: (value: string) => void;
   size?: 'sm' | 'md';
-  /** Stretches the group across its row and shares the row equally between the options. */
+  /**
+   * Stretches the group across its row and shares the row equally between the options. The options
+   * stay on that one row, so it suits a few short ones; without `fill`, many or long options wrap
+   * to a second row instead.
+   */
   fill?: boolean;
 }
 

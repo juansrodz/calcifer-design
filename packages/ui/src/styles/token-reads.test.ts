@@ -663,9 +663,11 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
+    // No read of the accent pair. The chosen option's badge re-declares `--color-accent-soft` and
+    // `--color-border-accent` for a nested pill (row below), which is a declaration, not a read.
     file: 'components/Segmented/Segmented.module.css',
     contains: [],
-    lacks: ['--color-accent'],
+    lacks: [/var\(--color-accent/],
   },
   {
     // The track and its border: the defaults are the neutrals they replace, and the width stays
@@ -870,10 +872,11 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [anyWeightLiteral, 'var(--font-sans)'],
   },
   {
+    // The label-to-count distance is the button's own `gap`; the badge adds no margin of its own.
     file: 'components/Button/Button.module.css',
     rule: /^\.badge \{([^}]*)\}/m,
-    contains: ['display: inline-flex;', 'margin-inline-start: var(--space-1);'],
-    lacks: [],
+    contains: ['display: inline-flex;'],
+    lacks: ['margin'],
   },
 
   // `IconButton`'s `soft` variant: a quiet fill that reads the surface roles, a hover one step up,
@@ -930,9 +933,25 @@ const expectations: ReadonlyArray<Expectation> = [
   // `Segmented`'s badge slot (contract §2.2, styled as `Button`'s badge), the full-width group
   // (L2-17) and the one consumer hook on the chosen option, `--segmented-pressed-shadow`.
   {
+    // As on `Button`: the option's `gap` spaces the count from the label, the badge adds no margin.
     file: 'components/Segmented/Segmented.module.css',
     rule: /^\.badge \{([^}]*)\}/m,
-    contains: ['display: inline-flex;', 'margin-inline-start: var(--space-1);'],
+    contains: ['display: inline-flex;'],
+    lacks: ['margin'],
+  },
+  {
+    // A pill in the chosen option is drawn as the option's inverse: every token a `Tag` reads is
+    // re-pointed to the selected pair, so it stays legible on `--color-selected`.
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-pressed\] \.badge \{([^}]*)\}/m,
+    contains: [
+      '--color-surface-2: var(--color-selected-text);',
+      '--color-accent-soft: var(--color-selected-text);',
+      '--color-border: transparent;',
+      '--color-border-accent: transparent;',
+      '--color-text: var(--color-selected);',
+      '--color-text-muted: var(--color-selected);',
+    ],
     lacks: [],
   },
   {

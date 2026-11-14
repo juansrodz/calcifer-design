@@ -545,9 +545,10 @@ describe('Segmented', () => {
     it('chooses the option when the badge is pressed', async () => {
       const onValueChange = fn();
       render(<WithBadges onValueChange={onValueChange} />);
-      await userEvent.click(screen.getByText('2'));
-      expect(onValueChange).toHaveBeenCalledWith('requests');
       expect(screen.getByRole('button', { name: 'Requests 2' })).toHaveAttribute('data-pressed');
+      await userEvent.click(screen.getByText('12'));
+      expect(onValueChange).toHaveBeenCalledWith('going');
+      expect(screen.getByRole('button', { name: 'Going 12' })).toHaveAttribute('data-pressed');
     });
   });
 
