@@ -51,6 +51,9 @@ const UI_INLINE_PROPERTIES = [
   '--card-list-min-column',
 ] as const;
 
+// Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
+const UI_CONSUMER_HOOK_PROPERTIES = ['--avatar-size', '--avatar-font-size'] as const;
+
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
 async function collectComponentSources(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { recursive: true });
@@ -74,6 +77,7 @@ describe('@calcifer-design/ui dist', () => {
       'IconButton',
       'Alert',
       'Avatar',
+      'avatarColorIndex',
       'ErrorBoundary',
       'Popover',
       'Dialog',
@@ -115,6 +119,13 @@ describe('@calcifer-design/ui dist', () => {
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
+  });
+
+  // `AVATAR_COLOR_COUNT` is a number, so the function list above cannot hold it. Six is the count
+  // the theme's `avatarFill1` to `avatarFill6` roles define, and `avatarColorIndex` is modulo it.
+  it('exports the avatar colour count from dist/index.js', async () => {
+    const uiModule = (await import(path.join(distRoot, 'index.js'))) as Record<string, unknown>;
+    expect(uiModule['AVATAR_COLOR_COUNT']).toBe(6);
   });
 
   it('emits per-component stylesheets with the hashed class-name pattern', async () => {
@@ -262,9 +273,9 @@ describe('@calcifer-design/ui dist', () => {
 
   // A `var(--name)` the package never declares resolves to nothing at runtime and fails silently
   // (`--radius-contorl` would). `defined` is every name the tokens' generated sheet declares, every
-  // name any shipped stylesheet declares, and the two lists above. The guard keeps an empty scan
+  // name any shipped stylesheet declares, and the three lists above. The guard keeps an empty scan
   // (a moved dist folder) from passing.
-  it('reads no custom property that the package never declares', async () => {
+  async function readDistCss(): Promise<{ allDistCss: string; defined: Set<string> }> {
     const cssFiles = await collectCssFiles(distRoot);
     expect(cssFiles.length).toBeGreaterThan(5);
     const allDistCss = (await Promise.all(cssFiles.map((file) => readFile(file, 'utf8')))).join(
@@ -275,9 +286,27 @@ describe('@calcifer-design/ui dist', () => {
       ...customPropertyNamesOf(allDistCss),
       ...BASE_UI_RUNTIME_PROPERTIES,
       ...UI_INLINE_PROPERTIES,
+      ...UI_CONSUMER_HOOK_PROPERTIES,
     ]);
+    return { allDistCss, defined };
+  }
+
+  it('reads no custom property that the package never declares', async () => {
+    const { allDistCss, defined } = await readDistCss();
     expect(allDistCss).toContain('var(--');
     expect(findUnknownCustomProperties(allDistCss, defined)).toEqual([]);
+  });
+
+  // The hooks are allowed by name, not by pattern: a misspelt one (`--avatar-sise`) is still an
+  // unknown read, so the allow-list cannot hide the typo it exists to catch.
+  it('allows each consumer hook by name and still catches a misspelt one', async () => {
+    const { defined } = await readDistCss();
+    for (const hook of UI_CONSUMER_HOOK_PROPERTIES) {
+      expect(defined.has(hook), hook).toBe(true);
+    }
+    expect(
+      findUnknownCustomProperties('.probe { inline-size: var(--avatar-sise); }', defined),
+    ).toEqual(['--avatar-sise']);
   });
 
   // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would

@@ -138,3 +138,6 @@ export { ThemeScope } from './components/ThemeScope/ThemeScope';
 export { usePortalContainer } from './components/ThemeScope/PortalContainerContext';
 export type { ThemeScopeProps, ThemeMode } from './components/ThemeScope/ThemeScope';
 export type { PortalContainer } from './components/ThemeScope/PortalContainerContext';
+export { avatarColorIndex, AVATAR_COLOR_COUNT } from './components/Avatar/avatarColor';
+export type { AvatarColorIndex } from './components/Avatar/avatarColor';
+export type { AvatarSize } from './components/Avatar/Avatar';
