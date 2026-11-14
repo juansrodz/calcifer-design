@@ -415,8 +415,38 @@ describe('Button', () => {
     expect(button).toHaveAttribute('data-disabled');
     expect(button).toHaveAttribute('aria-busy', 'true');
     expect(button).toHaveAttribute('aria-disabled', 'true');
+    // It shows what a disabled button shows: the icon, no spinner.
+    expect(Array.from(button.children).map((child) => child.className)).toEqual(['icon', 'label']);
+    expect(button.firstElementChild?.querySelector('svg')).not.toBeNull();
+    expect(within(button).queryByTestId('spinner')).toBeNull();
+    // Focusable, as `loading` with `disabled` is: the house behaviour for a busy button.
+    expect(button).not.toHaveAttribute('disabled');
+    await userEvent.tab();
+    expect(button).toHaveFocus();
     await userEvent.click(button);
+    await userEvent.keyboard('{Enter}');
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('renders a disabled pending button with no icon exactly as a disabled one, label and all', () => {
+    const { unmount } = render(<PendingNoIcon disabled />);
+    const pendingButton = screen.getByRole('button', { name: 'Sign in' });
+    // No overlay (it would have nothing to anchor to, `position: relative` riding on
+    // `data-pending`) and no spinner: the label is the only child, and it is the idle label.
+    expect(Array.from(pendingButton.children).map((child) => child.className)).toEqual(['label']);
+    expect(pendingButton.firstElementChild?.textContent).toBe('Sign in');
+    expect(within(pendingButton).queryByTestId('spinner')).toBeNull();
+    expect(pendingButton).not.toHaveAttribute('data-pending');
+    expect(pendingButton).toHaveAttribute('aria-busy', 'true');
+    expect(pendingButton).toHaveAttribute('aria-disabled', 'true');
+    const pendingChildren = Array.from(pendingButton.children).map((child) => child.outerHTML);
+    unmount();
+    // The same children as the disabled button alone: the busy state is the only difference.
+    render(<Button disabled>Sign in</Button>);
+    const disabledButton = screen.getByRole('button', { name: 'Sign in' });
+    expect(Array.from(disabledButton.children).map((child) => child.outerHTML)).toEqual(
+      pendingChildren,
+    );
   });
 
   it('writes no pending marker or busy state when pending is false', () => {

@@ -1001,6 +1001,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'display: flex;',
       'align-items: center;',
       'justify-content: center;',
+      'pointer-events: none;',
     ],
     lacks: [],
   },

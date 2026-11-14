@@ -201,13 +201,16 @@
   --color-accent: currentcolor;
 }
 
-/* With no leading icon a pending button lays its spinner over the label's box. */
+/* With no leading icon a pending button lays its spinner over the label's box. The overlay is
+   only rendered beside `data-pending`, which supplies the `position: relative` it anchors to; it
+   takes no pointer events either, so a press always lands on the button. */
 .pendingOverlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
 .root[data-variant='primary'] .pendingOverlay {

@@ -46,7 +46,8 @@ export interface ButtonProps extends Omit<
   /**
    * Shows a spinner in place of the leading icon and keeps the label, so the accessible name never
    * changes. Sets `aria-busy` and `aria-disabled` and blocks activation, while the button stays
-   * focusable, so focus never drops to the page.
+   * focusable, so focus never drops to the page. A button that is also `disabled` keeps the
+   * disabled look, with its icon and label as they are and no spinner.
    */
   pending?: boolean;
   className?: string;
@@ -77,6 +78,10 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const isBusy = loading || pending;
+  // The pending look (the spinner, the hidden label, the full-strength paint) belongs to a button
+  // that is merely busy. One the caller disabled keeps the disabled look, so the two never mix: a
+  // spinner over a dimmed button, or an overlay with nothing to anchor it, would both misread.
+  const showsPending = pending && !disabled;
   // Base UI's Button defaults `nativeButton` to `true`, which assumes the `render` prop
   // (when given) still produces a native `<button>`. Most consumers use `render` to swap
   // in a non-button element (e.g. a router `Link`, which renders an `<a>`), so default to
@@ -84,15 +89,16 @@ export function Button({
   const isNativeButton = nativeButton ?? !rest.render;
   // The leading slot: the icon, or the spinner standing in for it while pending. With no icon a
   // pending button lays the spinner over the label's box instead, and the label stays in the flow
-  // (hidden by the stylesheet, never removed) so the name and the width do not change.
+  // (hidden by the stylesheet, never removed) so the name and the width do not change. A disabled
+  // button shows its icon, or nothing, whatever `pending` says.
   let leading: ReactNode = null;
   if (hasContent(startIcon)) {
     leading = (
       <span className={styles.icon} aria-hidden="true">
-        {pending ? <Spinner size="sm" /> : startIcon}
+        {showsPending ? <Spinner size="sm" /> : startIcon}
       </span>
     );
-  } else if (pending) {
+  } else if (showsPending) {
     leading = (
       <span className={styles.pendingOverlay} aria-hidden="true">
         <Spinner size="sm" />
@@ -108,9 +114,9 @@ export function Button({
       data-size={size}
       data-tone={tone}
       data-loading={loading ? '' : undefined}
-      // A button the caller disabled keeps the disabled look: `data-pending` lifts the dimming so a
-      // spinner reads at full strength, which only a button that is merely busy should get.
-      data-pending={pending && !disabled ? '' : undefined}
+      // `data-pending` lifts the disabled dimming so the spinner reads at full strength, which only
+      // a button that is merely busy should get.
+      data-pending={showsPending ? '' : undefined}
       disabled={Boolean(disabled) || isBusy}
       focusableWhenDisabled={isBusy}
       aria-busy={isBusy || undefined}
