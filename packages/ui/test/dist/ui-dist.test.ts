@@ -125,6 +125,7 @@ describe('@calcifer-design/ui dist', () => {
       'TabBar',
       'EmptyState',
       'AvatarGroup',
+      'ChoiceCard',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

@@ -1,0 +1,130 @@
+/* The grid is `minmax(0, 1fr)` so a long word in one card cannot widen its column past the
+   container. The column count is a local property set per `data-columns`, because the
+   `repeat()` count is not something the token lint reads as a value. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--choice-card-columns), minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.grid[data-columns='1'] {
+  --choice-card-columns: 1;
+}
+
+.grid[data-columns='2'] {
+  --choice-card-columns: 2;
+}
+
+/* The card is the `<label>`, so the whole of it is the press target. The card's outline and the
+   ring's hollow circle are inset shadows held in local properties: a `box-shadow` value that
+   starts with `inset` is not one the token lint accepts as a declaration, but it is as a custom
+   property's (the AvatarGroup route). The checked card re-points the outline; the checked ring
+   re-points its own circle. */
+.card {
+  --choice-card-ring: inset 0 0 0 1px var(--color-border-strong);
+  --choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);
+  --choice-card-ring-clearance: calc(1.125rem + var(--space-2));
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-raised);
+  box-shadow: var(--choice-card-ring);
+  color: var(--color-text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.card[data-checked] {
+  --choice-card-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-selected);
+
+  background: var(--color-selected-soft);
+}
+
+.card[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.disc {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.card[data-checked] .disc {
+  background: var(--color-surface-raised);
+  color: var(--color-selected-soft-text);
+}
+
+.disc > svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-heading);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+}
+
+/* The gap under the disc. A card with no icon starts with its title instead, on the row the ring
+   sits in, so that title keeps clear of the ring. */
+.disc + .title {
+  margin-top: var(--space-2);
+}
+
+.title:first-child {
+  padding-inline-end: var(--choice-card-ring-clearance);
+}
+
+.description {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+/* The radio itself, drawn as the ring in the card's corner. Empty it is a hollow circle; the
+   indicator inside it only mounts once chosen. */
+.ring {
+  position: absolute;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: var(--radius-full);
+  box-shadow: var(--choice-card-dot);
+  cursor: inherit;
+}
+
+.ring[data-checked] {
+  --choice-card-dot: none;
+
+  background: var(--color-selected);
+  color: var(--color-selected-text);
+}
+
+.mark {
+  display: flex;
+}
+
+.mark > svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
+}

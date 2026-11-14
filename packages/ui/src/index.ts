@@ -149,3 +149,5 @@ export { EmptyState } from './components/EmptyState/EmptyState';
 export type { EmptyStateProps } from './components/EmptyState/EmptyState';
 export { AvatarGroup } from './components/AvatarGroup/AvatarGroup';
 export type { AvatarGroupProps, AvatarGroupItem } from './components/AvatarGroup/AvatarGroup';
+export { ChoiceCard } from './components/ChoiceCard/ChoiceCard';
+export type { ChoiceCardProps, ChoiceCardOption } from './components/ChoiceCard/ChoiceCard';

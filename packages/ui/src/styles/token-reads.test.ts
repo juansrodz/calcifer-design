@@ -1139,6 +1139,153 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [anyWeightLiteral],
   },
+
+  // `ChoiceCard`: a radio group drawn as cards. The grid's column count is a local property set per
+  // `data-columns`; the card's outline and the ring's hollow circle are inset shadows held in local
+  // properties too, because an `inset` value is not one the token lint accepts as a `box-shadow`
+  // declaration. The checked card swaps the outline for the selected colour at the emphasis width.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.grid \{([^}]*)\}/m,
+    contains: [
+      'display: grid;',
+      'grid-template-columns: repeat(var(--choice-card-columns), minmax(0, 1fr));',
+      'gap: var(--space-2);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.grid\[data-columns='1'\] \{([^}]*)\}/m,
+    contains: ['--choice-card-columns: 1;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.grid\[data-columns='2'\] \{([^}]*)\}/m,
+    contains: ['--choice-card-columns: 2;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-ring: inset 0 0 0 1px var(--color-border-strong);',
+      '--choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);',
+      'position: relative;',
+      'padding: var(--space-3);',
+      'border-radius: var(--radius-panel);',
+      'background: var(--color-surface-raised);',
+      'box-shadow: var(--choice-card-ring);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card\[data-checked\] \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-selected);',
+      'background: var(--color-selected-soft);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: [],
+  },
+  // The icon disc: a circle on the second neutral surface with the muted ink, and on a chosen card
+  // the raised surface with the selected-soft ink.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.disc \{([^}]*)\}/m,
+    contains: [
+      'width: 1.875rem;',
+      'height: 1.875rem;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-2);',
+      'color: var(--color-text-muted);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card\[data-checked\] \.disc \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-surface-raised);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.disc > svg \{([^}]*)\}/m,
+    contains: ['width: 0.9375rem;', 'height: 0.9375rem;'],
+    lacks: [],
+  },
+  // The title is the sans heading weight and the line under it the body role, as the contract's
+  // type roles name them; the gap under the disc exists only where a disc does.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.title \{([^}]*)\}/m,
+    contains: [
+      sansFamily,
+      'font-weight: var(--font-weight-heading);',
+      'font-size: var(--text-md);',
+      'line-height: var(--leading-snug);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.disc \+ \.title \{([^}]*)\}/m,
+    contains: ['margin-top: var(--space-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.description \{([^}]*)\}/m,
+    contains: [
+      'margin-top: var(--space-1);',
+      ...bodyRole,
+      'font-size: var(--text-sm);',
+      'line-height: var(--leading-snug);',
+      'color: var(--color-text-muted);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  // The ring: the radio itself, 18 px in the card's corner, hollow until chosen and then filled
+  // with the selected colour around an 11 px check in the selected text colour.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.ring \{([^}]*)\}/m,
+    contains: [
+      'inset-block-start: var(--space-3);',
+      'inset-inline-end: var(--space-3);',
+      'width: 1.125rem;',
+      'height: 1.125rem;',
+      'border-radius: var(--radius-full);',
+      'box-shadow: var(--choice-card-dot);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.ring\[data-checked\] \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-dot: none;',
+      'background: var(--color-selected);',
+      'color: var(--color-selected-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.mark > svg \{([^}]*)\}/m,
+    contains: ['width: 0.6875rem;', 'height: 0.6875rem;'],
+    lacks: [],
+  },
 ];
 
 // The chip's height is `--avatar-group-size`, and each `data-size` on the list must set it to the
