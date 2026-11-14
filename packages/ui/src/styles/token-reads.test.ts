@@ -821,8 +821,12 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
+    // The dimmed fill and ink sit inside the `@supports` block, and nothing else in the file mixes a
+    // colour: a browser without `color-mix()` keeps the house 0.45 opacity of `.root[data-disabled]`
+    // instead of an unset fill at full opacity. The regex takes the `@supports` header and the rule
+    // directly inside it, so a rule hoisted out of the block fails to match.
     file: 'components/Button/Button.module.css',
-    rule: /^\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\] \{([^}]*)\}/m,
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{\n {2}\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\] \{([^}]*)\}\n\}/m,
     contains: [
       '--button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);',
       '--button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);',
@@ -831,6 +835,14 @@ const expectations: ReadonlyArray<Expectation> = [
       'color: var(--button-inverse-disabled-ink);',
     ],
     lacks: ['opacity: 0.45;'],
+  },
+  {
+    // Outside the `@supports` block nothing reads the two disabled properties, and the house
+    // disabled rule keeps its 0.45 opacity for every tone.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: ['--button-inverse-disabled', 'color-mix'],
   },
   {
     // Hover repaints the accent tone only; a toned fill keeps its colour.
@@ -895,9 +907,22 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // The hook is read on `soft` alone: no other variant's rule, and not the base rule, reads it.
+    // The hook is read on `soft` alone: the base, secondary and primary rules do not read it (ghost
+    // has no rule of its own beyond its hover).
     file: 'components/IconButton/IconButton.module.css',
     rule: /^\.root \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--icon-button-shadow'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='secondary'\] \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--icon-button-shadow'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='primary'\] \{([^}]*)\}/m,
     contains: [],
     lacks: ['--icon-button-shadow'],
   },

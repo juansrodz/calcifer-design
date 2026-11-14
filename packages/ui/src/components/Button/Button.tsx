@@ -28,9 +28,12 @@ export interface ButtonProps extends Omit<
   className?: string;
 }
 
-/** `true`, `false`, `null` and `undefined` render nothing, so they must not leave an empty badge. */
+/**
+ * `true`, `false`, `null` and `undefined` render nothing, and `''` renders an empty text node, so
+ * none of them may leave an empty badge (or its space) behind.
+ */
 function hasContent(node: ReactNode) {
-  return node !== undefined && node !== null && typeof node !== 'boolean';
+  return node !== undefined && node !== null && node !== '' && typeof node !== 'boolean';
 }
 
 export function Button({

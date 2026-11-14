@@ -146,6 +146,25 @@ describe('Button', () => {
     expect(screen.getByRole('button').querySelector('.badge')).toBeNull();
   });
 
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['false', false],
+    ['true', true],
+    ['an empty string', ''],
+  ])('renders no badge, and no space for one, when the badge is %s', (_name, badge) => {
+    render(<Button badge={badge}>Suggestions</Button>);
+    const button = screen.getByRole('button', { name: 'Suggestions' });
+    expect(button.querySelector('.badge')).toBeNull();
+    // The label span alone: no stray space text node either.
+    expect(button.childNodes).toHaveLength(1);
+  });
+
+  it('renders a zero badge, since zero is a count', () => {
+    render(<Button badge={0}>Suggestions</Button>);
+    expect(screen.getByRole('button', { name: 'Suggestions 0' })).toBeInTheDocument();
+  });
+
   it('renders as the given element with no console error when composed with render', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     // Base UI clones this element and injects `Button`'s own children ("Go") into it at

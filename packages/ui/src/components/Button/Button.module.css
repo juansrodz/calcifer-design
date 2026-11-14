@@ -115,14 +115,19 @@
 
 /* The inverse primary dims its own fill and ink instead of the whole button, so the dimmed state
    keeps the surface behind it readable (the mock's 1f). The two mixes are local properties because
-   the token lint refuses `color-mix()` inline (L2-3). */
-.root[data-variant='primary'][data-tone='inverse'][data-disabled] {
-  --button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);
-  --button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);
+   the token lint refuses `color-mix()` inline (L2-3). `color-mix()` is Baseline 2023, as
+   `Timeline.module.css` assumes; the rule sits behind `@supports` so a browser without it keeps the
+   plain 0.45 opacity of the `[data-disabled]` rule above, rather than an unset fill and undimmed
+   ink at full opacity. */
+@supports (color: color-mix(in srgb, red, blue)) {
+  .root[data-variant='primary'][data-tone='inverse'][data-disabled] {
+    --button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);
+    --button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);
 
-  opacity: 1;
-  background: var(--button-inverse-disabled-fill);
-  color: var(--button-inverse-disabled-ink);
+    opacity: 1;
+    background: var(--button-inverse-disabled-fill);
+    color: var(--button-inverse-disabled-ink);
+  }
 }
 
 .label {
