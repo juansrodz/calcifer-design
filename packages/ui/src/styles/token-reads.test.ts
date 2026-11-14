@@ -377,8 +377,14 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root \{([^}]*)\}/m,
-    contains: ['min-height: var(--size-control);', 'min-width: var(--size-touch);'],
-    lacks: ['min-height: var(--size-touch);'],
+    // Primary keeps the pill: the whole-file guard on `--radius-md` went with the row variant, so
+    // the base rule pins its own radius here.
+    contains: [
+      'min-height: var(--size-control);',
+      'min-width: var(--size-touch);',
+      'border-radius: var(--radius-full);',
+    ],
+    lacks: ['min-height: var(--size-touch);', '--radius-md'],
   },
   {
     file: 'components/Button/Button.module.css',

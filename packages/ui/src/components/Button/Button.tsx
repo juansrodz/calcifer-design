@@ -4,14 +4,16 @@ import styles from './Button.module.css';
 
 /**
  * `row` is a list row: as wide as the box it sits in, start-aligned, with no fill or border at rest
- * and a quiet surface on hover and press. Pair it with `endIcon` for a trailing chevron.
+ * and a quiet surface on hover and press. Pair it with `endIcon` for a trailing chevron. A row keeps
+ * a 44 px floor and its own padding whatever `size` says; `size` changes only its type. Like ghost,
+ * it has no tone rule, so a `tone` on a row is ignored.
  */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'row';
 export type ButtonSize = 'md' | 'sm' | 'lg';
 /**
  * The colour family a filled button draws from. `accent` is the house look; `inverse` is the
  * high-contrast fill for a button that sits on an accent or photo surface; `selected` is the chosen
- * state's colour. Ghost has no tone rule.
+ * state's colour. Ghost and row have no tone rule, so a tone on either is ignored.
  */
 export type ButtonTone = 'accent' | 'inverse' | 'selected';
 
