@@ -1,6 +1,7 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import type { FieldFrameProps } from '../Field/Field';
 import { PickerField } from '../Field/PickerField';
@@ -90,6 +91,7 @@ export function TreeSelect({
   labels,
 }: TreeSelectProps) {
   const popupRef = useRef<HTMLDivElement>(null);
+  const container = usePortalContainer();
   const [heldValue, setHeldValue] = useState(defaultValue ?? null);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -160,7 +162,7 @@ export function TreeSelect({
       open={open}
       onOpenChange={changeOpen}
     >
-      <BasePopover.Portal>
+      <BasePopover.Portal container={container}>
         <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
           <BasePopover.Popup
             ref={popupRef}

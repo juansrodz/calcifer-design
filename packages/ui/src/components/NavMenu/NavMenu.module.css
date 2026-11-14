@@ -12,16 +12,18 @@
   list-style: none;
 }
 
-/* Plain text links, as in the mock: the current page is set in the text colour at weight
-   500, the rest sit in the muted colour; no pill behind either. */
+/* Plain text links, as in the mock: by default (the nav tokens) the current page is set in the
+   text colour at weight 500 and the rest sit in the muted colour; no pill behind either until a
+   theme gives the current link a fill (`--color-nav-selected` is `transparent` by default). */
 .link {
   display: inline-flex;
   align-items: center;
-  min-height: var(--size-touch);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  min-height: var(--size-control);
+  border-radius: var(--radius-option);
+  color: var(--color-nav-text);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 400;
+  font-weight: var(--font-weight-nav);
   text-decoration: none;
   white-space: nowrap;
   transition-property: color;
@@ -30,12 +32,16 @@
 }
 
 .link[aria-current='page'] {
-  color: var(--color-text);
-  font-weight: 500;
+  background: var(--color-nav-selected);
+  color: var(--color-nav-selected-text);
+  font-weight: var(--font-weight-nav-selected);
 }
 
+/* The current link is skipped: a bare `.link:hover` ties `.link[aria-current='page']` on
+   specificity and comes later, so it would repaint the current link in `--color-text` on hover and
+   drop `--color-nav-selected-text` as soon as a theme sets the two apart. */
 @media (hover: hover) {
-  .link:hover {
+  .link:hover:not([aria-current='page']) {
     color: var(--color-text);
   }
 }
@@ -44,11 +50,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--size-touch);
-  height: var(--size-touch);
+  width: var(--size-control);
+  height: var(--size-control);
   padding: 0;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
@@ -61,7 +67,8 @@
 
 .item {
   padding-inline: var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
 }
 

@@ -5,6 +5,13 @@
   resize: vertical;
 }
 
+/* A multi-line box reads the panel radius where a single line reads the control's. The type
+   qualifier out-ranks `.control`, which the same element carries, so bundle order cannot decide
+   it. */
+textarea.root {
+  border-radius: var(--radius-panel);
+}
+
 /* `field-sizing: content` makes `rows` meaningless, so the same height is rebuilt from the count:
    that many lines, the padding above and below, and the two border pixels. Inside `@supports`
    because a browser without it must keep the resize handle and the attribute's height. */

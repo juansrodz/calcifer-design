@@ -53,6 +53,7 @@
   padding-inline: var(--space-3);
   border-radius: var(--radius-md);
   color: var(--color-text);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
   cursor: pointer;
   user-select: none;

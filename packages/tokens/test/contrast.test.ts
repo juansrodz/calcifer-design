@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { contrastRatio } from '../src/contrast';
+import { defineTheme } from '../src/theme';
+import { checkThemeContrast } from '../src/theme-contrast';
 import { textContrastPairs, themes, uiContrastPairs } from '../src/tokens';
 
 describe('contrastRatio', () => {
@@ -14,26 +16,8 @@ describe('contrastRatio', () => {
   });
 });
 
-describe('text roles meet WCAG AA (4.5:1) in every theme', () => {
-  for (const [themeName, theme] of Object.entries(themes)) {
-    for (const [foreground, background] of textContrastPairs) {
-      it(`${themeName}: ${foreground} on ${background}`, () => {
-        const ratio = contrastRatio(theme.color[foreground], theme.color[background]);
-        expect(ratio).toBeGreaterThanOrEqual(4.5);
-      });
-    }
-  }
-});
-
-describe('non-text UI roles meet WCAG 1.4.11 (3:1) in every theme', () => {
-  for (const [themeName, theme] of Object.entries(themes)) {
-    for (const [foreground, background] of uiContrastPairs) {
-      it(`${themeName}: ${foreground} on ${background}`, () => {
-        const ratio = contrastRatio(theme.color[foreground], theme.color[background]);
-        expect(ratio).toBeGreaterThanOrEqual(3);
-      });
-    }
-  }
+it('the house theme passes every pair in both modes', () => {
+  expect(checkThemeContrast(defineTheme({ className: 'theme-house' }))).toEqual([]);
 });
 
 describe('contrast pair lists only name opaque hex colours', () => {

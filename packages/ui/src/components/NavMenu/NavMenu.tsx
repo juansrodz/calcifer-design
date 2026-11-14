@@ -1,6 +1,7 @@
 import { Menu } from '@base-ui/react/menu';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { minWidth, useMediaQuery } from '../../hooks/useMediaQuery';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './NavMenu.module.css';
 
@@ -57,6 +58,7 @@ export function NavMenu({
   renderLink = defaultRenderLink,
 }: NavMenuProps) {
   const isWide = useMediaQuery(minWidth('md'));
+  const container = usePortalContainer();
   const [open, setOpen] = useState(false);
   const [previousPath, setPreviousPath] = useState(currentPath);
 
@@ -98,7 +100,7 @@ export function NavMenu({
             <path d={open ? 'M4 4l10 10M14 4L4 14' : 'M2 5h14M2 9h14M2 13h14'} />
           </svg>
         </Menu.Trigger>
-        <Menu.Portal>
+        <Menu.Portal container={container}>
           <Menu.Positioner className={popupStyles.layer} side="bottom" align="end" sideOffset={8}>
             <Menu.Popup className={popupStyles.surface} data-popup="menu">
               {items.map((item) => (

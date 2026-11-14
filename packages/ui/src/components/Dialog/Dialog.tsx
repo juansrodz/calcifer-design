@@ -2,6 +2,7 @@ import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import type { ReactElement, ReactNode } from 'react';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { IconButton } from '../IconButton/IconButton';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './Dialog.module.css';
 
@@ -74,6 +75,7 @@ export function Dialog({
   // out-of-range level would otherwise resolve to `undefined` and throw in React as an invalid
   // element type. `@calcifer-design/ui` is consumed from JavaScript apps.
   const Heading = headingTags[headingLevel] ?? 'h2';
+  const container = usePortalContainer();
   return (
     <BaseDialog.Root
       open={open}
@@ -82,8 +84,12 @@ export function Dialog({
       disablePointerDismissal={!dismissOnOutsidePress}
     >
       {trigger === undefined ? null : <BaseDialog.Trigger render={trigger} />}
-      <BaseDialog.Portal>
-        <BaseDialog.Backdrop className={[popupStyles.dialogLayer, popupStyles.scrim].join(' ')} />
+      <BaseDialog.Portal container={container}>
+        <BaseDialog.Backdrop
+          className={[popupStyles.dialogLayer, popupStyles.scrim].join(' ')}
+          data-variant={variant}
+          data-side={sheetSide}
+        />
         <BaseDialog.Viewport
           className={[popupStyles.dialogLayer, styles.viewport].join(' ')}
           data-variant={variant}

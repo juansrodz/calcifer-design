@@ -1,5 +1,6 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import type { ReactElement, ReactNode } from 'react';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import a11yStyles from '../../styles/a11y.module.css';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './Popover.module.css';
@@ -67,6 +68,7 @@ export function Popover({
   // out-of-range level would otherwise resolve to `undefined` and throw in React as an invalid
   // element type. `@calcifer-design/ui` is consumed from JavaScript apps.
   const Heading = headingTags[headingLevel] ?? 'h3';
+  const container = usePortalContainer();
   return (
     <BasePopover.Root
       open={open}
@@ -75,7 +77,7 @@ export function Popover({
       modal={modal}
     >
       <BasePopover.Trigger render={trigger} />
-      <BasePopover.Portal>
+      <BasePopover.Portal container={container}>
         {/* Only full `modal`, never `'trap-focus'`. Base UI's backdrop is a hit-testable element
             unless the popover was opened by hover (`PopoverBackdrop.js` sets
             `pointerEvents: 'none'` for `REASONS.triggerHover` and for nothing else), and the

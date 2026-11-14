@@ -101,6 +101,8 @@
 
 .description {
   color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-sm);
   line-height: var(--leading-prose);
 }

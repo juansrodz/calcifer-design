@@ -47,6 +47,15 @@ h3 {
   margin: 0;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+
 p {
   margin: 0;
   max-width: var(--measure);

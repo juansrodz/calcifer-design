@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { customPropertyNamesOf } from '../src/custom-property-scan';
 import { tokensToCss, toKebab } from '../src/generate';
 import { tokens } from '../src/tokens';
 
@@ -51,6 +52,8 @@ describe('tokensToCss', () => {
       `--font-sans: ${tokens.shared.font.sans};`,
       `--size-touch: ${tokens.shared.size.touch};`,
       `--motion-duration-2: ${tokens.shared.motion.duration[2]};`,
+      `--font-weight-button: ${tokens.shared.fontWeight.button};`,
+      `--radius-control: ${tokens.shared.radius.control};`,
     ];
     for (const property of propertiesEmittedOnce) {
       const occurrences = css.split(property).length - 1;
@@ -116,5 +119,93 @@ describe('tokensToCss', () => {
     expect(css).toContain('--space-page-inline-wide: clamp(4rem, 5vw, 8rem);');
     expect(css).toContain('--text-display: clamp(2.75rem, 2rem + 3.5vw, 4.5rem);');
     expect(css).toContain('--text-display-wide: 5.5rem;');
+  });
+
+  it('emits the display and body font roles as the sans stack', () => {
+    expect(css).toContain(`--font-display: ${tokens.shared.font.sans};`);
+    expect(css).toContain(`--font-body: ${tokens.shared.font.sans};`);
+  });
+
+  it('emits the font weight family', () => {
+    expect(css).toContain('--font-weight-body: 400;');
+    expect(css).toContain('--font-weight-nav-selected: 500;');
+    expect(css).toContain('--font-weight-display: 600;');
+  });
+
+  it('emits the display font stretch', () => {
+    expect(css).toContain('--font-stretch-display: normal;');
+  });
+
+  it('emits the display text transform', () => {
+    expect(css).toContain('--text-transform-display: none;');
+  });
+
+  it('emits the role radii', () => {
+    expect(css).toContain('--radius-control: 0.625rem;');
+    expect(css).toContain('--radius-option: 0.5rem;');
+    expect(css).toContain('--radius-panel: 0.625rem;');
+    expect(css).toContain('--radius-popup: 0.75rem;');
+    expect(css).toContain('--radius-card: 1rem;');
+    expect(css).toContain('--radius-dialog: 1rem;');
+  });
+
+  it('emits the role sizes', () => {
+    expect(css).toContain('--size-drawer: 28rem;');
+    expect(css).toContain('--size-control: 44px;');
+    expect(css).toContain('--size-control-sm: 2.5rem;');
+  });
+
+  it('emits the selected colour roles in both themes', () => {
+    expect(css).toContain(`--color-selected: ${tokens.themes.light.color.accent};`);
+    expect(css).toContain(`--color-selected: ${tokens.themes.dark.color.accent};`);
+  });
+
+  it('emits a transparent nav selection fill', () => {
+    expect(css).toContain('--color-nav-selected: transparent;');
+  });
+
+  it('emits all six avatar fills and inks', () => {
+    expect(css).toContain('--color-avatar-fill-6:');
+    expect(css).toContain('--color-avatar-ink-6:');
+  });
+
+  it('emits the shadow family beside the elevations in both themes', () => {
+    expect(css).toContain(`--shadow-soft: ${tokens.themes.light.elevation[1]};`);
+    expect(css).toContain(`--shadow-sheet: ${tokens.themes.dark.elevation[3]};`);
+    expect(css).toContain('--shadow-action: none;');
+  });
+});
+
+/** The custom property of every leaf in `tree`, named the way the generator names it: `--` plus each key in kebab-case, joined by `-`. */
+function leafPropertyNamesOf(tree: object, path: readonly string[] = []): string[] {
+  const names: string[] = [];
+  for (const [key, value] of Object.entries(tree)) {
+    const keyPath = [...path, toKebab(key)];
+    if (typeof value === 'object' && value !== null) {
+      names.push(...leafPropertyNamesOf(value, keyPath));
+    } else {
+      names.push(`--${keyPath.join('-')}`);
+    }
+  }
+  return names;
+}
+
+describe('tokensToCss completeness', () => {
+  const declaredNames = customPropertyNamesOf(tokensToCss(tokens));
+
+  // `tokens.breakpoint` is not walked: it is not part of `shared` or either mode, and the
+  // generator never emits it (breakpoints are not custom properties; `findWidthQueryViolations`
+  // guards the media queries instead).
+  const trees = [
+    ['tokens.shared', tokens.shared],
+    ['tokens.themes.light', tokens.themes.light],
+    ['tokens.themes.dark', tokens.themes.dark],
+  ] as const;
+
+  it.each(trees)('declares a custom property for every leaf of %s', (_label, tree) => {
+    const leafNames = leafPropertyNamesOf(tree);
+    expect(leafNames.length).toBeGreaterThan(0);
+    const undeclared = leafNames.filter((name) => !declaredNames.has(name));
+    expect(undeclared).toEqual([]);
   });
 });

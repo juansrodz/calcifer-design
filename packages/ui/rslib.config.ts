@@ -1,6 +1,12 @@
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 import { defineConfig } from '@rslib/core';
+import packageJson from './package.json';
+
+// R7: the version salts every class name this build emits (`ui0-6-0-surface-aB3dE`), so two ui
+// versions on one page (two remotes, each with its own copy) never share a class. Storybook's own
+// `rsbuild.config.ts` keeps the unsalted pattern: it is one ui version on its own page.
+const classNameSalt = `ui${packageJson.version.replaceAll('.', '-')}`;
 
 // Bundleless ESM: `dist` mirrors `src`, each `X.module.css` becomes a plain `X_module.css`
 // with the hashed class names baked in plus an `X.module.js` class map, so any bundler with
@@ -34,7 +40,7 @@ export default defineConfig({
   output: {
     target: 'web',
     distPath: { root: 'dist' },
-    cssModules: { localIdentName: '[local]-[hash:base64:5]' },
+    cssModules: { localIdentName: `${classNameSalt}-[local]-[hash:base64:5]` },
     copy: [{ from: './src/styles/base.css', to: 'styles' }],
   },
 });

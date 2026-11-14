@@ -33,12 +33,17 @@
   min-width: 0;
   color: var(--color-text);
   font-size: var(--text-h3);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-display);
+  font-stretch: var(--font-stretch-display);
+  text-transform: var(--text-transform-display);
   line-height: var(--leading-snug);
 }
 
 .description {
   color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-sm);
   line-height: var(--leading-prose);
 }

@@ -1,8 +1,20 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  customPropertyNamesOf,
+  findUnknownCustomProperties,
+  tokens,
+  tokensToCss,
+} from '@calcifer-design/tokens';
 import { describe, expect, it } from 'vitest';
+import packageJson from '../../package.json';
 
 const distRoot = path.resolve(import.meta.dirname, '../../dist');
+const componentsSource = path.resolve(import.meta.dirname, '../../src/components');
+
+// R7: every class name the build emits starts with `ui<version>-` (`rslib.config.ts` derives it
+// from the same `package.json`), so two ui versions on one page never share a class.
+const classPrefix = `ui${packageJson.version.replaceAll('.', '-')}-`;
 
 async function collectCssFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -16,6 +28,35 @@ async function collectCssFiles(directory: string): Promise<string[]> {
     }
   }
   return files;
+}
+
+// Custom properties the package reads but never declares, on purpose. Base UI sets the first set
+// on the elements it positions or animates (the positioner's anchor and available box, the toast
+// stack's index and offset, the tab list's active-tab box); the second set are the ones a
+// component's own TSX writes into an inline `style`, so no stylesheet declares them.
+const BASE_UI_RUNTIME_PROPERTIES = [
+  '--anchor-width',
+  '--available-width',
+  '--available-height',
+  '--transform-origin',
+  '--toast-index',
+  '--toast-offset-y',
+  '--active-tab-left',
+  '--active-tab-width',
+] as const;
+
+const UI_INLINE_PROPERTIES = [
+  '--tree-level',
+  '--text-area-rows',
+  '--card-list-min-column',
+] as const;
+
+/** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
+async function collectComponentSources(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { recursive: true });
+  return entries
+    .filter((entry) => entry.endsWith('.tsx') && !/\.(test|stories)\.tsx$/.test(entry))
+    .map((entry) => path.join(directory, entry));
 }
 
 describe('@calcifer-design/ui dist', () => {
@@ -69,6 +110,8 @@ describe('@calcifer-design/ui dist', () => {
       'Timeline',
       'DataGrid',
       'createDataGridColumnHelper',
+      'ThemeScope',
+      'usePortalContainer',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
@@ -80,7 +123,35 @@ describe('@calcifer-design/ui dist', () => {
     const buttonCss = cssFiles.find((file) => file.includes(`${path.sep}Button${path.sep}`));
     expect(buttonCss).toBeDefined();
     const css = await readFile(buttonCss ?? '', 'utf8');
-    expect(css).toMatch(/\.[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\b/);
+    expect(css).toMatch(new RegExp(`\\.${classPrefix}[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\\b`));
+  });
+
+  // R7: the class selectors are read from rule preludes only (the text before each `{` that does
+  // not start with `@`), so `@media` and `@keyframes` preludes and declaration values such as
+  // `scale(0.96)` are never scanned. The count guard keeps an empty scan from passing.
+  it('prefixes every class selector in every module stylesheet with the package version', async () => {
+    const moduleCssFiles = (await collectCssFiles(distRoot)).filter((file) =>
+      file.endsWith('_module.css'),
+    );
+    expect(moduleCssFiles.length).toBeGreaterThan(5);
+    const classSelectors: string[] = [];
+    const unprefixed: string[] = [];
+    for (const file of moduleCssFiles) {
+      const css = (await readFile(file, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const match of css.matchAll(/([^{}]*)\{/g)) {
+        const prelude = (match[1] ?? '').slice((match[1] ?? '').lastIndexOf(';') + 1).trim();
+        if (prelude.startsWith('@')) continue;
+        for (const selector of prelude.matchAll(/\.(-?[A-Za-z_][A-Za-z0-9_-]*)/g)) {
+          const className = selector[1] ?? '';
+          classSelectors.push(className);
+          if (!className.startsWith(classPrefix)) {
+            unprefixed.push(`${path.relative(distRoot, file)}: .${className}`);
+          }
+        }
+      }
+    }
+    expect(classSelectors.length).toBeGreaterThan(100);
+    expect(unprefixed).toEqual([]);
   });
 
   // Stories, tests and the sample data they share are for this repository, not for consumers.
@@ -129,9 +200,9 @@ describe('@calcifer-design/ui dist', () => {
     // One copy of the rule in the whole package: the reason the shared class is imported from
     // TSX rather than `composes`-d, which would inline it into every consuming stylesheet.
     const popupCss = await readFile(path.join(distRoot, 'styles/popup_module.css'), 'utf8');
-    expect(popupCss).toMatch(/\.surface-[A-Za-z0-9_-]{5}\b/);
+    expect(popupCss).toMatch(new RegExp(`\\.${classPrefix}surface-[A-Za-z0-9_-]{5}\\b`));
     const fieldCss = await readFile(path.join(distRoot, 'styles/field_module.css'), 'utf8');
-    expect(fieldCss).toMatch(/\.control-[A-Za-z0-9_-]{5}\b/);
+    expect(fieldCss).toMatch(new RegExp(`\\.${classPrefix}control-[A-Za-z0-9_-]{5}\\b`));
     const componentCss = await collectCssFiles(path.join(distRoot, 'components'));
     for (const file of componentCss) {
       const css = await readFile(file, 'utf8');
@@ -147,5 +218,76 @@ describe('@calcifer-design/ui dist', () => {
       const css = await readFile(file, 'utf8');
       expect(css, file).not.toContain('var(--color-surface-input)');
     }
+  });
+
+  // Contract §2.1, L1-12: a portal without `container` goes to `<body>` and leaves the theme scope.
+  // The scan reads the source, where the element is still `<X.Portal …>`; it must find the nine
+  // sites L1 wired, so an empty scan (a moved folder, a broken pattern) cannot pass.
+  it('passes the scope’s portal container to every Portal', async () => {
+    const portalPattern = /<([A-Za-z]+)\.Portal\b([^>]*)>/g;
+    const sites: string[] = [];
+    for (const file of await collectComponentSources(componentsSource)) {
+      const source = await readFile(file, 'utf8');
+      for (const match of source.matchAll(portalPattern)) {
+        const site = `${path.relative(componentsSource, file)}: ${match[0]}`;
+        sites.push(site);
+        expect(match[2], site).toContain('container={container}');
+      }
+    }
+    expect(sites.length).toBeGreaterThanOrEqual(9);
+  });
+
+  // R5: a dialog, a sheet and the toast stack size from percentages, never a viewport unit, so an
+  // embedded scope's overlays are meant to follow its box rather than the window. A dialog or
+  // sheet resolves against the grid area of its fixed `.viewport`; the toast width,
+  // `calc(100% - …)`, against the fixed stack's containing block. The scan is per file:
+  // `popup_module.css` carries the surfaces, `Dialog_module.css` the viewport they sit in,
+  // `ToastRegion_module.css` the stack. The unit pattern covers the dynamic, small and large
+  // variants, the logical axes, `vmin` and `vmax`; the two positive guards keep the scan from
+  // passing vacuously if a rule moves out of its file.
+  it('sizes dialogs, sheets and toasts without a viewport unit', async () => {
+    const files = [
+      'styles/popup_module.css',
+      'components/Dialog/Dialog_module.css',
+      'components/ToastRegion/ToastRegion_module.css',
+    ];
+    const css: Record<string, string> = {};
+    for (const file of files) {
+      css[file] = await readFile(path.join(distRoot, file), 'utf8');
+      expect(css[file], file).not.toMatch(/\d(?:[sld]?v(?:h|w|i|b)|vmin|vmax)\b/);
+    }
+    expect(css['styles/popup_module.css']).toContain('max-height: 85%');
+    expect(css['components/ToastRegion/ToastRegion_module.css']).toContain('calc(100% -');
+  });
+
+  // A `var(--name)` the package never declares resolves to nothing at runtime and fails silently
+  // (`--radius-contorl` would). `defined` is every name the tokens' generated sheet declares, every
+  // name any shipped stylesheet declares, and the two lists above. The guard keeps an empty scan
+  // (a moved dist folder) from passing.
+  it('reads no custom property that the package never declares', async () => {
+    const cssFiles = await collectCssFiles(distRoot);
+    expect(cssFiles.length).toBeGreaterThan(5);
+    const allDistCss = (await Promise.all(cssFiles.map((file) => readFile(file, 'utf8')))).join(
+      '\n',
+    );
+    const defined = new Set<string>([
+      ...customPropertyNamesOf(tokensToCss(tokens)),
+      ...customPropertyNamesOf(allDistCss),
+      ...BASE_UI_RUNTIME_PROPERTIES,
+      ...UI_INLINE_PROPERTIES,
+    ]);
+    expect(allDistCss).toContain('var(--');
+    expect(findUnknownCustomProperties(allDistCss, defined)).toEqual([]);
+  });
+
+  // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would
+  // make every theme fail the check.
+  it('reads the theme brand from the tokens package and mints no symbol of its own', async () => {
+    const themeScope = await readFile(
+      path.join(distRoot, 'components/ThemeScope/ThemeScope.js'),
+      'utf8',
+    );
+    expect(themeScope).toContain('from "@calcifer-design/tokens"');
+    expect(themeScope).not.toContain('Symbol(');
   });
 });

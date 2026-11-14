@@ -3,6 +3,7 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
 import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
@@ -66,6 +67,7 @@ export function Select({
   align = 'start',
   sideOffset = 8,
 }: SelectProps) {
+  const container = usePortalContainer();
   return (
     <BaseField.Root
       className={fieldStyles.frame}
@@ -102,7 +104,7 @@ export function Select({
             <ChevronDownIcon />
           </BaseSelect.Icon>
         </BaseSelect.Trigger>
-        <BaseSelect.Portal>
+        <BaseSelect.Portal container={container}>
           <BaseSelect.Positioner
             className={popupStyles.layer}
             side={side}

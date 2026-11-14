@@ -18,8 +18,9 @@
 .month {
   flex: 1;
   color: var(--color-text);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
-  font-weight: 500;
+  font-weight: var(--font-weight-label);
   line-height: var(--leading-snug);
   text-align: center;
 }
@@ -98,8 +99,8 @@
 }
 
 .day[aria-selected='true'] {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
+  background: var(--color-selected);
+  color: var(--color-selected-text);
 }
 
 /* The line is what says "not this one" beyond dimming, which alone can read as a weekend. */

@@ -14,10 +14,11 @@
    property and there is no `--z-*` token, so these are literals.
 
    `.layer` and `.dialogLayer` now share the same z-index. Every Base UI portal is appended to
-   `document.body` when its popup opens and removed again when it closes, so with equal z-index
-   the open order decides which popup paints on top: a popup opened from inside an already-open
-   dialog is appended after it and paints above it, while a popup opened before the dialog stays
-   beneath the dialog's scrim once the dialog opens. The two class names stay distinct on
+   its container when its popup opens (the nearest `ThemeScope`'s portal host, or `<body>` when
+   there is none) and removed again when it closes, so with equal z-index the open order decides
+   which popup paints on top: a popup opened from inside an already-open dialog is appended after
+   it and paints above it, while a popup opened before the dialog stays beneath the dialog's
+   scrim once the dialog opens. The two class names stay distinct on
    purpose, so the two layers can diverge again later without touching every popup. Toasts keep
    70, above both, because a toast can report a failure that happened inside a dialog. A backdrop
    shares its popup's layer and sits below it on DOM order alone — Base UI's anatomy always
@@ -44,10 +45,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-popup);
   background: var(--color-surface-raised);
   color: var(--color-text);
-  box-shadow: var(--elevation-2);
+  box-shadow: var(--shadow-raised);
   transform-origin: var(--transform-origin);
   transition-property: opacity, transform;
   transition-duration: var(--motion-duration-2);
@@ -72,27 +73,33 @@
 .surface[data-popup='tooltip'] {
   max-width: min(18rem, var(--available-width));
   padding: var(--space-2) var(--space-3);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
   font-size: var(--text-sm);
 }
 
+/* The dialog and the sheets size in percentages of their grid area, never in viewport units: the
+   area belongs to `Dialog.module.css`'s `.viewport` (`position: fixed; inset: 0`), whose
+   containing block is the browser viewport standalone and the nearest transformed ancestor when
+   the scope is embedded, which is meant to let an embedded scope's overlays follow its box. */
 .surface[data-popup='dialog'] {
   gap: var(--space-4);
   width: min(32rem, 100%);
   max-width: 100%;
-  max-height: 85dvh;
+  max-height: 85%;
   padding: var(--space-5);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--elevation-3);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-dialog);
 }
 
 .surface[data-popup='sheet'] {
   gap: var(--space-4);
   width: 100%;
   max-width: 100%;
-  max-height: 85dvh;
+  max-height: 85%;
   padding: var(--space-5);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: var(--elevation-3);
+  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+  box-shadow: var(--shadow-sheet);
 }
 
 /* A select's width is its trigger's rather than a fixed dropdown width, and that is the one
@@ -126,16 +133,18 @@
 }
 
 /* A sheet docked to the end edge is a full-height panel — an item editor, a filter drawer. It
-   keeps the sheet's padding and gap and gives up the rounded top, because a panel that meets
-   three viewport edges has no free corner to round. `Dialog` sets `data-side` on the popup only
-   when the variant is `sheet`, so these never reach a centred dialog. The slide is on the x
-   axis and `translateX` is physical: under `dir="rtl"` the panel would slide in from the wrong
-   side. The library has no RTL story yet, and this is the first rule that would need one. */
+   keeps the sheet's padding and gap. It meets the viewport on three sides, so the corners on
+   those edges stay square and the panel rounds its free leading corners with the dialog radius.
+   `Dialog` sets `data-side` on the popup only when the variant is `sheet`, so these never reach a
+   centred dialog. The slide is on the x axis and `translateX` is physical, and so is the radius
+   below: under `dir="rtl"` the panel would slide in from the wrong side and round the wrong
+   corners. The library has no RTL story yet, and this is the first rule that would need one. */
 .surface[data-popup='sheet'][data-side='end'] {
-  width: min(28rem, 100%);
-  height: 100dvh;
-  max-height: 100dvh;
-  border-radius: 0;
+  width: min(var(--size-drawer), 100%);
+  height: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-dialog) 0 0 var(--radius-dialog);
+  box-shadow: var(--shadow-drawer);
 }
 
 .surface[data-popup='sheet'][data-side='end'][data-starting-style],
@@ -161,6 +170,13 @@
   transition-property: opacity;
   transition-duration: var(--motion-duration-2);
   transition-timing-function: var(--motion-ease);
+}
+
+/* The bottom sheet's scrim has its own colour hook, so a theme can tint the sheet's backdrop apart
+   from a centred dialog's and an end drawer's. `Dialog` sets `data-variant` and `data-side` on the
+   backdrop as it does on the viewport; the default of `--color-scrim-sheet` is `--color-scrim`. */
+.scrim[data-variant='sheet'][data-side='bottom'] {
+  background: var(--color-scrim-sheet);
 }
 
 .scrim[data-starting-style],
