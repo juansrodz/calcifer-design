@@ -65,7 +65,7 @@ export function TabBar<Item extends TabBarItem = TabBarItem>({
           {items.map((item) => {
             const isCurrent = isCurrentPath(item.href, currentPath);
             return (
-              <li key={item.href}>
+              <li key={item.href} className={styles.item}>
                 {renderLink(item, {
                   className: styles.link,
                   'aria-current': isCurrent ? 'page' : undefined,

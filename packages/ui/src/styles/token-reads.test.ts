@@ -906,7 +906,16 @@ const expectations: ReadonlyArray<Expectation> = [
       'box-shadow: var(--shadow-tab-bar);',
       'justify-content: space-around;',
       'flex: 1;',
+      'min-width: 0;',
     ],
+    lacks: [],
+  },
+  // A short bar (five items and the action at 360 px) shrinks the current label rather than
+  // overflowing: the pill and the label may go below their content, the item keeps the 44 px floor.
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['min-width: var(--size-touch);'],
     lacks: [],
   },
   {
@@ -963,7 +972,15 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/TabBar/TabBar.module.css',
     rule: /^\.label \{([^}]*)\}/m,
-    contains: [sansFamily, 'font-size: var(--text-sm);', 'font-weight: var(--font-weight-button);'],
+    contains: [
+      sansFamily,
+      'font-size: var(--text-sm);',
+      'font-weight: var(--font-weight-button);',
+      'min-width: 0;',
+      'overflow: hidden;',
+      'text-overflow: ellipsis;',
+      'white-space: nowrap;',
+    ],
     lacks: [anyWeightLiteral],
   },
 
