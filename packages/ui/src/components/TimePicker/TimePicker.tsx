@@ -32,6 +32,12 @@ export interface TimePickerProps extends Omit<
   /**
    * A decorative glyph inside the field, before the time: an icon from your own set, sized to 1rem
    * and coloured by the text-muted role. The field's label still names the input.
+   *
+   * With an icon the visible field is a pill around the input, and the input's own props (`hidden`
+   * and `title` included) reach the inner input, not the pill: size the field from its container.
+   * The pill is a different element from the bare input, so changing `startIcon` between present and
+   * absent remounts the input and loses an uncontrolled value and the focus: decide the icon once,
+   * or control the value.
    */
   startIcon?: ReactNode;
 }

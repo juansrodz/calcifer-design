@@ -104,6 +104,8 @@ describe('TextInput', () => {
       expect(icon?.querySelector('svg')).not.toBeNull();
       expect(input).toHaveClass('affixInput');
       expect(input).not.toHaveClass('control');
+      // The Field's `name` still reaches the input, which is what a form submits.
+      expect(input).toHaveAttribute('name', 'location');
       expect(pill().children).toHaveLength(2);
     });
 

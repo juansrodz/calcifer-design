@@ -118,6 +118,8 @@ describe('TimePicker', () => {
       expect(timeInput()).toHaveAttribute('type', 'time');
       expect(timeInput()).toHaveClass('affixInput');
       expect(timeInput()).not.toHaveClass('control');
+      // The Field's `name` still reaches the input, which is what a form submits.
+      expect(timeInput()).toHaveAttribute('name', 'arrival');
       const pill = timeInput().parentElement;
       expect(pill).toHaveClass('control', 'affix');
       const icon = timeInput().previousElementSibling;

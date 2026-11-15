@@ -172,7 +172,7 @@ describe('DatePicker', () => {
         defaultValue: '2026-02-17',
         iconPlacement: 'start',
       });
-      expect(trigger()).toHaveTextContent('Feb 17, 2026');
+      expect(trigger()).toHaveAccessibleName('Event date Feb 17, 2026');
       expect(trigger().firstElementChild).toBe(parts().icon);
       unmount();
       renderPicker({
@@ -180,7 +180,7 @@ describe('DatePicker', () => {
         defaultValue: '2026-02-17',
         formatOptions: { dateStyle: 'full' },
       });
-      expect(trigger()).toHaveTextContent('Tuesday, February 17, 2026');
+      expect(trigger()).toHaveAccessibleName('Event date Tuesday, February 17, 2026');
       expect(trigger().lastElementChild).toBe(parts().icon);
     });
 
@@ -190,7 +190,7 @@ describe('DatePicker', () => {
         defaultValue: '2026-02-17',
         formatOptions: { weekday: 'short', day: 'numeric', month: 'short' },
       });
-      expect(trigger()).toHaveTextContent('mar, 17 feb');
+      expect(trigger()).toHaveAccessibleName('Event date mar, 17 feb');
     });
 
     it('leaves the placeholder alone, and the icon where it was put', () => {
