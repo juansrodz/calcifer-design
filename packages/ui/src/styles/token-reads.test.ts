@@ -1408,6 +1408,12 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^ {2}\.chip\[data-pressed\] \{([^}]*)\}/m,
+    contains: ['forced-color-adjust: none;', 'outline-color: CanvasText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.chip\[data-disabled\] \{([^}]*)\}/m,
     contains: ['opacity: 0.45;'],
     lacks: [],
@@ -1427,6 +1433,12 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.group \{([^}]*)\}/m,
+    contains: ['min-width: 0;', 'margin: 0;', 'padding: 0;', 'border: 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.row \{([^}]*)\}/m,
     contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
     lacks: [],
   },

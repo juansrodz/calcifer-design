@@ -21,6 +21,12 @@ interface ToggleChipGroupBaseProps extends FieldFrameProps {
   /** Names the group. Rendered as a plain element, not a `<label>`, as `RadioGroup` does. */
   label: string;
   options: readonly ToggleChipOption[];
+  /**
+   * Draws the required mark after the label, and nothing more. A group of toggle buttons has no
+   * `required` attribute to carry the requirement to assistive technology, and the browser cannot
+   * check one, so a form that needs a chip pressed says so with `error`.
+   */
+  required?: boolean;
   /** Called when the focus leaves a chip, as `RadioGroup`'s `onBlur` is. */
   onBlur?: () => void;
 }
@@ -61,9 +67,9 @@ function valuesOf(value: string | readonly string[] | null | undefined): readonl
  * Each chip is a toggle button, and the group is one tab stop whose arrow keys move focus without
  * pressing anything. A pressed chip of a multiple group draws a check.
  *
- * Base UI's `ToggleGroup` and `Toggle`, unlike its `RadioGroup`, read no `Field` context, so what
- * `RadioGroup` gets for free is wired here by hand: the description and error ids, the group's
- * `aria-describedby` and `aria-invalid`, and the frame's `disabled`.
+ * Base UI's `ToggleGroup` and `Toggle`, unlike its `RadioGroup`, read no `Field` context. The group
+ * therefore renders a `Field.Control` itself (see below), which is what makes it a field to a
+ * `Form`, and passes the frame's `disabled` on to the `ToggleGroup` by hand.
  */
 export function ToggleChipGroup(props: ToggleChipGroupProps) {
   const {
@@ -77,8 +83,6 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
     disabled = false,
   } = props;
   const labelId = useId();
-  const descriptionId = useId();
-  const errorId = useId();
   const [heldValues, setHeldValues] = useState(() => valuesOf(props.defaultValue));
   const controlled = props.value !== undefined;
   const pressedValues = controlled ? valuesOf(props.value) : heldValues;
@@ -88,20 +92,14 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
   const pressedChips = options.flatMap((option, index) =>
     pressedValues.includes(option.value) ? [{ option, index }] : [],
   );
-  // Base UI's `Form` cannot read a toggle group, so the group hands `Form` its value as `PickerField`
-  // and `Upload` do: the pressed value (or `null`) of a single group, the list of a multiple one.
-  // A disabled group submits nothing, as a disabled control does.
-  useFormValue(
-    disabled ? undefined : name,
-    multiple
-      ? pressedChips.map(({ option }) => option.value)
-      : (pressedChips[0]?.option.value ?? null),
-  );
-  // The same test `FieldMessages` applies, so the group names only a node that renders.
-  const hasDescription = description !== undefined && description !== null && description !== false;
-  const describedBy = [hasDescription ? descriptionId : null, error === undefined ? null : errorId]
-    .filter(Boolean)
-    .join(' ');
+  // What a `Form` submits for the group: the pressed value (or `null`) of a single group, the list
+  // of a multiple one. Base UI's `Form` cannot read a toggle group, so the value is handed over as
+  // `PickerField` and `Upload` do, and a disabled group submits nothing, as a disabled control
+  // does.
+  const submittedValue = multiple
+    ? pressedChips.map(({ option }) => option.value)
+    : (pressedChips[0]?.option.value ?? null);
+  useFormValue(disabled ? undefined : name, submittedValue);
   return (
     <BaseField.Root
       className={fieldStyles.frame}
@@ -116,55 +114,82 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
         {label}
         <RequiredMark when={required} />
       </span>
-      <ToggleGroup
-        className={styles.group}
-        aria-labelledby={labelId}
-        aria-describedby={describedBy || undefined}
-        aria-invalid={error === undefined ? undefined : 'true'}
-        disabled={disabled}
-        multiple={multiple}
-        // Always controlled, so that what is pressed follows `options` past the first render and
-        // `value` may arrive late.
-        value={pressedChips.map(({ index }) => String(index))}
+      {/* The group is the frame's `Field.Control`, as the trigger is in `PickerField` and the file
+          input in `Upload`, so that `Form` treats it as a field: a `Form` error on its `name`
+          marks it invalid, goes when the pressed set changes, stops a submit, and `Form` moves
+          focus to it. Base UI also gives it `aria-invalid` and the `aria-describedby` naming the
+          description and error that render. It is rendered as a `fieldset`, a group whose element
+          has the constraint-validation API Base UI reads (a `div` has none) and which can take
+          focus, and the chips sit in a row inside it. */}
+      <BaseField.Control
+        // Base UI compares this to clear a `Form` entry; the group has no string value of its own.
+        value={pressedChips.length === 0 ? '' : JSON.stringify(submittedValue)}
         onBlur={onBlur}
-        onValueChange={(nextIndexes) => {
-          const nextValues = nextIndexes
-            .map(Number)
-            .sort((first, second) => first - second)
-            .flatMap((index) => {
-              const option = options[index];
-              return option ? [option.value] : [];
-            });
-          if (props.selectionMode === 'multiple') {
-            if (!controlled) {
-              setHeldValues(nextValues);
-            }
-            props.onValueChange?.(nextValues);
-            return;
-          }
-          const [chosenValue] = nextValues;
-          // An empty array is the pressed chip being pressed again, which changes nothing.
-          if (chosenValue === undefined) {
-            return;
-          }
-          if (!controlled) {
-            setHeldValues([chosenValue]);
-          }
-          props.onValueChange?.(chosenValue);
+        render={(controlProps) => {
+          // Base UI hands over the props of an `<input>`. The three that only an input reads stay
+          // out: the signature above, a default value and the change handler.
+          const {
+            value: _signature,
+            defaultValue: _defaultValue,
+            onChange: _onChange,
+            ...groupProps
+          } = controlProps as typeof controlProps & { value: string };
+          return (
+            <ToggleGroup
+              {...groupProps}
+              render={<fieldset />}
+              className={styles.group}
+              aria-labelledby={labelId}
+              // Focusable by script, for `Form`, and not a tab stop of its own: Tab goes to a chip.
+              tabIndex={-1}
+              disabled={disabled}
+              multiple={multiple}
+              // Always controlled, so that what is pressed follows `options` past the first render
+              // and `value` may arrive late.
+              value={pressedChips.map(({ index }) => String(index))}
+              onValueChange={(nextIndexes) => {
+                const nextValues = nextIndexes
+                  .map(Number)
+                  .sort((first, second) => first - second)
+                  .flatMap((index) => {
+                    const option = options[index];
+                    return option ? [option.value] : [];
+                  });
+                if (props.selectionMode === 'multiple') {
+                  if (!controlled) {
+                    setHeldValues(nextValues);
+                  }
+                  props.onValueChange?.(nextValues);
+                  return;
+                }
+                const [chosenValue] = nextValues;
+                // An empty array is the pressed chip being pressed again, which changes nothing.
+                if (chosenValue === undefined) {
+                  return;
+                }
+                if (!controlled) {
+                  setHeldValues([chosenValue]);
+                }
+                props.onValueChange?.(chosenValue);
+              }}
+            >
+              <div className={styles.row}>
+                {options.map((option, index) => (
+                  <ChipToggle
+                    key={option.value}
+                    value={String(index)}
+                    showCheck={multiple && pressedValues.includes(option.value)}
+                    icon={option.icon}
+                    disabled={option.disabled}
+                  >
+                    {option.label}
+                  </ChipToggle>
+                ))}
+              </div>
+            </ToggleGroup>
+          );
         }}
-      >
-        {options.map((option, index) => (
-          <ChipToggle
-            key={option.value}
-            value={String(index)}
-            showCheck={multiple && pressedValues.includes(option.value)}
-            icon={option.icon}
-            disabled={option.disabled}
-          >
-            {option.label}
-          </ChipToggle>
-        ))}
-      </ToggleGroup>
+      />
       {/* One input per pressed value, in the options' order, so a native form submits the group;
           without a `name` there is nothing to submit under. Disabled, as a disabled control is. */}
       {name === undefined
@@ -178,12 +203,7 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
               disabled={disabled}
             />
           ))}
-      <FieldMessages
-        description={description}
-        descriptionId={descriptionId}
-        error={error}
-        errorId={errorId}
-      />
+      <FieldMessages description={description} error={error} />
     </BaseField.Root>
   );
 }

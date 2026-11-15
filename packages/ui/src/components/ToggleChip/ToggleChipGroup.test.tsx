@@ -275,7 +275,11 @@ describe('ToggleChipGroup, multiple', () => {
   it('keeps the check out of the accessible name', () => {
     render(<MultipleGroup />);
     expect(chip('Vegan')).toHaveAccessibleName('Vegan');
-    expect(chip('Vegan').querySelector('[aria-hidden="true"]')).not.toBeNull();
+    const check = chip('Vegan').querySelector('svg');
+    expect(check).not.toBeNull();
+    // Both the span that holds the check and the drawing itself are `aria-hidden`.
+    expect(check?.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(check).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('follows a controlled list, and keeps it when the consumer ignores the change', async () => {
@@ -485,6 +489,122 @@ describe('ToggleChipGroup, inside Form', () => {
     await userEvent.click(chip('Vegan'));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSubmit).toHaveBeenCalledWith({ dietary: ['spicy'] });
+  });
+});
+
+describe('ToggleChipGroup, a Form error', () => {
+  const save = <button type="submit">Save</button>;
+
+  function dishGroup() {
+    return (
+      <ToggleChipGroup selectionMode="single" label="Dish type" name="dish" options={dishOptions} />
+    );
+  }
+
+  it('shows an entry in errors, marks the group invalid and describes it by the message', () => {
+    render(
+      <Form onSubmit={vi.fn()} errors={{ dish: 'Not offered here.' }}>
+        {dishGroup()}
+      </Form>,
+    );
+    const group = screen.getByRole('group', { name: 'Dish type' });
+    expect(screen.getByText('Not offered here.')).toBeVisible();
+    expect(group).toHaveAttribute('aria-invalid', 'true');
+    expect(group).toHaveAccessibleDescription('Not offered here.');
+  });
+
+  it('clears the entry, and the invalid mark, when a chip of a single group is pressed', async () => {
+    render(
+      <Form onSubmit={vi.fn()} errors={{ dish: 'Not offered here.' }}>
+        {dishGroup()}
+      </Form>,
+    );
+    await userEvent.click(chip('Side'));
+    expect(screen.queryByText('Not offered here.')).toBeNull();
+    const group = screen.getByRole('group', { name: 'Dish type' });
+    expect(group).not.toHaveAttribute('aria-invalid');
+    expect(group).not.toHaveAccessibleDescription();
+  });
+
+  it('clears the entry when the pressed list of a multiple group changes', async () => {
+    render(
+      <Form onSubmit={vi.fn()} errors={{ dietary: 'Too many allergies listed.' }}>
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          name="dietary"
+          options={dietaryOptions}
+          defaultValue={['vegan']}
+        />
+      </Form>,
+    );
+    expect(screen.getByText('Too many allergies listed.')).toBeVisible();
+    await userEvent.click(chip('Spicy'));
+    expect(screen.queryByText('Too many allergies listed.')).toBeNull();
+  });
+
+  it('stops the submit while the entry stands, and moves focus to the group', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Form onSubmit={onSubmit} errors={{ dish: 'Not offered here.' }}>
+        {dishGroup()}
+        {save}
+      </Form>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole('group', { name: 'Dish type' })).toHaveFocus();
+  });
+
+  it('lets Tab go on from the focused group to its first chip', async () => {
+    render(
+      <Form onSubmit={vi.fn()} errors={{ dish: 'Not offered here.' }}>
+        {dishGroup()}
+        {save}
+      </Form>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await userEvent.tab();
+    expect(chip('Main dish')).toHaveFocus();
+  });
+
+  it('submits once a press has cleared the entry', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Form onSubmit={onSubmit} errors={{ dish: 'Not offered here.' }}>
+        {dishGroup()}
+        {save}
+      </Form>,
+    );
+    await userEvent.click(chip('Side'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenCalledWith({ dish: 'side' });
+  });
+
+  it('lets an explicit error win over an entry', () => {
+    render(
+      <Form onSubmit={vi.fn()} errors={{ dish: 'From the server.' }}>
+        <ToggleChipGroup
+          selectionMode="single"
+          label="Dish type"
+          name="dish"
+          options={dishOptions}
+          error="Explicit."
+        />
+      </Form>,
+    );
+    expect(screen.getByText('Explicit.')).toBeVisible();
+    expect(screen.queryByText('From the server.')).toBeNull();
+  });
+
+  it('shows no error for a group the entries do not name', () => {
+    render(
+      <Form onSubmit={vi.fn()} errors={{ other: 'Not this one.' }}>
+        {dishGroup()}
+      </Form>,
+    );
+    expect(screen.queryByText('Not this one.')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Dish type' })).not.toHaveAttribute('aria-invalid');
   });
 });
 
