@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fn } from 'storybook/test';
 import { describe, expect, it, vi } from 'vitest';
@@ -157,6 +157,35 @@ describe('SearchField', () => {
     expect(onValueChange).toHaveBeenCalledTimes(1);
   });
 
+  // An IME's committing Enter and its cancelling Escape belong to the composition, not to the
+  // field: Chromium reports `isComposing`, and Safari fires `compositionend` before the committing
+  // Enter, so only the legacy `keyCode` 229 gives that one away.
+  describe('leaves the keys of an IME composition alone', () => {
+    const compositionKeys = [
+      ['isComposing', { isComposing: true }],
+      ['keyCode 229', { keyCode: 229 }],
+    ] as const;
+
+    it.each(compositionKeys)('does not submit on Enter with %s', (_name, init) => {
+      const onSubmit = fn();
+      render(<Default onSubmit={onSubmit} defaultValue="Ad" />);
+      fireEvent.keyDown(searchbox(), { key: 'Enter', ...init });
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it.each(compositionKeys)('does not clear on Escape with %s', (_name, init) => {
+      const onValueChange = fn();
+      const onSubmit = fn();
+      render(<WithValue onValueChange={onValueChange} onSubmit={onSubmit} />);
+      // `fireEvent` returns false when the event was cancelled: the IME's own Escape must survive.
+      expect(fireEvent.keyDown(searchbox(), { key: 'Escape', ...init })).toBe(true);
+      expect(onValueChange).not.toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(searchbox()).toHaveValue('Ada');
+      expect(screen.getByRole('button', { name: 'Clear search' })).toBeInTheDocument();
+    });
+  });
+
   it('counts one change for one Escape', async () => {
     render(<CountsChanges />);
     expect(screen.getByText('Changes: 0')).toBeInTheDocument();
@@ -165,9 +194,57 @@ describe('SearchField', () => {
     expect(screen.getByText('Changes: 1')).toBeInTheDocument();
   });
 
+  // The input is one line tall inside a taller pill, so a press on the glyph or above and below
+  // the text would focus nothing without this.
+  describe('focuses the input from a press anywhere on the pill', () => {
+    it('on the glyph, so the caret lands in the input', async () => {
+      render(<WithValue />);
+      const glyph = pill().firstElementChild;
+      if (glyph === null) throw new Error('the pill has no glyph');
+      await userEvent.click(glyph);
+      expect(searchbox()).toHaveFocus();
+    });
+
+    it('on the pill itself, cancelling the press so the focus is not taken back', () => {
+      render(<Default />);
+      expect(fireEvent.mouseDown(pill())).toBe(false);
+      expect(searchbox()).toHaveFocus();
+    });
+
+    it('but never from the input or the clear control, whose presses are their own', () => {
+      render(<WithValue />);
+      expect(fireEvent.mouseDown(searchbox())).toBe(true);
+      const clear = screen.getByRole('button', { name: 'Clear search' });
+      expect(fireEvent.mouseDown(clear)).toBe(true);
+      const clearGlyph = clear.querySelector('svg');
+      if (clearGlyph === null) throw new Error('the clear control has no glyph');
+      expect(fireEvent.mouseDown(clearGlyph)).toBe(true);
+      expect(searchbox()).not.toHaveFocus();
+    });
+  });
+
+  it('names the search landmark by the label, so two fields are two distinct landmarks', () => {
+    render(
+      <>
+        <Default />
+        <Default label="Search groups" />
+      </>,
+    );
+    expect(screen.getAllByRole('search')).toHaveLength(2);
+    expect(screen.getByRole('search', { name: 'Search people' })).toBeInTheDocument();
+    expect(screen.getByRole('search', { name: 'Search groups' })).toBeInTheDocument();
+  });
+
+  it('points the landmark at a label id built from the input id', () => {
+    render(<Default id="q" />);
+    expect(screen.getByText('Search people')).toHaveAttribute('id', 'q-label');
+    expect(screen.getByRole('search')).toHaveAttribute('aria-labelledby', 'q-label');
+  });
+
   it('puts an id on the input and keeps the label naming it', () => {
     render(<Default id="q" />);
-    const input = screen.getByLabelText('Search people');
+    // The landmark is labelled by the same label, so `getByLabelText` finds it too: ask for the input.
+    const input = screen.getByLabelText('Search people', { selector: 'input' });
     expect(input).toBe(searchbox());
     expect(input).toHaveAttribute('id', 'q');
   });
@@ -179,8 +256,8 @@ describe('SearchField', () => {
         <Default label="Search groups" />
       </>,
     );
-    const first = screen.getByLabelText('Search people');
-    const second = screen.getByLabelText('Search groups');
+    const first = screen.getByLabelText('Search people', { selector: 'input' });
+    const second = screen.getByLabelText('Search groups', { selector: 'input' });
     expect(first.id).not.toBe('');
     expect(first.id).not.toBe(second.id);
   });

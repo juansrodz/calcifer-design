@@ -1,4 +1,11 @@
-import { useId, useRef, useState, type ComponentPropsWithoutRef, type KeyboardEvent } from 'react';
+import {
+  useId,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { SearchIcon } from '../../icons/SearchIcon';
 import a11yStyles from '../../styles/a11y.module.css';
@@ -73,6 +80,10 @@ export function SearchField({
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     inputProps.onKeyDown?.(event);
+    // The Enter that commits an IME candidate and the Escape that cancels one belong to the
+    // composition. Chromium marks them `isComposing`; Safari fires `compositionend` before the
+    // committing Enter, so only the legacy `keyCode` 229 gives that one away.
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === 'Enter') {
       onSubmit?.(current);
     } else if (event.key === 'Escape' && current !== '') {
@@ -82,22 +93,37 @@ export function SearchField({
     }
   }
 
+  // The input is one line tall inside a taller pill, so a press on the glyph or above and below the
+  // text would focus nothing. Cancelling the press and focusing the input puts the caret where a
+  // bare `TextInput`'s whole-pill input would. The input and the clear control keep their own.
+  function focusInputFromPill(event: MouseEvent<HTMLDivElement>) {
+    if (event.target instanceof Element && event.target.closest('input, button') !== null) return;
+    event.preventDefault();
+    inputRef.current?.focus();
+  }
+
+  const labelId = `${inputId}-label`;
   return (
     <div
       role="search"
+      aria-labelledby={labelId}
       className={[fieldStyles.frame, styles.root, className].filter(Boolean).join(' ')}
       data-size={size}
     >
       <label
+        id={labelId}
         htmlFor={inputId}
         className={hideLabel ? a11yStyles.visuallyHidden : fieldStyles.label}
         data-disabled={disabled ? '' : undefined}
       >
         {label}
       </label>
+      {/* A pointer convenience only: the input inside is the focusable, keyboard-reachable control. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         className={[fieldStyles.control, fieldStyles.affix, styles.box].join(' ')}
         data-disabled={disabled ? '' : undefined}
+        onMouseDown={focusInputFromPill}
       >
         <span className={fieldStyles.affixIcon} aria-hidden="true">
           <SearchIcon />

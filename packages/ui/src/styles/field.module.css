@@ -178,8 +178,11 @@
   outline-offset: var(--focus-ring-offset);
 }
 
+/* `align-self: stretch` makes the input as tall as the wrapper, so a press above or below its one
+   line of text lands on the input and focuses it, as a bare `.control` input does. */
 .affixInput {
   flex: 1;
+  align-self: stretch;
   min-width: 0;
   padding: 0;
   border: 0;

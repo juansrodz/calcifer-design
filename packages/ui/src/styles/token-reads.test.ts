@@ -1283,6 +1283,7 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.affixInput \{([^}]*)\}/m,
     contains: [
       'flex: 1;',
+      'align-self: stretch;',
       'min-width: 0;',
       'padding: 0;',
       'border: 0;',
@@ -1323,13 +1324,19 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/SearchField/SearchField.module.css',
     rule: /^\.root \.box \{([^}]*)\}/m,
-    contains: ['padding-block: 0;', 'padding-inline: var(--space-4) var(--space-1);'],
-    lacks: ['min-height', 'gap'],
+    contains: [
+      'padding-block: 0;',
+      'padding-inline: var(--space-4) var(--space-1);',
+      // The larger of the touch floor and the clear circle plus the pill's two 1px borders, so a
+      // larger root font (the circle is `rem`, the floor `px`) cannot make the circle outgrow it.
+      'min-height: max(var(--size-touch), calc(var(--size-close) + 2px));',
+    ],
+    lacks: ['gap'],
   },
   {
     file: 'components/SearchField/SearchField.module.css',
     rule: /^\.root\[data-size='sm'\] \.box \{([^}]*)\}/m,
-    contains: ['min-height: var(--size-control-sm);'],
+    contains: ['min-height: max(var(--size-control-sm), calc(var(--size-close) + 2px));'],
     lacks: ['padding'],
   },
   {
@@ -1346,6 +1353,13 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/SearchField/SearchField.module.css',
     rule: /^\.root \.clear\[data-size\]::before \{([^}]*)\}/m,
     contains: ["content: '';", 'position: absolute;', 'inset: calc(50% - var(--size-touch) / 2);'],
+    lacks: [],
+  },
+  {
+    // The small pill's target stops at the pill's inner edge, not the 44 px of the md rule above.
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root\[data-size='sm'\] \.clear::before \{([^}]*)\}/m,
+    contains: ['inset-block: -1px;'],
     lacks: [],
   },
   {
