@@ -204,6 +204,19 @@ describe('ChoiceCard', () => {
     expect(screen.getByRole('radiogroup')).toHaveAccessibleDescription('Choose who can join.');
   });
 
+  it('marks every ring invalid under an error, so the skin draws them in the danger colour', () => {
+    const { unmount } = render(<WithError />);
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).toHaveAttribute('data-invalid');
+    }
+    unmount();
+
+    render(<Default />);
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).not.toHaveAttribute('data-invalid');
+    }
+  });
+
   it('describes the group with its own description beside the option lines', () => {
     render(
       <ChoiceCard

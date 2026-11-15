@@ -1175,13 +1175,48 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       '--choice-card-ring: inset 0 0 0 1px var(--color-border-strong);',
       '--choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);',
+      // The ring's size is named once; the clearance reads it, so the two cannot drift apart.
+      '--choice-card-ring-size: 1.125rem;',
+      '--choice-card-ring-clearance: calc(var(--choice-card-ring-size) + var(--space-2));',
+      // The card is a column that starts every part at the start edge, so the disc keeps its own
+      // width instead of stretching, and a long word breaks inside the card instead of widening it.
       'position: relative;',
+      'display: flex;',
+      'flex-direction: column;',
+      'align-items: flex-start;',
       'padding: var(--space-3);',
+      // The edge forced colours paint, since they remove the shadows.
+      'border: 1px solid transparent;',
       'border-radius: var(--radius-panel);',
       'background: var(--color-surface-raised);',
       'box-shadow: var(--choice-card-ring);',
+      'overflow-wrap: anywhere;',
     ],
     lacks: [],
+  },
+  // The keyboard focus rings the whole card, with the base focus ring's own width, colour and
+  // offset. Where `:has()` is understood the ring's own outline is dropped, and only there: an
+  // unconditional `.ring:focus-visible { outline: none }` would leave a browser without `:has()`
+  // with no focus indicator, so the whole-file row below refuses one at the top level.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card:has\(\.ring:focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      'outline: var(--focus-ring-width) solid var(--color-focus);',
+      'outline-offset: var(--focus-ring-offset);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@supports selector\(:has\(\*\)\) \{\s*\.ring:focus-visible \{([^}]*)\}/m,
+    contains: ['outline: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    contains: [],
+    lacks: [/^\.ring:focus-visible/m, /^\.ring:focus-visible,/m],
   },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
@@ -1246,6 +1281,14 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['margin-top: var(--space-2);'],
     lacks: [],
   },
+  // A card with no icon starts with its title, on the row the ring sits in, so that title keeps
+  // clear of the ring by the clearance the card computes.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.title:first-child \{([^}]*)\}/m,
+    contains: ['padding-inline-end: var(--choice-card-ring-clearance);'],
+    lacks: [],
+  },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^\.description \{([^}]*)\}/m,
@@ -1266,10 +1309,20 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       'inset-block-start: var(--space-3);',
       'inset-inline-end: var(--space-3);',
-      'width: 1.125rem;',
-      'height: 1.125rem;',
+      'width: var(--choice-card-ring-size);',
+      'height: var(--choice-card-ring-size);',
+      'border: 1px solid transparent;',
       'border-radius: var(--radius-full);',
       'box-shadow: var(--choice-card-dot);',
+    ],
+    lacks: [],
+  },
+  // An errored group's rings take the danger border, as `RadioGroup`'s dots do.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.ring\[data-invalid\] \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);',
     ],
     lacks: [],
   },
@@ -1287,6 +1340,25 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^\.mark > svg \{([^}]*)\}/m,
     contains: ['width: 0.6875rem;', 'height: 0.6875rem;'],
+    lacks: [],
+  },
+  // Forced colours remove the shadows and the fills, so the chosen card and its ring are told
+  // apart by system colours on the borders the two boxes keep.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.ring\[data-checked\] \{([^}]*)\}/m,
+    contains: [
+      'forced-color-adjust: none;',
+      'border-color: Highlight;',
+      'background: Highlight;',
+      'color: HighlightText;',
+    ],
     lacks: [],
   },
 

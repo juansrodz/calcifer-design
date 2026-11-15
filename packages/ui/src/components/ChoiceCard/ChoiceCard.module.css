@@ -19,17 +19,28 @@
    ring's hollow circle are inset shadows held in local properties: a `box-shadow` value that
    starts with `inset` is not one the token lint accepts as a declaration, but it is as a custom
    property's (the AvatarGroup route). The checked card re-points the outline; the checked ring
-   re-points its own circle. */
+   re-points its own circle.
+
+   The ring's size is named once and read by the ring and by the clearance. The clearance is the
+   room a title with no icon above it leaves at its end for the ring, and it is right only because
+   the ring's `inset-inline-end` equals the card's padding (both `--space-3`): the ring then ends
+   where the title's box ends, so the ring's size plus a `--space-2` gap is all the title yields.
+
+   The transparent border is what survives forced colours, which remove every `box-shadow`: the
+   browser paints it in the system text colour, so the card still has an edge (the `forced-colors`
+   block at the end gives the chosen card its own). The inset shadows sit inside it, 1 px in. */
 .card {
   --choice-card-ring: inset 0 0 0 1px var(--color-border-strong);
   --choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);
-  --choice-card-ring-clearance: calc(1.125rem + var(--space-2));
+  --choice-card-ring-size: 1.125rem;
+  --choice-card-ring-clearance: calc(var(--choice-card-ring-size) + var(--space-2));
 
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   padding: var(--space-3);
+  border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--color-surface-raised);
   box-shadow: var(--choice-card-ring);
@@ -47,6 +58,21 @@
 .card[data-disabled] {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+/* The radio is the 18 px ring in the corner, but the card is what a person chose, so the keyboard
+   focus rings the card. `base.css` already draws `:focus-visible` on the ring; where `:has()` is
+   understood that is suppressed (below) and this replaces it, so there is one indicator. A browser
+   without `:has()` keeps the ring's own outline and never loses the focus indicator. */
+.card:has(.ring:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@supports selector(:has(*)) {
+  .ring:focus-visible {
+    outline: none;
+  }
 }
 
 .disc {
@@ -106,11 +132,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.125rem;
-  height: 1.125rem;
+  width: var(--choice-card-ring-size);
+  height: var(--choice-card-ring-size);
+  border: 1px solid transparent;
   border-radius: var(--radius-full);
   box-shadow: var(--choice-card-dot);
   cursor: inherit;
+}
+
+/* An errored group's rings take the danger border, as `RadioGroup`'s dots do. Before the checked
+   rule below, which has the same specificity: a chosen ring is filled and keeps no circle. */
+.ring[data-invalid] {
+  --choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);
 }
 
 .ring[data-checked] {
@@ -127,4 +160,26 @@
 .mark > svg {
   width: 0.6875rem;
   height: 0.6875rem;
+}
+
+/* Forced colours remove every `box-shadow` and replace the fills, so a chosen card would look like
+   the rest. The transparent borders survive, and so do system colours: the chosen card's edge and
+   its filled ring take `Highlight`. `forced-color-adjust: none` on the ring because Chromium
+   otherwise paints its Canvas backplate behind the check, and `HighlightText` on that can be
+   unreadable (`Segmented.module.css` has the measurement). */
+@media (forced-colors: active) {
+  .card[data-checked] {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: Highlight;
+  }
+
+  .ring[data-checked] {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
 }
