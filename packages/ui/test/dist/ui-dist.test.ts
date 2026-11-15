@@ -57,6 +57,7 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--avatar-font-size',
   '--collapsible-heading-size',
   '--empty-state-heading-size',
+  '--toggle-chip-pressed-ring',
 ] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
@@ -126,6 +127,8 @@ describe('@calcifer-design/ui dist', () => {
       'EmptyState',
       'AvatarGroup',
       'ChoiceCard',
+      'ToggleChip',
+      'ToggleChipGroup',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

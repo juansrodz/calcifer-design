@@ -1289,6 +1289,75 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['width: 0.6875rem;', 'height: 0.6875rem;'],
     lacks: [],
   },
+
+  // `ToggleChip` and `ToggleChipGroup`, one stylesheet. An unpressed chip is the quiet surface fill
+  // and a pressed one the selected pair, whose ring an app sets through `--toggle-chip-pressed-ring`
+  // (default `none`, so the look without the hook is the fill alone). The chip's label is the sans
+  // face at the label weight, in a token size.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip \{([^}]*)\}/m,
+    contains: [
+      'display: inline-flex;',
+      'gap: var(--space-1);',
+      'padding: var(--space-2) var(--space-3);',
+      'border: 0;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-2);',
+      'color: var(--color-text);',
+      sansFamily,
+      'font-weight: var(--font-weight-label);',
+      'font-size: var(--text-sm);',
+      'line-height: var(--leading-tight);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-with-icon\] \{([^}]*)\}/m,
+    contains: ['padding-inline-start: var(--space-1);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^ {2}\.chip:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-3);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected);',
+      'color: var(--color-selected-text);',
+      'box-shadow: var(--toggle-chip-pressed-ring, none);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.icon > \* \{([^}]*)\}/m,
+    contains: ['width: 1.625rem;', 'height: 1.625rem;', 'border-radius: var(--radius-full);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.check > svg \{([^}]*)\}/m,
+    contains: ['width: 0.75rem;', 'height: 0.75rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.group \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
 ];
 
 // The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each

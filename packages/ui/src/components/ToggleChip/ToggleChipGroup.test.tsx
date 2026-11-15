@@ -1,0 +1,648 @@
+import { composeStories } from '@storybook/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import fieldStyles from '../../styles/field.module.css';
+import { Form } from '../Form/Form';
+import * as stories from './ToggleChip.stories';
+import { ToggleChipGroup, type ToggleChipOption } from './ToggleChipGroup';
+
+const { SingleGroup, MultipleGroup, Required, WithError, DisabledOption } = composeStories(stories);
+
+// The stories' fixtures, for the tests that need a plain `vi.fn()` handler: a composed story types
+// its handler with Storybook's own spy, which a `vi.fn()` does not satisfy.
+const dishOptions: ToggleChipOption[] = [
+  { value: 'main', label: 'Main dish' },
+  { value: 'side', label: 'Side' },
+  { value: 'dessert', label: 'Dessert' },
+  { value: 'drink', label: 'Drink' },
+  { value: 'other', label: 'Other' },
+];
+
+const dietaryOptions: ToggleChipOption[] = [
+  { value: 'vegetarian', label: 'Vegetarian' },
+  { value: 'vegan', label: 'Vegan' },
+  { value: 'gluten-free', label: 'Gluten-free' },
+  { value: 'spicy', label: 'Spicy' },
+];
+
+function chip(name: string): HTMLElement {
+  return screen.getByRole('button', { name });
+}
+
+function pressedLabels(): (string | null)[] {
+  return screen
+    .getAllByRole('button')
+    .filter((button) => button.getAttribute('aria-pressed') === 'true')
+    .map((button) => button.textContent);
+}
+
+function hiddenInputs(container: HTMLElement): HTMLInputElement[] {
+  return Array.from(container.querySelectorAll<HTMLInputElement>('input[type="hidden"]'));
+}
+
+describe('ToggleChipGroup, single', () => {
+  it('is a group named by its label, of toggle buttons', () => {
+    render(<SingleGroup />);
+    const group = screen.getByRole('group', { name: 'Dish type' });
+    expect(group).toBeInTheDocument();
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Main dish',
+      'Side',
+      'Dessert',
+      'Drink',
+      'Other',
+    ]);
+  });
+
+  it('presses one chip at a time and reports the value once, with one argument', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        defaultValue="main"
+        onValueChange={onValueChange}
+      />,
+    );
+    expect(pressedLabels()).toEqual(['Main dish']);
+    await userEvent.click(chip('Side'));
+    expect(pressedLabels()).toEqual(['Side']);
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange.mock.calls[0]).toEqual(['side']);
+  });
+
+  it('keeps the chip pressed, and reports nothing, when it is pressed again', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('Side'));
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    await userEvent.click(chip('Side'));
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(pressedLabels()).toEqual(['Side']);
+  });
+
+  it('presses none for a null value, and Tab lands on the first enabled chip', async () => {
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={[{ value: 'main', label: 'Main dish', disabled: true }, ...dishOptions.slice(1)]}
+        value={null}
+      />,
+    );
+    expect(pressedLabels()).toEqual([]);
+    await userEvent.tab();
+    expect(chip('Side')).toHaveFocus();
+  });
+
+  it('moves focus between the chips with the arrow keys, without pressing any', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.tab();
+    expect(chip('Main dish')).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(chip('Side')).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(chip('Main dish')).toHaveFocus();
+    expect(onValueChange).not.toHaveBeenCalled();
+    expect(pressedLabels()).toEqual([]);
+  });
+
+  it('presses the focused chip from the keyboard', async () => {
+    render(<ToggleChipGroup selectionMode="single" label="Dish type" options={dishOptions} />);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    await userEvent.keyboard(' ');
+    expect(pressedLabels()).toEqual(['Side']);
+  });
+
+  it('draws no check on a pressed chip', () => {
+    // The fixture has no icons, so any drawing inside a chip would be a check.
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        defaultValue="main"
+      />,
+    );
+    expect(pressedLabels()).toEqual(['Main dish']);
+    expect(screen.getByRole('group', { name: 'Dish type' }).querySelector('svg')).toBeNull();
+  });
+
+  it('draws only the icon on each chip of the story, the pressed one included', () => {
+    render(<SingleGroup />);
+    expect(pressedLabels()).toEqual(['Main dish']);
+    for (const button of screen.getAllByRole('button')) {
+      expect(button.querySelectorAll('svg')).toHaveLength(1);
+    }
+  });
+
+  it('follows a controlled value, and keeps it when the consumer ignores the change', async () => {
+    const onValueChange = vi.fn();
+    const { rerender } = render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        value="main"
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('Side'));
+    expect(onValueChange).toHaveBeenCalledWith('side');
+    expect(pressedLabels()).toEqual(['Main dish']);
+    rerender(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        value="drink"
+        onValueChange={onValueChange}
+      />,
+    );
+    expect(pressedLabels()).toEqual(['Drink']);
+  });
+
+  it('presses and reports an option whose value is the empty string', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={[{ value: '', label: 'Any' }, ...dishOptions]}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('Any'));
+    expect(onValueChange.mock.calls[0]).toEqual(['']);
+    expect(pressedLabels()).toEqual(['Any']);
+  });
+
+  it('presses the chip an uncontrolled defaultValue names', () => {
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        defaultValue="dessert"
+      />,
+    );
+    expect(pressedLabels()).toEqual(['Dessert']);
+  });
+
+  it('presses nothing for a value no option holds, and reports nothing', () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        value="soup"
+        onValueChange={onValueChange}
+      />,
+    );
+    expect(pressedLabels()).toEqual([]);
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('ToggleChipGroup, multiple', () => {
+  it('reports the values in the options order, not the order they were pressed', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('Spicy'));
+    expect(onValueChange.mock.calls[0]).toEqual([['spicy']]);
+    await userEvent.click(chip('Vegan'));
+    expect(onValueChange.mock.calls[1]).toEqual([['vegan', 'spicy']]);
+    await userEvent.click(chip('Vegan'));
+    expect(onValueChange.mock.calls[2]).toEqual([['spicy']]);
+    expect(onValueChange).toHaveBeenCalledTimes(3);
+    expect(pressedLabels()).toEqual(['Spicy']);
+  });
+
+  it('allows releasing the last pressed chip, which reports an empty list', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        defaultValue={['vegan']}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('Vegan'));
+    expect(onValueChange.mock.calls[0]).toEqual([[]]);
+    expect(pressedLabels()).toEqual([]);
+  });
+
+  it('draws the check on pressed chips and on no other', async () => {
+    render(<MultipleGroup />);
+    expect(pressedLabels()).toEqual(['Vegan', 'Gluten-free']);
+    expect(chip('Vegan').querySelector('svg')).not.toBeNull();
+    expect(chip('Gluten-free').querySelector('svg')).not.toBeNull();
+    expect(chip('Spicy').querySelector('svg')).toBeNull();
+    await userEvent.click(chip('Spicy'));
+    expect(chip('Spicy').querySelector('svg')).not.toBeNull();
+    await userEvent.click(chip('Vegan'));
+    expect(chip('Vegan').querySelector('svg')).toBeNull();
+  });
+
+  it('keeps the check out of the accessible name', () => {
+    render(<MultipleGroup />);
+    expect(chip('Vegan')).toHaveAccessibleName('Vegan');
+    expect(chip('Vegan').querySelector('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it('follows a controlled list, and keeps it when the consumer ignores the change', async () => {
+    const onValueChange = vi.fn();
+    const { rerender } = render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        value={['vegan']}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('Spicy'));
+    expect(onValueChange).toHaveBeenCalledWith(['vegan', 'spicy']);
+    expect(pressedLabels()).toEqual(['Vegan']);
+    rerender(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        value={['spicy', 'vegetarian']}
+        onValueChange={onValueChange}
+      />,
+    );
+    expect(pressedLabels()).toEqual(['Vegetarian', 'Spicy']);
+  });
+
+  it('presses and reports an option whose value is the empty string', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={[{ value: '', label: 'No restrictions' }, ...dietaryOptions]}
+        onValueChange={onValueChange}
+      />,
+    );
+    await userEvent.click(chip('No restrictions'));
+    expect(onValueChange.mock.calls[0]).toEqual([['']]);
+    expect(pressedLabels()).toEqual(['No restrictions']);
+  });
+});
+
+describe('ToggleChipGroup, submitting', () => {
+  it('renders one hidden input per pressed value under the name, in the options order', async () => {
+    const { container } = render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        name="dietary"
+        options={dietaryOptions}
+        defaultValue={['spicy', 'vegan']}
+      />,
+    );
+    expect(hiddenInputs(container).map((input) => [input.name, input.value])).toEqual([
+      ['dietary', 'vegan'],
+      ['dietary', 'spicy'],
+    ]);
+    await userEvent.click(chip('Vegetarian'));
+    expect(hiddenInputs(container).map((input) => input.value)).toEqual([
+      'vegetarian',
+      'vegan',
+      'spicy',
+    ]);
+  });
+
+  it('renders none without a name', () => {
+    const { container } = render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        defaultValue={['spicy', 'vegan']}
+      />,
+    );
+    expect(hiddenInputs(container)).toHaveLength(0);
+  });
+
+  it('renders one for a single group, and none while nothing is pressed', async () => {
+    const { container } = render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        name="dish"
+        options={dishOptions}
+      />,
+    );
+    expect(hiddenInputs(container)).toHaveLength(0);
+    await userEvent.click(chip('Side'));
+    expect(hiddenInputs(container).map((input) => [input.name, input.value])).toEqual([
+      ['dish', 'side'],
+    ]);
+  });
+
+  it('submits an option whose value is the empty string', () => {
+    const { container } = render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        name="dish"
+        options={[{ value: '', label: 'Any' }]}
+        defaultValue=""
+      />,
+    );
+    expect(hiddenInputs(container).map((input) => [input.name, input.value])).toEqual([
+      ['dish', ''],
+    ]);
+  });
+
+  it('puts the pressed values in a native form’s data', () => {
+    render(
+      <form aria-label="Sign up">
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          name="dietary"
+          options={dietaryOptions}
+          defaultValue={['spicy', 'vegan']}
+        />
+      </form>,
+    );
+    const form = screen.getByRole('form', { name: 'Sign up' }) as HTMLFormElement;
+    expect(new FormData(form).getAll('dietary')).toEqual(['vegan', 'spicy']);
+  });
+
+  it('submits nothing while the group is disabled', () => {
+    const { container } = render(
+      <form aria-label="Sign up">
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          name="dietary"
+          options={dietaryOptions}
+          defaultValue={['vegan']}
+          disabled
+        />
+      </form>,
+    );
+    const form = screen.getByRole('form', { name: 'Sign up' }) as HTMLFormElement;
+    expect(hiddenInputs(container)).toHaveLength(1);
+    expect(new FormData(form).getAll('dietary')).toEqual([]);
+  });
+});
+
+describe('ToggleChipGroup, inside Form', () => {
+  const save = <button type="submit">Save</button>;
+
+  it('hands onSubmit the pressed value, the list, and null for a single group with none', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Form onSubmit={onSubmit}>
+        <ToggleChipGroup
+          selectionMode="single"
+          label="Dish type"
+          name="dish"
+          options={dishOptions}
+          defaultValue="side"
+        />
+        <ToggleChipGroup
+          selectionMode="single"
+          label="Other dish type"
+          name="otherDish"
+          options={dishOptions}
+        />
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          name="dietary"
+          options={dietaryOptions}
+          defaultValue={['spicy', 'vegan']}
+        />
+        {save}
+      </Form>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      dish: 'side',
+      otherDish: null,
+      dietary: ['vegan', 'spicy'],
+    });
+  });
+
+  it('hands onSubmit the current values after a press, and nothing for a disabled group', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Form onSubmit={onSubmit}>
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          name="dietary"
+          options={dietaryOptions}
+          defaultValue={['vegan']}
+        />
+        <ToggleChipGroup
+          selectionMode="single"
+          label="Dish type"
+          name="dish"
+          options={dishOptions}
+          defaultValue="side"
+          disabled
+        />
+        {save}
+      </Form>,
+    );
+    await userEvent.click(chip('Spicy'));
+    await userEvent.click(chip('Vegan'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenCalledWith({ dietary: ['spicy'] });
+  });
+});
+
+describe('ToggleChipGroup, the frame', () => {
+  it('describes the group by the error, and marks it invalid', () => {
+    render(<WithError />);
+    const group = screen.getByRole('group', { name: /Dish type/ });
+    expect(group).toHaveAttribute('aria-invalid', 'true');
+    expect(group).toHaveAccessibleDescription('Choose a dish type.');
+    expect(screen.getByText('Choose a dish type.')).toBeVisible();
+  });
+
+  it('describes the group by its description', () => {
+    render(<MultipleGroup />);
+    const group = screen.getByRole('group', { name: 'Dietary needs' });
+    expect(group).toHaveAccessibleDescription('Tell the host what you cannot eat.');
+    expect(group).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('describes the group by both, the description first', () => {
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        description="Pick the nearest."
+        error="Choose a dish type."
+      />,
+    );
+    expect(screen.getByRole('group', { name: 'Dish type' })).toHaveAccessibleDescription(
+      'Pick the nearest. Choose a dish type.',
+    );
+  });
+
+  it('carries no description attribute and no invalid mark when neither is given', () => {
+    render(<SingleGroup />);
+    const group = screen.getByRole('group', { name: 'Dish type' });
+    expect(group).not.toHaveAttribute('aria-describedby');
+    expect(group).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('renders no description node for a description that is false or null', () => {
+    const { rerender } = render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        description={false}
+      />,
+    );
+    expect(screen.getByRole('group', { name: 'Dish type' })).not.toHaveAttribute(
+      'aria-describedby',
+    );
+    rerender(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        description={null}
+      />,
+    );
+    expect(screen.getByRole('group', { name: 'Dish type' })).not.toHaveAttribute(
+      'aria-describedby',
+    );
+  });
+
+  it('draws the required mark after the label, hidden from assistive technology', () => {
+    const { container } = render(<Required />);
+    const mark = container.querySelector(`.${fieldStyles.required}`);
+    expect(mark).not.toBeNull();
+    expect(mark).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('group', { name: 'Dish type' })).toBeInTheDocument();
+  });
+
+  it('draws no required mark unless it is required', () => {
+    const { container } = render(<SingleGroup />);
+    expect(container.querySelector(`.${fieldStyles.required}`)).toBeNull();
+  });
+
+  it('calls onBlur when focus leaves the group', async () => {
+    const onBlur = vi.fn();
+    render(
+      <>
+        <ToggleChipGroup
+          selectionMode="single"
+          label="Dish type"
+          options={dishOptions}
+          onBlur={onBlur}
+        />
+        <button type="button">After</button>
+      </>,
+    );
+    await userEvent.tab();
+    expect(onBlur).not.toHaveBeenCalled();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+    expect(onBlur).toHaveBeenCalled();
+  });
+});
+
+describe('ToggleChipGroup, disabled', () => {
+  it('cannot press the disabled option, and the arrow keys step over it', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions.map((option) =>
+          option.value === 'side' ? { ...option, disabled: true } : option,
+        )}
+        onValueChange={onValueChange}
+      />,
+    );
+    expect(chip('Side')).toBeDisabled();
+    expect(chip('Dessert')).not.toBeDisabled();
+    await userEvent.click(chip('Side'));
+    expect(onValueChange).not.toHaveBeenCalled();
+    expect(chip('Side')).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.tab();
+    expect(chip('Main dish')).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(chip('Dessert')).toHaveFocus();
+  });
+
+  it('disables the fourth chip in DisabledOption', () => {
+    render(<DisabledOption />);
+    expect(chip('Drink')).toBeDisabled();
+    expect(chip('Main dish')).not.toBeDisabled();
+  });
+
+  it('disables every chip when the group is disabled, and reports nothing', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        disabled
+        onValueChange={onValueChange}
+      />,
+    );
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toBeDisabled();
+    }
+    await userEvent.click(chip('Vegan'));
+    expect(onValueChange).not.toHaveBeenCalled();
+    expect(pressedLabels()).toEqual([]);
+  });
+
+  it('dims the group’s label when the group is disabled', () => {
+    const { container } = render(
+      <ToggleChipGroup selectionMode="single" label="Dish type" options={dishOptions} disabled />,
+    );
+    expect(container.querySelector(`.${fieldStyles.legend}`)).toHaveAttribute('data-disabled');
+  });
+
+  it('leaves the label undimmed otherwise', () => {
+    const { container } = render(<SingleGroup />);
+    expect(container.querySelector(`.${fieldStyles.legend}`)).not.toHaveAttribute('data-disabled');
+  });
+});

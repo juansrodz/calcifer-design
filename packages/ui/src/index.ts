@@ -151,3 +151,12 @@ export { AvatarGroup } from './components/AvatarGroup/AvatarGroup';
 export type { AvatarGroupProps, AvatarGroupItem } from './components/AvatarGroup/AvatarGroup';
 export { ChoiceCard } from './components/ChoiceCard/ChoiceCard';
 export type { ChoiceCardProps, ChoiceCardOption } from './components/ChoiceCard/ChoiceCard';
+export { ToggleChip } from './components/ToggleChip/ToggleChip';
+export { ToggleChipGroup } from './components/ToggleChip/ToggleChipGroup';
+export type { ToggleChipProps } from './components/ToggleChip/ToggleChip';
+export type {
+  ToggleChipGroupProps,
+  ToggleChipOption,
+  ToggleChipGroupSingleProps,
+  ToggleChipGroupMultipleProps,
+} from './components/ToggleChip/ToggleChipGroup';
