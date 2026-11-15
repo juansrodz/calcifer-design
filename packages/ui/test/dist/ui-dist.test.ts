@@ -129,6 +129,7 @@ describe('@calcifer-design/ui dist', () => {
       'ChoiceCard',
       'ToggleChip',
       'ToggleChipGroup',
+      'ProgressBar',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }

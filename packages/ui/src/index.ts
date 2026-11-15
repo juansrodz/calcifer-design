@@ -160,3 +160,5 @@ export type {
   ToggleChipGroupSingleProps,
   ToggleChipGroupMultipleProps,
 } from './components/ToggleChip/ToggleChipGroup';
+export { ProgressBar } from './components/ProgressBar/ProgressBar';
+export type { ProgressBarProps } from './components/ProgressBar/ProgressBar';

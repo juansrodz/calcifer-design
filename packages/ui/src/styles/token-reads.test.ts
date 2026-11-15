@@ -1442,6 +1442,168 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
     lacks: [],
   },
+
+  // `ProgressBar`: a label row, a track and a helper line. The fill's colour is a local property,
+  // so each tone and status names a colour once: the accent by default, the selected colour for the
+  // `selected` tone, and the success and danger colours for the statuses, which win over a tone.
+  // The label is the sans face at the label weight and the value at the button weight, both in a
+  // token size; every weight in the file is a token.
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    contains: [],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      '--progress-bar-fill: var(--color-accent);',
+      'position: relative;',
+      'display: flex;',
+      'flex-direction: column;',
+      'gap: var(--space-2);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: ['--progress-bar-fill: var(--color-selected);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-status='finished'\] \{([^}]*)\}/m,
+    contains: ['--progress-bar-fill: var(--color-success);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-status='error'\] \{([^}]*)\}/m,
+    contains: ['--progress-bar-fill: var(--color-danger);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.row \{([^}]*)\}/m,
+    contains: ['display: flex;', 'justify-content: space-between;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.label,\n\.value \{([^}]*)\}/m,
+    contains: [
+      'color: var(--color-text);',
+      sansFamily,
+      'font-size: var(--text-sm);',
+      'line-height: var(--leading-snug);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.label \{([^}]*)\}/m,
+    contains: ['font-weight: var(--font-weight-label);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    // After a blank line: `.value {` also begins the line of the shared `.label,\n.value {` rule.
+    rule: /\n\n\.value \{([^}]*)\}/,
+    contains: ['font-weight: var(--font-weight-button);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.track \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'height: 0.5rem;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-3);',
+      'overflow: hidden;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-size='sm'\] \.track \{([^}]*)\}/m,
+    contains: ['height: 0.25rem;'],
+    lacks: [],
+  },
+  // The fill: the local colour, and a width transition on the motion tokens (Base UI writes the
+  // width itself, inline).
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.indicator \{([^}]*)\}/m,
+    contains: [
+      'border-radius: var(--radius-full);',
+      'background: var(--progress-bar-fill);',
+      'transition-property: width;',
+      'transition-duration: var(--motion-duration-2);',
+      'transition-timing-function: var(--motion-ease);',
+    ],
+    lacks: [],
+  },
+  // Indeterminate: a 40% segment that rests centred and slides on `translate`, symmetrically about
+  // its rest (its own width's percentages: 175% is 70% of the track, fully off either edge).
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.indicator\[data-indeterminate\] \{([^}]*)\}/m,
+    contains: [
+      'position: absolute;',
+      'inset-inline-start: 30%;',
+      'inline-size: 40%;',
+      'animation-name: slide;',
+      'animation-duration: var(--motion-duration-4);',
+      'animation-timing-function: var(--motion-ease);',
+      'animation-iteration-count: infinite;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    contains: ['translate: -175% 0;', 'translate: 175% 0;'],
+    lacks: [],
+  },
+  // Reduced motion: `base.css` only shortens an animation to its end frame, which here lies off the
+  // track, so the slide stops and the segment stays at its rest: centred, 40% wide, 30% in.
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^ {2}\.indicator\[data-indeterminate\] \{([^}]*)\}/m,
+    contains: ['animation-name: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.helper \{([^}]*)\}/m,
+    contains: [
+      'color: var(--color-text-muted);',
+      ...bodyRole,
+      'font-size: var(--text-xs);',
+      'line-height: var(--leading-snug);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-status='error'\] \.helper \{([^}]*)\}/m,
+    contains: ['color: var(--color-danger);'],
+    lacks: [],
+  },
+  // Forced colours: the track keeps an edge in the text colour and the fill the system highlight.
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^ {2}\.track \{([^}]*)\}/m,
+    contains: ['outline: 1px solid CanvasText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^ {2}\.indicator \{([^}]*)\}/m,
+    contains: ['forced-color-adjust: none;', 'background: Highlight;'],
+    lacks: [],
+  },
 ];
 
 // The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each
