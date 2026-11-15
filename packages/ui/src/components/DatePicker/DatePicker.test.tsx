@@ -9,6 +9,7 @@ import { DatePicker, type DatePickerProps } from './DatePicker';
 import * as stories from './DatePicker.stories';
 
 const allStories = composeStories(stories);
+const { LeadingIconLongDate } = allStories;
 
 /** Pinned so "today" is known. Only `Date` is faked: user-event and Base UI need real timers. */
 const NOW = new Date(2026, 2, 18, 12);
@@ -120,6 +121,114 @@ describe('DatePicker', () => {
       await userEvent.keyboard('{Enter}');
       await screen.findByRole('dialog');
       await waitFor(() => expect(focusedDate()).toBe('2026-03-08'));
+    });
+  });
+
+  describe('the date format and the icon placement', () => {
+    /** The trigger's two parts: the icon's wrapper and the span holding the value or placeholder. */
+    function parts(): { icon: Element | null; value: Element | null } {
+      const children = Array.from(trigger().children);
+      return {
+        icon: children.find((child) => child.classList.contains('icon')) ?? null,
+        value: children.find((child) => child.classList.contains('value')) ?? null,
+      };
+    }
+
+    it('reads the date in the format the story asks for, and its name ends with it', () => {
+      render(<LeadingIconLongDate />);
+      expect(trigger()).toHaveTextContent('Tue, Feb 17, 2026');
+      expect(trigger()).toHaveAccessibleName('Event date Tue, Feb 17, 2026');
+    });
+
+    it('puts the icon before the value and says so on the trigger', () => {
+      render(<LeadingIconLongDate />);
+      expect(trigger()).toHaveAttribute('data-icon-placement', 'start');
+      const { icon, value } = parts();
+      expect(trigger().firstElementChild).toBe(icon);
+      expect(icon?.nextElementSibling).toBe(value);
+      expect(icon?.querySelector('svg')).not.toBeNull();
+      expect(value).toHaveTextContent('Tue, Feb 17, 2026');
+    });
+
+    it('is `dateStyle: medium` with the icon last and no attribute when neither prop is given', () => {
+      renderPicker({ locale: 'en-US', defaultValue: '2026-02-17' });
+      expect(trigger()).toHaveTextContent('Feb 17, 2026');
+      expect(trigger()).toHaveAccessibleName('Event date Feb 17, 2026');
+      expect(trigger()).not.toHaveAttribute('data-icon-placement');
+      const { icon, value } = parts();
+      expect(trigger().lastElementChild).toBe(icon);
+      expect(value?.nextElementSibling).toBe(icon);
+    });
+
+    it('treats `iconPlacement="end"` as the default', () => {
+      renderPicker({ locale: 'en-US', defaultValue: '2026-02-17', iconPlacement: 'end' });
+      expect(trigger()).not.toHaveAttribute('data-icon-placement');
+      expect(trigger().lastElementChild).toBe(parts().icon);
+    });
+
+    it('moves the icon without touching the format, and the format without the icon', () => {
+      const { unmount } = renderPicker({
+        locale: 'en-US',
+        defaultValue: '2026-02-17',
+        iconPlacement: 'start',
+      });
+      expect(trigger()).toHaveTextContent('Feb 17, 2026');
+      expect(trigger().firstElementChild).toBe(parts().icon);
+      unmount();
+      renderPicker({
+        locale: 'en-US',
+        defaultValue: '2026-02-17',
+        formatOptions: { dateStyle: 'full' },
+      });
+      expect(trigger()).toHaveTextContent('Tuesday, February 17, 2026');
+      expect(trigger().lastElementChild).toBe(parts().icon);
+    });
+
+    it('formats in the locale the picker was given', () => {
+      renderPicker({
+        locale: 'es-ES',
+        defaultValue: '2026-02-17',
+        formatOptions: { weekday: 'short', day: 'numeric', month: 'short' },
+      });
+      expect(trigger()).toHaveTextContent('mar, 17 feb');
+    });
+
+    it('leaves the placeholder alone, and the icon where it was put', () => {
+      renderPicker({
+        placeholder: 'Pick a day',
+        formatOptions: { dateStyle: 'full' },
+        iconPlacement: 'start',
+      });
+      expect(trigger()).toHaveAccessibleName('Event date Pick a day');
+      expect(parts().value).toHaveAttribute('data-placeholder');
+      expect(trigger().firstElementChild).toBe(parts().icon);
+    });
+
+    it("leaves the calendar's labels in their own format", async () => {
+      render(<LeadingIconLongDate />);
+      await openCalendar();
+      expect(screen.getByRole('grid', { name: 'February 2026' })).toBeVisible();
+      expect(cell('Tuesday, February 17, 2026')).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('shows a date chosen from the calendar in the same format', async () => {
+      render(<LeadingIconLongDate />);
+      await openCalendar();
+      await userEvent.click(cell('Wednesday, February 18, 2026'));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(trigger()).toHaveTextContent('Wed, Feb 18, 2026');
+    });
+
+    it('keeps the clear button after the trigger, whichever end the icon is on', () => {
+      renderPicker({
+        locale: 'en-US',
+        defaultValue: '2026-02-17',
+        iconPlacement: 'start',
+        clearable: true,
+      });
+      expect(trigger('Event date Feb 17, 2026').nextElementSibling).toBe(
+        screen.getByRole('button', { name: 'Clear Event date' }),
+      );
     });
   });
 

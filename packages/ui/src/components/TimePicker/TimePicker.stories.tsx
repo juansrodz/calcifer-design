@@ -2,6 +2,25 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Field } from '../Field/Field';
 import { TimePicker, type TimePickerProps } from './TimePicker';
 
+/** A consumer's own glyph: the library ships none for a clock, and `startIcon` takes any node. */
+function ClockGlyph() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 4.5V8l2.5 1.5" />
+    </svg>
+  );
+}
+
 interface TimePickerStoryProps extends TimePickerProps {
   description?: string;
   error?: string;
@@ -51,4 +70,5 @@ export const Disabled: Story = { args: { disabled: true, defaultValue: '18:30' }
 export const WithError: Story = {
   args: { error: 'Arrive before the doors close.', defaultValue: '23:30' },
 };
+export const WithStartIcon: Story = { args: { startIcon: <ClockGlyph />, defaultValue: '18:30' } };
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultValue: '18:30' } };

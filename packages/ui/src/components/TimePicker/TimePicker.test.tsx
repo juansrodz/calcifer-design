@@ -7,8 +7,17 @@ import { Field } from '../Field/Field';
 import { TimePicker } from './TimePicker';
 import * as stories from './TimePicker.stories';
 
-const { Default, Prefilled, Bounded, Described, Required, Disabled, WithError, Dark } =
-  composeStories(stories);
+const {
+  Default,
+  Prefilled,
+  Bounded,
+  Described,
+  Required,
+  Disabled,
+  WithError,
+  WithStartIcon,
+  Dark,
+} = composeStories(stories);
 
 function timeInput(): HTMLInputElement {
   return screen.getByLabelText<HTMLInputElement>('Arrival');
@@ -23,6 +32,7 @@ describe('TimePicker', () => {
     ['Required', Required],
     ['Disabled', Disabled],
     ['WithError', WithError],
+    ['WithStartIcon', WithStartIcon],
     ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
@@ -100,5 +110,57 @@ describe('TimePicker', () => {
     render(<WithError />);
     expect(timeInput()).toHaveAttribute('aria-invalid', 'true');
     expect(timeInput()).toHaveAccessibleDescription('Arrive before the doors close.');
+  });
+
+  describe('with a leading icon', () => {
+    it('keeps the native time input and its label, inside a pill after a decorative icon', () => {
+      render(<WithStartIcon />);
+      expect(timeInput()).toHaveAttribute('type', 'time');
+      expect(timeInput()).toHaveClass('affixInput');
+      expect(timeInput()).not.toHaveClass('control');
+      const pill = timeInput().parentElement;
+      expect(pill).toHaveClass('control', 'affix');
+      const icon = timeInput().previousElementSibling;
+      expect(icon).toBe(pill?.firstElementChild);
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon?.querySelector('svg')).not.toBeNull();
+    });
+
+    it('is a bare input wearing the skin when there is no icon, with no wrapper', () => {
+      render(<Default />);
+      expect(timeInput()).toHaveClass('control');
+      expect(timeInput()).not.toHaveClass('affixInput');
+      expect(timeInput().closest('.affix')).toBeNull();
+    });
+
+    it('keeps the field wiring on the input, the error as it does without an icon', () => {
+      render(
+        <Field label="Arrival" error="Arrive before the doors close.">
+          <TimePicker startIcon={<svg />} />
+        </Field>,
+      );
+      expect(timeInput()).toHaveAttribute('aria-invalid', 'true');
+      expect(timeInput()).toHaveAttribute('data-invalid');
+      expect(timeInput()).toHaveAccessibleDescription('Arrive before the doors close.');
+    });
+
+    it('focuses the input from a press on the icon, the same pill behaviour as TextInput', () => {
+      render(<WithStartIcon />);
+      const icon = timeInput().previousElementSibling;
+      if (icon === null) throw new Error('the pill has no icon');
+      expect(fireEvent.mouseDown(icon)).toBe(false);
+      expect(timeInput()).toHaveFocus();
+    });
+
+    it('reports the value as it does without an icon', () => {
+      const onValueChange = vi.fn();
+      render(
+        <Field label="Arrival">
+          <TimePicker startIcon={<svg />} onValueChange={onValueChange} />
+        </Field>,
+      );
+      fireEvent.change(timeInput(), { target: { value: '18:30' } });
+      expect(onValueChange).toHaveBeenCalledWith('18:30');
+    });
   });
 });

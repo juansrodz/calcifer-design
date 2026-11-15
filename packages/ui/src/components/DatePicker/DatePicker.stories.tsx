@@ -50,4 +50,13 @@ function ControlledPicker(props: DatePickerProps) {
   return <DatePicker {...props} value={date} onValueChange={setDate} clearable />;
 }
 export const Controlled: Story = { render: (args) => <ControlledPicker {...args} /> };
+/** The date as a longer line, with the calendar glyph leading it, as a form that reads like a sentence has it. */
+export const LeadingIconLongDate: Story = {
+  args: {
+    locale: 'en-US',
+    defaultValue: '2026-02-17',
+    formatOptions: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
+    iconPlacement: 'start',
+  },
+};
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultValue: '2026-03-08' } };

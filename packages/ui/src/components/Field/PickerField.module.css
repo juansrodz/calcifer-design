@@ -15,6 +15,12 @@
   cursor: pointer;
 }
 
+/* The icon first: the trigger stops spreading its parts to both ends and packs them to the start.
+   The attribute makes this rule the stronger one, so it never depends on source order. */
+.trigger[data-icon-placement='start'] {
+  justify-content: flex-start;
+}
+
 .value {
   overflow: hidden;
   white-space: nowrap;

@@ -1299,6 +1299,13 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // A disabled input would show the browser's arrow over the wrapper's `not-allowed`.
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['cursor: inherit;'],
+    lacks: [],
+  },
+  {
     file: 'styles/field.module.css',
     rule: /^\.affixInput::placeholder \{([^}]*)\}/m,
     contains: ['color: var(--color-text-subtle);'],
@@ -1314,6 +1321,49 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'styles/field.module.css',
     rule: /^\.affixIcon > svg \{([^}]*)\}/m,
     contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+
+  // `TextInput` and `TimePicker` with a leading icon (L2-18): the wrapper is not the input, so the
+  // input's `data-invalid` and `data-disabled` are read through `:has`, repeating `.control`'s own
+  // declarations. Both rules weigh (0,3,0), the focus ring's weight, and follow it, so an invalid
+  // focused field keeps the danger border as a bare `.control` one does.
+  {
+    file: 'styles/field.module.css',
+    contains: [
+      '.affix:has(> .affixInput:focus-visible)',
+      '.affix:has(> .affixInput[data-invalid])',
+      '.affix:has(> .affixInput[data-disabled])',
+      'var(--focus-ring-width)',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix:has\(> \.affixInput\[data-invalid\]\) \{([^}]*)\}/m,
+    contains: [
+      'border-color: var(--color-danger-border);',
+      'background: var(--color-danger-surface);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix:has\(> \.affixInput\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['cursor: not-allowed;', 'opacity: 0.55;'],
+    lacks: [],
+  },
+  {
+    // `PickerField`'s icon at the start: the trigger packs its parts to the start instead of
+    // spreading them across it, and says so through the attribute.
+    file: 'components/Field/PickerField.module.css',
+    contains: ["[data-icon-placement='start']"],
+    lacks: [],
+  },
+  {
+    file: 'components/Field/PickerField.module.css',
+    rule: /^\.trigger\[data-icon-placement='start'\] \{([^}]*)\}/m,
+    contains: ['justify-content: flex-start;'],
     lacks: [],
   },
 

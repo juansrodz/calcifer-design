@@ -1,6 +1,5 @@
-import { Input as BaseInput } from '@base-ui/react/input';
-import type { ComponentPropsWithoutRef } from 'react';
-import fieldStyles from '../../styles/field.module.css';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { AffixInput } from '../Field/AffixInput';
 import { useFieldRequired } from '../Field/Field';
 
 export interface TimePickerProps extends Omit<
@@ -30,18 +29,29 @@ export interface TimePickerProps extends Omit<
   max?: string;
   /** The granularity in seconds, as the native attribute has it: 900 is every quarter hour. */
   step?: number;
+  /**
+   * A decorative glyph inside the field, before the time: an icon from your own set, sized to 1rem
+   * and coloured by the text-muted role. The field's label still names the input.
+   */
+  startIcon?: ReactNode;
 }
 
 /**
  * Goes inside `Field`. The native control is the choice here: it handles locale, 12 or 24-hour
  * entry, the keyboard and mobile wheels, and none of that is worth rebuilding.
  */
-export function TimePicker({ value, defaultValue, onValueChange, ...rest }: TimePickerProps) {
+export function TimePicker({
+  value,
+  defaultValue,
+  onValueChange,
+  startIcon,
+  ...rest
+}: TimePickerProps) {
   const required = useFieldRequired();
   return (
-    <BaseInput
+    <AffixInput
       {...rest}
-      className={fieldStyles.control}
+      startIcon={startIcon}
       type="time"
       value={value}
       defaultValue={defaultValue}

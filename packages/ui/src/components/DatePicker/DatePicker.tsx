@@ -42,6 +42,8 @@ const DEFAULT_LABELS: Omit<DatePickerLabels, 'clear'> = {
   unavailableMessage: 'Choose an available date.',
 };
 
+const DEFAULT_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = { dateStyle: 'medium' };
+
 export interface DatePickerProps extends FieldFrameProps {
   /** The visible label, and the start of the trigger's accessible name. */
   label: string;
@@ -89,6 +91,19 @@ export interface DatePickerProps extends FieldFrameProps {
   clearable?: boolean;
   /** Shown on the trigger while nothing is chosen. */
   placeholder?: string;
+  /**
+   * How the chosen date reads on the trigger, in the picker's `locale`: the options of
+   * `Intl.DateTimeFormat`. Defaults to `{ dateStyle: 'medium' }`. The placeholder and the calendar's
+   * own labels do not follow it. The date is a calendar day, so `timeZone` and `calendar` are fixed
+   * (UTC and Gregorian) whatever the options say. `Intl` refuses `dateStyle` beside the individual
+   * fields (`weekday`, `month` and the rest), and so does this: use one or the other.
+   */
+  formatOptions?: Intl.DateTimeFormatOptions;
+  /**
+   * Which end of the trigger the calendar icon sits at. `start` puts it before the date and packs
+   * both to the start; `end` is the trigger as it was.
+   */
+  iconPlacement?: 'start' | 'end';
   /** The words the control says itself, for an app that is not in English. */
   labels?: Partial<DatePickerLabels>;
 }
@@ -115,6 +130,8 @@ export function DatePicker({
   weekStartsOn,
   clearable = false,
   placeholder = 'Choose a date',
+  formatOptions = DEFAULT_FORMAT_OPTIONS,
+  iconPlacement = 'end',
   labels,
 }: DatePickerProps) {
   const gridRef = useRef<HTMLTableElement>(null);
@@ -148,11 +165,10 @@ export function DatePicker({
       disabled={disabled}
       value={chosen}
       valueText={
-        chosen === null
-          ? placeholder
-          : dateFormatter(resolvedLocale, { dateStyle: 'medium' }).format(chosen)
+        chosen === null ? placeholder : dateFormatter(resolvedLocale, formatOptions).format(chosen)
       }
       icon={<CalendarIcon />}
+      iconPlacement={iconPlacement}
       requiredWord={words.required}
       validate={() => {
         if (chosen === null) {

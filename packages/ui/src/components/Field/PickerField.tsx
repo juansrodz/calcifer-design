@@ -14,8 +14,14 @@ export interface PickerFieldProps extends FieldFrameProps {
   value: string | null;
   /** The trigger's words: the value as it reads, or the placeholder. */
   valueText: string;
-  /** Sits at the end of the trigger. */
+  /** Sits at the end of the trigger, or at the start with `iconPlacement`. */
   icon: ReactNode;
+  /**
+   * Which end of the trigger the icon sits at. `start` puts its wrapper before the value and writes
+   * `data-icon-placement="start"` on the trigger, which then packs both to the start; `end` is the
+   * trigger as it was, with no attribute.
+   */
+  iconPlacement?: 'start' | 'end';
   /** Added to the icon's wrapper, for a picker whose icon reacts to the popup. */
   iconClassName?: string;
   /** Joins the trigger's accessible name when the field is `required`. */
@@ -56,6 +62,7 @@ export function PickerField({
   value,
   valueText,
   icon,
+  iconPlacement = 'end',
   iconClassName,
   requiredWord,
   validate,
@@ -74,7 +81,12 @@ export function PickerField({
   const valueId = useId();
   const requiredId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const iconAtStart = iconPlacement === 'start';
   const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  const iconSpan = (
+    <span className={[styles.icon, iconClassName].filter(Boolean).join(' ')}>{icon}</span>
+  );
 
   useFormValue(disabled ? undefined : name, value);
   useFormReset(hiddenInputRef, onReset);
@@ -113,10 +125,12 @@ export function PickerField({
                 aria-labelledby={[labelId, required ? requiredId : null, valueId]
                   .filter(Boolean)
                   .join(' ')}
+                data-icon-placement={iconAtStart ? 'start' : undefined}
                 render={<button type="button" />}
               />
             }
           >
+            {iconAtStart ? iconSpan : null}
             <span
               id={valueId}
               className={styles.value}
@@ -124,7 +138,7 @@ export function PickerField({
             >
               {valueText}
             </span>
-            <span className={[styles.icon, iconClassName].filter(Boolean).join(' ')}>{icon}</span>
+            {iconAtStart ? null : iconSpan}
           </BasePopover.Trigger>
           {children}
         </BasePopover.Root>
