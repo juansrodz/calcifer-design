@@ -6,9 +6,13 @@ import styles from './ProgressBar.module.css';
 /** The statuses that carry a spoken word; `active` is the normal case and says nothing. */
 type ProgressBarStatusWord = 'finished' | 'error';
 
-const DEFAULT_STATUS_LABELS: Record<ProgressBarStatusWord, string> = {
+/** Every word the bar speaks: the two status words, and the value of a bar with none. */
+type ProgressBarWord = ProgressBarStatusWord | 'indeterminate';
+
+const DEFAULT_WORDS: Record<ProgressBarWord, string> = {
   finished: 'Finished',
   error: 'Error',
+  indeterminate: 'indeterminate progress',
 };
 
 const DEFAULT_MAX = 100;
@@ -28,8 +32,9 @@ export interface ProgressBarProps {
   /** The value that fills the track. Anything that is not a positive finite number reads as 100. */
   max?: number;
   /**
-   * `finished` fills the track and says so, whatever `value` is. `error` keeps the value and says
-   * so. Both are stated in words and not only in colour.
+   * `finished` fills the track and says so, whatever `value` is. `error` keeps the value and draws
+   * it in the danger colour. Both are also stated in a visually hidden word, for assistive
+   * technology, so pair `error` with `helperText` to give sighted people the reason in words.
    */
   status?: 'active' | 'finished' | 'error';
   size?: 'sm' | 'md';
@@ -42,8 +47,13 @@ export interface ProgressBarProps {
   hideValue?: boolean;
   /** `selected` fills with the selected colour, the pair an app re-scopes for a chosen thing. */
   tone?: 'accent' | 'selected';
-  /** The words `finished` and `error` are stated in, for an app that is not in English. */
-  statusLabels?: Partial<Record<ProgressBarStatusWord, string>>;
+  /**
+   * The words the bar speaks, for an app that is not in English: `finished` and `error` follow the
+   * label in the bar's name, and `indeterminate` is the announced value of a bar with none (its
+   * `aria-valuetext`). Defaults `Finished`, `Error` and `indeterminate progress`; a key left out,
+   * or `undefined`, keeps its default.
+   */
+  statusLabels?: Partial<Record<ProgressBarWord, string>>;
 }
 
 function defaultFormatValue(value: number, max: number): string {
@@ -80,9 +90,25 @@ export function ProgressBar({
       ? Math.min(Math.max(rawValue, 0), effectiveMax)
       : null;
   const valueText = effectiveValue === null ? undefined : formatValue(effectiveValue, effectiveMax);
-  const statusWord =
-    status === 'active' ? undefined : { ...DEFAULT_STATUS_LABELS, ...statusLabels }[status];
+  // Per key, so a caller's `{ error: undefined }` keeps the default word.
+  const wordOf = (word: ProgressBarWord) => statusLabels?.[word] ?? DEFAULT_WORDS[word];
+  const statusWord = status === 'active' ? undefined : wordOf(status);
+  const showValue = valueText !== undefined && !hideValue;
   const hasHelper = helperText !== undefined && helperText !== null && helperText !== false;
+  const labelElement = (
+    <BaseProgress.Label className={hideLabel ? a11yStyles.visuallyHidden : styles.label}>
+      {label}
+      {/* The word is part of the bar's name, as `Alert` and `Steps` state a tone: colour is never
+          the only signal. The space is real text, since two inline boxes would be read as one
+          word. */}
+      {statusWord === undefined ? null : (
+        <>
+          {' '}
+          <span className={a11yStyles.visuallyHidden}>{statusWord}</span>
+        </>
+      )}
+    </BaseProgress.Label>
+  );
   return (
     <BaseProgress.Root
       className={styles.root}
@@ -91,29 +117,24 @@ export function ProgressBar({
       data-tone={tone}
       value={effectiveValue}
       max={effectiveMax}
-      // Left out for an indeterminate bar, so Base UI's own wording for it stands.
-      {...(valueText === undefined ? {} : { 'aria-valuetext': valueText })}
+      // An indeterminate bar has no value to format, so it announces its own word.
+      aria-valuetext={valueText ?? wordOf('indeterminate')}
       aria-describedby={hasHelper ? helperId : undefined}
     >
-      <div className={styles.row}>
-        <BaseProgress.Label className={hideLabel ? a11yStyles.visuallyHidden : styles.label}>
-          {label}
-          {/* The word is part of the bar's name, as `Alert` and `Steps` state a tone: colour is
-              never the only signal. The space is real text, since two inline boxes would be read
-              as one word. */}
-          {statusWord === undefined ? null : (
-            <>
-              {' '}
-              <span className={a11yStyles.visuallyHidden}>{statusWord}</span>
-            </>
-          )}
-        </BaseProgress.Label>
-        {valueText === undefined || hideValue ? null : (
-          <span className={styles.value} aria-hidden="true">
-            {valueText}
-          </span>
-        )}
-      </div>
+      {/* The row exists only when something in it is drawn. A hidden label is out of flow, so with
+          nothing else in the row an empty one would still add the root's `gap` above the track. */}
+      {!hideLabel || showValue ? (
+        <div className={styles.row}>
+          {labelElement}
+          {showValue ? (
+            <span className={styles.value} aria-hidden="true">
+              {valueText}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        labelElement
+      )}
       <BaseProgress.Track className={styles.track}>
         <BaseProgress.Indicator className={styles.indicator} />
       </BaseProgress.Track>

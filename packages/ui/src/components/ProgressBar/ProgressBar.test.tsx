@@ -97,10 +97,20 @@ describe('ProgressBar', () => {
     it.each([
       ['NaN', Number.NaN],
       ['Infinity', Number.POSITIVE_INFINITY],
+      ['-Infinity', Number.NEGATIVE_INFINITY],
     ])('reads a %s value as indeterminate', (_name, value) => {
       render(<ProgressBar label="Odd" value={value} />);
       const bar = screen.getByRole('progressbar', { name: 'Odd' });
       expect(bar).not.toHaveAttribute('aria-valuenow');
+      expect(screen.queryByText(/%/)).toBeNull();
+    });
+
+    it('reads a missing value, which a JavaScript caller can leave out, as indeterminate', () => {
+      // @ts-expect-error `value` is required in the type; a JavaScript caller can still omit it.
+      render(<ProgressBar label="Odd" />);
+      const bar = screen.getByRole('progressbar', { name: 'Odd' });
+      expect(bar).not.toHaveAttribute('aria-valuenow');
+      expect(bar).toHaveAttribute('aria-valuetext', 'indeterminate progress');
       expect(screen.queryByText(/%/)).toBeNull();
     });
 
@@ -186,6 +196,25 @@ describe('ProgressBar', () => {
       expect(screen.getByRole('progressbar', { name: 'Envoi Terminé' })).toBeInTheDocument();
     });
 
+    it('draws the status word visually hidden, for assistive technology only', () => {
+      render(<Error />);
+      const word = screen.getByText('Error');
+      expect(word.className).toContain('visuallyHidden');
+      expect(word.closest('[role="progressbar"]')).not.toBeNull();
+    });
+
+    it('keeps the default word for a key the caller left undefined', () => {
+      render(
+        <ProgressBar
+          label="Upload"
+          value={30}
+          status="error"
+          statusLabels={{ error: undefined }}
+        />,
+      );
+      expect(screen.getByRole('progressbar')).toHaveAccessibleName('Upload Error');
+    });
+
     it('keeps the default word for a status the caller did not translate', () => {
       render(
         <ProgressBar
@@ -197,6 +226,76 @@ describe('ProgressBar', () => {
       );
       expect(screen.getByRole('progressbar')).toHaveAccessibleName('Upload Finished');
     });
+  });
+
+  describe('an indeterminate bar’s announcement', () => {
+    it('is Base UI’s wording by default, unchanged', () => {
+      render(<Indeterminate />);
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuetext',
+        'indeterminate progress',
+      );
+    });
+
+    it('takes its words from the caller', () => {
+      render(
+        <ProgressBar
+          label="Événements"
+          value={null}
+          statusLabels={{ indeterminate: 'Chargement' }}
+        />,
+      );
+      expect(screen.getByRole('progressbar', { name: 'Événements' })).toHaveAttribute(
+        'aria-valuetext',
+        'Chargement',
+      );
+    });
+
+    it('is not used by a bar that has a value', () => {
+      render(
+        <ProgressBar label="Upload" value={40} statusLabels={{ indeterminate: 'Chargement' }} />,
+      );
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '40%');
+    });
+  });
+
+  describe('the row', () => {
+    // The label's parent is the row when there is one and the bar itself when there is not, which
+    // is the structure itself and needs no class name.
+    function rowOf(label: string): HTMLElement | null {
+      const parent = screen.getByText(label).parentElement;
+      return parent === screen.getByRole('progressbar') ? null : parent;
+    }
+
+    it('holds the label and the value', () => {
+      render(<Default />);
+      const row = rowOf('Items packed');
+      expect(row).not.toBeNull();
+      expect(row).toContainElement(screen.getByText('5/8'));
+    });
+
+    it('holds a visible label alone when there is no value to show', () => {
+      render(<Indeterminate />);
+      expect(rowOf('Loading events')).not.toBeNull();
+    });
+
+    it('holds a hidden label with the value that is drawn beside it', () => {
+      render(<HiddenLabel />);
+      expect(rowOf('Upload progress')).toContainElement(screen.getByText('45%'));
+    });
+
+    it.each([
+      ['`hideValue`', { value: 40, hideValue: true }],
+      ['an indeterminate value', { value: null }],
+    ])(
+      'is not rendered for a hidden label and %s, so the label sits in the bar',
+      (_name, props) => {
+        render(<ProgressBar label="Upload" hideLabel {...props} />);
+        // Nothing drawn is left in it, and an empty row would still add the bar's gap above the track.
+        expect(rowOf('Upload')).toBeNull();
+        expect(screen.getByRole('progressbar', { name: 'Upload' })).toBeInTheDocument();
+      },
+    );
   });
 
   it('keeps the name when the label is hidden, and shows the value', () => {
