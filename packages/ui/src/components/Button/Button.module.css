@@ -250,10 +250,14 @@
 
 /* Forced colours replace the selected fills, so a chosen button would look like the rest. Every
    button already carries a 1 px transparent border, which the browser paints in the system text
-   colour; a selected primary or secondary paints it in `Highlight` instead. The `:is()` lifts the
-   rule over the selected secondary's own transparent border above. */
+   colour; a selected primary or secondary paints it in `Highlight` instead. The selected
+   secondary's own `border-color: transparent` above weighs (0,3,0), as the `:is()` alone would, so
+   the bare `[data-variant]` lifts this rule to (0,4,0): it wins on weight, not on coming later. */
 @media (forced-colors: active) {
-  .root[data-tone='selected']:is([data-variant='primary'], [data-variant='secondary']) {
+  .root[data-tone='selected'][data-variant]:is(
+      [data-variant='primary'],
+      [data-variant='secondary']
+    ) {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     border-color: Highlight;
   }

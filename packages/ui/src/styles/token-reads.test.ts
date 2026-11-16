@@ -839,10 +839,11 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent', '--color-border-strong'],
   },
   // Forced colours: a chosen primary or secondary keeps a `Highlight` edge, its only cue once the
-  // fills are replaced.
+  // fills are replaced. The bare `[data-variant]` weighs it (0,4,0), over the selected secondary's
+  // (0,3,0) transparent border, so it does not win by source order alone.
   {
     file: 'components/Button/Button.module.css',
-    rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]:is\(\[data-variant='primary'\], \[data-variant='secondary'\]\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]\[data-variant\]:is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
     contains: ['border-color: Highlight;'],
     lacks: [],
   },
