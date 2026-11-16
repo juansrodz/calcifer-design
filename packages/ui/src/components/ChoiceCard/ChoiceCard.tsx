@@ -51,8 +51,9 @@ function ChoiceCardItem({ option, checked }: ChoiceCardItemProps) {
   const descriptionId = useId();
   const hasDescription = Boolean(option.description);
   return (
-    // `Field.Item` scopes the control id per option, as in `RadioGroup`.
-    <BaseField.Item disabled={option.disabled}>
+    // `Field.Item` scopes the control id per option, as in `RadioGroup`. It is the grid's item, so
+    // it is a column the card grows to fill: the cards of a row come out one height.
+    <BaseField.Item className={styles.item} disabled={option.disabled}>
       {/* The label wraps the whole card, so a press anywhere on it chooses the radio. Base UI
           writes `data-disabled` on it; `data-checked` it cannot know, so the group passes it. */}
       <BaseField.Label className={styles.card} data-checked={checked ? '' : undefined}>

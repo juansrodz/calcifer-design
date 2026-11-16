@@ -54,8 +54,16 @@
 
 /* Forced colours replace the selected fill and so erase the pressed state; system colours
    survive. `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate
-   behind the text, and `HighlightText` on that can be unreadable. */
+   behind the text, and `HighlightText` on that can be unreadable.
+
+   They also drop the unpressed chip's fill, and a chip has no border, so it would have no edge at
+   all. A transparent 1 px border declared here and only here is painted in the system text colour;
+   the chip is 2 px larger in forced colours and the default look is untouched. */
 @media (forced-colors: active) {
+  .chip {
+    border: 1px solid transparent;
+  }
+
   .chip[data-pressed] {
     forced-color-adjust: none;
 

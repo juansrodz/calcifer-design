@@ -26,9 +26,19 @@
    the ring's `inset-inline-end` equals the card's padding (both `--space-3`): the ring then ends
    where the title's box ends, so the ring's size plus a `--space-2` gap is all the title yields.
 
-   The transparent border is what survives forced colours, which remove every `box-shadow`: the
-   browser paints it in the system text colour, so the card still has an edge (the `forced-colors`
-   block at the end gives the chosen card its own). The inset shadows sit inside it, 1 px in. */
+   There is no border: an inset shadow is drawn inside the padding box, so a border (even a
+   transparent one) would hold the empty ring's circle 1 px in, drawing it 2 px smaller than the
+   filled ring, and would leave a pale 1 px halo outside the chosen card's ring and push the
+   content 1 px in. The shadows are flush instead. Forced colours remove every `box-shadow`, so the
+   `forced-colors` block at the end gives each box the 1 px border that is then the only edge left.
+
+   The card fills its grid cell (`flex-grow`, in the `.item` column below), so the cards of a row
+   are one height whichever has the longer line. */
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
 .card {
   --choice-card-ring: inset 0 0 0 1px var(--color-border-strong);
   --choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);
@@ -38,9 +48,9 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   align-items: flex-start;
   padding: var(--space-3);
-  border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--color-surface-raised);
   box-shadow: var(--choice-card-ring);
@@ -134,7 +144,6 @@
   justify-content: center;
   width: var(--choice-card-ring-size);
   height: var(--choice-card-ring-size);
-  border: 1px solid transparent;
   border-radius: var(--radius-full);
   box-shadow: var(--choice-card-dot);
   cursor: inherit;
@@ -162,12 +171,19 @@
   height: 0.6875rem;
 }
 
-/* Forced colours remove every `box-shadow` and replace the fills, so a chosen card would look like
-   the rest. The transparent borders survive, and so do system colours: the chosen card's edge and
-   its filled ring take `Highlight`. `forced-color-adjust: none` on the ring because Chromium
-   otherwise paints its Canvas backplate behind the check, and `HighlightText` on that can be
-   unreadable (`Segmented.module.css` has the measurement). */
+/* Forced colours remove every `box-shadow` and replace the fills, so without an edge of their own
+   the cards and rings would vanish and a chosen card would look like the rest. Each box gets a
+   transparent border here and only here (the browser paints it in the system text colour, and the
+   default look stays flush), and the chosen card's edge and its filled ring take `Highlight`.
+   `forced-color-adjust: none` on the ring because Chromium otherwise paints its Canvas backplate
+   behind the check, and `HighlightText` on that can be unreadable (`Segmented.module.css` has the
+   measurement). */
 @media (forced-colors: active) {
+  .card,
+  .ring {
+    border: 1px solid transparent;
+  }
+
   .card[data-checked] {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     border-color: Highlight;

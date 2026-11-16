@@ -45,6 +45,10 @@ const bodyRole = [
 
 const sansFamily = 'font-family: var(--font-sans);';
 
+// Any `border` shorthand declaration: the property name is not preceded by a hyphen, so the longhands
+// and `border-radius` do not match.
+const noBorderShorthand = /(?:^|\s)border\s*:/;
+
 // The band `AvatarGroup` draws around each avatar and around its overflow chip: the one value both
 // rules are pinned to, so a ring on one and not the other cannot pass.
 const avatarGroupRing = '0 0 0 var(--border-width-emphasis) var(--color-avatar-ring)';
@@ -1184,14 +1188,25 @@ const expectations: ReadonlyArray<Expectation> = [
       'display: flex;',
       'flex-direction: column;',
       'align-items: flex-start;',
+      // The card fills its grid cell, so the cards of a row are one height.
+      'flex-grow: 1;',
       'padding: var(--space-3);',
-      // The edge forced colours paint, since they remove the shadows.
-      'border: 1px solid transparent;',
       'border-radius: var(--radius-panel);',
       'background: var(--color-surface-raised);',
       'box-shadow: var(--choice-card-ring);',
       'overflow-wrap: anywhere;',
     ],
+    // No border at the top level, not even a transparent one: an inset shadow is drawn inside the
+    // padding box, so a border holds the empty ring in a smaller circle than the filled one, leaves
+    // a halo outside the chosen card's ring and pushes the content in. The forced-colours block
+    // below declares the border, which is then the only edge left.
+    lacks: [noBorderShorthand],
+  },
+  // The wrapper Base UI renders for each option is the grid's item. A column the card grows to fill.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex-direction: column;'],
     lacks: [],
   },
   // The keyboard focus rings the whole card, with the base focus ring's own width, colour and
@@ -1311,11 +1326,11 @@ const expectations: ReadonlyArray<Expectation> = [
       'inset-inline-end: var(--space-3);',
       'width: var(--choice-card-ring-size);',
       'height: var(--choice-card-ring-size);',
-      'border: 1px solid transparent;',
       'border-radius: var(--radius-full);',
       'box-shadow: var(--choice-card-dot);',
     ],
-    lacks: [],
+    // No border here either: with one the empty ring would draw at 16 px and grow to 18 when chosen.
+    lacks: [noBorderShorthand],
   },
   // An errored group's rings take the danger border, as `RadioGroup`'s dots do.
   {
@@ -1342,8 +1357,14 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['width: 0.6875rem;', 'height: 0.6875rem;'],
     lacks: [],
   },
-  // Forced colours remove the shadows and the fills, so the chosen card and its ring are told
-  // apart by system colours on the borders the two boxes keep.
+  // Forced colours remove the shadows and the fills, so each box gets the 1 px border that is then
+  // its only edge, and the chosen card and its ring are told apart by system colours on it.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card,\n {2}\.ring \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
+    lacks: [],
+  },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{([^}]*)\}/m,
@@ -1410,6 +1431,14 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^ {2}\.chip\[data-pressed\] \{([^}]*)\}/m,
     contains: ['forced-color-adjust: none;', 'outline-color: CanvasText;'],
+    lacks: [],
+  },
+  // An unpressed chip has no fill in forced colours and no border by default, so it would have no
+  // edge. The border is declared in the forced-colours block only; the top-level rule keeps none.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
     lacks: [],
   },
   {
