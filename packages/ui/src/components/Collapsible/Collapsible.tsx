@@ -75,9 +75,15 @@ export function Collapsible({
         <BaseCollapsible.Trigger className={styles.trigger} aria-controls={panelId}>
           <span className={styles.label}>{heading}</span>
           {/* A browser draws no space between flex items, but the accessible name joins the label
-              and the aside only with this text node (jsdom computes both spans as inline). */}
-          {hasContent(headingAside) ? ' ' : null}
-          {headingAside}
+              and the aside only with this text node (jsdom computes both spans as inline). The
+              aside's own span makes it a flex item even as plain text, so a disabled row dims it
+              with the label and the chevron. */}
+          {hasContent(headingAside) ? (
+            <>
+              {' '}
+              <span>{headingAside}</span>
+            </>
+          ) : null}
           <span className={styles.chevron} aria-hidden="true">
             <ChevronDownIcon />
           </span>

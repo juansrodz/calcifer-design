@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
+import { Collapsible } from './Collapsible';
 import styles from './Collapsible.module.css';
 import * as stories from './Collapsible.stories';
 
@@ -112,6 +113,18 @@ describe('Collapsible', () => {
     await userEvent.click(trigger);
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('wraps a plain-text aside in an element of its own, so a disabled row dims it too', () => {
+    render(
+      <Collapsible heading="Mains" headingAside="2 dishes" disabled>
+        Lasagna for six
+      </Collapsible>,
+    );
+    const trigger = screen.getByRole('button', { name: 'Mains 2 dishes' });
+    // The dimming rule is `.trigger[data-disabled] > *`, which a bare text node escapes.
+    expect(screen.getByText('2 dishes').parentElement).toBe(trigger);
+    expect(screen.getByText('2 dishes').tagName).toBe('SPAN');
   });
 
   it('carries data-open on the root only while open', async () => {

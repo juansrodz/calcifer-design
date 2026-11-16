@@ -55,8 +55,8 @@
   inset-block: min(0px, calc((100% - 1.5rem) / 2));
 }
 
-/* A disabled row dims what it shows (the label, an aside element and the chevron), not the button,
-   so an outline drawn round the button keeps its full strength. */
+/* A disabled row dims what it shows (the label, the aside and the chevron, each a child element),
+   not the button, so an outline drawn round the button keeps its full strength. */
 .trigger[data-disabled] {
   cursor: not-allowed;
 }
