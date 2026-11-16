@@ -4,6 +4,7 @@ import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId, useState, type ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import fieldStyles from '../../styles/field.module.css';
+import { hasContent } from '../../utils/hasContent';
 import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
 import styles from './ChoiceCard.module.css';
 
@@ -49,7 +50,7 @@ interface ChoiceCardItemProps {
 function ChoiceCardItem({ option, checked }: ChoiceCardItemProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const hasDescription = Boolean(option.description);
+  const hasDescription = hasContent(option.description);
   return (
     // `Field.Item` scopes the control id per option, as in `RadioGroup`. It is the grid's item, so
     // it is a column the card grows to fill: the cards of a row come out one height.
@@ -57,7 +58,7 @@ function ChoiceCardItem({ option, checked }: ChoiceCardItemProps) {
       {/* The label wraps the whole card, so a press anywhere on it chooses the radio. Base UI
           writes `data-disabled` on it; `data-checked` it cannot know, so the group passes it. */}
       <BaseField.Label className={styles.card} data-checked={checked ? '' : undefined}>
-        {option.icon ? (
+        {hasContent(option.icon) ? (
           <span className={styles.disc} aria-hidden="true">
             {option.icon}
           </span>

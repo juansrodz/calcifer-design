@@ -2,6 +2,7 @@ import { Collapsible as BaseCollapsible } from '@base-ui/react/collapsible';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
+import { hasContent } from '../../utils/hasContent';
 import styles from './Collapsible.module.css';
 
 export interface CollapsibleProps {
@@ -75,7 +76,7 @@ export function Collapsible({
           <span className={styles.label}>{heading}</span>
           {/* A browser draws no space between flex items, but the accessible name joins the label
               and the aside only with this text node (jsdom computes both spans as inline). */}
-          {headingAside === undefined ? null : ' '}
+          {hasContent(headingAside) ? ' ' : null}
           {headingAside}
           <span className={styles.chevron} aria-hidden="true">
             <ChevronDownIcon />

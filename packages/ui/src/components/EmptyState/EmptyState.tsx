@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { hasContent } from '../../utils/hasContent';
 import styles from './EmptyState.module.css';
 
 export interface EmptyStateProps {
@@ -62,14 +63,14 @@ export function EmptyState({
       data-tone={tone}
       data-align={align}
     >
-      {illustration ? (
+      {hasContent(illustration) ? (
         <div className={styles.illustration} aria-hidden="true">
           {illustration}
         </div>
       ) : null}
       <Heading className={styles.heading}>{heading}</Heading>
-      {children ? <div className={styles.body}>{children}</div> : null}
-      {actions ? <div className={styles.actions}>{actions}</div> : null}
+      {hasContent(children) ? <div className={styles.body}>{children}</div> : null}
+      {hasContent(actions) ? <div className={styles.actions}>{actions}</div> : null}
     </div>
   );
 }

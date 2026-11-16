@@ -1,5 +1,6 @@
 import { Button as BaseButton } from '@base-ui/react/button';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { hasContent } from '../../utils/hasContent';
 import { Spinner } from '../Spinner/Spinner';
 import styles from './Button.module.css';
 
@@ -51,15 +52,6 @@ export interface ButtonProps extends Omit<
    */
   pending?: boolean;
   className?: string;
-}
-
-/**
- * `true`, `false`, `null` and `undefined` render nothing, and `''` renders an empty text node, so
- * none of them may leave an empty badge, end icon or space behind. Shared with `LinkButton`; the
- * barrel does not export it.
- */
-export function hasContent(node: ReactNode) {
-  return node !== undefined && node !== null && node !== '' && typeof node !== 'boolean';
 }
 
 export function Button({

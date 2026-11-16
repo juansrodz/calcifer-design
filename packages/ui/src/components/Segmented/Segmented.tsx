@@ -3,6 +3,7 @@ import { ToggleGroup } from '@base-ui/react/toggle-group';
 import { useContext, useState, type ReactNode } from 'react';
 import { useIndexedToggleGroup } from '../../hooks/useIndexedToggleGroup';
 import a11yStyles from '../../styles/a11y.module.css';
+import { hasContent } from '../../utils/hasContent';
 import { InsideToolbarContext } from '../Toolbar/InsideToolbarContext';
 import styles from './Segmented.module.css';
 
@@ -71,14 +72,6 @@ export type SegmentedProps = SegmentedNamedByLabel | SegmentedNamedByElement;
 function chosenIndexOf(options: SegmentedOption[], value: string | undefined): number {
   const namedIndex = options.findIndex((option) => option.value === value);
   return namedIndex === -1 ? options.findIndex((option) => !option.disabled) : namedIndex;
-}
-
-/**
- * `true`, `false`, `null` and `undefined` render nothing, and `''` renders an empty text node, so
- * none of them may leave an empty badge (or its space) behind. `0` is a count and stays.
- */
-function hasContent(node: ReactNode) {
-  return node !== undefined && node !== null && node !== '' && typeof node !== 'boolean';
 }
 
 /**

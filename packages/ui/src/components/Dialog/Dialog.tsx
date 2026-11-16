@@ -5,6 +5,7 @@ import { IconButton } from '../IconButton/IconButton';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import a11yStyles from '../../styles/a11y.module.css';
 import popupStyles from '../../styles/popup.module.css';
+import { hasContent } from '../../utils/hasContent';
 import styles from './Dialog.module.css';
 
 export type DialogVariant = 'center' | 'sheet';
@@ -118,7 +119,7 @@ export function Dialog({
   // control; with `closeHidden` the ref is empty and `true` hands the choice back to Base UI.
   const initialFocus = (interactionType: string) =>
     interactionType === 'touch' ? popupRef.current : (closeRef.current ?? true);
-  const showEndGroup = headerEnd !== undefined || !closeHidden;
+  const showEndGroup = hasContent(headerEnd) || !closeHidden;
   return (
     <BaseDialog.Root
       open={open}

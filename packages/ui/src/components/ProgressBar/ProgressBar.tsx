@@ -1,6 +1,7 @@
 import { Progress as BaseProgress } from '@base-ui/react/progress';
 import { useId, type ReactNode } from 'react';
 import a11yStyles from '../../styles/a11y.module.css';
+import { hasContent } from '../../utils/hasContent';
 import styles from './ProgressBar.module.css';
 
 /** The statuses that carry a spoken word; `active` is the normal case and says nothing. */
@@ -98,7 +99,7 @@ export function ProgressBar({
   const wordOf = (word: ProgressBarWord) => statusLabels?.[word] ?? DEFAULT_WORDS[word];
   const statusWord = status === 'active' ? undefined : wordOf(status);
   const showValue = valueText !== undefined && !hideValue;
-  const hasHelper = helperText !== undefined && helperText !== null && helperText !== false;
+  const hasHelper = hasContent(helperText);
   const labelElement = (
     <BaseProgress.Label className={hideLabel ? a11yStyles.visuallyHidden : styles.label}>
       {label}

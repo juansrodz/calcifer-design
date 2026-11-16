@@ -1,6 +1,6 @@
 import { useRender } from '@base-ui/react/use-render';
 import type { ComponentPropsWithRef, ReactNode } from 'react';
-import { hasContent } from './Button';
+import { hasContent } from '../../utils/hasContent';
 import type { ButtonSize, ButtonTone, ButtonVariant } from './Button';
 import styles from './Button.module.css';
 
