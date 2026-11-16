@@ -4,6 +4,7 @@ import { CloseIcon } from '../../icons/CloseIcon';
 import { IconButton } from '../IconButton/IconButton';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import a11yStyles from '../../styles/a11y.module.css';
+import closeCircleStyles from '../../styles/closeCircle.module.css';
 import popupStyles from '../../styles/popup.module.css';
 import { hasContent } from '../../utils/hasContent';
 import styles from './Dialog.module.css';
@@ -168,7 +169,7 @@ export function Dialog({
                           label={closeLabel}
                           variant={closeVariant}
                           size="sm"
-                          className={styles.close}
+                          className={closeCircleStyles.close}
                         >
                           <CloseIcon />
                         </IconButton>

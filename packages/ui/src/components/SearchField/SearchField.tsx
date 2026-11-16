@@ -3,6 +3,7 @@ import { useControllable } from '../../hooks/useControllable';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { SearchIcon } from '../../icons/SearchIcon';
 import a11yStyles from '../../styles/a11y.module.css';
+import closeCircleStyles from '../../styles/closeCircle.module.css';
 import fieldStyles from '../../styles/field.module.css';
 import { focusInputFromPill } from '../../utils/focusInputFromPill';
 import { useFormValue } from '../Form/FormContext';
@@ -132,7 +133,7 @@ export function SearchField({
             variant="ghost"
             size="sm"
             label={clearLabel}
-            className={styles.clear}
+            className={[styles.clear, closeCircleStyles.close].join(' ')}
             onClick={clear}
           >
             <CloseIcon />

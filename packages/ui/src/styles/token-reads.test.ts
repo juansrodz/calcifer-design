@@ -1167,9 +1167,7 @@ const expectations: ReadonlyArray<Expectation> = [
   },
 
   // `Dialog`'s header slots, pinned sheet footer, grab handle and heading hooks (contract §2.2,
-  // L2-17, L2-21 / O-33): the close is drawn at the `--size-close` circle by a three-class rule that
-  // beats `IconButton`'s `.root[data-size='sm']`, and a `::before` grows its pointer target to
-  // `--size-touch` without changing the drawn size.
+  // L2-17). Its close control wears the shared close circle (the rows below).
   {
     file: 'components/Dialog/Dialog.module.css',
     contains: [
@@ -1181,24 +1179,26 @@ const expectations: ReadonlyArray<Expectation> = [
       'var(--dialog-heading-leading, var(--leading-snug))',
       'h4.heading',
       'var(--sheet-handle-width, 2.5rem)',
-      'var(--size-close)',
-      '.headerEnd > .close[data-variant]',
     ],
     lacks: [],
   },
+  // The close circle `Dialog`'s close and `SearchField`'s clear control wear (L2-21 / O-33, PF-8):
+  // drawn at `--size-close` by a three-class rule that beats `IconButton`'s
+  // `.root[data-size='sm']`, and a `::before` grows its pointer target to `--size-touch` without
+  // changing the drawn size.
   {
-    file: 'components/Dialog/Dialog.module.css',
-    rule: /^\.headerEnd > \.close\[data-variant\] \{([^}]*)\}/m,
+    file: 'styles/closeCircle.module.css',
+    rule: /^\.close\[data-variant\]\[data-size\] \{([^}]*)\}/m,
     contains: [
       'position: relative;',
       'min-height: var(--size-close);',
       'min-width: var(--size-close);',
     ],
-    lacks: ['--size-touch'],
+    lacks: ['--size-touch', '--size-control'],
   },
   {
-    file: 'components/Dialog/Dialog.module.css',
-    rule: /^\.headerEnd > \.close\[data-variant\]::before \{([^}]*)\}/m,
+    file: 'styles/closeCircle.module.css',
+    rule: /^\.close\[data-variant\]\[data-size\]::before \{([^}]*)\}/m,
     contains: ["content: '';", 'position: absolute;', 'inset: calc(50% - var(--size-touch) / 2);'],
     lacks: [],
   },
@@ -1425,25 +1425,10 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['padding', '--size-touch'],
   },
   {
+    // The small pill's target stops at the pill's inner edge, not the shared circle's 44 px. Four
+    // classes' worth of weight, over the shared rule's three.
     file: 'components/SearchField/SearchField.module.css',
-    rule: /^\.root \.clear\[data-size\] \{([^}]*)\}/m,
-    contains: [
-      'position: relative;',
-      'min-height: var(--size-close);',
-      'min-width: var(--size-close);',
-    ],
-    lacks: ['--size-touch', '--size-control'],
-  },
-  {
-    file: 'components/SearchField/SearchField.module.css',
-    rule: /^\.root \.clear\[data-size\]::before \{([^}]*)\}/m,
-    contains: ["content: '';", 'position: absolute;', 'inset: calc(50% - var(--size-touch) / 2);'],
-    lacks: [],
-  },
-  {
-    // The small pill's target stops at the pill's inner edge, not the 44 px of the md rule above.
-    file: 'components/SearchField/SearchField.module.css',
-    rule: /^\.root\[data-size='sm'\] \.clear::before \{([^}]*)\}/m,
+    rule: /^\.root\[data-size='sm'\] \.clear\[data-size\]::before \{([^}]*)\}/m,
     contains: ['inset-block: -1px;'],
     lacks: [],
   },

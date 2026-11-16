@@ -1,0 +1,22 @@
+/* The close circle an `IconButton` is drawn as where the mock shows one: `Dialog`'s close control
+   and `SearchField`'s clear control. Internal: each puts `.close` on its `IconButton`.
+
+   It is the `--size-close` circle, never a bigger button (O-33, L2-21): `IconButton`'s `sm` floor is
+   40 px (`--size-control-sm`), and this rule lowers it to 36 px. It carries three classes' worth of
+   weight (`.close` and the two attributes `IconButton` writes on itself) so it beats
+   `.root[data-size='sm']` in `IconButton.module.css` whichever stylesheet the bundle orders first. */
+.close[data-variant][data-size] {
+  position: relative;
+  min-height: var(--size-close);
+  min-width: var(--size-close);
+}
+
+/* The 44 px pointer target: an invisible box centred on the circle, which grows the hit area to
+   `--size-touch` without changing what is drawn. Centred by percentages rather than a fixed inset
+   so the button's own 1 px border does not push it off by a pixel. A consumer that needs a smaller
+   target (`SearchField`'s small pill) overrides it with more weight than this rule's. */
+.close[data-variant][data-size]::before {
+  content: '';
+  position: absolute;
+  inset: calc(50% - var(--size-touch) / 2);
+}
