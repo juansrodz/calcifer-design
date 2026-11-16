@@ -102,9 +102,12 @@
   color: var(--color-selected-text);
 }
 
+/* The chosen secondary is its soft fill alone: the resting grey edge goes, and a ring round it,
+   where one is wanted, is the consumer's to draw. */
 .root[data-variant='secondary'][data-tone='selected'] {
   background: var(--color-selected-soft);
   color: var(--color-selected-soft-text);
+  border-color: transparent;
 }
 
 @media (hover: hover) {
@@ -238,4 +241,15 @@
 
 .root[data-loading] .label {
   opacity: 0.7;
+}
+
+/* Forced colours replace the selected fills, so a chosen button would look like the rest. Every
+   button already carries a 1 px transparent border, which the browser paints in the system text
+   colour; a selected primary or secondary paints it in `Highlight` instead. The `:is()` lifts the
+   rule over the selected secondary's own transparent border above. */
+@media (forced-colors: active) {
+  .root[data-tone='selected']:is([data-variant='primary'], [data-variant='secondary']) {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: Highlight;
+  }
 }

@@ -208,9 +208,13 @@
 
 /* `base.css` draws a ring on every `:focus-visible`, and a bare `.affixInput` would tie with it on
    specificity, leaving the winner to the consumer's bundle order. The pseudo-class here makes
-   this rule the stronger one whatever the order, so the input never rings inside its own pill. */
-.affixInput:focus-visible {
-  outline: none;
+   this rule the stronger one whatever the order, so the input never rings inside its own pill.
+   Only where `:has()` is understood, as `ChoiceCard`'s ring: the pill's ring above needs it, so a
+   browser without it keeps the input's own outline and never loses the focus indicator. */
+@supports selector(:has(*)) {
+  .affixInput:focus-visible {
+    outline: none;
+  }
 }
 
 /* A disabled input gets the browser's arrow, which would show inside the pill where the wrapper's

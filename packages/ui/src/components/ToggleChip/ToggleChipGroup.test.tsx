@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import fieldStyles from '../../styles/field.module.css';
 import { Form } from '../Form/Form';
 import * as stories from './ToggleChip.stories';
+import styles from './ToggleChip.module.css';
 import { ToggleChipGroup, type ToggleChipOption } from './ToggleChipGroup';
 
 const { SingleGroup, MultipleGroup, Required, WithError, DisabledOption } = composeStories(stories);
@@ -723,6 +724,17 @@ describe('ToggleChipGroup, the frame', () => {
     expect(group).toHaveAttribute('aria-invalid', 'true');
     expect(group).toHaveAccessibleDescription('Choose a dish type.');
     expect(screen.getByText('Choose a dish type.')).toBeVisible();
+  });
+
+  it('marks the group data-invalid, which the chips’ danger ring reads, only while invalid', () => {
+    const { unmount } = render(<WithError />);
+    const group = screen.getByRole('group', { name: /Dish type/ });
+    expect(group).toHaveClass(styles.group);
+    expect(group).toHaveAttribute('data-invalid');
+    expect(chip('Side').closest(`.${styles.group}`)).toBe(group);
+    unmount();
+    render(<SingleGroup />);
+    expect(screen.getByRole('group', { name: 'Dish type' })).not.toHaveAttribute('data-invalid');
   });
 
   it('describes the group by its description', () => {

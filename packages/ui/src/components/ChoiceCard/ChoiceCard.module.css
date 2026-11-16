@@ -177,7 +177,9 @@
    default look stays flush), and the chosen card's edge and its filled ring take `Highlight`.
    `forced-color-adjust: none` on the ring because Chromium otherwise paints its Canvas backplate
    behind the check, and `HighlightText` on that can be unreadable (`Segmented.module.css` has the
-   measurement). */
+   measurement). A disabled card's text and edge take `GrayText`, the system's own disabled colour,
+   beside the dimming; after the chosen card's rule, so a disabled chosen card reads disabled too
+   while its filled ring still says it is chosen. */
 @media (forced-colors: active) {
   .card,
   .ring {
@@ -187,6 +189,13 @@
   .card[data-checked] {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     border-color: Highlight;
+  }
+
+  .card[data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    color: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
 
   .ring[data-checked] {

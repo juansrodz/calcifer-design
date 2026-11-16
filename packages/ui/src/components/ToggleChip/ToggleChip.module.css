@@ -52,6 +52,16 @@
   box-shadow: var(--toggle-chip-pressed-ring, none);
 }
 
+/* An errored group's unpressed chips take the danger ring, as `ChoiceCard`'s rings do; a pressed
+   chip keeps its fill. The group (the frame's `Field.Control`) carries Base UI's `data-invalid`.
+   The ring is an inset shadow held in a local property, for the reason `ChoiceCard.module.css`
+   records, and forced colours drop it with every other shadow, leaving their own edge as it is. */
+.group[data-invalid] .chip:not([data-pressed]) {
+  --toggle-chip-invalid-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);
+
+  box-shadow: var(--toggle-chip-invalid-ring);
+}
+
 /* Forced colours replace the selected fill and so erase the pressed state; system colours
    survive. `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate
    behind the text, and `HighlightText` on that can be unreadable.

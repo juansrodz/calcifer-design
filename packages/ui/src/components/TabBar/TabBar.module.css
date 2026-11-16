@@ -1,9 +1,11 @@
-/* Fixed above the bottom edge. The `z-index` is a literal, as in `popup.module.css`, and sits
-   under the popup layers' 50, so an open sheet covers the bar. */
+/* Fixed above the bottom edge, and above a phone's home indicator: the safe-area inset is added to
+   the gap (`0px` where there is none; a unitless `0` would make the `calc()` invalid). The
+   `z-index` is a literal, as in `popup.module.css`, and sits under the popup layers' 50, so an open
+   sheet covers the bar. */
 .root {
   position: fixed;
   inset-inline: var(--space-4);
-  inset-block-end: var(--space-5);
+  inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   display: flex;
   gap: var(--space-3);
   align-items: center;
@@ -111,4 +113,19 @@
   font-weight: var(--font-weight-button);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Forced colours drop the pill's fill and shadow and the current link's fill, so the bar would have
+   no edge and the current page only its label. The pill gets a transparent 1 px border here and
+   only here (the browser paints it in the system text colour), and the current link's fill is
+   outlined in `Highlight`. */
+@media (forced-colors: active) {
+  .pill {
+    border: 1px solid transparent;
+  }
+
+  .link[aria-current='page']::before {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    outline: 1px solid Highlight;
+  }
 }

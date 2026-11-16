@@ -834,8 +834,17 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       'background: var(--color-selected-soft);',
       'color: var(--color-selected-soft-text);',
+      'border-color: transparent;',
     ],
-    lacks: ['--color-accent'],
+    lacks: ['--color-accent', '--color-border-strong'],
+  },
+  // Forced colours: a chosen primary or secondary keeps a `Highlight` edge, its only cue once the
+  // fills are replaced.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]:is\(\[data-variant='primary'\], \[data-variant='secondary'\]\) \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
   },
   {
     // The dimmed fill and ink sit inside the `@supports` block, and nothing else in the file mixes a
@@ -1299,9 +1308,10 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['outline'],
   },
   {
-    // Two classes' worth of weight over `base.css`'s `:focus-visible` ring, whatever the bundle order.
+    // Two classes' worth of weight over `base.css`'s `:focus-visible` ring, whatever the bundle order,
+    // and only where `:has()` draws the pill's ring instead.
     file: 'styles/field.module.css',
-    rule: /^\.affixInput:focus-visible \{([^}]*)\}/m,
+    rule: /^@supports selector\(:has\(\*\)\) \{\n {2}\.affixInput:focus-visible \{([^}]*)\}/m,
     contains: ['outline: none;'],
     lacks: [],
   },
@@ -1564,6 +1574,14 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
 
+  // `SkipLink` reads the inverse pair, which no brand's accent exemption reaches, not the accent.
+  {
+    file: 'components/SkipLink/SkipLink.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['background: var(--color-inverse);', 'color: var(--color-inverse-text);'],
+    lacks: ['--color-accent'],
+  },
+
   // `TabBar`'s measure. The pill is 44 + 2 x 2.5 = 49 px through its block padding alone (the mock
   // draws 49; the items keep the 44 px target), and the current link's fill is its `::before`, 33 px
   // high, so a 44 px link carries a smaller fill. A jsdom test sees none of this, so each declaration
@@ -1574,7 +1592,7 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       'position: fixed;',
       'inset-inline: var(--space-4);',
-      'inset-block-end: var(--space-5);',
+      'inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));',
       'display: flex;',
       'gap: var(--space-3);',
       'align-items: center;',
@@ -1676,6 +1694,19 @@ const expectations: ReadonlyArray<Expectation> = [
       'white-space: nowrap;',
     ],
     lacks: [anyWeightLiteral],
+  },
+  // Forced colours: the pill keeps an edge and the current link's fill a `Highlight` outline.
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.pill \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.link\[aria-current='page'\]::before \{([^}]*)\}/m,
+    contains: ['outline: 1px solid Highlight;'],
+    lacks: [],
   },
 
   // `EmptyState`'s card. The tone and the alignment are data attributes the component always
@@ -2058,6 +2089,13 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // A disabled card reads the system's disabled colour, after the chosen card's rule.
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{[^}]*\}\n\n {2}\.card\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['border-color: GrayText;', 'color: GrayText;'],
+    lacks: [],
+  },
+  {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.ring\[data-checked\] \{([^}]*)\}/m,
     contains: [
@@ -2110,6 +2148,16 @@ const expectations: ReadonlyArray<Expectation> = [
       'background: var(--color-selected);',
       'color: var(--color-selected-text);',
       'box-shadow: var(--toggle-chip-pressed-ring, none);',
+    ],
+    lacks: [],
+  },
+  // An errored group's unpressed chips draw the danger ring `ChoiceCard`'s rings draw.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.group\[data-invalid\] \.chip:not\(\[data-pressed\]\) \{([^}]*)\}/m,
+    contains: [
+      '--toggle-chip-invalid-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);',
+      'box-shadow: var(--toggle-chip-invalid-ring);',
     ],
     lacks: [],
   },
