@@ -198,12 +198,6 @@
   height: 1rem;
 }
 
-/* The spinner's head reads the accent, which vanishes on the accent fill of a primary button, so
-   the primary variant hands the spinner the button's own ink instead. */
-.root[data-variant='primary'] .icon {
-  --color-accent: currentcolor;
-}
-
 /* With no leading icon a pending button lays its spinner over the label's box. The overlay is
    only rendered beside `data-pending`, which supplies the `position: relative` it anchors to; it
    takes no pointer events either, so a press always lands on the button. */
@@ -216,6 +210,10 @@
   pointer-events: none;
 }
 
+/* The spinner's head reads the accent, which vanishes on the accent fill of a primary button, so
+   the primary variant hands the spinner the button's own ink instead, in the start slot and in the
+   overlay alike. */
+.root[data-variant='primary'] .icon,
 .root[data-variant='primary'] .pendingOverlay {
   --color-accent: currentcolor;
 }

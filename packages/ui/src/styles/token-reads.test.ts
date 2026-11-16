@@ -991,14 +991,9 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // One rule for both places the spinner sits: the start slot and the overlay.
     file: 'components/Button/Button.module.css',
-    rule: /^\.root\[data-variant='primary'\] \.icon \{([^}]*)\}/m,
-    contains: ['--color-accent: currentcolor;'],
-    lacks: [],
-  },
-  {
-    file: 'components/Button/Button.module.css',
-    rule: /^\.root\[data-variant='primary'\] \.pendingOverlay \{([^}]*)\}/m,
+    rule: /^\.root\[data-variant='primary'\] \.icon,\n\.root\[data-variant='primary'\] \.pendingOverlay \{([^}]*)\}/m,
     contains: ['--color-accent: currentcolor;'],
     lacks: [],
   },
