@@ -1,15 +1,9 @@
-import {
-  useId,
-  useRef,
-  useState,
-  type ComponentPropsWithoutRef,
-  type KeyboardEvent,
-  type MouseEvent,
-} from 'react';
+import { useId, useRef, useState, type ComponentPropsWithoutRef, type KeyboardEvent } from 'react';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { SearchIcon } from '../../icons/SearchIcon';
 import a11yStyles from '../../styles/a11y.module.css';
 import fieldStyles from '../../styles/field.module.css';
+import { focusInputFromPill } from '../../utils/focusInputFromPill';
 import { useFormValue } from '../Form/FormContext';
 import { IconButton } from '../IconButton/IconButton';
 import styles from './SearchField.module.css';
@@ -97,15 +91,6 @@ export function SearchField({
     }
   }
 
-  // The input is one line tall inside a taller pill, so a press on the glyph or above and below the
-  // text would focus nothing. Cancelling the press and focusing the input puts the caret where a
-  // bare `TextInput`'s whole-pill input would. The input and the clear control keep their own.
-  function focusInputFromPill(event: MouseEvent<HTMLDivElement>) {
-    if (event.target instanceof Element && event.target.closest('input, button') !== null) return;
-    event.preventDefault();
-    inputRef.current?.focus();
-  }
-
   const labelId = `${inputId}-label`;
   return (
     <div
@@ -127,7 +112,7 @@ export function SearchField({
       <div
         className={[fieldStyles.control, fieldStyles.affix, styles.box].join(' ')}
         data-disabled={disabled ? '' : undefined}
-        onMouseDown={focusInputFromPill}
+        onMouseDown={(event) => focusInputFromPill(event, inputRef.current)}
       >
         <span className={fieldStyles.affixIcon} aria-hidden="true">
           <SearchIcon />

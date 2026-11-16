@@ -1,6 +1,7 @@
 import { Input as BaseInput } from '@base-ui/react/input';
 import { useRef, type MouseEvent, type ReactNode } from 'react';
 import fieldStyles from '../../styles/field.module.css';
+import { focusInputFromPill } from '../../utils/focusInputFromPill';
 
 export interface AffixInputProps extends Omit<BaseInput.Props, 'className' | 'ref'> {
   /**
@@ -53,15 +54,11 @@ export function AffixInput({ startIcon, iconOpensPicker = false, ...inputProps }
     return <BaseInput {...inputProps} className={fieldStyles.control} />;
   }
 
-  // The input is one line tall inside a taller pill, so a press on the icon or above and below the
-  // text would focus nothing. Cancelling the press and focusing the input puts the caret where a
-  // bare input's whole-box press would. The input keeps its own presses, so a caret placed by
-  // pointer, a selection drag and a native picker button all behave as they do without an icon.
-  function focusInputFromPill(event: MouseEvent<HTMLDivElement>) {
-    if (event.target instanceof Element && event.target.closest('input, button') !== null) return;
-    event.preventDefault();
+  // A press on the pill focuses the input (`focusInputFromPill`); a press on the icon of a picker
+  // field also opens the picker.
+  function handlePillMouseDown(event: MouseEvent<HTMLDivElement>) {
     const input = inputRef.current;
-    input?.focus();
+    if (!focusInputFromPill(event, input)) return;
     if (
       iconOpensPicker &&
       input instanceof HTMLInputElement &&
@@ -78,7 +75,7 @@ export function AffixInput({ startIcon, iconOpensPicker = false, ...inputProps }
     <div
       className={[fieldStyles.control, fieldStyles.affix].join(' ')}
       data-icon-opens-picker={iconOpensPicker ? '' : undefined}
-      onMouseDown={focusInputFromPill}
+      onMouseDown={handlePillMouseDown}
     >
       <span className={fieldStyles.affixIcon} aria-hidden="true">
         {startIcon}
