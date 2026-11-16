@@ -1,11 +1,24 @@
+import { checkThemeContrast } from '@calcifer-design/tokens';
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
 import { Avatar } from './Avatar';
 import * as stories from './Avatar.stories';
+import { avatarColorsTheme } from './fixtures';
 
-const { Initials, Small, Large, Square, SingleName, WithImage } = composeStories(stories);
+const {
+  Initials,
+  Small,
+  Large,
+  Square,
+  SingleName,
+  WithImage,
+  ColorFromSeed,
+  Sizes,
+  ExactSize,
+  Dark,
+} = composeStories(stories);
 
 describe('Avatar', () => {
   it.each([
@@ -15,6 +28,10 @@ describe('Avatar', () => {
     ['Square', Square],
     ['SingleName', SingleName],
     ['WithImage', WithImage],
+    ['ColorFromSeed', ColorFromSeed],
+    ['Sizes', Sizes],
+    ['ExactSize', ExactSize],
+    ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -66,5 +83,54 @@ describe('Avatar', () => {
   it('uses the first and last word, ignoring the ones between', () => {
     render(<Avatar name="Ada King Lovelace" />);
     expect(screen.getByText('AL')).toBeInTheDocument();
+  });
+
+  it('colours the root from the seed: uid-1 is colour 2', () => {
+    render(<ColorFromSeed />);
+    const roots = screen.getAllByTestId('avatar');
+    expect(roots).toHaveLength(6);
+    expect(roots[0]).toHaveAttribute('data-color', '2');
+    // uid-2 hashes to colour 1, so the six seeds are not all one colour.
+    expect(roots[1]).toHaveAttribute('data-color', '1');
+  });
+
+  it('carries no data-color without a seed, so today’s look stays', () => {
+    render(<Initials />);
+    expect(screen.getByTestId('avatar')).not.toHaveAttribute('data-color');
+  });
+
+  it('keeps data-color on the root while an image is on its way', () => {
+    render(<Avatar name="GitHub" src="https://example.test/avatar.png" colorSeed="uid-1" />);
+    expect(screen.getByTestId('avatar')).toHaveAttribute('data-color', '2');
+  });
+
+  it('renders the five sizes as data-size, xs to xl', () => {
+    render(<Sizes />);
+    const sizes = screen.getAllByTestId('avatar').map((root) => root.getAttribute('data-size'));
+    expect(sizes).toEqual(['xs', 'sm', 'md', 'lg', 'xl']);
+  });
+
+  it('joins a consumer class to the root beside its own', () => {
+    render(<Avatar name="Ada Lovelace" className="ring" />);
+    expect(screen.getByTestId('avatar')).toHaveClass('root', 'ring');
+  });
+
+  it.each([
+    ['ColorFromSeed', ColorFromSeed],
+    ['Dark', Dark],
+  ])('%s sits in the six-colour theme, whose sheet is on the page', (_name, Story) => {
+    const { container } = render(<Story />);
+    const scope = container.querySelector(`.${avatarColorsTheme.className}`);
+    expect(scope).not.toBeNull();
+    expect(scope?.querySelectorAll('[data-testid="avatar"]')).toHaveLength(6);
+    const sheet = container.querySelector('style')?.textContent ?? '';
+    expect(sheet).toContain('--color-avatar-fill-1: #BFDBFE');
+    expect(sheet).toContain('--color-avatar-fill-1: #1E40AF');
+  });
+
+  // The stories' colours only show because this theme gives the six pairs six distinct values;
+  // a pair under 4.5:1 would make the story it dresses a contrast failure.
+  it('gives the story theme six pairs that all pass the contrast check', () => {
+    expect(checkThemeContrast(avatarColorsTheme)).toEqual([]);
   });
 });

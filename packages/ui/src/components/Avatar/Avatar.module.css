@@ -1,16 +1,20 @@
-/* A fixed square that clips its image. The initials sit on surface-3 so they keep contrast in
-   both themes without a dedicated token pairing. */
+/* A fixed box that clips its image. The size comes from `data-size`'s two presets, which a
+   consumer overrides with `--avatar-size` and `--avatar-font-size` (read here, never declared).
+   The fill and the initials' ink come from `data-color` when the avatar has a seed, and are
+   surface-3 and muted text otherwise, so they keep contrast in both themes. */
 .root {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  inline-size: var(--avatar-size, var(--avatar-preset));
+  block-size: var(--avatar-size, var(--avatar-preset));
   border-radius: var(--radius-full);
   background: var(--color-surface-3);
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  font-size: var(--avatar-font-size, var(--avatar-preset-font));
   font-weight: var(--font-weight-heading);
   line-height: var(--leading-tight);
   user-select: none;
@@ -20,21 +24,59 @@
   border-radius: var(--radius-md);
 }
 
+.root[data-size='xs'] {
+  --avatar-preset: 1.5rem;
+  --avatar-preset-font: var(--text-2xs);
+}
+
 .root[data-size='sm'] {
-  width: 1.75rem;
-  height: 1.75rem;
-  font-size: var(--text-2xs);
+  --avatar-preset: 1.75rem;
+  --avatar-preset-font: var(--text-2xs);
 }
 
 .root[data-size='md'] {
-  width: 2.5rem;
-  height: 2.5rem;
+  --avatar-preset: 2.5rem;
+  --avatar-preset-font: var(--text-sm);
 }
 
 .root[data-size='lg'] {
-  width: 4rem;
-  height: 4rem;
-  font-size: var(--text-lg);
+  --avatar-preset: 4rem;
+  --avatar-preset-font: var(--text-lg);
+}
+
+.root[data-size='xl'] {
+  --avatar-preset: 6rem;
+  --avatar-preset-font: var(--text-h3);
+}
+
+.root[data-color='1'] {
+  background: var(--color-avatar-fill-1);
+  color: var(--color-avatar-ink-1);
+}
+
+.root[data-color='2'] {
+  background: var(--color-avatar-fill-2);
+  color: var(--color-avatar-ink-2);
+}
+
+.root[data-color='3'] {
+  background: var(--color-avatar-fill-3);
+  color: var(--color-avatar-ink-3);
+}
+
+.root[data-color='4'] {
+  background: var(--color-avatar-fill-4);
+  color: var(--color-avatar-ink-4);
+}
+
+.root[data-color='5'] {
+  background: var(--color-avatar-fill-5);
+  color: var(--color-avatar-ink-5);
+}
+
+.root[data-color='6'] {
+  background: var(--color-avatar-fill-6);
+  color: var(--color-avatar-ink-6);
 }
 
 .image {

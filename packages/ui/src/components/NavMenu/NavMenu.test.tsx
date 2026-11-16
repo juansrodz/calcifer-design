@@ -1,12 +1,15 @@
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installMatchMedia } from '../../../test/matchMedia';
+import { NavMenu } from './NavMenu';
+import type { LinkRenderProps, NavItem, NavMenuProps } from './NavMenu';
 import * as stories from './NavMenu.stories';
 
-const { Desktop, Mobile } = composeStories(stories);
+const { Desktop, Mobile, Vertical } = composeStories(stories);
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -33,6 +36,72 @@ describe('NavMenu at desktop width', () => {
 
     rerender(<Desktop items={items} currentPath="/projects/showcase" />);
     expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
+  });
+});
+
+describe('NavMenu over any item type', () => {
+  type IconItem = { href: string; label: string; icon: string };
+  const iconItems: readonly IconItem[] = [
+    { href: '/events', label: 'Events', icon: 'calendar' },
+    { href: '/people', label: 'People', icon: 'group' },
+  ];
+
+  function renderIconLink(
+    item: IconItem,
+    { children, ...linkProps }: LinkRenderProps,
+  ): ReactElement {
+    return (
+      <a href={item.href} data-icon={item.icon} {...linkProps}>
+        {children}
+      </a>
+    );
+  }
+
+  it('accepts a readonly array of a wider item type and hands `renderLink` the whole item', () => {
+    installMatchMedia(true);
+    expectTypeOf<NavMenuProps<IconItem>['items']>().toEqualTypeOf<readonly IconItem[]>();
+    expectTypeOf<NavMenuProps<IconItem>['renderLink']>().toEqualTypeOf<
+      ((item: IconItem, props: LinkRenderProps) => ReactElement) | undefined
+    >();
+
+    render(
+      <NavMenu<IconItem> items={iconItems} currentPath="/events" renderLink={renderIconLink} />,
+    );
+    expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('data-icon', 'calendar');
+    expect(screen.getByRole('link', { name: 'People' })).toHaveAttribute('data-icon', 'group');
+  });
+
+  it('keeps the plain item type the default, so existing callers compile unchanged', () => {
+    expectTypeOf<NavMenuProps['items']>().toEqualTypeOf<readonly NavItem[]>();
+  });
+
+  it('types `renderLink` by the item type, so a renderer written for another type does not fit', () => {
+    expectTypeOf<NavMenuProps['renderLink']>().not.toEqualTypeOf<
+      NavMenuProps<IconItem>['renderLink']
+    >();
+  });
+});
+
+describe('NavMenu orientation', () => {
+  it('lays the list out horizontally by default', () => {
+    installMatchMedia(true);
+    render(<Desktop />);
+    expect(screen.getByRole('list')).toHaveAttribute('data-orientation', 'horizontal');
+  });
+
+  it('writes the vertical orientation on the list, axe-clean', async () => {
+    installMatchMedia(true);
+    const { container } = render(<Vertical />);
+    expect(screen.getByRole('list')).toHaveAttribute('data-orientation', 'vertical');
+    expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('is ignored at mobile width: the menu button renders and no list does', () => {
+    installMatchMedia(false);
+    render(<Vertical />);
+    expect(screen.getByRole('button', { name: 'Open menu' })).toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });
 

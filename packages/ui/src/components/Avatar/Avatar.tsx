@@ -1,13 +1,29 @@
 import { Avatar as BaseAvatar } from '@base-ui/react/avatar';
 import a11yStyles from '../../styles/a11y.module.css';
 import styles from './Avatar.module.css';
+import { avatarColorIndex } from './avatarColor';
+
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export interface AvatarProps {
   /** The person or thing this stands for. Used as the image's alt text and as the initials source. */
   name: string;
   src?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: AvatarSize;
   shape?: 'circle' | 'square';
+  /**
+   * A class for the root, joined after the component's own. It is how a consumer sets the two size
+   * hooks, `--avatar-size` and `--avatar-font-size`, for a size the five presets do not draw. Like
+   * any custom property the hooks inherit, so a wrapper that sets `--avatar-size` resizes every
+   * avatar inside it.
+   */
+  className?: string;
+  /**
+   * Colours the box from a seed, a stable id for the person (`avatarColorIndex(colorSeed)`, one of
+   * six theme colours), by writing `data-color` on the root. The colour fills the box behind the
+   * initials, and behind a photo while it loads. Left out, the avatar keeps its neutral fill.
+   */
+  colorSeed?: string;
 }
 
 /** Leading characters by code point, not by UTF-16 code unit. */
@@ -38,12 +54,20 @@ function initialsFrom(name: string): string {
   return `${leadingCharacters(firstWord, 1)}${leadingCharacters(lastWord, 1)}`.toUpperCase();
 }
 
-export function Avatar({ name, src, size = 'md', shape = 'circle' }: AvatarProps) {
+export function Avatar({
+  name,
+  src,
+  size = 'md',
+  shape = 'circle',
+  className,
+  colorSeed,
+}: AvatarProps) {
   return (
     <BaseAvatar.Root
-      className={styles.root}
+      className={[styles.root, className].filter(Boolean).join(' ')}
       data-size={size}
       data-shape={shape}
+      data-color={colorSeed === undefined ? undefined : avatarColorIndex(colorSeed)}
       data-testid="avatar"
     >
       {src !== undefined ? (
