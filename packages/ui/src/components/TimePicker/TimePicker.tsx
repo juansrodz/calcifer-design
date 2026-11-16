@@ -31,7 +31,9 @@ export interface TimePickerProps extends Omit<
   step?: number;
   /**
    * A decorative glyph inside the field, before the time: an icon from your own set, sized to 1rem
-   * and coloured by the text-muted role. The field's label still names the input.
+   * and coloured by the text-muted role. The field's label still names the input. It takes the
+   * place of the browser's own picker button, which is hidden, and a press on it opens the picker
+   * where the browser has one; typing a time is unchanged.
    *
    * With an icon the visible field is a pill around the input, and the input's own props (`hidden`
    * and `title` included) reach the inner input, not the pill: size the field from its container.
@@ -58,6 +60,7 @@ export function TimePicker({
     <AffixInput
       {...rest}
       startIcon={startIcon}
+      iconOpensPicker
       type="time"
       value={value}
       defaultValue={defaultValue}

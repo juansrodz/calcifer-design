@@ -33,6 +33,11 @@ export interface NavMenuProps<Item extends NavItem = NavItem> {
    * wide layout only: below `md` the links are already a column inside the menu, so it is ignored.
    */
   orientation?: 'horizontal' | 'vertical';
+  /**
+   * The menu button's accessible name below `md`, while the menu is closed (`open`, default
+   * "Open menu") and while it is open (`close`, default "Close menu").
+   */
+  labels?: { open?: string; close?: string };
 }
 
 /**
@@ -65,6 +70,7 @@ export function NavMenu<Item extends NavItem = NavItem>({
   label = 'Primary',
   renderLink = defaultRenderLink,
   orientation = 'horizontal',
+  labels,
 }: NavMenuProps<Item>) {
   const isWide = useMediaQuery(minWidth('md'));
   const container = usePortalContainer();
@@ -95,7 +101,10 @@ export function NavMenu<Item extends NavItem = NavItem>({
   return (
     <nav className={styles.root} aria-label={label}>
       <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
-        <Menu.Trigger className={styles.trigger} aria-label={open ? 'Close menu' : 'Open menu'}>
+        <Menu.Trigger
+          className={styles.trigger}
+          aria-label={open ? (labels?.close ?? 'Close menu') : (labels?.open ?? 'Open menu')}
+        >
           <svg
             className={styles.triggerIcon}
             viewBox="0 0 18 18"

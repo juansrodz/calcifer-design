@@ -220,6 +220,12 @@
   cursor: inherit;
 }
 
+/* A wearer whose leading icon opens the native picker (`TimePicker`) hides the browser's own
+   picker button, so the field shows one glyph for it, at the start. */
+.affix[data-icon-opens-picker] > .affixInput::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
 /* The input has no `.control` to give it this colour. */
 .affixInput::placeholder {
   color: var(--color-text-subtle);

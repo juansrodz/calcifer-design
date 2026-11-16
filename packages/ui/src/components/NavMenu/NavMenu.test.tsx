@@ -135,6 +135,19 @@ describe('NavMenu at mobile width', () => {
     expect(screen.queryByRole('menuitem', { name: 'About' })).not.toBeInTheDocument();
   });
 
+  it('takes its button names from labels, keeping each default it is not given', async () => {
+    installMatchMedia(false);
+    const { unmount } = render(<Mobile labels={{ open: 'Abrir menú', close: 'Cerrar menú' }} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    expect(await screen.findByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cerrar menú' })).toBeInTheDocument();
+    unmount();
+    render(<Mobile labels={{ open: 'Abrir menú' }} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    expect(await screen.findByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close menu' })).toBeInTheDocument();
+  });
+
   it('wears the tier-wide popup skin, so it cannot drift from Menu and Popover', async () => {
     installMatchMedia(false);
     render(<Mobile />);

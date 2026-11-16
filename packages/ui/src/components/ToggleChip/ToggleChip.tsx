@@ -31,6 +31,13 @@ interface ChipToggleProps extends ToggleChipProps {
   value?: string;
   /** Draws a check after the label. The group asks for it on a pressed chip of a multiple group. */
   showCheck: boolean;
+  /**
+   * The group's tab stop (`useIndexedToggleGroup`). A lone chip leaves both out, and so does a
+   * group chip whose stop is Base UI's: they are spread only when present, so an absent one never
+   * overrides the `tabIndex` Base UI roves.
+   */
+  tabIndex?: number;
+  onFocus?: () => void;
 }
 
 /**
@@ -48,6 +55,7 @@ export function ChipToggle({
   onPressedChange,
   children,
   className,
+  ...tabStopProps
 }: ChipToggleProps) {
   return (
     <Toggle
@@ -57,6 +65,7 @@ export function ChipToggle({
       disabled={disabled}
       pressed={pressed}
       defaultPressed={defaultPressed}
+      {...tabStopProps}
       // One argument out, whatever Base UI passes in — see the prop's doc.
       onPressedChange={onPressedChange ? (nextPressed) => onPressedChange(nextPressed) : undefined}
     >

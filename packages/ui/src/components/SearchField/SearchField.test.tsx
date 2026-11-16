@@ -7,6 +7,8 @@ import { tokens } from '@calcifer-design/tokens';
 import { axe, axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import fieldStyles from '../../styles/field.module.css';
+import { Form } from '../Form/Form';
+import { SearchField } from './SearchField';
 import styles from './SearchField.module.css';
 import * as stories from './SearchField.stories';
 
@@ -87,6 +89,27 @@ describe('SearchField', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit).toHaveBeenCalledWith('Ad');
     expect(onFormSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('hands a Form’s onSubmit its value under its name, and nothing while disabled', async () => {
+    const onSubmit = vi.fn();
+    const { rerender } = render(
+      <Form onSubmit={onSubmit}>
+        <SearchField label="Search people" name="query" defaultValue="Ad" />
+        <button type="submit">Save</button>
+      </Form>,
+    );
+    await userEvent.type(searchbox(), 'a');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenLastCalledWith({ query: 'Ada' });
+    rerender(
+      <Form onSubmit={onSubmit}>
+        <SearchField label="Search people" name="query" defaultValue="Ad" disabled />
+        <button type="submit">Save</button>
+      </Form>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).toHaveBeenLastCalledWith({});
   });
 
   it('shows a clear control only while there is a value', async () => {

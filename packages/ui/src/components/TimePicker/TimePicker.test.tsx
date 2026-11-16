@@ -154,6 +154,72 @@ describe('TimePicker', () => {
       expect(timeInput()).toHaveFocus();
     });
 
+    describe('opens the native picker from a press on the icon', () => {
+      function iconOf(input: HTMLInputElement): Element {
+        const icon = input.previousElementSibling;
+        if (icon === null) throw new Error('the pill has no icon');
+        return icon;
+      }
+
+      // React reports an error thrown in an event handler on the window, not to `fireEvent`'s
+      // caller, so a throw is caught there.
+      function windowErrorsDuring(action: () => void): unknown[] {
+        const errors: unknown[] = [];
+        const record = (event: ErrorEvent) => {
+          errors.push(event.error);
+          event.preventDefault();
+        };
+        window.addEventListener('error', record);
+        try {
+          action();
+        } finally {
+          window.removeEventListener('error', record);
+        }
+        return errors;
+      }
+
+      it('calls showPicker, hides the browser’s own button, and leaves other presses alone', () => {
+        render(<WithStartIcon />);
+        const showPicker = vi.fn();
+        timeInput().showPicker = showPicker;
+        expect(timeInput().parentElement).toHaveAttribute('data-icon-opens-picker');
+        fireEvent.mouseDown(timeInput().parentElement as HTMLElement);
+        expect(showPicker).not.toHaveBeenCalled();
+        fireEvent.mouseDown(iconOf(timeInput()).querySelector('svg') as SVGElement);
+        expect(showPicker).toHaveBeenCalledTimes(1);
+        expect(timeInput()).toHaveFocus();
+      });
+
+      it.each(['NotAllowedError', 'InvalidStateError'])(
+        'swallows a %s from showPicker and still focuses the input',
+        (errorName) => {
+          render(<WithStartIcon />);
+          timeInput().showPicker = () => {
+            throw new DOMException('refused', errorName);
+          };
+          expect(windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())))).toEqual([]);
+          expect(timeInput()).toHaveFocus();
+        },
+      );
+
+      it('lets any other error from showPicker through', () => {
+        render(<WithStartIcon />);
+        timeInput().showPicker = () => {
+          throw new DOMException('cross-origin', 'SecurityError');
+        };
+        const errors = windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())));
+        expect(errors).toHaveLength(1);
+        expect((errors[0] as DOMException).name).toBe('SecurityError');
+      });
+
+      it('does nothing more where the browser has no showPicker', () => {
+        render(<WithStartIcon />);
+        Object.defineProperty(timeInput(), 'showPicker', { value: undefined });
+        expect(windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())))).toEqual([]);
+        expect(timeInput()).toHaveFocus();
+      });
+    });
+
     it('reports the value as it does without an icon', () => {
       const onValueChange = vi.fn();
       render(

@@ -1,6 +1,7 @@
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import fieldStyles from '../../styles/field.module.css';
 import { Form } from '../Form/Form';
@@ -223,6 +224,82 @@ describe('ToggleChipGroup, single', () => {
   });
 });
 
+describe('ToggleChipGroup, its tab stop', () => {
+  function betweenButtons(group: ReactElement) {
+    return (
+      <>
+        <button type="button">Before</button>
+        {group}
+        <button type="button">After</button>
+      </>
+    );
+  }
+
+  function singleGroup(props: { defaultValue?: string; value?: string | null }) {
+    return (
+      <ToggleChipGroup selectionMode="single" label="Dish type" options={dishOptions} {...props} />
+    );
+  }
+
+  it('lands on the chip a single group’s defaultValue presses', async () => {
+    render(betweenButtons(singleGroup({ defaultValue: 'dessert' })));
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(chip('Dessert')).toHaveFocus();
+    // One stop: the next tab leaves the group.
+    await userEvent.tab();
+    expect(chip('After')).toHaveFocus();
+  });
+
+  it('returns to the pressed chip when focus left from another one', async () => {
+    render(betweenButtons(singleGroup({ defaultValue: 'dessert' })));
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(chip('Side')).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(chip('Before')).toHaveFocus();
+    await userEvent.tab();
+    expect(chip('Dessert')).toHaveFocus();
+  });
+
+  it('moves with a controlled value', async () => {
+    const { rerender } = render(betweenButtons(singleGroup({ value: 'side' })));
+    rerender(betweenButtons(singleGroup({ value: 'drink' })));
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(chip('Drink')).toHaveFocus();
+    rerender(betweenButtons(singleGroup({ value: null })));
+    await userEvent.tab({ shift: true });
+    await userEvent.tab();
+    expect(chip('Main dish')).toHaveFocus();
+  });
+
+  it('follows the chip pressed by a click', async () => {
+    render(betweenButtons(singleGroup({})));
+    await userEvent.click(chip('Other'));
+    await userEvent.click(chip('Before'));
+    await userEvent.tab();
+    expect(chip('Other')).toHaveFocus();
+  });
+
+  it('stays on the first chip of a multiple group, whatever is pressed', async () => {
+    render(
+      betweenButtons(
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          options={dietaryOptions}
+          defaultValue={['spicy', 'vegan']}
+        />,
+      ),
+    );
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(chip('Vegetarian')).toHaveFocus();
+  });
+});
+
 describe('ToggleChipGroup, multiple', () => {
   it('reports the values in the options order, not the order they were pressed', async () => {
     const onValueChange = vi.fn();
@@ -404,6 +481,37 @@ describe('ToggleChipGroup, submitting', () => {
     );
     const form = screen.getByRole('form', { name: 'Sign up' }) as HTMLFormElement;
     expect(new FormData(form).getAll('dietary')).toEqual(['vegan', 'spicy']);
+  });
+
+  it('names only the hidden inputs in form.elements, never the group', () => {
+    render(
+      <form aria-label="Sign up">
+        <ToggleChipGroup
+          selectionMode="single"
+          label="Dish type"
+          name="dish"
+          options={dishOptions}
+          defaultValue="side"
+        />
+        <ToggleChipGroup
+          selectionMode="multiple"
+          label="Dietary needs"
+          name="dietary"
+          options={dietaryOptions}
+          defaultValue={['spicy', 'vegan']}
+        />
+      </form>,
+    );
+    const form = screen.getByRole('form', { name: 'Sign up' }) as HTMLFormElement;
+    const dish = form.elements.namedItem('dish');
+    expect(dish).toBeInstanceOf(HTMLInputElement);
+    expect((dish as HTMLInputElement).value).toBe('side');
+    const dietary = form.elements.namedItem('dietary') as RadioNodeList;
+    expect(Array.from(dietary).map((element) => (element as HTMLInputElement).type)).toEqual([
+      'hidden',
+      'hidden',
+    ]);
+    expect(form.querySelector('fieldset[name]')).toBeNull();
   });
 
   it('submits nothing while the group is disabled', () => {

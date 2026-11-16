@@ -10,6 +10,7 @@ import { CloseIcon } from '../../icons/CloseIcon';
 import { SearchIcon } from '../../icons/SearchIcon';
 import a11yStyles from '../../styles/a11y.module.css';
 import fieldStyles from '../../styles/field.module.css';
+import { useFormValue } from '../Form/FormContext';
 import { IconButton } from '../IconButton/IconButton';
 import styles from './SearchField.module.css';
 
@@ -66,6 +67,9 @@ export function SearchField({
   const isControlled = value !== undefined;
   const [heldValue, setHeldValue] = useState(defaultValue ?? '');
   const current = isControlled ? value : heldValue;
+  // Base UI's `Form` reads only its own fields, so the value is handed over under `name` as
+  // `PickerField` does; a disabled field submits nothing, as a disabled input does.
+  useFormValue(disabled ? undefined : inputProps.name, current);
 
   function change(nextValue: string) {
     if (!isControlled) setHeldValue(nextValue);

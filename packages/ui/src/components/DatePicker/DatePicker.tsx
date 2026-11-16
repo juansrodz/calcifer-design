@@ -1,5 +1,5 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CalendarIcon } from '../../icons/CalendarIcon';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
@@ -43,6 +43,26 @@ const DEFAULT_LABELS: Omit<DatePickerLabels, 'clear'> = {
 };
 
 const DEFAULT_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = { dateStyle: 'medium' };
+
+// The package's `types` carry no Node globals, so the declaration build does not know `process`
+// (`TabBar` records why the literal `process.env.NODE_ENV` is the form to read).
+declare const process: { env: { NODE_ENV?: string } };
+
+/**
+ * The trigger's formatter, or the default one when `Intl` refuses the options: a `TypeError` for
+ * `dateStyle` beside a field such as `weekday`, a `RangeError` for a value it does not know. A
+ * picker never throws over its look; `refused` says so, for the development warning.
+ */
+function triggerFormatter(locale: string | undefined, options: Intl.DateTimeFormatOptions) {
+  try {
+    return { formatter: dateFormatter(locale, options), refused: false };
+  } catch (error) {
+    if (!(error instanceof TypeError || error instanceof RangeError)) {
+      throw error;
+    }
+    return { formatter: dateFormatter(locale, DEFAULT_FORMAT_OPTIONS), refused: true };
+  }
+}
 
 export interface DatePickerProps extends FieldFrameProps {
   /** The visible label, and the start of the trigger's accessible name. */
@@ -96,7 +116,8 @@ export interface DatePickerProps extends FieldFrameProps {
    * `Intl.DateTimeFormat`. Defaults to `{ dateStyle: 'medium' }`. The placeholder and the calendar's
    * own labels do not follow it. The date is a calendar day, so `timeZone` and `calendar` are fixed
    * (UTC and Gregorian) whatever the options say. `Intl` refuses `dateStyle` beside the individual
-   * fields (`weekday`, `month` and the rest), and so does this: use one or the other.
+   * fields (`weekday`, `month` and the rest), and a value it does not know: options it refuses fall
+   * back to the default, with a warning in development, so use one or the other.
    */
   formatOptions?: Intl.DateTimeFormatOptions;
   /**
@@ -147,6 +168,15 @@ export function DatePicker({
   const firstWeekday = weekStartsOn ?? weekStartOf(resolvedLocale);
   const earliest = parseIsoDate(min);
   const latest = parseIsoDate(max);
+  // Built on every render, not only once a date is chosen, so refused options warn at once.
+  const { formatter, refused } = triggerFormatter(resolvedLocale, formatOptions);
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production' && refused) {
+      console.warn(
+        'DatePicker: Intl.DateTimeFormat refused formatOptions; the default { dateStyle: "medium" } is used instead.',
+      );
+    }
+  }, [refused]);
 
   const commit = (nextValue: string | null) => {
     setHeldValue(nextValue);
@@ -164,9 +194,7 @@ export function DatePicker({
       required={required}
       disabled={disabled}
       value={chosen}
-      valueText={
-        chosen === null ? placeholder : dateFormatter(resolvedLocale, formatOptions).format(chosen)
-      }
+      valueText={chosen === null ? placeholder : formatter.format(chosen)}
       icon={<CalendarIcon />}
       iconPlacement={iconPlacement}
       requiredWord={words.required}

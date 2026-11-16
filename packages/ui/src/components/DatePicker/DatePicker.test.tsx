@@ -193,6 +193,33 @@ describe('DatePicker', () => {
       expect(trigger()).toHaveAccessibleName('Event date mar, 17 feb');
     });
 
+    it('falls back to the default format, with one warning, for options Intl refuses', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const { rerender } = render(
+          <DatePicker
+            label="Event date"
+            locale="en-US"
+            formatOptions={{ dateStyle: 'medium', weekday: 'short' }}
+          />,
+        );
+        await openCalendar();
+        await userEvent.click(cell('Tuesday, March 17, 2026'));
+        expect(trigger()).toHaveAccessibleName('Event date Mar 17, 2026');
+        rerender(
+          <DatePicker
+            label="Event date"
+            locale="en-US"
+            formatOptions={{ dateStyle: 'medium', weekday: 'short' }}
+          />,
+        );
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0]?.[0]).toContain('DatePicker');
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
     it('leaves the placeholder alone, and the icon where it was put', () => {
       renderPicker({
         placeholder: 'Pick a day',

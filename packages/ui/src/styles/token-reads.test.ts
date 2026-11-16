@@ -1313,6 +1313,13 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // `TimePicker`'s leading icon opens the picker, so the browser's own button is hidden.
+    file: 'styles/field.module.css',
+    rule: /^\.affix\[data-icon-opens-picker\] > \.affixInput::-webkit-calendar-picker-indicator \{([^}]*)\}/m,
+    contains: ['display: none;'],
+    lacks: [],
+  },
+  {
     file: 'styles/field.module.css',
     rule: /^\.affixInput::placeholder \{([^}]*)\}/m,
     contains: ['color: var(--color-text-subtle);'],

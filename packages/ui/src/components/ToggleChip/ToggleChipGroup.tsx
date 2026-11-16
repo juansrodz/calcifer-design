@@ -1,6 +1,7 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
 import { useId, useState, type ReactNode } from 'react';
+import { useIndexedToggleGroup } from '../../hooks/useIndexedToggleGroup';
 import fieldStyles from '../../styles/field.module.css';
 import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
 import { useFormValue } from '../Form/FormContext';
@@ -65,7 +66,9 @@ function valuesOf(value: string | readonly string[] | null | undefined): readonl
 /**
  * A row of chips that choose one value (`selectionMode="single"`) or any number (`"multiple"`).
  * Each chip is a toggle button, and the group is one tab stop whose arrow keys move focus without
- * pressing anything. A pressed chip of a multiple group draws a check.
+ * pressing anything. A pressed chip of a multiple group draws a check. Tab lands on the pressed chip
+ * of a single group, or the first enabled chip while none is pressed (`useIndexedToggleGroup`
+ * records how); a multiple group's stop is Base UI's, the first enabled chip.
  *
  * Base UI's `ToggleGroup` and `Toggle`, unlike its `RadioGroup`, read no `Field` context. The group
  * therefore renders a `Field.Control` itself (see below), which is what makes it a field to a
@@ -87,11 +90,12 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
   const controlled = props.value !== undefined;
   const pressedValues = controlled ? valuesOf(props.value) : heldValues;
   const multiple = props.selectionMode === 'multiple';
-  // Base UI hears each chip by its index, because its `Toggle` takes `''` for no value at all and
-  // generates an id instead (`Segmented` does the same).
   const pressedChips = options.flatMap((option, index) =>
     pressedValues.includes(option.value) ? [{ option, index }] : [],
   );
+  const singleStopIndex = pressedChips[0]?.index ?? options.findIndex((option) => !option.disabled);
+  // Base UI hears each chip by its index (see the hook). A disabled group has no stop to place.
+  const toggleGroup = useIndexedToggleGroup(options, multiple || disabled ? -1 : singleStopIndex);
   // What a `Form` submits for the group: the pressed value (or `null`) of a single group, the list
   // of a multiple one. Base UI's `Form` cannot read a toggle group, so the value is handed over as
   // `PickerField` and `Upload` do, and a disabled group submits nothing, as a disabled control
@@ -126,14 +130,16 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
         value={pressedChips.length === 0 ? '' : JSON.stringify(submittedValue)}
         onBlur={onBlur}
         render={(controlProps) => {
-          // Base UI hands over the props of an `<input>`. The three that only an input reads stay
-          // out: the signature above, a default value and the change handler.
+          // Base UI hands over the props of an `<input>`. The four that only an input reads stay
+          // out: the signature above, a default value, the change handler and the `name`, which on
+          // the `fieldset` would make `form.elements` name the group beside the hidden inputs.
           const {
             value: _signature,
             defaultValue: _defaultValue,
             onChange: _onChange,
+            name: _name,
             ...groupProps
-          } = controlProps as typeof controlProps & { value: string };
+          } = controlProps as typeof controlProps & { value: string; name?: string };
           return (
             <ToggleGroup
               {...groupProps}
@@ -146,15 +152,9 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
               multiple={multiple}
               // Always controlled, so that what is pressed follows `options` past the first render
               // and `value` may arrive late.
-              value={pressedChips.map(({ index }) => String(index))}
+              value={toggleGroup.groupValue(pressedChips.map(({ index }) => index))}
               onValueChange={(nextIndexes) => {
-                const nextValues = nextIndexes
-                  .map(Number)
-                  .sort((first, second) => first - second)
-                  .flatMap((index) => {
-                    const option = options[index];
-                    return option ? [option.value] : [];
-                  });
+                const nextValues = toggleGroup.optionsAt(nextIndexes).map(({ value }) => value);
                 if (props.selectionMode === 'multiple') {
                   if (!controlled) {
                     setHeldValues(nextValues);
@@ -173,11 +173,12 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
                 props.onValueChange?.(chosenValue);
               }}
             >
-              <div className={styles.row}>
+              <div className={styles.row} onBlur={toggleGroup.onGroupBlur}>
                 {options.map((option, index) => (
                   <ChipToggle
                     key={option.value}
                     value={String(index)}
+                    {...toggleGroup.itemProps(option, index)}
                     showCheck={multiple && pressedValues.includes(option.value)}
                     icon={option.icon}
                     disabled={option.disabled}

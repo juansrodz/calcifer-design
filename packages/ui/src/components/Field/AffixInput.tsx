@@ -9,6 +9,30 @@ export interface AffixInputProps extends Omit<BaseInput.Props, 'className' | 're
    * itself.
    */
   startIcon?: ReactNode;
+  /**
+   * With `startIcon`, the browser's own picker button is hidden (the icon sits where it would be
+   * looked for) and a press on the icon opens the picker instead. `TimePicker` asks for it; typing
+   * in the input is unchanged.
+   */
+  iconOpensPicker?: boolean;
+}
+
+/**
+ * Opens the input's native picker, where the browser has one. `showPicker` refuses without a user
+ * gesture (`NotAllowedError`) and on a disabled or read-only input (`InvalidStateError`), and a
+ * refusal leaves the press as a plain focus.
+ */
+function showPickerOf(input: HTMLInputElement) {
+  try {
+    input.showPicker?.();
+  } catch (error) {
+    if (
+      !(error instanceof DOMException) ||
+      (error.name !== 'NotAllowedError' && error.name !== 'InvalidStateError')
+    ) {
+      throw error;
+    }
+  }
 }
 
 /**
@@ -22,7 +46,7 @@ export interface AffixInputProps extends Omit<BaseInput.Props, 'className' | 're
  * pill. The pill reads the input's `data-invalid` and `data-disabled` through `:has`, because the
  * state Base UI writes is on the input.
  */
-export function AffixInput({ startIcon, ...inputProps }: AffixInputProps) {
+export function AffixInput({ startIcon, iconOpensPicker = false, ...inputProps }: AffixInputProps) {
   const inputRef = useRef<HTMLElement>(null);
 
   if (!startIcon) {
@@ -36,7 +60,16 @@ export function AffixInput({ startIcon, ...inputProps }: AffixInputProps) {
   function focusInputFromPill(event: MouseEvent<HTMLDivElement>) {
     if (event.target instanceof Element && event.target.closest('input, button') !== null) return;
     event.preventDefault();
-    inputRef.current?.focus();
+    const input = inputRef.current;
+    input?.focus();
+    if (
+      iconOpensPicker &&
+      input instanceof HTMLInputElement &&
+      event.target instanceof Element &&
+      event.target.closest(`.${fieldStyles.affixIcon}`) !== null
+    ) {
+      showPickerOf(input);
+    }
   }
 
   return (
@@ -44,6 +77,7 @@ export function AffixInput({ startIcon, ...inputProps }: AffixInputProps) {
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={[fieldStyles.control, fieldStyles.affix].join(' ')}
+      data-icon-opens-picker={iconOpensPicker ? '' : undefined}
       onMouseDown={focusInputFromPill}
     >
       <span className={fieldStyles.affixIcon} aria-hidden="true">
