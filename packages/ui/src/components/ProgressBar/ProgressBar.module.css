@@ -61,17 +61,19 @@
 }
 
 /* The track clips the indicator, so the slide of an indeterminate bar starts and ends outside it
-   without a scrollbar or a bleed past the rounded ends. */
+   without a scrollbar or a bleed past the rounded ends. Its height is the consumer hook
+   `--progress-bar-track-size`, read here and never declared: 0.5rem by default, 0.25rem at `sm`.
+   The indicator follows it (Base UI's `height: inherit`, or `block-size: 100%` below). */
 .track {
   position: relative;
-  height: 0.5rem;
+  height: var(--progress-bar-track-size, 0.5rem);
   border-radius: var(--radius-full);
   background: var(--color-surface-3);
   overflow: hidden;
 }
 
 .root[data-size='sm'] .track {
-  height: 0.25rem;
+  height: var(--progress-bar-track-size, 0.25rem);
 }
 
 /* Base UI writes `width: <n>%` and `height: inherit` on a determinate indicator, so only the

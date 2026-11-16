@@ -19,8 +19,9 @@ export const Block: Story = { args: { variant: 'block', height: '8rem' } };
 export const Circle: Story = { args: { variant: 'circle', width: '2.5rem', height: '2.5rem' } };
 
 /**
- * A consumer rounds the `text` and `block` skeletons through `--skeleton-radius`, set on an
- * ancestor; the circle keeps its full radius. The story stylesheet sets it on a wrapper.
+ * A consumer rounds the `text` and `block` skeletons through `--skeleton-radius`, set on a
+ * `ThemeScope` or another DOM ancestor of the skeleton (it takes no `className`); the circle keeps
+ * its full radius. The story stylesheet sets it on a wrapper.
  */
 export const RadiusHook: Story = {
   render: () => (

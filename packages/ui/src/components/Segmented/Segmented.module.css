@@ -66,8 +66,9 @@
   }
 }
 
-/* `--segmented-pressed-shadow` is a hook a consumer sets on the group or an ancestor to lift the
-   chosen option; the library never declares it, and with none set the option stays flat. */
+/* `--segmented-pressed-shadow` is a hook a consumer sets on a `ThemeScope` or another DOM ancestor
+   of the group (which takes no `className`) to lift the chosen option; the library never declares
+   it, and with none set the option stays flat. */
 .option[data-pressed] {
   background: var(--color-selected);
   color: var(--color-selected-text);

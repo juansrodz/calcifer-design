@@ -32,9 +32,10 @@
   gap: var(--space-3);
 }
 
-/* The three `--dialog-heading-*` hooks are set by a consumer on the popup or an ancestor and never
-   declared here; each defaults to the step this heading always drew (`--text-h3`, the heading
-   tracking, the snug leading), so a dialog with no hook set looks as it did. */
+/* The three `--dialog-heading-*` hooks are set by a consumer on a `ThemeScope` (whose portal host
+   holds the popup) or a DOM ancestor of the popup, and never declared here; each defaults to the
+   step this heading always drew (`--text-h3`, the heading tracking, the snug leading), so a dialog
+   with no hook set looks as it did. */
 .heading {
   flex: 1 1 auto;
   min-width: 0;
@@ -108,12 +109,12 @@ h4.heading {
    the body pads that much and takes it back as a negative margin: the ring shows, and the content
    sits exactly where it did. */
 .body {
-  --ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));
-  --ring-room-reach: calc(var(--ring-room) * -1);
+  --dialog-body-ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));
+  --dialog-body-ring-reach: calc(var(--dialog-body-ring-room) * -1);
 
   min-height: 0;
-  margin: var(--ring-room-reach);
-  padding: var(--ring-room);
+  margin: var(--dialog-body-ring-reach);
+  padding: var(--dialog-body-ring-room);
   overflow-y: auto;
   overscroll-behavior: contain;
 }

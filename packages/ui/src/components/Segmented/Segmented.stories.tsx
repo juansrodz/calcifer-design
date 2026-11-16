@@ -110,8 +110,9 @@ export const Fill: Story = {
   ],
 };
 /**
- * A consumer gives the chosen option a shadow by setting `--segmented-pressed-shadow` on the group
- * or an ancestor; here a story stylesheet points it at the soft surface shadow.
+ * A consumer gives the chosen option a shadow by setting `--segmented-pressed-shadow` on a
+ * `ThemeScope` or another DOM ancestor of the group, which takes no `className`; here a story
+ * stylesheet points it at the soft surface shadow.
  */
 export const PressedShadow: Story = {
   args: { defaultValue: 'week' },

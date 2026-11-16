@@ -37,6 +37,10 @@ export interface ProgressBarProps {
    * technology, so pair `error` with `helperText` to give sighted people the reason in words.
    */
   status?: 'active' | 'finished' | 'error';
+  /**
+   * The track's height: 0.5rem, or 0.25rem at `sm`. A consumer sets another through the
+   * `--progress-bar-track-size` hook, on a `ThemeScope` or another DOM ancestor of the bar.
+   */
   size?: 'sm' | 'md';
   /**
    * The visible and the announced value, given the effective value (clamped; `max` for a

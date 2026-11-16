@@ -1215,10 +1215,10 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.body \{([^}]*)\}/m,
     contains: [
-      '--ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));',
-      '--ring-room-reach: calc(var(--ring-room) * -1);',
-      'margin: var(--ring-room-reach);',
-      'padding: var(--ring-room);',
+      '--dialog-body-ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));',
+      '--dialog-body-ring-reach: calc(var(--dialog-body-ring-room) * -1);',
+      'margin: var(--dialog-body-ring-reach);',
+      'padding: var(--dialog-body-ring-room);',
       'overflow-y: auto;',
     ],
     lacks: [],
@@ -2319,7 +2319,8 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.track \{([^}]*)\}/m,
     contains: [
       'position: relative;',
-      'height: 0.5rem;',
+      // The consumer hook, read and never declared, over the default height.
+      'height: var(--progress-bar-track-size, 0.5rem);',
       'border-radius: var(--radius-full);',
       'background: var(--color-surface-3);',
       'overflow: hidden;',
@@ -2329,7 +2330,7 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/ProgressBar/ProgressBar.module.css',
     rule: /^\.root\[data-size='sm'\] \.track \{([^}]*)\}/m,
-    contains: ['height: 0.25rem;'],
+    contains: ['height: var(--progress-bar-track-size, 0.25rem);'],
     lacks: [],
   },
   // The fill: the local colour, and a width transition on the motion tokens (Base UI writes the

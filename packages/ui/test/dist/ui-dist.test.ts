@@ -66,6 +66,7 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--collapsible-heading-size',
   '--empty-state-heading-size',
   '--toggle-chip-pressed-ring',
+  '--progress-bar-track-size',
 ] as const;
 
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */

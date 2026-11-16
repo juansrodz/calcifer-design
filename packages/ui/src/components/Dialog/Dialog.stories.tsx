@@ -142,8 +142,9 @@ export const HiddenClose: Story = {
 
 /**
  * A consumer restyles the heading and the sheet's grab handle through five custom properties set
- * on the popup or an ancestor. The popup portals out of the story's own tree, so the story
- * stylesheet reaches it by its `data-popup` attribute rather than by a wrapper class.
+ * on a `ThemeScope` (whose portal host holds the popup) or a DOM ancestor of the popup. The popup
+ * portals out of the story's own tree, so the story stylesheet reaches it by its `data-popup`
+ * attribute rather than by a wrapper class.
  */
 export const HeadingHooks: Story = {
   args: { variant: 'sheet', defaultOpen: true },
