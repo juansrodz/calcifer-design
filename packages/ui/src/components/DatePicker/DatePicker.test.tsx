@@ -220,6 +220,50 @@ describe('DatePicker', () => {
       }
     });
 
+    it('reads NODE_ENV only when Intl refused the options', () => {
+      // Every read of `process.env.NODE_ENV` from DatePicker's own module, while one picker with
+      // good options and one with refused options each render once.
+      function datePickerReadsDuring(action: () => void): number {
+        const realEnv = process.env;
+        let reads = 0;
+        process.env = new Proxy(realEnv, {
+          get(target, key, receiver) {
+            if (key === 'NODE_ENV' && (new Error().stack ?? '').includes('DatePicker.tsx')) {
+              reads += 1;
+            }
+            return Reflect.get(target, key, receiver) as unknown;
+          },
+        });
+        try {
+          action();
+        } finally {
+          process.env = realEnv;
+        }
+        return reads;
+      }
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        expect(
+          datePickerReadsDuring(() =>
+            render(<DatePicker label="Event date" locale="en-US" />).unmount(),
+          ),
+        ).toBe(0);
+        expect(
+          datePickerReadsDuring(() =>
+            render(
+              <DatePicker
+                label="Event date"
+                locale="en-US"
+                formatOptions={{ dateStyle: 'medium', weekday: 'short' }}
+              />,
+            ).unmount(),
+          ),
+        ).toBeGreaterThan(0);
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
     it('leaves the placeholder alone, and the icon where it was put', () => {
       renderPicker({
         placeholder: 'Pick a day',

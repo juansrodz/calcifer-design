@@ -171,7 +171,9 @@ export function DatePicker({
   // Built on every render, not only once a date is chosen, so refused options warn at once.
   const { formatter, refused } = triggerFormatter(resolvedLocale, formatOptions);
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' && refused) {
+    // `refused` first, so `process` is read only when there is something to warn about: an app
+    // bundled without a `NODE_ENV` define has no `process` to read.
+    if (refused && process.env.NODE_ENV !== 'production') {
       console.warn(
         'DatePicker: Intl.DateTimeFormat refused formatOptions; the default { dateStyle: "medium" } is used instead.',
       );
