@@ -2109,11 +2109,12 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // A disabled card reads the system's disabled colour, after the chosen card's rule.
+    // A disabled card reads the system's disabled colour, after the chosen card's rule. `GrayText`
+    // is the cue, so the card is not dimmed as well.
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{[^}]*\}\n\n {2}\.card\[data-disabled\] \{([^}]*)\}/m,
-    contains: ['border-color: GrayText;', 'color: GrayText;'],
-    lacks: [],
+    contains: ['opacity: 1;', 'border-color: GrayText;', 'color: GrayText;'],
+    lacks: ['opacity: 0.45'],
   },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
