@@ -80,6 +80,31 @@ describe('Avatar', () => {
     expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(initials.textContent ?? '')).toBe(false);
   });
 
+  it('skips what leads a word before its first letter or digit', () => {
+    const { unmount } = render(<Avatar name="Dad (Pablo)" />);
+    expect(screen.getByText('DP')).toBeInTheDocument();
+    unmount();
+    render(<Avatar name="(Pablo)" />);
+    expect(screen.getByText('PA')).toBeInTheDocument();
+  });
+
+  it('keeps the first code point of a word with no letter or digit, as before', () => {
+    const { unmount } = render(<Avatar name="🎉 Party" />);
+    expect(screen.getByText('🎉P')).toBeInTheDocument();
+    unmount();
+    // The initials equal the name here, so the decorative span is read rather than the text.
+    const { container } = render(<Avatar name="🎉🎊" />);
+    expect(container.querySelector('[aria-hidden="true"]')?.textContent).toBe('🎉🎊');
+  });
+
+  it('leaves plain names as they were', () => {
+    const { unmount } = render(<Avatar name="Ada Lovelace" />);
+    expect(screen.getByText('AL')).toBeInTheDocument();
+    unmount();
+    render(<Avatar name="Cher" />);
+    expect(screen.getByText('CH')).toBeInTheDocument();
+  });
+
   it('uses the first and last word, ignoring the ones between', () => {
     render(<Avatar name="Ada King Lovelace" />);
     expect(screen.getByText('AL')).toBeInTheDocument();

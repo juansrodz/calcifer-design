@@ -32,8 +32,19 @@ function leadingCharacters(word: string, count: number): string {
 }
 
 /**
+ * The word from its first letter or digit on, so punctuation that leads it is not an initial
+ * ("(Pablo)" reads as "Pablo"). A word with neither, such as an emoji, is kept whole, so its first
+ * code point is still its initial.
+ */
+function fromFirstLetterOrDigit(word: string): string {
+  const start = word.search(/[\p{L}\p{N}]/u);
+  return start === -1 ? word : word.slice(start);
+}
+
+/**
  * First and last word's initial, upper-cased. A one-word name gives its first two letters, which
- * reads better at these sizes than a lone character.
+ * reads better at these sizes than a lone character. Each word is read from its first letter or
+ * digit (`fromFirstLetterOrDigit`), so "Dad (Pablo)" gives "DP".
  *
  * `slice()` is not used here: it indexes UTF-16 code units, so a name beginning with an emoji or
  * any other astral character yields half a surrogate pair — `'😀 Lovelace'` became `'\ud83dL'`,
@@ -48,10 +59,12 @@ function initialsFrom(name: string): string {
   if (firstWord === undefined || lastWord === undefined) {
     return '';
   }
+  const first = fromFirstLetterOrDigit(firstWord);
   if (words.length === 1) {
-    return leadingCharacters(firstWord, 2).toUpperCase();
+    return leadingCharacters(first, 2).toUpperCase();
   }
-  return `${leadingCharacters(firstWord, 1)}${leadingCharacters(lastWord, 1)}`.toUpperCase();
+  const last = fromFirstLetterOrDigit(lastWord);
+  return `${leadingCharacters(first, 1)}${leadingCharacters(last, 1)}`.toUpperCase();
 }
 
 export function Avatar({
