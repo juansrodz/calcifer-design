@@ -1,6 +1,7 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
+import { useControllable } from '../../hooks/useControllable';
 import { useIndexedToggleGroup } from '../../hooks/useIndexedToggleGroup';
 import type { FieldFrameProps } from '../Field/Field';
 import { GroupFrame } from '../Field/GroupFrame';
@@ -86,9 +87,10 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
     disabled = false,
   } = props;
   const labelId = useId();
-  const [heldValues, setHeldValues] = useState(() => valuesOf(props.defaultValue));
-  const controlled = props.value !== undefined;
-  const pressedValues = controlled ? valuesOf(props.value) : heldValues;
+  const [pressedValues, setPressedValues] = useControllable(
+    props.value === undefined ? undefined : valuesOf(props.value),
+    valuesOf(props.defaultValue),
+  );
   const multiple = props.selectionMode === 'multiple';
   const pressedChips = options.flatMap((option, index) =>
     pressedValues.includes(option.value) ? [{ option, index }] : [],
@@ -152,9 +154,7 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
               onValueChange={(nextIndexes) => {
                 const nextValues = toggleGroup.optionsAt(nextIndexes).map(({ value }) => value);
                 if (props.selectionMode === 'multiple') {
-                  if (!controlled) {
-                    setHeldValues(nextValues);
-                  }
+                  setPressedValues(nextValues);
                   props.onValueChange?.(nextValues);
                   return;
                 }
@@ -163,9 +163,7 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
                 if (chosenValue === undefined) {
                   return;
                 }
-                if (!controlled) {
-                  setHeldValues([chosenValue]);
-                }
+                setPressedValues([chosenValue]);
                 props.onValueChange?.(chosenValue);
               }}
             >

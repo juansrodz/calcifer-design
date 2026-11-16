@@ -1,7 +1,8 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { Radio as BaseRadio } from '@base-ui/react/radio';
 import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
+import { useControllable } from '../../hooks/useControllable';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { hasContent } from '../../utils/hasContent';
 import type { FieldFrameProps } from '../Field/Field';
@@ -104,11 +105,9 @@ export function ChoiceCard({
 }: ChoiceCardProps) {
   const labelId = useId();
   // Each card's `data-checked` needs the chosen value, which Base UI keeps to itself when it owns
-  // it. So the group always hands Base UI a value: the consumer's when they control it, this
-  // held one otherwise.
-  const [heldValue, setHeldValue] = useState<string | null>(defaultValue ?? null);
-  const controlled = value !== undefined;
-  const chosenValue = controlled ? value : heldValue;
+  // it. So the group always hands Base UI a value: the consumer's when they control it, a held one
+  // otherwise.
+  const [chosenValue, setChosenValue] = useControllable(value, defaultValue ?? null);
   return (
     <GroupFrame
       labelId={labelId}
@@ -130,9 +129,7 @@ export function ChoiceCard({
           if (nextValue === null) {
             return;
           }
-          if (!controlled) {
-            setHeldValue(nextValue);
-          }
+          setChosenValue(nextValue);
           // One argument out, whatever Base UI passes in — see the prop's doc.
           onValueChange?.(nextValue);
         }}

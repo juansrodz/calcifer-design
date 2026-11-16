@@ -1,4 +1,5 @@
-import { useId, useRef, useState, type ComponentPropsWithoutRef, type KeyboardEvent } from 'react';
+import { useId, useRef, type ComponentPropsWithoutRef, type KeyboardEvent } from 'react';
+import { useControllable } from '../../hooks/useControllable';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { SearchIcon } from '../../icons/SearchIcon';
 import a11yStyles from '../../styles/a11y.module.css';
@@ -58,15 +59,13 @@ export function SearchField({
   const generatedId = useId();
   const inputId = inputProps.id ?? generatedId;
   const inputRef = useRef<HTMLInputElement>(null);
-  const isControlled = value !== undefined;
-  const [heldValue, setHeldValue] = useState(defaultValue ?? '');
-  const current = isControlled ? value : heldValue;
+  const [current, setCurrent] = useControllable(value, defaultValue ?? '');
   // Base UI's `Form` reads only its own fields, so the value is handed over under `name` as
   // `PickerField` does; a disabled field submits nothing, as a disabled input does.
   useFormValue(disabled ? undefined : inputProps.name, current);
 
   function change(nextValue: string) {
-    if (!isControlled) setHeldValue(nextValue);
+    setCurrent(nextValue);
     onValueChange?.(nextValue);
   }
 
