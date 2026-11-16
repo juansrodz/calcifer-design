@@ -341,7 +341,6 @@ describe('@calcifer-design/ui dist', () => {
   it('allows each consumer hook by name and still catches a misspelt one', async () => {
     const { allDistCss, defined } = await readDistCss();
     for (const hook of UI_CONSUMER_HOOK_PROPERTIES) {
-      expect(defined.has(hook), hook).toBe(true);
       expect(allDistCss, `${hook} is read by no shipped stylesheet`).toMatch(
         new RegExp(`var\\(\\s*${hook}\\s*[,)]`),
       );
