@@ -3,9 +3,9 @@ import { Radio as BaseRadio } from '@base-ui/react/radio';
 import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId, useState, type ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
-import fieldStyles from '../../styles/field.module.css';
 import { hasContent } from '../../utils/hasContent';
-import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
+import type { FieldFrameProps } from '../Field/Field';
+import { GroupFrame } from '../Field/GroupFrame';
 import styles from './ChoiceCard.module.css';
 
 export interface ChoiceCardOption {
@@ -110,19 +110,15 @@ export function ChoiceCard({
   const controlled = value !== undefined;
   const chosenValue = controlled ? value : heldValue;
   return (
-    <BaseField.Root
-      className={fieldStyles.frame}
+    <GroupFrame
+      labelId={labelId}
+      label={label}
       name={name}
+      description={description}
+      error={error}
+      required={required}
       disabled={disabled}
-      invalid={error !== undefined}
     >
-      {/* Not a `Field.Label`, for the reason `RadioGroup` records: it would name every radio
-          after the group. A plain element the group points at keeps each card's own name. The
-          `data-disabled` is written by hand because this span is not a Base UI part. */}
-      <span className={fieldStyles.legend} id={labelId} data-disabled={disabled ? '' : undefined}>
-        {label}
-        <RequiredMark when={required} />
-      </span>
       <BaseRadioGroup<string | null>
         className={styles.grid}
         data-columns={columns}
@@ -151,7 +147,6 @@ export function ChoiceCard({
           />
         ))}
       </BaseRadioGroup>
-      <FieldMessages description={description} error={error} />
-    </BaseField.Root>
+    </GroupFrame>
   );
 }

@@ -2,8 +2,8 @@ import { Field as BaseField } from '@base-ui/react/field';
 import { ToggleGroup } from '@base-ui/react/toggle-group';
 import { useId, useState, type ReactNode } from 'react';
 import { useIndexedToggleGroup } from '../../hooks/useIndexedToggleGroup';
-import fieldStyles from '../../styles/field.module.css';
-import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
+import type { FieldFrameProps } from '../Field/Field';
+import { GroupFrame } from '../Field/GroupFrame';
 import { useFormValue } from '../Form/FormContext';
 import { ChipToggle } from './ToggleChip';
 import styles from './ToggleChip.module.css';
@@ -105,19 +105,15 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
     : (pressedChips[0]?.option.value ?? null);
   useFormValue(disabled ? undefined : name, submittedValue);
   return (
-    <BaseField.Root
-      className={fieldStyles.frame}
+    <GroupFrame
+      labelId={labelId}
+      label={label}
       name={name}
+      description={description}
+      error={error}
+      required={required}
       disabled={disabled}
-      invalid={error !== undefined}
     >
-      {/* Not a `Field.Label`, for the reason `RadioGroup` records: a plain element the group points
-          at with `aria-labelledby` names the group and leaves each chip's own name alone. The
-          `data-disabled` is written by hand because this span is not a Base UI part. */}
-      <span className={fieldStyles.legend} id={labelId} data-disabled={disabled ? '' : undefined}>
-        {label}
-        <RequiredMark when={required} />
-      </span>
       {/* The group is the frame's `Field.Control`, as the trigger is in `PickerField` and the file
           input in `Upload`, so that `Form` treats it as a field: a `Form` error on its `name`
           marks it invalid, goes when the pressed set changes, stops a submit, and `Form` moves
@@ -204,7 +200,6 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
               disabled={disabled}
             />
           ))}
-      <FieldMessages description={description} error={error} />
-    </BaseField.Root>
+    </GroupFrame>
   );
 }
