@@ -3,7 +3,6 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { fn } from 'storybook/test';
 import { describe, expect, it, vi } from 'vitest';
-import { tokens } from '@calcifer-design/tokens';
 import { axe, axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import fieldStyles from '../../styles/field.module.css';
@@ -328,8 +327,9 @@ describe('SearchField', () => {
   });
 
   // PF-8: the pill is as high with a clear control as without. jsdom has no layout, so the
-  // structure that guarantees it is pinned here and the rules in token-reads.test.ts; Task 14
-  // measures the heights in a browser.
+  // structure that guarantees it is pinned here and the rules in token-reads.test.ts (each pill's
+  // floor is the larger of its size token and the clear circle plus the two borders, a `max()`
+  // the rows there pin by its text); Task 14 measures the heights in a browser.
   describe('the pill keeps its height when the clear control appears', () => {
     it('is one element before and after typing, wearing the affix skin and its own box class', async () => {
       render(<Default />);
@@ -350,16 +350,6 @@ describe('SearchField', () => {
       expect(clear.parentElement).toBe(pill());
       expect(clear).toHaveClass(styles.clear);
       expect(clear).toHaveAttribute('data-size');
-    });
-
-    it('fits the clear circle and the pill borders inside the small pill', () => {
-      // `.root .clear[data-size]` reads `--size-close`; `.root[data-size='sm'] .box` reads
-      // `--size-control-sm`; `.control` draws a 1px border each side.
-      const toPixels = (length: string) =>
-        length.endsWith('rem') ? Number.parseFloat(length) * 16 : Number.parseFloat(length);
-      const { close, controlSm, control } = tokens.shared.size;
-      expect(toPixels(close) + 2).toBeLessThanOrEqual(toPixels(controlSm));
-      expect(toPixels(close) + 2).toBeLessThanOrEqual(toPixels(control));
     });
   });
 });

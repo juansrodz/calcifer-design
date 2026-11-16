@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
+import styles from './Collapsible.module.css';
 import * as stories from './Collapsible.stories';
 
 const { Default, OpenOnArrival, WithAside, Controlled, Disabled, HeadingSize, Dark } =
@@ -127,8 +128,8 @@ describe('Collapsible', () => {
   it('joins a class from the caller to the root after its own', () => {
     const { container } = render(<Default className="from-the-app" />);
     const root = container.querySelector('section');
-    expect(root).toHaveClass('from-the-app');
-    expect(root?.className.split(' ').length).toBeGreaterThan(1);
+    // The component's class first and the caller's last, so the caller's wins a tie.
+    expect(root?.className.split(' ')).toEqual([styles.root, 'from-the-app']);
   });
 
   it('hides the chevron, wrapper and icon alike, from assistive technology', () => {

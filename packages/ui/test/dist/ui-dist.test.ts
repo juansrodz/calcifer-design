@@ -336,10 +336,15 @@ describe('@calcifer-design/ui dist', () => {
 
   // The hooks are allowed by name, not by pattern: a misspelt one (`--avatar-sise`) is still an
   // unknown read, so the allow-list cannot hide the typo it exists to catch.
+  // Each listed hook must also be read somewhere in the shipped CSS: an entry no stylesheet reads
+  // any more (a renamed or removed hook) would otherwise stay on the allow-list unnoticed.
   it('allows each consumer hook by name and still catches a misspelt one', async () => {
-    const { defined } = await readDistCss();
+    const { allDistCss, defined } = await readDistCss();
     for (const hook of UI_CONSUMER_HOOK_PROPERTIES) {
       expect(defined.has(hook), hook).toBe(true);
+      expect(allDistCss, `${hook} is read by no shipped stylesheet`).toMatch(
+        new RegExp(`var\\(\\s*${hook}\\s*[,)]`),
+      );
     }
     expect(
       findUnknownCustomProperties('.probe { inline-size: var(--avatar-sise); }', defined),

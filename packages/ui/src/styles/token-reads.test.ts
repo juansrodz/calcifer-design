@@ -1420,8 +1420,9 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/SearchField/SearchField.module.css',
     rule: /^\.root\[data-size='sm'\] \.box \{([^}]*)\}/m,
+    // The same `max()` over the small floor: the md rule above reads `--size-touch`, this one never.
     contains: ['min-height: max(var(--size-control-sm), calc(var(--size-close) + 2px));'],
-    lacks: ['padding'],
+    lacks: ['padding', '--size-touch'],
   },
   {
     file: 'components/SearchField/SearchField.module.css',
