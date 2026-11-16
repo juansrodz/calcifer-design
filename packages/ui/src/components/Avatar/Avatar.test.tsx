@@ -88,6 +88,18 @@ describe('Avatar', () => {
     expect(screen.getByText('PA')).toBeInTheDocument();
   });
 
+  it('skips a word that is punctuation alone', () => {
+    const { unmount } = render(<Avatar name="Juan –" />);
+    expect(screen.getByText('J')).toBeInTheDocument();
+    unmount();
+    const { unmount: unmountSecond } = render(<Avatar name="Dad (Pablo )" />);
+    expect(screen.getByText('DP')).toBeInTheDocument();
+    unmountSecond();
+    // Only punctuation is skipped: an emoji word still gives the first initial.
+    render(<Avatar name="🎉 Party" />);
+    expect(screen.getByText('🎉P')).toBeInTheDocument();
+  });
+
   it('keeps the first code point of a word with no letter or digit, as before', () => {
     const { unmount } = render(<Avatar name="🎉 Party" />);
     expect(screen.getByText('🎉P')).toBeInTheDocument();

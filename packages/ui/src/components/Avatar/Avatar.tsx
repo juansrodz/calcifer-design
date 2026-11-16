@@ -41,10 +41,17 @@ function fromFirstLetterOrDigit(word: string): string {
   return start === -1 ? word : word.slice(start);
 }
 
+/** A word of punctuation alone ("–", ")"), which names no one and so gives no initial. */
+function isPunctuationOnly(word: string): boolean {
+  return /^\p{P}+$/u.test(word);
+}
+
 /**
  * First and last word's initial, upper-cased. A one-word name gives its first two letters, which
  * reads better at these sizes than a lone character. Each word is read from its first letter or
- * digit (`fromFirstLetterOrDigit`), so "Dad (Pablo)" gives "DP".
+ * digit (`fromFirstLetterOrDigit`), so "Dad (Pablo)" gives "DP". A word of punctuation alone is
+ * skipped (`isPunctuationOnly`), so "Juan –" gives "J" and "Dad (Pablo )" gives "DP"; an emoji is
+ * not punctuation and still counts ("🎉 Party" gives "🎉P").
  *
  * `slice()` is not used here: it indexes UTF-16 code units, so a name beginning with an emoji or
  * any other astral character yields half a surrogate pair — `'😀 Lovelace'` became `'\ud83dL'`,
@@ -54,16 +61,18 @@ function fromFirstLetterOrDigit(word: string): string {
  */
 function initialsFrom(name: string): string {
   const words = name.normalize('NFC').trim().split(/\s+/).filter(Boolean);
-  const firstWord = words.at(0);
-  const lastWord = words.at(-1);
-  if (firstWord === undefined || lastWord === undefined) {
+  const namingWords = words.filter((word) => !isPunctuationOnly(word));
+  const firstWord = namingWords.at(0);
+  if (firstWord === undefined) {
     return '';
   }
   const first = fromFirstLetterOrDigit(firstWord);
   if (words.length === 1) {
     return leadingCharacters(first, 2).toUpperCase();
   }
-  const last = fromFirstLetterOrDigit(lastWord);
+  // A name of several words whose others were all punctuation keeps one initial.
+  const lastWord = namingWords.length > 1 ? namingWords.at(-1) : undefined;
+  const last = lastWord === undefined ? '' : fromFirstLetterOrDigit(lastWord);
   return `${leadingCharacters(first, 1)}${leadingCharacters(last, 1)}`.toUpperCase();
 }
 
