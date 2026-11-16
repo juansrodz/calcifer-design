@@ -88,7 +88,7 @@ export function NavMenu<Item extends NavItem = NavItem>({
 
   if (isWide) {
     return (
-      <nav className={styles.root} aria-label={label}>
+      <nav className={styles.root} aria-label={label} data-orientation={orientation}>
         <ul className={styles.list} data-orientation={orientation}>
           {items.map((item) => (
             <li key={item.href}>{renderLink(item, linkPropsFor(item, currentPath))}</li>

@@ -87,12 +87,14 @@ describe('NavMenu orientation', () => {
     installMatchMedia(true);
     render(<Desktop />);
     expect(screen.getByRole('list')).toHaveAttribute('data-orientation', 'horizontal');
+    expect(screen.getByRole('navigation')).toHaveAttribute('data-orientation', 'horizontal');
   });
 
-  it('writes the vertical orientation on the list, axe-clean', async () => {
+  it('writes the vertical orientation on the list and on the nav, axe-clean', async () => {
     installMatchMedia(true);
     const { container } = render(<Vertical />);
     expect(screen.getByRole('list')).toHaveAttribute('data-orientation', 'vertical');
+    expect(screen.getByRole('navigation')).toHaveAttribute('data-orientation', 'vertical');
     expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('aria-current', 'page');
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -102,6 +104,7 @@ describe('NavMenu orientation', () => {
     render(<Vertical />);
     expect(screen.getByRole('button', { name: 'Open menu' })).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation')).not.toHaveAttribute('data-orientation');
   });
 });
 

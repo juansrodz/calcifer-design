@@ -39,9 +39,9 @@
    declared. It is the one library reader of `--leading-display`: that token stays off the house
    headings so none of them moves, and this component is new, so reading it moves nothing. The
    headline is display type whose two-line box only that leading matches, and the size hook cannot
-   reach `line-height`. `base.css` resets the margin of `h1`–`h3` and tracks them, so `h4` gets
-   both here: the tracking is the house heading's (`--tracking-heading`) at every level, never
-   `--tracking-display`. The colour is the root's. */
+   reach `line-height`. `base.css` tracks only `h1`–`h3`, so every level gets its tracking here:
+   the house heading's (`--tracking-heading`), never `--tracking-display`. The margin reset repeats
+   `base.css`'s. The colour is the root's. */
 .heading {
   margin: 0;
   font-size: var(--empty-state-heading-size, var(--text-h3));

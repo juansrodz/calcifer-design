@@ -6,9 +6,9 @@
 
 /* The heading is the display role (the four declarations every library heading reads) at the one
    size hook a consumer may set, `--collapsible-heading-size`, which is read here and never
-   declared. `base.css` resets the margin of `h1`–`h3` and tracks them, so `h4`–`h6` get both
-   here: the tracking is the house heading's (`--tracking-heading`, as `Card` and `Descriptions`
-   read it) at every level, never `--tracking-display`. */
+   declared. `base.css` tracks only `h1`–`h3`, so every level gets its tracking here: the house
+   heading's (`--tracking-heading`, as `Card` and `Descriptions` read it), never
+   `--tracking-display`. The margin reset repeats `base.css`'s. */
 .heading {
   margin: 0;
   color: var(--color-text);
@@ -21,8 +21,8 @@
   line-height: var(--leading-snug);
 }
 
-/* The whole row is the button. It takes the heading's type, so the label, the aside and the
-   chevron's colour are the heading's. */
+/* The whole row is the button. It takes the heading's type, so the label and the aside are the
+   heading's; the chevron is quieter (below). */
 .trigger {
   position: relative;
   display: flex;
@@ -55,8 +55,13 @@
   inset-block: min(0px, calc((100% - 1.5rem) / 2));
 }
 
+/* A disabled row dims what it shows (the label, an aside element and the chevron), not the button,
+   so an outline drawn round the button keeps its full strength. */
 .trigger[data-disabled] {
   cursor: not-allowed;
+}
+
+.trigger[data-disabled] > * {
   opacity: 0.45;
 }
 
@@ -73,6 +78,7 @@
   width: 1rem;
   height: 1rem;
   margin-inline-start: auto;
+  color: var(--color-text-muted);
   transition-property: transform;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);

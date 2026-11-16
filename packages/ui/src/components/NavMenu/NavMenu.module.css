@@ -3,6 +3,13 @@
   align-items: center;
 }
 
+/* A sidebar nav may be taller than its links (a grown column); stretching the list down it keeps
+   the links at the top instead of centring them. The wide layout writes the orientation on the nav
+   as well as on the list. */
+.root[data-orientation='vertical'] {
+  align-items: stretch;
+}
+
 .list {
   display: flex;
   align-items: center;

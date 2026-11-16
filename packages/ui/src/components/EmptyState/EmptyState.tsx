@@ -8,6 +8,12 @@ export interface EmptyStateProps {
    * `actions` instead. The slot lays several in-flow children out in a row, so pass one element
    * or wrap them. The root is `position: relative`, so an absolutely positioned child is placed
    * against the card and may spill over its edge.
+   *
+   * The slot keeps its place in the card's column even when its picture is positioned, so the
+   * heading still starts one gap (`--space-3`) below the padding: 36 px from the card's top at the
+   * default spacing, where a card with no illustration starts it at 24. To spill a picture over
+   * the card with the heading at the top, leave `illustration` out and position the picture from a
+   * wrapper of your own around the `EmptyState`, marked `aria-hidden` there.
    */
   illustration?: ReactNode;
   /** The headline, on the display type. Its tag is `headingLevel`. */

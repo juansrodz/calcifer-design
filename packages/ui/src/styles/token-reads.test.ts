@@ -1027,6 +1027,13 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 0;', 'color: transparent;'],
     lacks: ['visibility'],
   },
+  {
+    // The badge and the end icon hide under the spinner too, by opacity: the badge is named.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.pendingOverlay ~ \.badge,\n\.pendingOverlay ~ \.endIcon \{([^}]*)\}/m,
+    contains: ['opacity: 0;'],
+    lacks: ['visibility', 'display'],
+  },
 
   // `Skeleton`'s radius hook (plan L2, Task 16; O-22): a consumer rounds the text and block bars
   // through `--skeleton-radius`, each falling back to the step it read before; the circle keeps
@@ -1280,7 +1287,8 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'styles/field.module.css',
     rule: /^\.affix \{([^}]*)\}/m,
-    contains: ['gap: var(--space-2);'],
+    // The pill's non-input area says text, as a press there focuses the input.
+    contains: ['gap: var(--space-2);', 'cursor: text;'],
     // The padding and the floor stay `.control`'s: a single-class re-declaration would tie with it.
     lacks: ['padding', 'min-height'],
   },
@@ -1316,10 +1324,11 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // A disabled input would show the browser's arrow over the wrapper's `not-allowed`.
+    // A disabled input would show the browser's arrow over the wrapper's `not-allowed`; `:disabled`
+    // reaches `SearchField`'s plain input too.
     file: 'styles/field.module.css',
-    rule: /^\.affixInput\[data-disabled\] \{([^}]*)\}/m,
-    contains: ['cursor: inherit;'],
+    rule: /^\.affixInput:disabled \{([^}]*)\}/m,
+    contains: ['cursor: not-allowed;'],
     lacks: [],
   },
   {
@@ -1387,7 +1396,8 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Field/PickerField.module.css',
     rule: /^\.trigger\[data-icon-placement='start'\] \{([^}]*)\}/m,
-    contains: ['justify-content: flex-start;'],
+    // One gap after a leading icon across `DatePicker`, `TextInput` and `TimePicker`.
+    contains: ['justify-content: flex-start;', 'gap: var(--space-2);'],
     lacks: [],
   },
 
@@ -1453,6 +1463,20 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/SearchField/SearchField.module.css',
     contains: [],
     lacks: [/^\.box\b/m],
+  },
+  // The clear control's hover is one surface step off the input's, so it shows where a theme gives
+  // the input `--color-surface-2`; the small pill's keyboard ring is drawn inward.
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^@media \(hover: hover\) \{\n {2}\.root \.clear\[data-size\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-3);'],
+    lacks: ['--color-surface-2'],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root\[data-size='sm'\] \.clear:focus-visible \{([^}]*)\}/m,
+    contains: ['outline-offset: calc(-1 * var(--focus-ring-width));'],
+    lacks: [],
   },
 
   // `Avatar` sizes from its two consumer hooks over the five presets, and wears the theme's six
@@ -1524,6 +1548,13 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Collapsible/Collapsible.module.css',
     rule: /^\.trigger\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['cursor: not-allowed;'],
+    // The button itself is not dimmed, so a ring round it keeps its strength; what it shows is.
+    lacks: ['opacity'],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-disabled\] > \* \{([^}]*)\}/m,
     contains: ['opacity: 0.45;'],
     lacks: [],
   },
@@ -1534,6 +1565,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'width: 1rem;',
       'height: 1rem;',
       'margin-inline-start: auto;',
+      'color: var(--color-text-muted);',
       'transition-duration: var(--motion-duration-1);',
       'transition-timing-function: var(--motion-ease);',
     ],
@@ -1555,7 +1587,13 @@ const expectations: ReadonlyArray<Expectation> = [
 
   // `NavMenu`'s sidebar form. `flex: 1 1 auto` is what makes the list span the sidebar: `.root` is
   // a row flex container, so without it the list shrinks to its widest label. The link rule makes
-  // each link as wide as the list.
+  // each link as wide as the list, and the nav's own rule keeps the list at the top of a grown nav.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.root\[data-orientation='vertical'\] \{([^}]*)\}/m,
+    contains: ['align-items: stretch;'],
+    lacks: [],
+  },
   {
     file: 'components/NavMenu/NavMenu.module.css',
     rule: /^\.list\[data-orientation='vertical'\] \{([^}]*)\}/m,

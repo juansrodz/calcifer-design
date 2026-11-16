@@ -163,11 +163,16 @@
    wearer; `TextInput` and `TimePicker` wear the same pieces (through `AffixInput`) when they are
    given a leading icon.
 
-   `.affix` adds only `gap`, which `.control` does not declare. A wearer that must change the
-   padding or the floor does it under a two-class selector of its own, for the reason in this
-   file's header: a second single-class rule would tie with `.control`. */
+   `.affix` adds only `gap` and `cursor`, which `.control` does not declare. A wearer that must
+   change the padding or the floor does it under a two-class selector of its own, for the reason
+   in this file's header: a second single-class rule would tie with `.control`.
+
+   A press on the pill outside the input (the icon, the padding, the gap) focuses the input, so the
+   pointer says text there too. A button inside keeps its own cursor, and a disabled pill's
+   `not-allowed` (below, and `.control[data-disabled]`) out-ranks this. */
 .affix {
   gap: var(--space-2);
+  cursor: text;
 }
 
 /* The wrapper takes the input's focus, so the ring is drawn once, around the pill, and the input
@@ -218,10 +223,11 @@
 }
 
 /* A disabled input gets the browser's arrow, which would show inside the pill where the wrapper's
-   `not-allowed` (above) is meant to cover it; inheriting makes the whole pill one cursor, as a bare
-   `.control[data-disabled]` input is. */
-.affixInput[data-disabled] {
-  cursor: inherit;
+   `not-allowed` (above) covers the rest; the input says it itself, so the whole pill is one
+   cursor, as a bare `.control[data-disabled]` input is. `:disabled` reaches `SearchField`'s plain
+   input, which carries no `data-disabled`. */
+.affixInput:disabled {
+  cursor: not-allowed;
 }
 
 /* A wearer whose leading icon opens the native picker (`TimePicker`) hides the browser's own

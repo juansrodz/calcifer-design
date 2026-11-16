@@ -228,6 +228,13 @@
   color: transparent;
 }
 
+/* The spinner sits over the label's box only, so a badge or an end icon would show beside it.
+   Hidden by `opacity` for the label's reason: the badge is part of the accessible name. */
+.pendingOverlay ~ .badge,
+.pendingOverlay ~ .endIcon {
+  opacity: 0;
+}
+
 /* Inside a row the label takes the free width, so the badge and the end icon sit at the row's end,
    and the end icon reads the muted ink. */
 .root[data-variant='row'] .label {

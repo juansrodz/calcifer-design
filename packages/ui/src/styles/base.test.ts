@@ -30,6 +30,13 @@ describe('heading type', () => {
     expect(allLevelsRule?.[1]?.trim()).toBe('font-family: var(--font-display);');
   });
 
+  it('takes the user agent’s margins from h4 to h6 too, in a rule of their own', () => {
+    // The lookbehind skips the all-levels rule above, whose last three lines are the same.
+    const lowerLevelsRule = baseCssContents.match(/(?<!h3,\n)^h4,\nh5,\nh6 \{([^}]*)\}/m);
+    expect(lowerLevelsRule).not.toBeNull();
+    expect(lowerLevelsRule?.[1]?.trim()).toBe('margin: 0;');
+  });
+
   it('keeps the h1 to h3 rule as it was', () => {
     const upperLevelsRule = baseCssContents.match(/^h1,\nh2,\nh3 \{([^}]*)\}/m);
     expect(upperLevelsRule).not.toBeNull();
