@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from 'storybook/test';
+import { Card } from '../Card/Card';
 import { Checkbox } from './Checkbox';
 
 const meta = {
@@ -23,3 +24,21 @@ export const WithError: Story = {
 };
 export const Disabled: Story = { args: { disabled: true } };
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultChecked: true } };
+
+/**
+ * Unchecked and checked on a card, the raised surface where the translucent hairline used to fade
+ * to about 1.1:1. The unchecked boundary reads `--color-border-control`, 3:1 or better on every
+ * surface in both themes (WCAG 1.4.11).
+ */
+export const OnRaisedCard: Story = {
+  render: (args) => (
+    <div style={{ background: 'var(--color-surface-1)', padding: 'var(--space-5)' }}>
+      <Card heading="What are you bringing?">
+        <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+          <Checkbox {...args} />
+          <Checkbox {...args} label="Bring drinks" name="drinks" defaultChecked />
+        </div>
+      </Card>
+    </div>
+  ),
+};
