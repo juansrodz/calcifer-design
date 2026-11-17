@@ -71,4 +71,16 @@ export const WithError: Story = {
   args: { error: 'Arrive before the doors close.', defaultValue: '23:30' },
 };
 export const WithStartIcon: Story = { args: { startIcon: <ClockGlyph />, defaultValue: '18:30' } };
+/** The leading icon with an error: the pill takes the danger edge, and the icon stays. */
+export const StartIconWithError: Story = {
+  args: {
+    startIcon: <ClockGlyph />,
+    error: 'Arrive before the doors close.',
+    defaultValue: '23:30',
+  },
+};
+/** The leading icon in a disabled field: the icon dims with the pill and opens no picker. */
+export const StartIconDisabled: Story = {
+  args: { startIcon: <ClockGlyph />, disabled: true, defaultValue: '18:30' },
+};
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultValue: '18:30' } };

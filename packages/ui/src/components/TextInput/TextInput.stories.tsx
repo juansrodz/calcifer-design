@@ -8,6 +8,8 @@ import { TextInput } from './TextInput';
 interface StoryField {
   label: string;
   name: string;
+  error?: string;
+  disabled?: boolean;
 }
 
 const defaultField: StoryField = { label: 'Email', name: 'email' };
@@ -26,7 +28,7 @@ const meta = {
     (Story, context) => {
       const field = (context.parameters.field as StoryField | undefined) ?? defaultField;
       return (
-        <Field label={field.label} name={field.name}>
+        <Field label={field.label} name={field.name} error={field.error} disabled={field.disabled}>
           <Story />
         </Field>
       );
@@ -46,5 +48,23 @@ export const ReadOnly: Story = { args: { defaultValue: 'sebastian@example.com', 
 export const WithStartIcon: Story = {
   args: { startIcon: <CalendarIcon />, placeholder: 'Where is it?' },
   parameters: { field: { label: 'Location', name: 'location' } satisfies StoryField },
+};
+/** The leading icon with an error: the pill takes the danger edge, and the icon stays. */
+export const StartIconWithError: Story = {
+  args: { startIcon: <CalendarIcon />, defaultValue: 'Somewhere' },
+  parameters: {
+    field: {
+      label: 'Location',
+      name: 'location',
+      error: 'Give a street address.',
+    } satisfies StoryField,
+  },
+};
+/** The leading icon in a disabled field: the icon dims with the pill. */
+export const StartIconDisabled: Story = {
+  args: { startIcon: <CalendarIcon />, defaultValue: '12 Elm Street' },
+  parameters: {
+    field: { label: 'Location', name: 'location', disabled: true } satisfies StoryField,
+  },
 };
 export const Dark: Story = { globals: { theme: 'dark' } };

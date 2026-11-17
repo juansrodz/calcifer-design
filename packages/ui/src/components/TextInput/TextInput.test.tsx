@@ -15,6 +15,8 @@ const {
   Date: DateInput,
   ReadOnly,
   WithStartIcon,
+  StartIconWithError,
+  StartIconDisabled,
 } = composeStories(stories);
 
 describe('TextInput', () => {
@@ -25,6 +27,8 @@ describe('TextInput', () => {
     ['Date', DateInput],
     ['ReadOnly', ReadOnly],
     ['WithStartIcon', WithStartIcon],
+    ['StartIconWithError', StartIconWithError],
+    ['StartIconDisabled', StartIconDisabled],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();

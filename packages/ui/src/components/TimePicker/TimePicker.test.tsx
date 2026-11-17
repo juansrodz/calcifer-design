@@ -16,6 +16,8 @@ const {
   Disabled,
   WithError,
   WithStartIcon,
+  StartIconWithError,
+  StartIconDisabled,
   Dark,
 } = composeStories(stories);
 
@@ -33,6 +35,8 @@ describe('TimePicker', () => {
     ['Disabled', Disabled],
     ['WithError', WithError],
     ['WithStartIcon', WithStartIcon],
+    ['StartIconWithError', StartIconWithError],
+    ['StartIconDisabled', StartIconDisabled],
     ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);

@@ -9,7 +9,7 @@ import { DatePicker, type DatePickerProps } from './DatePicker';
 import * as stories from './DatePicker.stories';
 
 const allStories = composeStories(stories);
-const { LeadingIconLongDate } = allStories;
+const { LeadingIconLongDate, LeadingIconRightToLeft } = allStories;
 
 /** Pinned so "today" is known. Only `Date` is faked: user-event and Base UI need real timers. */
 const NOW = new Date(2026, 2, 18, 12);
@@ -48,6 +48,20 @@ describe('DatePicker', () => {
   it.each(Object.entries(allStories))('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
+  });
+
+  it('sets dir="rtl" on the document for the right-to-left icon story and puts it back after', () => {
+    const root = document.documentElement;
+    root.setAttribute('dir', 'ltr');
+    const { unmount } = render(<LeadingIconRightToLeft />);
+    expect(root).toHaveAttribute('dir', 'rtl');
+    expect(screen.getByRole('button', { name: /Event date/ })).toHaveAttribute(
+      'data-icon-placement',
+      'start',
+    );
+    unmount();
+    expect(root).toHaveAttribute('dir', 'ltr');
+    root.removeAttribute('dir');
   });
 
   it.each(['Chosen', 'RightToLeft', 'Dark', 'Bounded'] as const)(
