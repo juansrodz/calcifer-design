@@ -689,7 +689,7 @@ export function DataGrid<Row extends RowData>({
                 label={stateLabel}
                 replacement={stateReplacement}
                 clearFilters={clearFiltersButton}
-                // Under the card's heading; the empty state takes levels 2 to 4.
+                // Under an h2 card heading; under a deeper one, the empty state's deepest level.
                 headingLevel={headingLevel === 2 ? 3 : 4}
                 columnCount={columnCount}
                 firstEntryRow={headRowCount}

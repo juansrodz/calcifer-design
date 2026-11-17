@@ -16,7 +16,10 @@ export interface GridStateRowProps {
   replacement?: ReactNode;
   /** For `filteredEmpty`: the button beside the message. Without it the message shows alone. */
   clearFilters?: { label: string; onClick: () => void };
-  /** For `filteredEmpty`: the level of the empty state's heading, below the card's. */
+  /**
+   * For `filteredEmpty`: the level of the empty state's heading. The grid passes one below an h2
+   * card heading and 4 under any other, the deepest the empty state takes.
+   */
   headingLevel?: EmptyStateProps['headingLevel'];
   columnCount: number;
   /** The keyboard row of entry 0: the grid's `headRowCount`. The state row sits where it would. */

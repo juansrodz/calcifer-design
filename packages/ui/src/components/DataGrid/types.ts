@@ -19,6 +19,10 @@ export type DataGridRowEvent = MouseEvent<HTMLElement> | KeyboardEvent<HTMLEleme
 export interface DataGridProps<Row extends RowData> {
   gridId: string;
   heading: string;
+  /**
+   * The card heading's level; 2 by default. The filtered-empty state's heading goes one level
+   * below an h2, and is an h4 under any other level: the empty state takes levels 2 to 4 only.
+   */
   headingLevel?: 2 | 3 | 4 | 5 | 6;
   /**
    * In server mode, pass a new array only when your data changes: after a query change the grid
