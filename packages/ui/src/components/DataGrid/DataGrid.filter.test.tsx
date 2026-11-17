@@ -83,6 +83,15 @@ function watchResizeObservers(): () => void {
     });
 }
 
+/**
+ * A click on a button: focus moves to it first, as a press of the pointer moves it. For the tests
+ * that drive the grid with `fireEvent` under fake timers.
+ */
+function clickButton(button: HTMLElement) {
+  act(() => button.focus());
+  fireEvent.click(button);
+}
+
 let restoreElementSize: () => void;
 
 beforeEach(() => {
@@ -925,12 +934,6 @@ describe('search', () => {
     return screen.getByRole('searchbox', { name: 'Search rows' });
   }
 
-  /** A click on a button: focus moves to it first, as a press of the pointer moves it. */
-  function clickButton(button: HTMLElement) {
-    act(() => button.focus());
-    fireEvent.click(button);
-  }
-
   it('opens search with focus in the field and filters after the pause', () => {
     vi.useFakeTimers();
     const onQueryChange = vi.fn();
@@ -1242,13 +1245,6 @@ describe('the filter strip', () => {
     fireEvent.click(screen.getByRole('button', { name: filtersButtonName }));
   }
 
-  /** A click on a button: focus moves to it first, as a press of the pointer moves it. */
-  function clickButton(name: string) {
-    const button = screen.getByRole('button', { name });
-    act(() => button.focus());
-    fireEvent.click(button);
-  }
-
   function stripRow(): HTMLElement {
     const strip = document.querySelector<HTMLElement>('thead tr[aria-rowindex="2"]');
     if (strip === null) throw new Error('the filter strip is not rendered');
@@ -1424,7 +1420,7 @@ describe('the filter strip', () => {
     act(() => nameFilter.focus());
     fireEvent.change(nameFilter, { target: { value: 'Nothing like this at all' } });
     act(() => vi.advanceTimersByTime(textFilterDelay / 3));
-    clickButton('Clear filters');
+    clickButton(screen.getByRole('button', { name: 'Clear filters' }));
     act(() => vi.advanceTimersByTime(400));
 
     expect(nameFilter).toHaveValue('');
@@ -1443,7 +1439,7 @@ describe('the filter strip', () => {
     act(() => nameFilter.focus());
     fireEvent.change(nameFilter, { target: { value: 'Hex' } });
     act(() => vi.advanceTimersByTime(textFilterDelay / 3));
-    clickButton('Clear filters');
+    clickButton(screen.getByRole('button', { name: 'Clear filters' }));
     act(() => vi.advanceTimersByTime(400));
 
     expect(nameFilter).toHaveValue('');
