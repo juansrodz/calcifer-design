@@ -8,6 +8,8 @@ import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
 import { Field } from '../Field/Field';
 import { TextInput } from '../TextInput/TextInput';
+import { ThemeScope } from '../ThemeScope/ThemeScope';
+import { demoTheme } from '../ThemeScope/fixtures';
 import { Dialog } from './Dialog';
 import * as stories from './Dialog.stories';
 
@@ -701,5 +703,53 @@ describe('Dialog', () => {
         expect(css).toContain(hook);
       }
     });
+  });
+
+  // A focus trap keeps the keyboard in; a screen reader's virtual cursor walks the DOM, not the tab
+  // order, so the page behind has to be hidden from it as well, and the popup has to say it is modal.
+  describe('the page behind a modal dialog', () => {
+    function PageWithDialog({ scoped = false }: { scoped?: boolean }) {
+      const [open, setOpen] = useState(false);
+      const page = (
+        <>
+          <main data-testid="page">
+            <button type="button" onClick={() => setOpen(true)}>
+              Edit
+            </button>
+          </main>
+          <Dialog heading="Edit the potluck" open={open} onOpenChange={setOpen}>
+            <p>Body.</p>
+          </Dialog>
+        </>
+      );
+      return scoped ? <ThemeScope theme={demoTheme}>{page}</ThemeScope> : page;
+    }
+
+    it('marks the popup aria-modal', async () => {
+      render(<OpenOnLoad />);
+      expect(await screen.findByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+    });
+
+    it.each([
+      ['portalled to the body', false],
+      ['portalled into a ThemeScope', true],
+    ])(
+      'hides the page from assistive tech while open and gives it back after, %s',
+      async (_where, scoped) => {
+        render(<PageWithDialog scoped={scoped} />);
+        const page = screen.getByTestId('page');
+        expect(page.closest('[aria-hidden="true"], [inert]')).toBeNull();
+        await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+        const popup = await screen.findByRole('dialog');
+        expect(page.closest('[aria-hidden="true"], [inert]')).not.toBeNull();
+        expect(popup.closest('[aria-hidden="true"], [inert]')).toBeNull();
+        // Only the dialog is left in the accessibility tree.
+        expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(page.closest('[aria-hidden="true"], [inert]')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
+      },
+    );
   });
 });

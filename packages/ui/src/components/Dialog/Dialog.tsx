@@ -151,6 +151,10 @@ export function Dialog({
             className={popupStyles.surface}
             data-popup={variant === 'sheet' ? 'sheet' : 'dialog'}
             data-side={sheetSide}
+            // Modal (Base UI's default, which this wrapper never changes): focus is trapped and
+            // Base UI hides the rest of the page with `aria-hidden` while open. Base UI does not
+            // write `aria-modal`, so the popup says it here, as the DatePicker's calendar does.
+            aria-modal="true"
             initialFocus={initialFocus}
           >
             {sheetSide === 'bottom' ? <div className={styles.handle} aria-hidden="true" /> : null}
