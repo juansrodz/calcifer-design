@@ -1351,7 +1351,9 @@ describe('the filter strip', () => {
     await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
 
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '3');
-    const stateMessage = within(screen.getByRole('grid')).getByText('No rows match the search or filters.');
+    const stateMessage = within(screen.getByRole('grid')).getByText(
+      'No rows match the search or filters.',
+    );
     expect(stateMessage.closest('tr')).toHaveAttribute('aria-rowindex', '3');
     unmount();
 
