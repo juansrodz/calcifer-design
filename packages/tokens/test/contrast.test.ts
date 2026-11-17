@@ -31,3 +31,28 @@ describe('contrast pair lists only name opaque hex colours', () => {
     }
   }
 });
+
+/**
+ * WCAG 1.4.11: the unchecked checkbox and the radio are known by their boundary alone, so it must
+ * reach 3:1 against whatever it sits on. `borderStrong` is a translucent hairline (about 1.4:1 on
+ * the raised surface); `borderControl` is the opaque colour a control's boundary reads instead.
+ */
+describe('the control boundary', () => {
+  const controlSurfaces = ['surface1', 'surface2', 'surfaceRaised', 'surfaceInput'] as const;
+
+  for (const [themeName, theme] of Object.entries(themes)) {
+    for (const surface of controlSurfaces) {
+      it(`${themeName}: borderControl reaches 3:1 on ${surface}`, () => {
+        expect(
+          contrastRatio(theme.color.borderControl, theme.color[surface]),
+        ).toBeGreaterThanOrEqual(3);
+      });
+    }
+  }
+
+  it('is held to 3:1 for every theme, through the ui pair list', () => {
+    for (const surface of controlSurfaces) {
+      expect(uiContrastPairs).toContainEqual(['borderControl', surface]);
+    }
+  });
+});
