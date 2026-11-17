@@ -38,6 +38,9 @@ export function useOverflowFocusable<Target extends HTMLElement>(): [
           });
     mutationObserver?.observe(element, { childList: true, characterData: true, subtree: true });
     return () => {
+      // The element is gone or replaced: the next one starts from "fits" until it is measured, so
+      // a reopened dialog never opens with the last body's Tab stop.
+      setOverflowing(false);
       resizeObserver.disconnect();
       mutationObserver?.disconnect();
     };

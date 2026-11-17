@@ -1,10 +1,14 @@
 import { composeStories } from '@storybook/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
+import { Field } from '../Field/Field';
+import { TextInput } from '../TextInput/TextInput';
+import { Dialog } from './Dialog';
 import * as stories from './Dialog.stories';
 
 const {
@@ -318,64 +322,146 @@ describe('Dialog', () => {
   });
 
   // jsdom does no layout and has no ResizeObserver. These stub both: every `.body` is 200px tall
-  // and its content `contentHeight`, and each observer runs when `reportResize` says the browser
-  // would have (its first report, then any later resize).
+  // and 300px wide, its content `contentHeight` by `contentWidth`, and each observer runs when
+  // `reportResize` says the browser would have (its first report, then any later resize). Each
+  // stub instance records what it observes, lets go of and whether it was disconnected.
   describe('the scrolling body', () => {
     const bodyHeight = 200;
+    const bodyWidth = 300;
     let contentHeight = 0;
-    let resizeCallbacks: Array<() => void> = [];
+    let contentWidth = bodyWidth;
+    interface ObserverRecord {
+      callback: () => void;
+      observed: Element[];
+      unobserved: Element[];
+      disconnects: number;
+    }
+    let observerRecords: ObserverRecord[] = [];
+    // jsdom's MutationObserver is real; this subclass also counts the disconnects of each one that
+    // watches a `.body`.
+    let bodyMutationRecords: Array<{ disconnects: number }> = [];
+    const RealMutationObserver = globalThis.MutationObserver;
+    class RecordingMutationObserver extends RealMutationObserver {
+      private readonly record = { disconnects: 0 };
+      override observe(target: Node, options?: MutationObserverInit) {
+        if (target instanceof Element && target.classList.contains('body')) {
+          bodyMutationRecords.push(this.record);
+        }
+        super.observe(target, options);
+      }
+      override disconnect() {
+        this.record.disconnects += 1;
+        super.disconnect();
+      }
+    }
     const elementPrototype = HTMLElement.prototype;
-    const originalScrollHeight = Object.getOwnPropertyDescriptor(elementPrototype, 'scrollHeight');
-    const originalClientHeight = Object.getOwnPropertyDescriptor(elementPrototype, 'clientHeight');
+    const measuredProperties = [
+      'scrollHeight',
+      'clientHeight',
+      'scrollWidth',
+      'clientWidth',
+    ] as const;
+    const originalDescriptors = measuredProperties.map(
+      (property) =>
+        [property, Object.getOwnPropertyDescriptor(elementPrototype, property)] as const,
+    );
+
+    function stubBodySize(property: (typeof measuredProperties)[number], read: () => number) {
+      Object.defineProperty(elementPrototype, property, {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.classList.contains('body') ? read() : 0;
+        },
+      });
+    }
 
     beforeEach(() => {
       contentHeight = 0;
-      resizeCallbacks = [];
+      contentWidth = bodyWidth;
+      observerRecords = [];
+      bodyMutationRecords = [];
+      globalThis.MutationObserver = RecordingMutationObserver;
       class ResizeObserverStub {
+        private readonly record: ObserverRecord;
         constructor(callback: () => void) {
-          resizeCallbacks.push(callback);
+          this.record = { callback, observed: [], unobserved: [], disconnects: 0 };
+          observerRecords.push(this.record);
         }
-        observe() {}
-        unobserve() {}
-        disconnect() {}
+        observe(target: Element) {
+          this.record.observed.push(target);
+        }
+        unobserve(target: Element) {
+          this.record.unobserved.push(target);
+        }
+        disconnect() {
+          this.record.disconnects += 1;
+        }
       }
       globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
-      Object.defineProperty(elementPrototype, 'scrollHeight', {
-        configurable: true,
-        get(this: HTMLElement) {
-          return this.classList.contains('body') ? contentHeight : 0;
-        },
-      });
-      Object.defineProperty(elementPrototype, 'clientHeight', {
-        configurable: true,
-        get(this: HTMLElement) {
-          return this.classList.contains('body') ? bodyHeight : 0;
-        },
-      });
+      stubBodySize('scrollHeight', () => contentHeight);
+      stubBodySize('clientHeight', () => bodyHeight);
+      stubBodySize('scrollWidth', () => contentWidth);
+      stubBodySize('clientWidth', () => bodyWidth);
     });
 
     afterEach(() => {
       delete (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
-      for (const [property, original] of [
-        ['scrollHeight', originalScrollHeight],
-        ['clientHeight', originalClientHeight],
-      ] as const) {
+      globalThis.MutationObserver = RealMutationObserver;
+      for (const [property, original] of originalDescriptors) {
         if (original) Object.defineProperty(elementPrototype, property, original);
         else delete (elementPrototype as unknown as Record<string, unknown>)[property];
       }
     });
 
-    function reportResize(nextContentHeight: number) {
+    function reportResize(nextContentHeight: number, nextContentWidth = bodyWidth) {
       contentHeight = nextContentHeight;
+      contentWidth = nextContentWidth;
       act(() => {
-        for (const callback of resizeCallbacks) callback();
+        for (const observerRecord of observerRecords) observerRecord.callback();
       });
+    }
+
+    /** The observers watching a `.body`: the hook's, not any Base UI keeps for itself. */
+    function bodyObservers() {
+      return observerRecords.filter((observerRecord) =>
+        observerRecord.observed.some((target) => target.classList.contains('body')),
+      );
     }
 
     async function openSheet() {
       render(<SheetWithFooter />);
       const popup = await screen.findByRole('dialog');
       return { popup, body: popup.querySelector('.body') as HTMLElement };
+    }
+
+    /** A dialog the test opens and closes by its own toggle, so the popup unmounts in between. */
+    function ToggledDialog({ closeHidden = false }: { closeHidden?: boolean }) {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen((wasOpen) => !wasOpen)}>
+            Toggle
+          </button>
+          <Dialog heading="Notes" open={open} onOpenChange={setOpen} closeHidden={closeHidden}>
+            <p>First paragraph.</p>
+            <Field label="Title">
+              <TextInput />
+            </Field>
+          </Dialog>
+        </>
+      );
+    }
+
+    // While the dialog is open the page behind it is inert, so the toggle is pressed directly.
+    function pressToggle() {
+      act(() => screen.getByRole('button', { name: 'Toggle', hidden: true }).click());
+    }
+
+    async function closeAndReopen() {
+      pressToggle();
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      pressToggle();
+      return screen.findByRole('dialog');
     }
 
     it('is a Tab stop and a region named by the heading while its content overflows', async () => {
@@ -418,6 +504,73 @@ describe('Dialog', () => {
       );
       await userEvent.tab();
       expect(body).toHaveFocus();
+    });
+
+    it('observes the body and each of its children, and disconnects when the dialog closes', async () => {
+      render(<ToggledDialog />);
+      const popup = await screen.findByRole('dialog');
+      const body = popup.querySelector('.body') as HTMLElement;
+      const [observer, ...others] = bodyObservers();
+      expect(others).toHaveLength(0);
+      expect(observer?.observed).toEqual([body, ...Array.from(body.children)]);
+      expect(observer?.disconnects).toBe(0);
+      expect(bodyMutationRecords).toEqual([{ disconnects: 0 }]);
+      pressToggle();
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(observer?.disconnects).toBe(1);
+      expect(bodyMutationRecords).toEqual([{ disconnects: 1 }]);
+    });
+
+    it('observes a child added after it opened, and measures again', async () => {
+      const { body } = await openSheet();
+      reportResize(100);
+      const [observer] = bodyObservers();
+      contentHeight = 600;
+      const lateParagraph = document.createElement('p');
+      lateParagraph.textContent = 'A late paragraph.';
+      await act(async () => {
+        body.appendChild(lateParagraph);
+        await Promise.resolve();
+      });
+      expect(observer?.observed).toContain(lateParagraph);
+      expect(body).toHaveAttribute('tabindex', '0');
+      expect(body).toHaveAttribute('role', 'region');
+    });
+
+    it('measures again when text set straight in the body changes', async () => {
+      render(
+        <Dialog heading="Notes" defaultOpen>
+          {'A short note.'}
+        </Dialog>,
+      );
+      const popup = await screen.findByRole('dialog');
+      const body = popup.querySelector('.body') as HTMLElement;
+      reportResize(100);
+      contentHeight = 600;
+      await act(async () => {
+        (body.firstChild as Text).data = 'A note that has grown far longer than the body.';
+        await Promise.resolve();
+      });
+      expect(body).toHaveAttribute('tabindex', '0');
+    });
+
+    it('reopens with no Tab stop on a body that fits, before any measure', async () => {
+      render(<ToggledDialog />);
+      await screen.findByRole('dialog');
+      reportResize(600);
+      contentHeight = 100;
+      const popup = await closeAndReopen();
+      expect(popup.querySelector('.body')).not.toHaveAttribute('tabindex');
+      expect(popup.querySelector('.body')).not.toHaveAttribute('role');
+    });
+
+    it('reopens a dialog without a header close with focus on its field, not the body', async () => {
+      render(<ToggledDialog closeHidden />);
+      await screen.findByRole('dialog');
+      reportResize(600);
+      contentHeight = 100;
+      const popup = await closeAndReopen();
+      await waitFor(() => expect(within(popup).getByLabelText('Title')).toHaveFocus());
     });
   });
 
