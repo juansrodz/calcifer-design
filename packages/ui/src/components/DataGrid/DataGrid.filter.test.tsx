@@ -258,6 +258,38 @@ describe('the filtered-empty state', () => {
     expect(stateBox.style.inlineSize).toBe('');
   });
 
+  it('follows the scroll area when only its width changes', () => {
+    // Every observer the grid makes, so the test can report a resize as a browser would.
+    const resizeCallbacks: ResizeObserverCallback[] = [];
+    class WatchedResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallbacks.push(callback);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', WatchedResizeObserver);
+    try {
+      renderGrid({ initialQuery: matchesNothing });
+      const button = within(screen.getByRole('grid')).getByRole('button', {
+        name: 'Clear filters',
+      });
+      const stateBox = button.closest('td')?.firstElementChild as HTMLElement;
+      expect(stateBox.style.maxInlineSize).toBe('800px');
+
+      // A phone turned upright: narrower, and just as tall.
+      Object.defineProperty(scrollArea(), 'clientWidth', { configurable: true, value: 390 });
+      act(() => {
+        for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
+      });
+
+      expect(stateBox.style.maxInlineSize).toBe('390px');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps the Clear filters button in the tab order', async () => {
     const user = userEvent.setup();
     renderGrid({ initialQuery: matchesNothing });

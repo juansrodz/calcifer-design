@@ -753,6 +753,29 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // The last row closes the body with no divider under it.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row:last-child \.cell \{([^}]*)\}/m,
+    contains: ['box-shadow: none;'],
+    lacks: [],
+  },
+  {
+    // The expanded row's own divider is the line above its panel; the panel adds only the one
+    // below, so the two never double.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.detailRow \{([^}]*)\}/m,
+    contains: ['border-block-end: 1px solid var(--color-border);'],
+    lacks: ['border-block:', 'border-block-start'],
+  },
+  {
+    // The state and error rows' content sticks to the scroll area's inline start, so it stays in
+    // view while the body scrolls sideways; jsdom lays nothing out, so the stylesheet is the pin.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.inView \{([^}]*)\}/m,
+    contains: ['position: sticky;', 'inset-inline-start: 0;'],
+    lacks: [],
+  },
+  {
     // Forced colours drop box-shadow, so there the row draws its divider as a border again.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.row \{([^}]*)\}/m,
