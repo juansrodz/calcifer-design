@@ -739,16 +739,24 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // A pinned cell lays the tint under its content and half a hairline past its block edges, where
-    // the row's own background reaches under the row's divider.
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^\.row\[data-highlighted\] \.cell\.pinnedCell::after,\n\.row\[aria-selected='true'\] \.cell\.pinnedCell::after \{([^}]*)\}/m,
-    contains: [
-      'background: var(--color-selected-soft);',
-      'inset-block: calc(1px / -2);',
-      'z-index: -1;',
-    ],
+    rule: /^\.row\[data-highlighted\] \.cell\.pinnedCell,\n\.row\[aria-selected='true'\] \.cell\.pinnedCell \{([^}]*)\}/m,
+    contains: ['var(--color-selected-soft)'],
     lacks: ['--color-accent'],
+  },
+  {
+    // The row's divider is each cell's own inset line, so a pinned cell's surface never covers it
+    // and the row itself draws no border to be covered.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.cell \{([^}]*)\}/m,
+    contains: ['box-shadow: inset 0 -1px 0 var(--color-border);'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row \{([^}]*)\}/m,
+    contains: ['transition-property: background-color;'],
+    lacks: ['border'],
   },
   {
     file: 'components/DatePicker/DatePicker.module.css',

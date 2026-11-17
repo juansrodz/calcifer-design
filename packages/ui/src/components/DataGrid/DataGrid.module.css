@@ -244,14 +244,9 @@
 }
 
 .row {
-  border-bottom: 1px solid var(--color-border);
   transition-property: background-color;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
-}
-
-.row:last-child {
-  border-bottom: 0;
 }
 
 @media (hover: hover) {
@@ -304,6 +299,13 @@
   font-family: var(--font-body);
   font-weight: var(--font-weight-body);
   overflow-wrap: anywhere;
+
+  /* The row's divider. Each cell draws its share inside its own edge, as the band's cells draw
+     their hairlines, so the line falls on the same pixel in every column at any subpixel offset of
+     the row, and a pinned cell's surface paints under it rather than over it. The last row's
+     cells draw none, below. */
+  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the 1px hairline every border here draws; no token is one */
+  box-shadow: inset 0 -1px 0 var(--color-border);
 }
 
 /* The outer columns line up with the card's own inset. */
@@ -351,21 +353,18 @@
   }
 }
 
-/*
- * A tinted row's pinned cell lays the tint over its surface (and the hover's) as a layer under its
- * content. A positioned cell does not get the row's background under the row's divider, so without
- * the layer the divider shows over the bare surface there and vanishes into the tint. The layer
- * reaches half the 1px divider past each block edge, as the row's own background does.
- */
-.row[data-highlighted] .cell.pinnedCell::after,
-.row[aria-selected='true'] .cell.pinnedCell::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  inset-block: calc(1px / -2);
-  z-index: -1;
-  background: var(--color-selected-soft);
-  pointer-events: none;
+.row[data-highlighted] .cell.pinnedCell,
+.row[aria-selected='true'] .cell.pinnedCell {
+  background-image: linear-gradient(var(--color-selected-soft), var(--color-selected-soft));
+}
+
+@media (hover: hover) {
+  .row[data-highlighted]:hover .cell.pinnedCell,
+  .row[aria-selected='true']:hover .cell.pinnedCell {
+    background-image:
+      linear-gradient(var(--color-selected-soft), var(--color-selected-soft)),
+      linear-gradient(var(--color-surface-2), var(--color-surface-2));
+  }
 }
 
 /* The checkbox column: 2.5rem (about 40px), first at the start. */
@@ -482,11 +481,11 @@
 }
 
 /*
- * An expanded row's detail panel: one cell across the row on a slightly tinted surface, with a
- * divider above it. Its content wraps freely, compact density included.
+ * An expanded row's detail panel: one cell across the row on a slightly tinted surface, under the
+ * row's own divider and with one below it. Its content wraps freely, compact density included.
  */
 .detailRow {
-  border-block: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--color-border);
 }
 
 .detailCell {
@@ -521,6 +520,11 @@
 .errorCell:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+/* The last row closes the body, with no divider under it. */
+.row:last-child .cell {
+  box-shadow: none;
 }
 
 /* The text of a highlighted or selected row: the selected tint's own text colour. */
