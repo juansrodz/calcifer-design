@@ -483,6 +483,13 @@ describe('Dialog', () => {
       expect(body).not.toHaveAttribute('aria-labelledby');
     });
 
+    it('counts content wider than the body as overflow too', async () => {
+      const { body } = await openSheet();
+      reportResize(bodyHeight, 600);
+      expect(body).toHaveAttribute('tabindex', '0');
+      expect(body).toHaveAttribute('role', 'region');
+    });
+
     it('follows a change between fitting and overflowing, both ways', async () => {
       const { body } = await openSheet();
       reportResize(100);
@@ -535,6 +542,20 @@ describe('Dialog', () => {
       expect(observer?.observed).toContain(lateParagraph);
       expect(body).toHaveAttribute('tabindex', '0');
       expect(body).toHaveAttribute('role', 'region');
+    });
+
+    it('lets go of a child that leaves, and measures again', async () => {
+      const { body } = await openSheet();
+      reportResize(600);
+      const [observer] = bodyObservers();
+      const firstChild = body.firstElementChild as Element;
+      contentHeight = 100;
+      await act(async () => {
+        firstChild.remove();
+        await Promise.resolve();
+      });
+      expect(observer?.unobserved).toEqual([firstChild]);
+      expect(body).not.toHaveAttribute('tabindex');
     });
 
     it('measures again when text set straight in the body changes', async () => {
