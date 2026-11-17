@@ -110,7 +110,6 @@ export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultValue: '
  */
 export const InEndDrawer: Story = {
   args: { defaultValue: '2026-11-20' },
-  decorators: [],
   render: (args) => (
     <Dialog heading="Edit the potluck" variant="sheet" side="end" defaultOpen>
       <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
