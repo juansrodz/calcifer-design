@@ -50,7 +50,7 @@ export const Dark: Story = { globals: { theme: 'dark' } };
 
 /**
  * On a card, the raised surface: the unselected rings read `--color-border-control`, 3:1 or better
- * on every surface in both themes (WCAG 1.4.11).
+ * on the surfaces the theme check covers, in both themes (WCAG 1.4.11).
  */
 export const OnRaisedCard: Story = {
   render: (args) => (

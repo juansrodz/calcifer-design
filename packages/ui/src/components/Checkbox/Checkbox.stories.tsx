@@ -27,8 +27,8 @@ export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultChecked:
 
 /**
  * Unchecked and checked on a card, the raised surface where the translucent hairline used to fade
- * to about 1.1:1. The unchecked boundary reads `--color-border-control`, 3:1 or better on every
- * surface in both themes (WCAG 1.4.11).
+ * to about 1.1:1. The unchecked boundary reads `--color-border-control`, 3:1 or better on the
+ * surfaces the theme check covers, in both themes (WCAG 1.4.11).
  */
 export const OnRaisedCard: Story = {
   render: (args) => (

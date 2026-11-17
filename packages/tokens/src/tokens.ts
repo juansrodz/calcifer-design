@@ -31,8 +31,8 @@ const lightColor = {
   borderStrong: 'rgba(28, 25, 23, 0.18)',
   /**
    * The boundary of a control known by its outline alone: the unchecked checkbox, the radio. Opaque
-   * so it can be measured: WCAG 1.4.11 asks 3:1, and the lowest here is 3.54:1 (light, surface2)
-   * and 5.35:1 (dark, surface2 and surfaceInput).
+   * so it can be measured: WCAG 1.4.11 asks 3:1, and on the four surfaces `uiContrastPairs` checks
+   * the lowest is 3.54:1 (light, surface2) and 5.35:1 (dark, surface2 and surfaceInput).
    */
   borderControl: '#857F79',
   borderAccent: 'rgba(59, 111, 224, 0.28)',
