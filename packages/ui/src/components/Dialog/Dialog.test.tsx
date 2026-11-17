@@ -1,7 +1,7 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
@@ -19,6 +19,7 @@ const {
   SideSheetWithFooter,
   HiddenClose,
   HeadingHooks,
+  LongBody,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -33,6 +34,7 @@ describe('Dialog', () => {
     ['SheetWithFooter', SheetWithFooter],
     ['SideSheetWithFooter', SideSheetWithFooter],
     ['HeadingHooks', HeadingHooks],
+    ['LongBody', LongBody],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -312,6 +314,110 @@ describe('Dialog', () => {
       expect(footer).toHaveClass('footer');
       expect(footer.previousElementSibling).toHaveClass('body');
       expect(footer.nextElementSibling).toBeNull();
+    });
+  });
+
+  // jsdom does no layout and has no ResizeObserver. These stub both: every `.body` is 200px tall
+  // and its content `contentHeight`, and each observer runs when `reportResize` says the browser
+  // would have (its first report, then any later resize).
+  describe('the scrolling body', () => {
+    const bodyHeight = 200;
+    let contentHeight = 0;
+    let resizeCallbacks: Array<() => void> = [];
+    const elementPrototype = HTMLElement.prototype;
+    const originalScrollHeight = Object.getOwnPropertyDescriptor(elementPrototype, 'scrollHeight');
+    const originalClientHeight = Object.getOwnPropertyDescriptor(elementPrototype, 'clientHeight');
+
+    beforeEach(() => {
+      contentHeight = 0;
+      resizeCallbacks = [];
+      class ResizeObserverStub {
+        constructor(callback: () => void) {
+          resizeCallbacks.push(callback);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+      globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+      Object.defineProperty(elementPrototype, 'scrollHeight', {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.classList.contains('body') ? contentHeight : 0;
+        },
+      });
+      Object.defineProperty(elementPrototype, 'clientHeight', {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.classList.contains('body') ? bodyHeight : 0;
+        },
+      });
+    });
+
+    afterEach(() => {
+      delete (globalThis as { ResizeObserver?: unknown }).ResizeObserver;
+      for (const [property, original] of [
+        ['scrollHeight', originalScrollHeight],
+        ['clientHeight', originalClientHeight],
+      ] as const) {
+        if (original) Object.defineProperty(elementPrototype, property, original);
+        else delete (elementPrototype as unknown as Record<string, unknown>)[property];
+      }
+    });
+
+    function reportResize(nextContentHeight: number) {
+      contentHeight = nextContentHeight;
+      act(() => {
+        for (const callback of resizeCallbacks) callback();
+      });
+    }
+
+    async function openSheet() {
+      render(<SheetWithFooter />);
+      const popup = await screen.findByRole('dialog');
+      return { popup, body: popup.querySelector('.body') as HTMLElement };
+    }
+
+    it('is a Tab stop and a region named by the heading while its content overflows', async () => {
+      const { popup, body } = await openSheet();
+      reportResize(600);
+      expect(body).toHaveAttribute('tabindex', '0');
+      expect(body).toHaveAttribute('role', 'region');
+      const heading = within(popup).getByRole('heading', { name: 'Remove the showcase remote?' });
+      expect(body).toHaveAttribute('aria-labelledby', heading.id);
+      expect(within(popup).getByRole('region', { name: 'Remove the showcase remote?' })).toBe(body);
+      expect(await axeDocument()).toHaveNoViolations();
+    });
+
+    it('adds no Tab stop, role or name while its content fits', async () => {
+      const { body } = await openSheet();
+      reportResize(bodyHeight);
+      expect(body).not.toHaveAttribute('tabindex');
+      expect(body).not.toHaveAttribute('role');
+      expect(body).not.toHaveAttribute('aria-labelledby');
+    });
+
+    it('follows a change between fitting and overflowing, both ways', async () => {
+      const { body } = await openSheet();
+      reportResize(100);
+      expect(body).not.toHaveAttribute('tabindex');
+      reportResize(600);
+      expect(body).toHaveAttribute('tabindex', '0');
+      expect(body).toHaveAttribute('role', 'region');
+      reportResize(150);
+      expect(body).not.toHaveAttribute('tabindex');
+      expect(body).not.toHaveAttribute('role');
+      expect(body).not.toHaveAttribute('aria-labelledby');
+    });
+
+    it('is reached by Tab from Close while it overflows', async () => {
+      const { popup, body } = await openSheet();
+      reportResize(600);
+      await waitFor(() =>
+        expect(within(popup).getByRole('button', { name: 'Close' })).toHaveFocus(),
+      );
+      await userEvent.tab();
+      expect(body).toHaveFocus();
     });
   });
 

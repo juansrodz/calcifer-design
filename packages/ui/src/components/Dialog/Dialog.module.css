@@ -100,6 +100,12 @@ h4.heading {
   overscroll-behavior: contain;
 }
 
+/* A body that overflows is a Tab stop (`Dialog.tsx`). Its ring is drawn inward, inside the ring
+   room above, so the popup's own scroll clip never cuts it and it covers no content. */
+.body:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

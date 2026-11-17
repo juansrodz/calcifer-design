@@ -1220,6 +1220,13 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // A body that overflows is a Tab stop; its ring is drawn inward, inside the ring room.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.body:focus-visible \{([^}]*)\}/m,
+    contains: ['outline-offset: calc(-1 * var(--focus-ring-width));'],
+    lacks: [],
+  },
+  {
     // The sheet pin, one row per rule. The footer's own rule is told apart from the grouped one by
     // what precedes it: the grouped rule's last selector follows a comma.
     file: 'components/Dialog/Dialog.module.css',

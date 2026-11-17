@@ -1,6 +1,7 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
-import { useRef, type ReactElement, type ReactNode } from 'react';
+import { useId, useRef, type ReactElement, type ReactNode } from 'react';
 import { CloseIcon } from '../../icons/CloseIcon';
+import { useOverflowFocusable } from '../../hooks/useOverflowFocusable';
 import { IconButton } from '../IconButton/IconButton';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import a11yStyles from '../../styles/a11y.module.css';
@@ -121,6 +122,11 @@ export function Dialog({
   const initialFocus = (interactionType: string) =>
     interactionType === 'touch' ? popupRef.current : (closeRef.current ?? true);
   const showEndGroup = hasContent(headerEnd) || !closeHidden;
+  // A body that scrolls is a Tab stop while it overflows, named by the heading, so a keyboard can
+  // scroll text that holds no control of its own (Safari makes no scroller focusable). A body that
+  // fits adds no stop. The heading's id is ours so the body can point at it.
+  const titleId = useId();
+  const [bodyRef, bodyOverflows] = useOverflowFocusable<HTMLDivElement>();
   return (
     <BaseDialog.Root
       open={open}
@@ -151,6 +157,7 @@ export function Dialog({
             <div className={styles.header}>
               {headerStart}
               <BaseDialog.Title
+                id={titleId}
                 className={[styles.heading, headingHidden ? a11yStyles.visuallyHidden : undefined]
                   .filter(Boolean)
                   .join(' ')}
@@ -184,7 +191,17 @@ export function Dialog({
                 {description}
               </BaseDialog.Description>
             )}
-            {children === undefined ? null : <div className={styles.body}>{children}</div>}
+            {children === undefined ? null : (
+              <div
+                ref={bodyRef}
+                className={styles.body}
+                {...(bodyOverflows
+                  ? { tabIndex: 0, role: 'region', 'aria-labelledby': titleId }
+                  : undefined)}
+              >
+                {children}
+              </div>
+            )}
             {footer === undefined ? null : <div className={styles.footer}>{footer}</div>}
           </BaseDialog.Popup>
         </BaseDialog.Viewport>

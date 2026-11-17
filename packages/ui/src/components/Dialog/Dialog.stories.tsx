@@ -97,6 +97,12 @@ export const SheetWithFooter: Story = {
   },
 };
 
+/**
+ * A centred dialog whose body is long enough to scroll. While it overflows, the body is a Tab stop
+ * (a region named by the heading), so a keyboard can scroll text that holds no control.
+ */
+export const LongBody: Story = { args: { defaultOpen: true, children: longBody } };
+
 /** The same pinned footer in a full-height panel on the trailing edge. */
 export const SideSheetWithFooter: Story = {
   args: {
