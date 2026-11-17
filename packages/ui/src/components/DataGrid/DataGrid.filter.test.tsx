@@ -251,8 +251,11 @@ describe('the filtered-empty state', () => {
 
     const button = within(screen.getByRole('grid')).getByRole('button', { name: 'Clear filters' });
     const stateBox = button.closest('td')?.firstElementChild as HTMLElement;
-    // The scroll area is 800px wide in the stubbed layout.
-    expect(stateBox.style.inlineSize).toBe('800px');
+    // The scroll area is 800px wide in the stubbed layout. A maximum, not a width: a width would
+    // count toward the table's minimum and keep the grid from shrinking in a flex item or a grid
+    // track once it had been measured wide.
+    expect(stateBox.style.maxInlineSize).toBe('800px');
+    expect(stateBox.style.inlineSize).toBe('');
   });
 
   it('keeps the Clear filters button in the tab order', async () => {

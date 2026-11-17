@@ -82,7 +82,7 @@ export function GridStateRow({
       <td role="gridcell" className={styles.stateCell} colSpan={columnCount} aria-colindex={1}>
         <div
           className={styles.inView}
-          style={viewportWidth > 0 ? { inlineSize: viewportWidth } : undefined}
+          style={viewportWidth > 0 ? { maxInlineSize: viewportWidth } : undefined}
         >
           {content}
         </div>
@@ -131,7 +131,7 @@ export function GridErrorRow({
       >
         <div
           className={`${styles.inView} ${styles.errorContent}`}
-          style={viewportWidth > 0 ? { inlineSize: viewportWidth } : undefined}
+          style={viewportWidth > 0 ? { maxInlineSize: viewportWidth } : undefined}
         >
           <span role="alert">{message}</span>
           <Button variant="secondary" size="sm" onClick={onRetry}>

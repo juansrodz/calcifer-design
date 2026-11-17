@@ -241,8 +241,11 @@ describe('server mode', () => {
 
     const errorBox = screen.getByText('Could not load rows').closest('td')
       ?.firstElementChild as HTMLElement;
-    // The scroll area is 800px wide in the stubbed layout.
-    expect(errorBox.style.inlineSize).toBe('800px');
+    // The scroll area is 800px wide in the stubbed layout. A maximum, not a width: a width would
+    // count toward the table's minimum and keep the grid from shrinking in a flex item or a grid
+    // track once it had been measured wide.
+    expect(errorBox.style.maxInlineSize).toBe('800px');
+    expect(errorBox.style.inlineSize).toBe('');
     expect(errorBox).toContainElement(screen.getByRole('button', { name: 'Try again' }));
   });
 

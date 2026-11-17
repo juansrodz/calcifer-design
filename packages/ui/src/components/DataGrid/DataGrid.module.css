@@ -569,9 +569,10 @@
 }
 
 /*
- * A cell across a table wider than the scroll area: its content takes the scroll area's width (set
- * inline once measured) and sticks to its inline start, so it stays in view as the body scrolls
- * sideways. The cell's inline padding moves here so that it holds at both edges of the view.
+ * A cell across a table wider than the scroll area: its content keeps to the scroll area's width (a
+ * maximum set inline once measured, which, unlike a width, adds nothing to the table's minimum, so
+ * the grid can still shrink) and sticks to its inline start, so it stays in view as the body
+ * scrolls sideways. The cell's inline padding moves here so that it holds at both edges of the view.
  */
 .inView {
   position: sticky;
