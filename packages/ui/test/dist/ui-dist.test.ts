@@ -202,6 +202,37 @@ describe('@calcifer-design/ui dist', () => {
     expect(unprefixed).toEqual([]);
   });
 
+  // The scan above skips `@` preludes, so the class selectors inside an `@scope (…) to (…)`
+  // prelude are checked here: the CSS Modules build once left `:local(.root)` in one unhashed.
+  it('hashes the classes in every @scope prelude and leaves no :local or :global behind', async () => {
+    const moduleCssFiles = (await collectCssFiles(distRoot)).filter((file) =>
+      file.endsWith('_module.css'),
+    );
+    const scopePreludes: { file: string; prelude: string }[] = [];
+    const leftovers: string[] = [];
+    for (const file of moduleCssFiles) {
+      const css = (await readFile(file, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+      if (/:(local|global)\(/.test(css)) {
+        leftovers.push(path.relative(distRoot, file));
+      }
+      for (const match of css.matchAll(/@scope([^{]*)\{/g)) {
+        scopePreludes.push({
+          file: path.relative(distRoot, file),
+          prelude: (match[1] ?? '').trim(),
+        });
+      }
+    }
+    expect(leftovers).toEqual([]);
+    // ThemeScope's mode-change rule is the one `@scope` today; the guard keeps an empty scan out.
+    expect(scopePreludes.length).toBeGreaterThan(0);
+    const unprefixed = scopePreludes.filter(({ prelude }) =>
+      [...prelude.matchAll(/\.(-?[A-Za-z_][A-Za-z0-9_-]*)/g)].some(
+        (selector) => !(selector[1] ?? '').startsWith(classPrefix),
+      ),
+    );
+    expect(unprefixed).toEqual([]);
+  });
+
   // Stories, tests and the sample data they share are for this repository, not for consumers.
   it('ships no story, test or fixture modules', async () => {
     const entries = await readdir(distRoot, { recursive: true });

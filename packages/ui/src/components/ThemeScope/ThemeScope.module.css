@@ -7,12 +7,18 @@
 
 /* The frame of a mode change (`suppressTransitionsForAFrame`): every transition in the scope,
    its portal host included, lands at once, so text never fades through the old colour on the new
-   surface. `!important` because each component declares its own transition. */
-.root[data-theme-changing],
-.root[data-theme-changing] *,
-.root[data-theme-changing] *::before,
-.root[data-theme-changing] *::after {
-  transition: none !important;
+   surface. `!important` because each component declares its own transition. The rule stops at a
+   nested scope (`to (.root)`): that one sets its colours from its own pin, `<html>` or the OS,
+   never from this one, so its transitions run on. `:where()` keeps the attribute out of the class
+   selector, which the CSS Modules build hashes only when it stands alone in an `@scope` prelude.
+   A browser without `@scope` skips the block and keeps the old fade. */
+@scope (.root:where([data-theme-changing])) to (.root) {
+  :scope,
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
 }
 
 /* Takes no space while empty; its portalled children (all positioned) render as the wrapper's. */

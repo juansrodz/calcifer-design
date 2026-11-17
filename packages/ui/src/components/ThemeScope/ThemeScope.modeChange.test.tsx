@@ -157,9 +157,18 @@ describe('the sheet under the mark', () => {
   const stylesheet = readFileSync(join(import.meta.dirname, 'ThemeScope.module.css'), 'utf-8');
 
   it('turns every transition in the scope off, its pseudo-elements and portals included', () => {
+    // `:where()` keeps the attribute out of the class the CSS Modules build hashes: with
+    // `.root[data-theme-changing]` the build left `:local(.root)` unhashed in the `@scope` prelude.
     const rule = stylesheet.match(
-      /^\.root\[data-theme-changing\],\n\.root\[data-theme-changing\] \*,\n\.root\[data-theme-changing\] \*::before,\n\.root\[data-theme-changing\] \*::after \{([^}]*)\}/m,
+      /^@scope \(\.root:where\(\[data-theme-changing\]\)\) to \(\.root\) \{\n {2}:scope,\n {2}\*,\n {2}\*::before,\n {2}\*::after \{([^}]*)\}\n\}/m,
     );
     expect(rule?.[1]?.trim()).toBe('transition: none !important;');
+  });
+
+  it('stops at a nested scope, whose mode never follows this one', () => {
+    // A nested scope sets its whole colour set from its own pin, `<html>` or the OS, so a parent's
+    // change moves nothing in it, and its in-flight transitions should run on. The `to (.root)`
+    // limit above leaves it out; no rule may reach every descendant of the mark.
+    expect(stylesheet).not.toMatch(/\.root\[data-theme-changing\] \*/);
   });
 });
