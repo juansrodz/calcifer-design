@@ -890,11 +890,11 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       '--button-lg-padding-inline: calc(var(--space-5) + var(--space-1));',
       'min-height: 3rem;',
-      'padding: var(--space-3) var(--button-lg-padding-inline);',
+      'padding: var(--space-2) var(--button-lg-padding-inline);',
       'font-size: var(--text-lg);',
       ...displayRole,
     ],
-    lacks: [anyWeightLiteral, 'var(--font-sans)'],
+    lacks: [anyWeightLiteral, 'var(--font-sans)', 'padding: var(--space-3)'],
   },
   {
     // The label-to-count distance is the button's own `gap`; the badge adds no margin of its own.
