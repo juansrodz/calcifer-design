@@ -334,6 +334,8 @@ describe('Dialog', () => {
       callback: () => void;
       observed: Element[];
       unobserved: Element[];
+      /** What the instance watches now: observed and not since let go of. */
+      watching: Set<Element>;
       disconnects: number;
     }
     let observerRecords: ObserverRecord[] = [];
@@ -384,17 +386,33 @@ describe('Dialog', () => {
       class ResizeObserverStub {
         private readonly record: ObserverRecord;
         constructor(callback: () => void) {
-          this.record = { callback, observed: [], unobserved: [], disconnects: 0 };
+          this.record = {
+            callback,
+            observed: [],
+            unobserved: [],
+            watching: new Set(),
+            disconnects: 0,
+          };
           observerRecords.push(this.record);
         }
+        // A real ResizeObserver throws on anything but an element (a text node, say).
         observe(target: Element) {
+          if (!(target instanceof Element)) {
+            throw new TypeError('ResizeObserver.observe: the target is not an Element.');
+          }
           this.record.observed.push(target);
+          this.record.watching.add(target);
         }
         unobserve(target: Element) {
+          if (!(target instanceof Element)) {
+            throw new TypeError('ResizeObserver.unobserve: the target is not an Element.');
+          }
           this.record.unobserved.push(target);
+          this.record.watching.delete(target);
         }
         disconnect() {
           this.record.disconnects += 1;
+          this.record.watching.clear();
         }
       }
       globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
@@ -542,6 +560,45 @@ describe('Dialog', () => {
       expect(observer?.observed).toContain(lateParagraph);
       expect(body).toHaveAttribute('tabindex', '0');
       expect(body).toHaveAttribute('role', 'region');
+    });
+
+    it('measures again when a text node is added straight to the body, and when it leaves', async () => {
+      const { body } = await openSheet();
+      reportResize(100);
+      contentHeight = 600;
+      const looseText = document.createTextNode('A line of loose text.');
+      await act(async () => {
+        body.appendChild(looseText);
+        await Promise.resolve();
+      });
+      expect(body).toHaveAttribute('tabindex', '0');
+      expect(body).toHaveAttribute('role', 'region');
+      contentHeight = 100;
+      await act(async () => {
+        looseText.remove();
+        await Promise.resolve();
+      });
+      expect(body).not.toHaveAttribute('tabindex');
+      expect(body).not.toHaveAttribute('role');
+    });
+
+    it('watches only the body’s own children, so nothing nested outlives its removed ancestor', async () => {
+      const { body } = await openSheet();
+      reportResize(100);
+      const [observer] = bodyObservers();
+      const paragraph = body.firstElementChild as Element;
+      const nested = document.createElement('span');
+      await act(async () => {
+        paragraph.appendChild(nested);
+        await Promise.resolve();
+      });
+      await act(async () => {
+        paragraph.remove();
+        await Promise.resolve();
+      });
+      expect(observer?.observed).not.toContain(nested);
+      expect(observer?.watching.has(paragraph)).toBe(false);
+      expect(observer?.watching.has(nested)).toBe(false);
     });
 
     it('lets go of a child that leaves, and measures again', async () => {
