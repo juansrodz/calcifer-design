@@ -100,6 +100,18 @@ describe('Avatar', () => {
     expect(screen.getByText('🎉P')).toBeInTheDocument();
   });
 
+  it.each([
+    ['?', '?'],
+    ['- -', '--'],
+    ['Dad (Pablo)', 'DP'],
+    ['¿Ñoño? Pérez', 'ÑP'],
+    ['42nd Street', '4S'],
+  ])('reads %s as %s', (name, initials) => {
+    // The decorative span is read, since for "?" the initials equal the name.
+    const { container } = render(<Avatar name={name} />);
+    expect(container.querySelector('[aria-hidden="true"]')?.textContent).toBe(initials);
+  });
+
   it('keeps the first code point of a word with no letter or digit, as before', () => {
     const { unmount } = render(<Avatar name="🎉 Party" />);
     expect(screen.getByText('🎉P')).toBeInTheDocument();

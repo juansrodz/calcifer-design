@@ -41,17 +41,18 @@ function fromFirstLetterOrDigit(word: string): string {
   return start === -1 ? word : word.slice(start);
 }
 
-/** A word of punctuation alone ("–", ")"), which names no one and so gives no initial. */
+/** A word of punctuation alone ("–", ")"), which names no one, so another word gives the initial. */
 function isPunctuationOnly(word: string): boolean {
   return /^\p{P}+$/u.test(word);
 }
 
 /**
  * First and last word's initial, upper-cased. A one-word name gives its first two letters, which
- * reads better at these sizes than a lone character. Each word is read from its first letter or
- * digit (`fromFirstLetterOrDigit`), so "Dad (Pablo)" gives "DP". A word of punctuation alone is
- * skipped (`isPunctuationOnly`), so "Juan –" gives "J" and "Dad (Pablo )" gives "DP"; an emoji is
- * not punctuation and still counts ("🎉 Party" gives "🎉P").
+ * reads better at these sizes than a lone character. Each chosen word gives its first letter or
+ * digit (`fromFirstLetterOrDigit`), or its first code point when it has neither, so "Dad (Pablo)"
+ * gives "DP", "¿Ñoño? Pérez" "ÑP" and "🎉 Party" "🎉P" (an emoji is not punctuation). A word of
+ * punctuation alone is skipped (`isPunctuationOnly`), so "Juan –" gives "J" and "Dad (Pablo )"
+ * "DP"; a name of nothing but punctuation keeps its marks ("?" gives "?", "- -" gives "--").
  *
  * `slice()` is not used here: it indexes UTF-16 code units, so a name beginning with an emoji or
  * any other astral character yields half a surrogate pair — `'😀 Lovelace'` became `'\ud83dL'`,
@@ -61,7 +62,9 @@ function isPunctuationOnly(word: string): boolean {
  */
 function initialsFrom(name: string): string {
   const words = name.normalize('NFC').trim().split(/\s+/).filter(Boolean);
-  const namingWords = words.filter((word) => !isPunctuationOnly(word));
+  const wordsThatName = words.filter((word) => !isPunctuationOnly(word));
+  // A name of nothing but punctuation still draws its marks rather than an empty disc.
+  const namingWords = wordsThatName.length === 0 ? words : wordsThatName;
   const firstWord = namingWords.at(0);
   if (firstWord === undefined) {
     return '';
