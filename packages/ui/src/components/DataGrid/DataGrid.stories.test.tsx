@@ -8,7 +8,7 @@ import * as stories from './DataGrid.stories';
 import { makeInventoryRows } from './fixtures';
 
 const composedStories = composeStories(stories);
-const { FileList, ViewAllLink, FilteredEmpty } = composedStories;
+const { FileList, ViewAllLink, FilteredEmpty, Search } = composedStories;
 
 /** The text of one column's cell in each rendered body row, top to bottom. */
 function textOfEachRow(columnName: string): string[] {
@@ -83,6 +83,20 @@ describe('DataGrid stories', () => {
     );
     const quantities = textOfEachRow('Quantity').map(Number);
     expect(quantities).toEqual([...quantities].sort((first, second) => first - second));
+  });
+
+  it('the search story finds rows with a wildcard', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Search />);
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.keyboard('hex*(2?){Enter}');
+
+    // `*` spans "bolt M6 " and `?` the batch's second digit; the brackets match themselves.
+    expect(textOfEachRow('Name')).toEqual(
+      ['20', '21', '22', '23', '24'].map((batch) => `Hex bolt M6 (${batch})`),
+    );
+    expect(screen.getByRole('button', { name: 'Filters, 1 active' })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('the filtered-empty story clears its filters', async () => {

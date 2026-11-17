@@ -16,7 +16,7 @@ import {
   type InventoryPage,
   type InventoryRow,
 } from './fixtures';
-import { emptyDataGridQuery } from './query';
+import { createQueryMatcher, emptyDataGridQuery } from './query';
 import type { DataGridQuery } from './types';
 
 // Every request made of a mock inventory server, the stories' included, so a test can see what
@@ -611,6 +611,31 @@ describe('finding rows in server mode', () => {
     expect(screen.getByText(`Showing 50 of ${matchCount} rows`)).toBeInTheDocument();
     expect(textOfEachRow('Location').every((location) => location === 'B-07')).toBe(true);
     expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the server again when the search changes', async () => {
+    const user = userEvent.setup();
+    render(<ServerFindingRows />);
+    expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
+    fetchPageRequests.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.keyboard('washer{Enter}');
+
+    expect(fetchPageRequests).toHaveBeenCalledTimes(1);
+    expect(fetchPageRequests).toHaveBeenCalledWith({
+      page: 0,
+      query: { ...emptyDataGridQuery, search: 'washer' },
+    });
+    const washerMatcher = createQueryMatcher(filterableInventoryColumns, {
+      ...emptyDataGridQuery,
+      search: 'washer',
+    });
+    const washerCount = countOfServerRowsWhere((row) => washerMatcher?.(row) ?? true);
+    expect(washerCount).toBeGreaterThan(0);
+    expect(
+      await screen.findByText(`Showing ${Math.min(washerCount, 50)} of ${washerCount} rows`),
+    ).toBeInTheDocument();
   });
 
   it('shows the filtered-empty state in server mode', async () => {

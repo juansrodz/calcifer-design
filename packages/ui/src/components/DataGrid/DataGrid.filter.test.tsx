@@ -11,7 +11,7 @@ import {
   makeInventoryRows,
   type InventoryRow,
 } from './fixtures';
-import { emptyDataGridQuery } from './query';
+import { createQueryMatcher, emptyDataGridQuery } from './query';
 import type { DataGridQuery } from './types';
 import { useDebouncedDraft } from './useDebouncedDraft';
 
@@ -220,10 +220,10 @@ describe('the filtered-empty state', () => {
     const { container } = renderGrid({ initialQuery: matchesNothing, onQueryChange });
 
     const grid = screen.getByRole('grid');
-    expect(within(grid).getByText('No rows match the filters.')).toHaveAttribute(
-      'aria-hidden',
-      'true',
-    );
+    // The empty state's heading, under the card's h2.
+    expect(
+      within(grid).getByRole('heading', { level: 3, name: 'No rows match the filters.' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
     expect(screen.getByText(`0 of ${rowTotal} rows`)).toBeInTheDocument();
     expect(grid).toHaveAttribute('aria-rowcount', '2');
@@ -755,15 +755,19 @@ describe('the filters button and match mode', () => {
     expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
   });
 
-  it('orders the toolbar: match mode, then filters, then refresh', () => {
-    renderGrid({ initialQuery: { filters: { status: 'out' } }, onRefresh: vi.fn() });
+  it('orders the toolbar: search, match mode, then filters, then refresh', () => {
+    renderGrid({
+      initialQuery: { filters: { status: 'out' } },
+      onRefresh: vi.fn(),
+      enableSearch: true,
+    });
 
     const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
     expect(
       within(toolbar)
         .getAllByRole('button')
         .map((button) => button.getAttribute('aria-label') ?? button.textContent),
-    ).toEqual(['All', 'Any', 'Filters, 1 active', 'Refresh']);
+    ).toEqual(['Search', 'All', 'Any', 'Filters, 1 active', 'Refresh']);
   });
 
   it('offers no filters when no column has a filter', () => {
@@ -813,6 +817,248 @@ describe('the filters button and match mode', () => {
     const matchMode = screen.getByRole('group', { name: 'Coincidir' });
     expect(within(matchMode).getByRole('button', { name: 'Todos' })).toBeInTheDocument();
     expect(within(matchMode).getByRole('button', { name: 'Alguno' })).toBeInTheDocument();
+  });
+});
+
+describe('search', () => {
+  const searchDelay = 400;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** The ids of the fixture rows a search for `term` leaves, in `rows` order. */
+  function idsOfRowsSearchedFor(term: string): string[] {
+    const matcher = createQueryMatcher(filterableInventoryColumns, {
+      ...emptyDataGridQuery,
+      search: term,
+    });
+    if (matcher === null) throw new Error('a search term should give a matcher');
+    return makeInventoryRows(rowTotal)
+      .filter(matcher)
+      .map((row) => row.id);
+  }
+
+  function searchButton(): HTMLElement {
+    return screen.getByRole('button', { name: 'Search' });
+  }
+
+  function searchField(): HTMLElement {
+    return screen.getByRole('searchbox', { name: 'Search rows' });
+  }
+
+  /** A click on a button: focus moves to it first, as a press of the pointer moves it. */
+  function clickButton(button: HTMLElement) {
+    act(() => button.focus());
+    fireEvent.click(button);
+  }
+
+  it('opens search with focus in the field and filters after the pause', () => {
+    vi.useFakeTimers();
+    const onQueryChange = vi.fn();
+    renderGrid({ enableSearch: true, onQueryChange });
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('searchbox', { name: 'Search rows' })).not.toBeInTheDocument();
+
+    clickButton(searchButton());
+
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'true');
+    expect(searchField()).toHaveFocus();
+
+    fireEvent.change(searchField(), { target: { value: 'bolt' } });
+    act(() => vi.advanceTimersByTime(searchDelay - 1));
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(onQueryChange).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(1));
+    const boltIds = idsOfRowsSearchedFor('bolt');
+    expect(boltIds.length).toBeGreaterThan(0);
+    expect(boltIds.length).toBeLessThan(rowTotal);
+    expect(screen.getByText(`${boltIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+    expect(onQueryChange).toHaveBeenCalledWith({ ...emptyDataGridQuery, search: 'bolt' });
+    // The search counts on the filters button.
+    expect(screen.getByRole('button', { name: 'Filters, 1 active' })).toBeInTheDocument();
+  });
+
+  it('searches at once on Enter and on clearing', () => {
+    vi.useFakeTimers();
+    const onQueryChange = vi.fn();
+    renderGrid({ enableSearch: true, onQueryChange });
+    clickButton(searchButton());
+
+    fireEvent.change(searchField(), { target: { value: 'washer' } });
+    fireEvent.keyDown(searchField(), { key: 'Enter' });
+
+    const washerIds = idsOfRowsSearchedFor('washer');
+    expect(screen.getByText(`${washerIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenCalledTimes(1);
+    expect(onQueryChange).toHaveBeenLastCalledWith({ ...emptyDataGridQuery, search: 'washer' });
+
+    clickButton(screen.getByRole('button', { name: 'Clear search' }));
+
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    expect(searchField()).toHaveValue('');
+    expect(searchField()).toHaveFocus();
+
+    // Nothing was left waiting to commit afterwards.
+    act(() => vi.advanceTimersByTime(searchDelay * 2));
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('never submits a form the grid sits in on Enter', () => {
+    const onSubmit = vi.fn((event: FormEvent) => event.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <DataGrid<InventoryRow>
+          gridId="search-form-grid"
+          heading="Inventory"
+          rows={makeInventoryRows(rowTotal)}
+          columns={filterableInventoryColumns}
+          getRowId={(row) => row.id}
+          enableSearch
+        />
+      </form>,
+    );
+    clickButton(searchButton());
+    fireEvent.change(searchField(), { target: { value: 'bolt' } });
+    const enter = fireEvent.keyDown(searchField(), { key: 'Enter' });
+
+    expect(enter).toBe(false);
+    const boltIds = idsOfRowsSearchedFor('bolt');
+    expect(screen.getByText(`${boltIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('clears, then closes, on Escape', () => {
+    vi.useFakeTimers();
+    renderGrid({ enableSearch: true });
+    clickButton(searchButton());
+    fireEvent.change(searchField(), { target: { value: 'bolt' } });
+    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    expect(
+      screen.getByText(`${idsOfRowsSearchedFor('bolt').length} of ${rowTotal} rows`),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(searchField(), { key: 'Escape' });
+
+    expect(searchField()).toHaveValue('');
+    expect(searchField()).toHaveFocus();
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+
+    fireEvent.keyDown(searchField(), { key: 'Escape' });
+
+    expect(screen.queryByRole('searchbox', { name: 'Search rows' })).not.toBeInTheDocument();
+    expect(searchButton()).toHaveFocus();
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('never hides an active search', () => {
+    vi.useFakeTimers();
+    const onQueryChange = vi.fn();
+    renderGrid({ enableSearch: true, onQueryChange });
+    clickButton(searchButton());
+    fireEvent.change(searchField(), { target: { value: 'bolt' } });
+    act(() => vi.advanceTimersByTime(searchDelay / 4));
+
+    // The press takes focus from the field first, which commits what it holds.
+    clickButton(searchButton());
+
+    expect(screen.queryByRole('searchbox', { name: 'Search rows' })).not.toBeInTheDocument();
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'false');
+    expect(searchButton()).toHaveFocus();
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
+
+    // Opened again, it starts empty, and closing it with no search reports nothing.
+    clickButton(searchButton());
+    expect(searchField()).toHaveValue('');
+    const reportsSoFar = onQueryChange.mock.calls.length;
+    clickButton(searchButton());
+    expect(onQueryChange).toHaveBeenCalledTimes(reportsSoFar);
+    act(() => vi.advanceTimersByTime(searchDelay * 2));
+    expect(onQueryChange).toHaveBeenCalledTimes(reportsSoFar);
+  });
+
+  it('opens on mount with the initial search, leaving focus where it is', () => {
+    renderGrid({ enableSearch: true, initialQuery: { search: 'washer' } });
+
+    expect(searchField()).toHaveValue('washer');
+    expect(searchField()).not.toHaveFocus();
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'true');
+    const washerIds = idsOfRowsSearchedFor('washer');
+    expect(screen.getByText(`${washerIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('drops a pending search when Clear filters clears the query', () => {
+    vi.useFakeTimers();
+    renderGrid({ enableSearch: true, initialQuery: { search: 'Nothing like this' } });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    act(() => searchField().focus());
+
+    fireEvent.change(searchField(), { target: { value: 'Nothing like this at all' } });
+    act(() => vi.advanceTimersByTime(searchDelay / 3));
+    clickButton(screen.getByRole('button', { name: 'Clear filters' }));
+    act(() => vi.advanceTimersByTime(500));
+
+    expect(searchField()).toHaveValue('');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('offers no search in server mode without onQueryChange', () => {
+    const { rerender } = renderGrid({ mode: 'server', enableSearch: true, onRefresh: vi.fn() });
+
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+
+    rerender(
+      <DataGrid<InventoryRow>
+        gridId="filter-grid"
+        heading="Inventory"
+        rows={makeInventoryRows(rowTotal)}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        mode="server"
+        enableSearch
+        onQueryChange={vi.fn()}
+      />,
+    );
+
+    expect(searchButton()).toBeInTheDocument();
+  });
+
+  it('offers no search for a read-only query', () => {
+    renderGrid({ enableSearch: true, query: { ...emptyDataGridQuery, search: 'bolt' } });
+
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: 'Search rows' })).not.toBeInTheDocument();
+    const boltIds = idsOfRowsSearchedFor('bolt');
+    expect(screen.getByText(`${boltIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('has no axe violations with the field open', async () => {
+    const user = userEvent.setup();
+    const { container } = renderGrid({ enableSearch: true });
+    await user.click(searchButton());
+    await user.keyboard('bolt');
+
+    expect(screen.getByRole('button', { name: 'Clear search' })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('takes its words from labels', async () => {
+    const user = userEvent.setup();
+    renderGrid({
+      enableSearch: true,
+      labels: { search: 'Buscar', searchField: 'Buscar filas', clearSearch: 'Borrar búsqueda' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    await user.keyboard('bolt');
+
+    expect(screen.getByRole('searchbox', { name: 'Buscar filas' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Borrar búsqueda' })).toBeInTheDocument();
   });
 });
 

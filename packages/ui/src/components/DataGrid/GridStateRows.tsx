@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button } from '../Button/Button';
+import { EmptyState, type EmptyStateProps } from '../EmptyState/EmptyState';
 import { Spinner } from '../Spinner/Spinner';
 import styles from './DataGrid.module.css';
 import type { GetCellProps } from './useGridKeyboard';
@@ -15,6 +16,8 @@ export interface GridStateRowProps {
   replacement?: ReactNode;
   /** For `filteredEmpty`: the button beside the message. Without it the message shows alone. */
   clearFilters?: { label: string; onClick: () => void };
+  /** For `filteredEmpty`: the level of the empty state's heading, below the card's. */
+  headingLevel?: EmptyStateProps['headingLevel'];
   columnCount: number;
   /** The keyboard row of entry 0: the grid's `headRowCount`. The state row sits where it would. */
   firstEntryRow: number;
@@ -22,14 +25,17 @@ export interface GridStateRowProps {
 
 /**
  * The body's only row while it loads, has no rows or shows none: one cell across every column.
- * The live region speaks the message, so the visible copy is hidden from assistive technology;
- * the Clear filters button beside it is not, and stays a tab stop, as the row is no keyboard row.
+ * The live region speaks the message, so the visible copy of the loading and empty states is
+ * hidden from assistive technology. The filtered-empty state is the library's `EmptyState`, whose
+ * message is a heading and stays readable (a hidden heading would be an empty one), with the Clear
+ * filters button as its action; the button stays a tab stop, as the row is no keyboard row.
  */
 export function GridStateRow({
   kind,
   label,
   replacement,
   clearFilters,
+  headingLevel,
   columnCount,
   firstEntryRow,
 }: GridStateRowProps) {
@@ -49,14 +55,18 @@ export function GridStateRow({
     );
   } else {
     content = replacement ?? (
-      <div className={`${styles.state} ${styles.filteredEmpty}`}>
-        <span aria-hidden="true">{label}</span>
-        {clearFilters ? (
-          <Button variant="secondary" size="sm" onClick={clearFilters.onClick}>
-            {clearFilters.label}
-          </Button>
-        ) : null}
-      </div>
+      <EmptyState
+        heading={label}
+        headingLevel={headingLevel}
+        className={styles.filteredEmpty}
+        actions={
+          clearFilters ? (
+            <Button variant="secondary" size="sm" onClick={clearFilters.onClick}>
+              {clearFilters.label}
+            </Button>
+          ) : undefined
+        }
+      />
     );
   }
   return (

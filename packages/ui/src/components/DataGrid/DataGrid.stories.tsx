@@ -243,6 +243,29 @@ export const Filtering: Story = {
   ),
 };
 
+export const Search: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The search button opens a search field; rows narrow 400ms after typing stops, or at once on Enter. `*` stands for any run of characters and `?` for one, so "hex*(2?)" finds the hex bolts of the twentieth to the twenty-fourth batch. Escape clears the field, and closes it once it is empty.',
+      },
+    },
+  },
+  render: () => (
+    <DataGrid<InventoryRow>
+      gridId="inventory-search-story"
+      heading="Inventory with search"
+      rows={filteringRows}
+      columns={filterableInventoryColumns}
+      getRowId={(row) => row.id}
+      selectionMode="multiple"
+      enableSearch
+      maxHeight="25rem"
+    />
+  ),
+};
+
 export const ViewAllLink: Story = {
   parameters: {
     docs: {

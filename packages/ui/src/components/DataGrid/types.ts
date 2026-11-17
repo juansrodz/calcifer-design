@@ -78,7 +78,11 @@ export interface DataGridProps<Row extends RowData> {
    * controlled. Read once, on mount.
    */
   initialSorting?: SortingState;
-  /** Adds the search button to the toolbar. */
+  /**
+   * Adds the search button to the toolbar. It opens a search field before the toolbar, which an
+   * active search (`initialQuery.search`, say) keeps open. Like the filters, it needs
+   * `onQueryChange` in server mode, and it is not offered for a read-only `query`.
+   */
   enableSearch?: boolean;
   enableSorting?: boolean;
   multiSort?: boolean;
@@ -89,8 +93,11 @@ export interface DataGridProps<Row extends RowData> {
    */
   emptyState?: ReactNode;
   /**
-   * Replaces the message shown when filters or search match nothing. It receives the grid's
-   * "clear filters and search" action. The grid announces `labels.filteredEmpty`.
+   * Replaces the message shown when filters or search match nothing (by default an `EmptyState`
+   * headed `labels.filteredEmpty`, with a Clear filters button). It receives the grid's "clear
+   * filters and search" action. The grid announces `labels.filteredEmpty`. A read-only query (a
+   * controlled `query` without `onQueryChange`) cannot be cleared, so the action does nothing
+   * there: offer no button for it then, as the default does not.
    */
   filteredEmptyState?: (clearFilters: () => void) => ReactNode;
   density?: DataGridDensity;

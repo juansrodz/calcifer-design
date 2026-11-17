@@ -92,6 +92,7 @@ export function DataGrid<Row extends RowData>({
   initialQuery,
   query,
   initialSorting,
+  enableSearch = false,
   enableSorting = true,
   multiSort = false,
   density = 'comfortable',
@@ -158,6 +159,12 @@ export function DataGrid<Row extends RowData>({
       }
     },
   });
+  // Search, like the filters, only where the user can change the query.
+  const searching = enableSearch && queryEnabled;
+  // The field shows while the user has it open or a search is active, so an active search is never
+  // hidden. An initial search opens it.
+  const [searchOpen, setSearchOpen] = useState(gridQuery.query.search !== '');
+  const showsSearch = searching && (searchOpen || gridQuery.query.search !== '');
   // The rows of the last commit. A query the app changes is acted on in a layout effect of the
   // render that brings it, and that render may bring the new query's first page as well: the old
   // query's rows are the ones before it. Declared after the query hook, so that its effect reads
@@ -576,6 +583,26 @@ export function DataGrid<Row extends RowData>({
         refreshing={refreshing}
         toolbarLabel={resolvedLabels.toolbar}
         refreshLabel={resolvedLabels.refresh}
+        search={
+          searching
+            ? {
+                open: showsSearch,
+                value: gridQuery.query.search,
+                buttonLabel: resolvedLabels.search,
+                fieldLabel: resolvedLabels.searchField,
+                clearLabel: resolvedLabels.clearSearch,
+                onToggle: () => {
+                  // Closing clears the search; the setter reports nothing when there is none.
+                  if (showsSearch) gridQuery.setSearch('');
+                  setSearchOpen(!showsSearch);
+                },
+                onClose: () => setSearchOpen(false),
+                onSearchChange: gridQuery.setSearch,
+                // A field the user is in stays open, even once its search is cleared.
+                onFieldFocus: () => setSearchOpen(true),
+              }
+            : undefined
+        }
         onToggleFilters={filtering ? () => setFiltersOpen((open) => !open) : undefined}
         filtersOpen={filtersOpen}
         filtersLabel={resolvedLabels.filters(gridQuery.activeCount)}
@@ -659,6 +686,8 @@ export function DataGrid<Row extends RowData>({
                 label={stateLabel}
                 replacement={stateReplacement}
                 clearFilters={clearFiltersButton}
+                // Under the card's heading; the empty state takes levels 2 to 4.
+                headingLevel={headingLevel === 2 ? 3 : 4}
                 columnCount={columnCount}
                 firstEntryRow={headRowCount}
               />

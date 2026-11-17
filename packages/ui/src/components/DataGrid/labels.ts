@@ -1,6 +1,12 @@
 export interface DataGridLabels {
   toolbar: string;
   refresh: string;
+  /** The search button's name; it is pressed while the search field shows. */
+  search: string;
+  /** The search field's name. */
+  searchField: string;
+  /** The search field's clear button. */
+  clearSearch: string;
   /** The filters button's name; the count of active filters and search is in it from 1 up. */
   filters: (activeCount: number) => string;
   /** Names the All / Any switch that says how the column filters combine. */
@@ -39,6 +45,9 @@ const numberFormat = new Intl.NumberFormat('en-US');
 export const defaultDataGridLabels: DataGridLabels = {
   toolbar: 'Grid tools',
   refresh: 'Refresh',
+  search: 'Search',
+  searchField: 'Search rows',
+  clearSearch: 'Clear search',
   filters: (activeCount) => (activeCount === 0 ? 'Filters' : `Filters, ${activeCount} active`),
   matchMode: 'Match filters',
   matchAll: 'All',
