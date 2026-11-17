@@ -149,6 +149,33 @@ export const EmbeddedInABox: Story = {
   ),
 };
 
+/** Text that transitions its colour: the nav links and the segments. */
+function ColourFadingControls() {
+  return (
+    <>
+      <NavMenu
+        orientation="vertical"
+        label="Sections"
+        currentPath="/projects"
+        items={[
+          { href: '/', label: 'Home' },
+          { href: '/projects', label: 'Projects' },
+          { href: '/about', label: 'About' },
+        ]}
+      />
+      <Segmented
+        aria-label="Range"
+        defaultValue="week"
+        options={[
+          { value: 'day', label: 'Day' },
+          { value: 'week', label: 'Week' },
+          { value: 'month', label: 'Month' },
+        ]}
+      />
+    </>
+  );
+}
+
 function ModeSwitchDemo() {
   const [mode, setMode] = useState<ThemeMode>('light');
   const otherMode: ThemeMode = mode === 'light' ? 'dark' : 'light';
@@ -158,25 +185,7 @@ function ModeSwitchDemo() {
         <Button variant="secondary" onClick={() => setMode(otherMode)}>
           Switch to {otherMode}
         </Button>
-        <NavMenu
-          orientation="vertical"
-          label="Sections"
-          currentPath="/projects"
-          items={[
-            { href: '/', label: 'Home' },
-            { href: '/projects', label: 'Projects' },
-            { href: '/about', label: 'About' },
-          ]}
-        />
-        <Segmented
-          aria-label="Range"
-          defaultValue="week"
-          options={[
-            { value: 'day', label: 'Day' },
-            { value: 'week', label: 'Week' },
-            { value: 'month', label: 'Month' },
-          ]}
-        />
+        <ColourFadingControls />
       </div>
     </ThemeScope>
   );
@@ -213,4 +222,19 @@ export const ModeSwitch: Story = {
       await expect(runningColourTransitions).toHaveLength(0);
     }
   },
+};
+
+/**
+ * Unpinned, so the scope follows `<html>`'s `data-theme` and then the OS preference. A change from
+ * either (the toolbar's theme, a host page's own toggle, the OS switching) lands in one frame, as
+ * a change of pin does.
+ */
+export const FollowsThePage: Story = {
+  render: () => (
+    <ThemeScope theme={demoTheme}>
+      <div style={{ display: 'grid', gap: 'var(--space-4)', inlineSize: '15rem' }}>
+        <ColourFadingControls />
+      </div>
+    </ThemeScope>
+  ),
 };

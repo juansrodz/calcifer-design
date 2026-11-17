@@ -46,6 +46,46 @@ export function ThemeScope({ theme, mode, className, children }: ThemeScopeProps
     previousModeRef.current = mode;
     return suppressTransitionsForAFrame(wrapperRef.current);
   }, [mode]);
+  // Unpinned, the mode comes from `<html>`'s `data-theme` and then the OS, which a page changes
+  // without rendering the scope (a host's own toggle, the OS at dusk); the same frame is held for
+  // either. The observer's callback is a microtask after the setter, and the media query's change
+  // event fires in the rendering steps, both before the style recalc the browser paints.
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (mode !== undefined || wrapper === null) {
+      return undefined;
+    }
+    // The latest hold only: it covers the frames of any earlier one still pending.
+    let releaseLatestHold: (() => void) | undefined;
+    const holdForAFrame = () => {
+      const releaseEarlierHold = releaseLatestHold;
+      releaseLatestHold = suppressTransitionsForAFrame(wrapper);
+      releaseEarlierHold?.();
+    };
+    const documentElement = wrapper.ownerDocument.documentElement;
+    const documentThemeObserver = new MutationObserver((records) => {
+      // Rewriting the value it already had changes nothing on the page.
+      if (records[0]?.oldValue !== documentElement.getAttribute('data-theme')) {
+        holdForAFrame();
+      }
+    });
+    documentThemeObserver.observe(documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+      attributeOldValue: true,
+    });
+    // Absent outside a browser (jsdom, for one); `<html>` is still followed there.
+    const colourSchemeQuery =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null;
+    colourSchemeQuery?.addEventListener('change', holdForAFrame);
+    return () => {
+      documentThemeObserver.disconnect();
+      colourSchemeQuery?.removeEventListener('change', holdForAFrame);
+      releaseLatestHold?.();
+    };
+  }, [mode]);
   // Checked through the tokens package's own symbol (L1-13): a theme from a second copy of the
   // package carries a different symbol and is refused like a hand-written object (L1-11).
   if (theme[themeBrand] !== true) {

@@ -11,7 +11,7 @@ import { demoTheme } from './fixtures';
 import { ThemeScope, type ThemeMode } from './ThemeScope';
 import * as stories from './ThemeScope.stories';
 
-const { ModeSwitch } = composeStories(stories);
+const { ModeSwitch, FollowsThePage } = composeStories(stories);
 
 // The frame of a mode change: text that transitions `color` (NavMenu's links, Segmented, the icon
 // buttons) would fade over `--motion-duration-1` while the surface behind it flips at once, a
@@ -28,6 +28,7 @@ function runOneFrame(): void {
 }
 
 beforeEach(() => {
+  document.documentElement.removeAttribute('data-theme');
   queuedFrames = [];
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
     queuedFrames.push(callback);
@@ -49,10 +50,13 @@ function wrapperOf(container: HTMLElement): HTMLElement {
 }
 
 describe('ThemeScope across a mode change', () => {
-  it('the ModeSwitch story has no axe violations', async () => {
+  it.each([
+    ['ModeSwitch', ModeSwitch],
+    ['FollowsThePage', FollowsThePage],
+  ])('the %s story has no axe violations', async (_name, Story) => {
     // NavMenu asks for the desktop width, so its links render inline.
     installMatchMedia(true);
-    render(<ModeSwitch />);
+    render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
   });
 
@@ -144,6 +148,104 @@ describe('ThemeScope across a mode change', () => {
     );
     const wrapper = wrapperOf(container);
     unmount();
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+});
+
+describe('an unpinned ThemeScope across a change of the page’s mode', () => {
+  // Unpinned, the scope's mode comes from `<html>`'s `data-theme` and then the OS, which change
+  // without any render of the scope: a host page's own toggle, or the OS switching at dusk.
+
+  /** Sets `<html>`'s `data-theme` and lets the mutation observers run. */
+  async function setDocumentTheme(theme: ThemeMode): Promise<void> {
+    await act(async () => {
+      document.documentElement.dataset['theme'] = theme;
+      await Promise.resolve();
+    });
+  }
+
+  function renderUnpinned() {
+    return render(
+      <ThemeScope theme={demoTheme}>
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+  }
+
+  it('holds transitions still for the frame in which the OS colour scheme changes', () => {
+    const setPrefersDark = installMatchMedia(false);
+    const { container } = renderUnpinned();
+    const wrapper = wrapperOf(container);
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    act(() => setPrefersDark(true));
+    expect(wrapper).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    act(runOneFrame);
+    act(runOneFrame);
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('holds transitions still for the frame in which <html>’s data-theme changes', async () => {
+    installMatchMedia(false);
+    const { container } = renderUnpinned();
+    const wrapper = wrapperOf(container);
+    await setDocumentTheme('dark');
+    expect(wrapper).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    act(runOneFrame);
+    act(runOneFrame);
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('marks nothing when <html> is given the data-theme it already has', async () => {
+    installMatchMedia(false);
+    document.documentElement.dataset['theme'] = 'dark';
+    const { container } = renderUnpinned();
+    await setDocumentTheme('dark');
+    expect(wrapperOf(container)).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('follows <html> where there is no matchMedia, as in a test environment', async () => {
+    vi.stubGlobal('matchMedia', undefined);
+    const { container } = renderUnpinned();
+    await setDocumentTheme('dark');
+    expect(wrapperOf(container)).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('leaves the page’s mode alone while pinned', async () => {
+    const setPrefersDark = installMatchMedia(false);
+    const { container } = render(
+      <ThemeScope theme={demoTheme} mode="light">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    act(() => setPrefersDark(true));
+    await setDocumentTheme('dark');
+    expect(wrapperOf(container)).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('stops listening once a mode is pinned', async () => {
+    const setPrefersDark = installMatchMedia(false);
+    const { container, rerender } = renderUnpinned();
+    rerender(
+      <ThemeScope theme={demoTheme} mode="dark">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    const wrapper = wrapperOf(container);
+    act(runOneFrame);
+    act(runOneFrame);
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    act(() => setPrefersDark(true));
+    await setDocumentTheme('dark');
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('stops listening when it unmounts', async () => {
+    const setPrefersDark = installMatchMedia(false);
+    const { container, unmount } = renderUnpinned();
+    const wrapper = wrapperOf(container);
+    unmount();
+    act(() => setPrefersDark(true));
+    await setDocumentTheme('dark');
     expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
   });
 });
