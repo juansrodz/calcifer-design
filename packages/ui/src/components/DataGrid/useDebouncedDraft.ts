@@ -58,18 +58,6 @@ export function useDebouncedDraft(
     setDraft(committed);
   }, [committed, cancelPending]);
 
-  // Unmounting commits what is still waiting, so closing a field never loses what was typed in it.
-  useEffect(
-    () => () => {
-      const pending = pendingRef.current;
-      if (!pending) return;
-      clearTimeout(pending.timer);
-      pendingRef.current = null;
-      commitValue(pending.value);
-    },
-    [commitValue],
-  );
-
   const change = useCallback(
     (value: string) => {
       setDraft(value);
@@ -89,6 +77,10 @@ export function useDebouncedDraft(
     cancelPending();
     commitValue(pending.value);
   }, [cancelPending, commitValue]);
+
+  // Unmounting commits what is still waiting, so closing a field never loses what was typed in it.
+  // `flush` keeps its identity for the hook's life, so this runs on unmount only.
+  useEffect(() => flush, [flush]);
 
   const commitNow = useCallback(
     (value: string) => {
