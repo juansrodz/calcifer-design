@@ -1,0 +1,165 @@
+import { composeStories } from '@storybook/react';
+import { act, render } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { useLayoutEffect, useRef } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axeDocument } from '../../../test/axe';
+import { installMatchMedia } from '../../../test/matchMedia';
+import { THEME_CHANGING_ATTRIBUTE } from '../../utils/suppressTransitions';
+import { demoTheme } from './fixtures';
+import { ThemeScope, type ThemeMode } from './ThemeScope';
+import * as stories from './ThemeScope.stories';
+
+const { ModeSwitch } = composeStories(stories);
+
+// The frame of a mode change: text that transitions `color` (NavMenu's links, Segmented, the icon
+// buttons) would fade over `--motion-duration-1` while the surface behind it flips at once, a
+// window of low contrast. jsdom runs no transitions, so this pins that the scope marks itself for
+// that frame and that its sheet holds every transition beneath the mark still; the browser check
+// in the release report measures a NavMenu link's colour in the first frame.
+
+let queuedFrames: FrameRequestCallback[];
+
+function runOneFrame(): void {
+  const callbacks = queuedFrames;
+  queuedFrames = [];
+  for (const callback of callbacks) callback(performance.now());
+}
+
+beforeEach(() => {
+  queuedFrames = [];
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    queuedFrames.push(callback);
+    return queuedFrames.length;
+  });
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+/** The scope's wrapper: the element that carries the theme class and `data-theme`. */
+function wrapperOf(container: HTMLElement): HTMLElement {
+  const wrapper = container.querySelector<HTMLElement>('.theme-demo');
+  if (wrapper === null) throw new Error('no scope wrapper rendered');
+  return wrapper;
+}
+
+describe('ThemeScope across a mode change', () => {
+  it('the ModeSwitch story has no axe violations', async () => {
+    // NavMenu asks for the desktop width, so its links render inline.
+    installMatchMedia(true);
+    render(<ModeSwitch />);
+    expect(await axeDocument()).toHaveNoViolations();
+  });
+
+  it('marks nothing on its first render', () => {
+    const { container } = render(
+      <ThemeScope theme={demoTheme} mode="light">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    expect(wrapperOf(container)).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it.each<[ThemeMode | undefined, ThemeMode | undefined]>([
+    ['light', 'dark'],
+    ['dark', 'light'],
+    ['dark', undefined],
+    [undefined, 'light'],
+  ])('holds transitions still for the frame of %s to %s', (fromMode, toMode) => {
+    const { container, rerender } = render(
+      <ThemeScope theme={demoTheme} mode={fromMode}>
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    rerender(
+      <ThemeScope theme={demoTheme} mode={toMode}>
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    const wrapper = wrapperOf(container);
+    expect(wrapper).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    act(runOneFrame);
+    expect(wrapper).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    act(runOneFrame);
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('has the mark on by the end of the commit that writes the new data-theme', () => {
+    // A child's layout effect runs before the scope's own; one that reads layout would flush
+    // styles before the mark is on. Such a flush starts transitions, and the mark the scope then
+    // sets cancels them: this pins that the mark is on by the end of the same commit.
+    const seen: { theme: string | null; marked: boolean }[] = [];
+    function Probe() {
+      const probeRef = useRef<HTMLSpanElement>(null);
+      useLayoutEffect(() => {
+        const wrapper = probeRef.current?.closest('.theme-demo');
+        queueMicrotask(() => {
+          seen.push({
+            theme: wrapper?.getAttribute('data-theme') ?? null,
+            marked: wrapper?.hasAttribute(THEME_CHANGING_ATTRIBUTE) ?? false,
+          });
+        });
+      });
+      return <span ref={probeRef} />;
+    }
+    const { rerender } = render(
+      <ThemeScope theme={demoTheme} mode="light">
+        <Probe />
+      </ThemeScope>,
+    );
+    rerender(
+      <ThemeScope theme={demoTheme} mode="dark">
+        <Probe />
+      </ThemeScope>,
+    );
+    return Promise.resolve().then(() => {
+      expect(seen.at(-1)).toEqual({ theme: 'dark', marked: true });
+    });
+  });
+
+  it('marks nothing when it re-renders in the same mode', () => {
+    const { container, rerender } = render(
+      <ThemeScope theme={demoTheme} mode="dark">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    rerender(
+      <ThemeScope theme={demoTheme} mode="dark" className="layout">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    expect(wrapperOf(container)).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('drops the mark if it unmounts inside the frame', () => {
+    const { container, rerender, unmount } = render(
+      <ThemeScope theme={demoTheme} mode="light">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    rerender(
+      <ThemeScope theme={demoTheme} mode="dark">
+        <a href="/">Home</a>
+      </ThemeScope>,
+    );
+    const wrapper = wrapperOf(container);
+    unmount();
+    expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+});
+
+describe('the sheet under the mark', () => {
+  const stylesheet = readFileSync(join(import.meta.dirname, 'ThemeScope.module.css'), 'utf-8');
+
+  it('turns every transition in the scope off, its pseudo-elements and portals included', () => {
+    const rule = stylesheet.match(
+      /^\.root\[data-theme-changing\],\n\.root\[data-theme-changing\] \*,\n\.root\[data-theme-changing\] \*::before,\n\.root\[data-theme-changing\] \*::after \{([^}]*)\}/m,
+    );
+    expect(rule?.[1]?.trim()).toBe('transition: none !important;');
+  });
+});
