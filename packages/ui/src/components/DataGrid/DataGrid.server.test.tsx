@@ -232,6 +232,7 @@ describe('server mode', () => {
     // not a width: a width would count toward the table's minimum and keep the grid from shrinking
     // in a flex item or a grid track once it had been measured wide.
     expect(scrollArea()).toContainElement(errorBox);
+    expect(errorBox).toHaveClass('inView');
     expect(scrollArea().style.getPropertyValue('--data-grid-view-inline-size')).toBe('800px');
     expect(errorBox.style.inlineSize).toBe('');
     expect(errorBox).toContainElement(screen.getByRole('button', { name: 'Try again' }));

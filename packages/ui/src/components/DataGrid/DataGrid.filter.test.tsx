@@ -281,6 +281,7 @@ describe('the filtered-empty state', () => {
     // not a width: a width would count toward the table's minimum and keep the grid from shrinking
     // in a flex item or a grid track once it had been measured wide.
     expect(scrollArea()).toContainElement(stateBox);
+    expect(stateBox).toHaveClass('inView');
     expect(scrollArea().style.getPropertyValue(viewInlineSize)).toBe('800px');
     expect(stateBox.style.inlineSize).toBe('');
   });
