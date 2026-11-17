@@ -61,6 +61,28 @@ describe('suppressTransitionsForAFrame', () => {
     expect(queuedFrames.size).toBe(0);
   });
 
+  it('keeps the mark while a second hold that overlaps the first is still pending', () => {
+    // Two sources on one element (a scope's pin changing while `<html>` changes): the first to
+    // end must not take the mark away from the second.
+    const element = document.createElement('div');
+    suppressTransitionsForAFrame(element);
+    runOneFrame();
+    suppressTransitionsForAFrame(element);
+    runOneFrame();
+    expect(element).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+    runOneFrame();
+    expect(element).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
+  it('counts a release only once, however often it is called', () => {
+    const element = document.createElement('div');
+    const firstRelease = suppressTransitionsForAFrame(element);
+    suppressTransitionsForAFrame(element);
+    firstRelease();
+    firstRelease();
+    expect(element).toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
+  });
+
   it('drops the mark at once when released early, and leaves no frame queued', () => {
     const element = document.createElement('div');
     const release = suppressTransitionsForAFrame(element);
