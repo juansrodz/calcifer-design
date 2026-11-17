@@ -995,6 +995,54 @@ describe('search', () => {
     expect(onQueryChange).toHaveBeenCalledTimes(reportsSoFar);
   });
 
+  /** A grid whose app owns the query, with a button outside it that searches for washers. */
+  function ControlledSearchGrid() {
+    const [query, setQuery] = useState<DataGridQuery>(emptyDataGridQuery);
+    return (
+      <>
+        <button type="button" onClick={() => setQuery({ ...query, search: 'washer' })}>
+          Find washers
+        </button>
+        <DataGrid<InventoryRow>
+          gridId="controlled-search-grid"
+          heading="Inventory"
+          rows={makeInventoryRows(rowTotal)}
+          columns={filterableInventoryColumns}
+          getRowId={(row) => row.id}
+          enableSearch
+          query={query}
+          onQueryChange={setQuery}
+        />
+      </>
+    );
+  }
+
+  it('shows the field for a search the app sets while it is closed', () => {
+    render(<ControlledSearchGrid />);
+    expect(screen.queryByRole('searchbox', { name: 'Search rows' })).not.toBeInTheDocument();
+
+    clickButton(screen.getByRole('button', { name: 'Find washers' }));
+
+    expect(searchField()).toHaveValue('washer');
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'true');
+    const washerIds = idsOfRowsSearchedFor('washer');
+    expect(screen.getByText(`${washerIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+  });
+
+  it('keeps a field the app opened while the user clears it from inside', () => {
+    render(<ControlledSearchGrid />);
+    clickButton(screen.getByRole('button', { name: 'Find washers' }));
+    act(() => searchField().focus());
+
+    // Escape with text clears the search; the field the user is in stays, and keeps focus.
+    fireEvent.keyDown(searchField(), { key: 'Escape' });
+
+    expect(searchField()).toHaveValue('');
+    expect(searchField()).toHaveFocus();
+    expect(searchButton()).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+  });
+
   it('opens on mount with the initial search, leaving focus where it is', () => {
     renderGrid({ enableSearch: true, initialQuery: { search: 'washer' } });
 
