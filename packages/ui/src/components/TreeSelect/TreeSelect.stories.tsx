@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { fn } from 'storybook/test';
 import { Button } from '../Button/Button';
+import { Dialog } from '../Dialog/Dialog';
+import { Field } from '../Field/Field';
 import { Form } from '../Form/Form';
+import { TextInput } from '../TextInput/TextInput';
 import type { TreeItem } from '../Tree/Tree';
 import { TreeSelect, type TreeSelectProps } from './TreeSelect';
 
@@ -92,4 +95,44 @@ export const InForm: Story = {
 export const Dark: Story = {
   globals: { theme: 'dark' },
   args: { defaultValue: 'web', clearable: true },
+};
+
+/** A tree taller than the popup's 24rem cap once its chosen branch is open. */
+const manyTeams: TreeItem[] = [
+  ...items,
+  {
+    id: 'people',
+    label: 'People',
+    children: [
+      { id: 'recruiting', label: 'Recruiting' },
+      { id: 'learning', label: 'Learning' },
+      { id: 'benefits', label: 'Benefits' },
+      { id: 'workplace', label: 'Workplace' },
+      { id: 'events', label: 'Events' },
+    ],
+  },
+  { id: 'research', label: 'Research' },
+  { id: 'support', label: 'Support' },
+];
+
+/** Halfway down an end drawer, where neither above nor below has the whole tree's room and the
+    side of the trigger is the scrim: the tree stays above or below and clamps to it. */
+export const InEndDrawer: Story = {
+  args: { defaultValue: 'events', items: manyTeams },
+  render: (args) => (
+    <Dialog heading="Edit the budget" variant="sheet" side="end" defaultOpen>
+      <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+        <Field label="Name">
+          <TextInput defaultValue="Friendsgiving" />
+        </Field>
+        <Field label="Where">
+          <TextInput defaultValue="The Rodriguez house" />
+        </Field>
+        <Field label="Host">
+          <TextInput defaultValue="Sebastian" />
+        </Field>
+        <TreeSelect {...args} />
+      </div>
+    </Dialog>
+  ),
 };
