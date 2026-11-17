@@ -753,6 +753,19 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // Forced colours drop box-shadow, so there the row draws its divider as a border again.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.row \{([^}]*)\}/m,
+    contains: ['border-block-end: 1px solid var(--color-border);'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^ {2}\.row:last-child \{([^}]*)\}/m,
+    contains: ['border-block-end: 0;'],
+    lacks: [],
+  },
+  {
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.row \{([^}]*)\}/m,
     contains: ['transition-property: background-color;'],

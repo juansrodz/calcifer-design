@@ -303,7 +303,7 @@
   /* The row's divider. Each cell draws its share inside its own edge, as the band's cells draw
      their hairlines, so the line falls on the same pixel in every column at any subpixel offset of
      the row, and a pinned cell's surface paints under it rather than over it. The last row's
-     cells draw none, below. */
+     cells draw none, below. Forced colours drop box-shadow, so there the row draws it instead. */
   /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the 1px hairline every border here draws; no token is one */
   box-shadow: inset 0 -1px 0 var(--color-border);
 }
@@ -525,6 +525,18 @@
 /* The last row closes the body, with no divider under it. */
 .row:last-child .cell {
   box-shadow: none;
+}
+
+/* Forced colours drop the cells' box-shadow, so the row draws the divider as a border, which they
+   recolour. Rows have no tint there, so a pinned cell covering it at some offsets costs little. */
+@media (forced-colors: active) {
+  .row {
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .row:last-child {
+    border-block-end: 0;
+  }
 }
 
 /* The text of a highlighted or selected row: the selected tint's own text colour. */
