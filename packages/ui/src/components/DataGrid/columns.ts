@@ -38,6 +38,11 @@ export interface DataGridFilterOption {
   label: string;
 }
 
+/**
+ * A column's filter in the filter strip. Keep a choice filter's `options` the same array across
+ * renders, as the columns themselves must be: a new array rebuilds the list, and a select then
+ * drops the text the user is typing in it.
+ */
 export type DataGridColumnFilter =
   | { type: 'text' }
   | { type: 'select'; options: readonly DataGridFilterOption[] }
