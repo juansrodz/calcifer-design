@@ -967,6 +967,21 @@ describe('search', () => {
     expect(searchButton()).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('keeps the Escape that closes the field from anything around the grid', () => {
+    // Above React's root, as a dialog's or a page's own key handling would be.
+    const onAncestorKeyDown = vi.fn();
+    document.body.addEventListener('keydown', onAncestorKeyDown);
+    renderGrid({ enableSearch: true });
+    clickButton(searchButton());
+
+    const escape = fireEvent.keyDown(searchField(), { key: 'Escape' });
+    document.body.removeEventListener('keydown', onAncestorKeyDown);
+
+    expect(screen.queryByRole('searchbox', { name: 'Search rows' })).not.toBeInTheDocument();
+    expect(escape).toBe(false);
+    expect(onAncestorKeyDown).not.toHaveBeenCalled();
+  });
+
   it('never hides an active search', () => {
     vi.useFakeTimers();
     const onQueryChange = vi.fn();
@@ -1067,6 +1082,29 @@ describe('search', () => {
     expect(searchField()).toHaveValue('');
     expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  // The committed search is already empty, so clearing the query leaves it unchanged and the
+  // draft's own reset does not fire: only the commit when focus leaves the field drops the text.
+  it('drops a pending search when Clear filters clears a column filter', () => {
+    vi.useFakeTimers();
+    const onQueryChange = vi.fn();
+    renderGrid({
+      enableSearch: true,
+      initialQuery: { filters: { name: 'Nothing like this' } },
+      onQueryChange,
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
+    clickButton(searchButton());
+
+    fireEvent.change(searchField(), { target: { value: 'bolt' } });
+    act(() => vi.advanceTimersByTime(searchDelay / 3));
+    clickButton(screen.getByRole('button', { name: 'Clear filters' }));
+    act(() => vi.advanceTimersByTime(searchDelay * 2));
+
+    expect(searchField()).toHaveValue('');
+    expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
   });
 
   it('offers no search in server mode without onQueryChange', () => {
