@@ -1335,6 +1335,13 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // The icon that opens the picker shows a pointer, unless the field is disabled.
+    file: 'styles/field.module.css',
+    rule: /^\.affix\[data-icon-opens-picker\]:not\(:has\(> \.affixInput\[data-disabled\]\)\) > \.affixIcon \{([^}]*)\}/m,
+    contains: ['cursor: pointer;'],
+    lacks: [],
+  },
+  {
     file: 'styles/field.module.css',
     rule: /^\.affixInput::placeholder \{([^}]*)\}/m,
     contains: ['color: var(--color-text-subtle);'],

@@ -252,6 +252,13 @@
   height: 1rem;
 }
 
+/* The glyph of a wearer whose icon opens the picker (`TimePicker`) is the picker's button, so it
+   shows a button's pointer over the pill's text cursor. A disabled field's glyph opens nothing and
+   keeps the pill's `not-allowed`. */
+.affix[data-icon-opens-picker]:not(:has(> .affixInput[data-disabled])) > .affixIcon {
+  cursor: pointer;
+}
+
 /* The small control surface a checkbox's box and a radio's dot share: the same input
    background, the same strong border, the same accent fill once checked, the same danger
    border when the field is invalid and the same dimming when it is disabled. `.control` above
