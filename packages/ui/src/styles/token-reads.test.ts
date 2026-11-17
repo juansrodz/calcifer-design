@@ -707,6 +707,44 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
+    // A pressed toggle wears the soft selected pair, as a selected secondary `Button` does.
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^ {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    // The grid's selected and highlighted rows take the soft selected tint and its text colour.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row\[data-highlighted\],\n\.row\[aria-selected='true'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected-soft);'],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row\[data-highlighted\] \.cell,\n\.row\[aria-selected='true'\] \.cell \{([^}]*)\}/m,
+    contains: ['color: var(--color-selected-soft-text);'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row\[data-highlighted\] \.cell\.pinnedCell,\n\.row\[aria-selected='true'\] \.cell\.pinnedCell \{([^}]*)\}/m,
+    contains: ['var(--color-selected-soft)'],
+    lacks: ['--color-accent'],
+  },
+  {
     file: 'components/DatePicker/DatePicker.module.css',
     rule: /^\.day\[aria-selected='true'\] \{([^}]*)\}/m,
     contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],

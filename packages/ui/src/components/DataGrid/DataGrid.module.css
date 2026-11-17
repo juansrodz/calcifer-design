@@ -259,16 +259,18 @@
   cursor: pointer;
 }
 
-/* Highlighted and selected rows share one tint, which deepens on hover. */
+/* Highlighted and selected rows share the selected family's tint, which deepens on hover: the
+   tint over the hover surface. Their text takes the tint's own colour, below the cell rules. */
 .row[data-highlighted],
 .row[aria-selected='true'] {
-  background: var(--color-accent-wash);
+  background: var(--color-selected-soft);
 }
 
 @media (hover: hover) {
   .row[data-highlighted]:hover,
   .row[aria-selected='true']:hover {
-    background: var(--color-accent-soft);
+    background-color: var(--color-surface-2);
+    background-image: linear-gradient(var(--color-selected-soft), var(--color-selected-soft));
   }
 }
 
@@ -345,13 +347,15 @@
 
 .row[data-highlighted] .cell.pinnedCell,
 .row[aria-selected='true'] .cell.pinnedCell {
-  background-image: linear-gradient(var(--color-accent-wash), var(--color-accent-wash));
+  background-image: linear-gradient(var(--color-selected-soft), var(--color-selected-soft));
 }
 
 @media (hover: hover) {
   .row[data-highlighted]:hover .cell.pinnedCell,
   .row[aria-selected='true']:hover .cell.pinnedCell {
-    background-image: linear-gradient(var(--color-accent-soft), var(--color-accent-soft));
+    background-image:
+      linear-gradient(var(--color-selected-soft), var(--color-selected-soft)),
+      linear-gradient(var(--color-surface-2), var(--color-surface-2));
   }
 }
 
@@ -508,6 +512,12 @@
 .errorCell:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+/* The text of a highlighted or selected row: the selected tint's own text colour. */
+.row[data-highlighted] .cell,
+.row[aria-selected='true'] .cell {
+  color: var(--color-selected-soft-text);
 }
 
 /*

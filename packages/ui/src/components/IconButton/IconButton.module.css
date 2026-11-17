@@ -45,11 +45,12 @@
   box-shadow: var(--icon-button-shadow, none);
 }
 
-/* A toggle that is on, in every variant. It sits after the variants so it wins over them, and its
-   hover rule below keeps it from falling back to the variant's own hover colours. */
+/* A toggle that is on, in every variant: the selected family's soft pair, as a selected secondary
+   `Button` wears it. It sits after the variants so it wins over them, and its hover rule below
+   keeps it from falling back to the variant's own hover colours. */
 .root[data-pressed] {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--color-selected-soft);
+  color: var(--color-selected-soft-text);
 }
 
 @media (hover: hover) {
@@ -71,8 +72,8 @@
   }
 
   .root[data-pressed]:hover:not([data-disabled]) {
-    background: var(--color-accent-soft);
-    color: var(--color-accent);
+    background: var(--color-selected-soft);
+    color: var(--color-selected-soft-text);
   }
 }
 
@@ -126,7 +127,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The primary button is already accent-coloured, so the badge swaps its pair to stay visible. */
+/* The primary button is already accent-coloured, so the badge swaps its pair to stay visible; a
+   pressed one wears the selected tint, so its badge is the accent again. */
 .root[data-variant='primary'] .badge {
   background: var(--color-accent-text);
   color: var(--color-accent);
@@ -137,7 +139,7 @@
   color: var(--color-accent-text);
 }
 
-/* Forced colours replace the accent tint and so erase the pressed state; system colours survive,
+/* Forced colours replace the selected tint and so erase the pressed state; system colours survive,
    as in Segmented. `forced-color-adjust: none` because Chromium otherwise paints its Canvas
    backplate behind the icon. Last in the file, so that the pressed hover and the primary badge
    rules above do not win back their tokens; the badge takes the same pair the other way round. */
