@@ -5,6 +5,7 @@ import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import a11yStyles from '../../styles/a11y.module.css';
 import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
+import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import type { DataGridFilterOption } from './columns';
 import styles from './DataGrid.module.css';
 
@@ -52,6 +53,7 @@ export function GridChoiceFilter({
   noOptionsLabel,
 }: GridChoiceFilterProps) {
   const summaryId = useId();
+  const container = usePortalContainer();
   // Controlled, so that the key handler knows whether Escape closes the list or leaves the cell.
   const [open, setOpen] = useState(false);
   const { contains } = Combobox.useFilter();
@@ -173,7 +175,7 @@ export function GridChoiceFilter({
           {summary}
         </span>
       ) : null}
-      <Combobox.Portal>
+      <Combobox.Portal container={container}>
         <Combobox.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
           <Combobox.Popup className={popupStyles.surface} data-popup="select">
             <Combobox.Empty className={styles.choiceEmpty}>{noOptionsLabel}</Combobox.Empty>
