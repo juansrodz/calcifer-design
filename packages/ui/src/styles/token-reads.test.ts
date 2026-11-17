@@ -729,6 +729,15 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-border-strong'],
   },
 
+  // Invalid, the box is still unchecked and its boundary still all that marks it, so the error
+  // colour is the opaque danger the tokens hold to 3:1, not the translucent danger border.
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.controlBox\[data-invalid\] \{([^}]*)\}/m,
+    contains: ['border-color: var(--color-danger);'],
+    lacks: ['--color-danger-border'],
+  },
+
   // The navigation colours. The current link's background defaults to `transparent`, so the link
   // looks as it does today until a theme gives it a fill.
   {

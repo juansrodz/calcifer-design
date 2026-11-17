@@ -296,9 +296,11 @@
 
 /* Measured on a checkbox under an invalid field. Inferred for a radio, where
    `RadioRootState extends FieldRootState` gives it the same shape; if that proves wrong the
-   error message below the group is still the signal, and nothing else depends on it. */
+   error message below the group is still the signal, and nothing else depends on it. The opaque
+   danger, not the translucent danger border: an invalid box is usually an unchecked one, known by
+   its boundary alone, and `--color-danger` is the colour the tokens hold to 3:1 (WCAG 1.4.11). */
 .controlBox[data-invalid] {
-  border-color: var(--color-danger-border);
+  border-color: var(--color-danger);
 }
 
 .controlBox[data-disabled] {
