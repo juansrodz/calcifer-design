@@ -29,6 +29,12 @@ const lightColor = {
   accentWash: 'rgba(59, 111, 224, 0.035)',
   border: 'rgba(28, 25, 23, 0.08)',
   borderStrong: 'rgba(28, 25, 23, 0.18)',
+  /**
+   * The boundary of a control known by its outline alone: the unchecked checkbox, the radio. Opaque
+   * so it can be measured: WCAG 1.4.11 asks 3:1, and on the four surfaces `uiContrastPairs` checks
+   * the lowest is 3.54:1 (light, surface2) and 5.35:1 (dark, surface2 and surfaceInput).
+   */
+  borderControl: '#857F79',
   borderAccent: 'rgba(59, 111, 224, 0.28)',
   cardBorder: 'transparent',
   /** The scrim behind a modal dialog. Warm black at 45%, so the page reads as inert, not gone. */
@@ -100,6 +106,7 @@ const darkColor = {
   accentWash: 'rgba(127, 164, 245, 0.05)',
   border: 'rgba(255, 255, 255, 0.08)',
   borderStrong: 'rgba(255, 255, 255, 0.18)',
+  borderControl: '#8A909C',
   borderAccent: 'rgba(127, 164, 245, 0.32)',
   cardBorder: 'rgba(255, 255, 255, 0.08)',
   /** Heavier than the light theme's: a dark surface needs more separation from a dark page. */
@@ -376,6 +383,10 @@ export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
   ['selected', 'surface1'],
   ['selected', 'surfaceRaised'],
   ['tabBarText', 'tabBar'],
+  ['borderControl', 'surface1'],
+  ['borderControl', 'surface2'],
+  ['borderControl', 'surfaceRaised'],
+  ['borderControl', 'surfaceInput'],
 ];
 
 export const tokens = { breakpoint, themes, shared } as const;

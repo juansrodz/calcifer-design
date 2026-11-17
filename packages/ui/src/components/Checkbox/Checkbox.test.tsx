@@ -7,7 +7,7 @@ import fieldStyles from '../../styles/field.module.css';
 import { Checkbox } from './Checkbox';
 import * as stories from './Checkbox.stories';
 
-const { Default, Checked, Indeterminate, Described, Required, WithError, Disabled } =
+const { Default, Checked, Indeterminate, Described, Required, WithError, Disabled, OnRaisedCard } =
   composeStories(stories);
 
 describe('Checkbox', () => {
@@ -19,6 +19,7 @@ describe('Checkbox', () => {
     ['Required', Required],
     ['WithError', WithError],
     ['Disabled', Disabled],
+    ['OnRaisedCard', OnRaisedCard],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();

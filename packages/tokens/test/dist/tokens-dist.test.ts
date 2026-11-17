@@ -40,6 +40,7 @@ describe('@calcifer-design/tokens dist', () => {
       '--color-selected',
       '--size-drawer',
       '--size-close',
+      '--color-border-control',
     ]) {
       expect(css).toContain(`${name}:`);
     }

@@ -1,0 +1,9 @@
+---
+'@calcifer-design/ui': minor
+---
+
+Three accessibility and placement fixes from the redesign's visual checks.
+
+- `DatePicker`: the calendar opens above or below its trigger and never beside it. Before, when neither side had room, as halfway down an end drawer at 1280 × 800, it fell back to the trigger's side, which in a drawer is over the scrim. It now takes the roomier of the two and fits itself to that space, scrolling if it must, as other popups do. Below its trigger the calendar no longer keeps an empty sixth week of room, so a four or five-week month is shorter there; above it the room stays, so the month buttons do not move under the pointer.
+- `Dialog`: the popup carries `aria-modal="true"`. The page behind was already hidden from assistive technology (`aria-hidden`) while the dialog is open, and this is unchanged.
+- `Checkbox` and `RadioGroup` (and the `DataGrid` row checkbox, which shares the rule): the unchecked boundary reads the new `--color-border-control` instead of `--color-border-strong`, and the invalid boundary reads `--color-danger` instead of the translucent `--color-danger-border`. The unchecked boundary reaches WCAG 1.4.11's 3:1 on the surfaces the theme check covers (`surface1`, `surface2`, `surfaceRaised` and `surfaceInput`), and the invalid edge on the ones the check holds `--color-danger` to (`surface1`, `surface2`, `surface3` and `surfaceRaised`); elsewhere, such as the control border on `surface3`, the ratio is not checked. This is a visible change: the empty box and the radio ring are darker in light mode and lighter in dark mode, and an invalid one has a solid red edge. Upgrading: move `@calcifer-design/tokens` to `^0.4.0` together with ui and import its `tokens.css`, which declares `--color-border-control`. A page still on an older `tokens.css` keeps today's faint border, which does not reach 3:1: without the token the border would vanish altogether, so ui falls back to `--color-border-strong`.

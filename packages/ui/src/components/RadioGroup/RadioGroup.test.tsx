@@ -7,7 +7,8 @@ import fieldStyles from '../../styles/field.module.css';
 import { RadioGroup } from './RadioGroup';
 import * as stories from './RadioGroup.stories';
 
-const { Default, Horizontal, Described, Required, WithError, Disabled } = composeStories(stories);
+const { Default, Horizontal, Described, Required, WithError, Disabled, OnRaisedCard } =
+  composeStories(stories);
 
 const options = [
   { value: 'public', label: 'Anyone with the address' },
@@ -23,6 +24,7 @@ describe('RadioGroup', () => {
     ['Required', Required],
     ['WithError', WithError],
     ['Disabled', Disabled],
+    ['OnRaisedCard', OnRaisedCard],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();

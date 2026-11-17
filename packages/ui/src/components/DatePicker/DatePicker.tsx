@@ -222,7 +222,15 @@ export function DatePicker({
       modal="trap-focus"
     >
       <BasePopover.Portal container={container}>
-        <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
+        {/* Above or below, never beside: Base UI's popover default falls back to the trigger's
+            side when neither fits, which in an end drawer is the scrim. Without that fallback the
+            calendar takes the roomier of the two and clamps to it, as every popup here does. */}
+        <BasePopover.Positioner
+          className={popupStyles.layer}
+          align="start"
+          sideOffset={8}
+          collisionAvoidance={{ fallbackAxisSide: 'none' }}
+        >
           <BasePopover.Popup
             className={[popupStyles.surface, styles.popup].join(' ')}
             data-popup="popover"
