@@ -100,7 +100,7 @@ describe('IconButton', () => {
     const { rerender } = render(<Ghost aria-pressed="true" />);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-pressed', 'true');
-    // The accent state follows `pressed` alone.
+    // The selected state follows `pressed` alone.
     expect(button).not.toHaveAttribute('data-pressed');
 
     rerender(<Ghost aria-pressed="true" pressed={false} />);
