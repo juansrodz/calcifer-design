@@ -161,6 +161,11 @@ describe('tokensToCss', () => {
     expect(css).toContain(`--color-selected: ${tokens.themes.dark.color.accent};`);
   });
 
+  it('emits the opaque control border in both themes', () => {
+    expect(css).toContain('--color-border-control: #857F79;');
+    expect(css).toContain('--color-border-control: #8A909C;');
+  });
+
   it('emits a transparent nav selection fill', () => {
     expect(css).toContain('--color-nav-selected: transparent;');
   });
