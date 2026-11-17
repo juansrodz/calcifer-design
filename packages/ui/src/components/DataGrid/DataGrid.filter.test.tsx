@@ -465,6 +465,9 @@ describe('a controlled query', () => {
       />
     );
     const outRows = rows.filter((row) => row.status === 'out');
+    const outNamesDescending = outRows
+      .map((row) => row.name)
+      .sort((first, second) => second.localeCompare(first));
     const { rerender } = render(
       readOnlyGrid({
         ...emptyDataGridQuery,
@@ -473,18 +476,28 @@ describe('a controlled query', () => {
       }),
     );
 
-    // The filter applies, but nothing offers to change the query.
+    // The filter and the sort apply, but nothing offers to change the query.
     expect(screen.getByText(`${outRows.length} of ${rowTotal} rows`)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Filters/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+    const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+    expect(nameHeader).toHaveAttribute('aria-sort', 'descending');
     for (const header of screen.getAllByRole('columnheader')) {
-      expect(header).not.toHaveAttribute('aria-sort');
       expect(header).not.toHaveAttribute('data-sortable');
+      if (header !== nameHeader) expect(header).not.toHaveAttribute('aria-sort');
     }
-    // A header that cannot sort claims no order, so the rows keep theirs.
-    expect(cellTextsOf('Name')).toEqual(outRows.map((row) => row.name));
-    await user.click(screen.getByRole('columnheader', { name: 'Name' }));
-    expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort');
+    expect(cellTextsOf('Name')).toEqual(outNamesDescending);
+
+    // Neither a click nor Enter on a header changes the order.
+    await user.click(nameHeader);
+    expect(nameHeader).toHaveAttribute('aria-sort', 'descending');
+    expect(nameHeader).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(nameHeader).toHaveAttribute('aria-sort', 'descending');
+    expect(cellTextsOf('Name')).toEqual(outNamesDescending);
+    await user.click(screen.getByRole('columnheader', { name: 'SKU' }));
+    expect(screen.getByRole('columnheader', { name: 'SKU' })).not.toHaveAttribute('aria-sort');
+    expect(cellTextsOf('Name')).toEqual(outNamesDescending);
 
     // Filtered to nothing, it says so, with no Clear filters button that would do nothing.
     rerender(

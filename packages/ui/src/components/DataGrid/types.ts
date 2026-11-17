@@ -47,7 +47,7 @@ export interface DataGridProps<Row extends RowData> {
    * The user changed the query: the sort, a filter, the match mode or the search. In client mode it
    * reports the query for the app to keep, for example in the URL; in server mode it is the cue to
    * load the first page of rows for this query. Without it, server mode and a controlled `query`
-   * offer no sorting, filters or search, and their headers carry no `aria-sort`. A text filter
+   * offer no sorting, filters or search; server-mode headers carry no `aria-sort`. A text filter
    * still waiting out its delay when the grid unmounts is committed then, and reported here.
    */
   onQueryChange?: (query: DataGridQuery) => void;
@@ -68,8 +68,9 @@ export interface DataGridProps<Row extends RowData> {
    * change on the query it shows, so a second change made before an asynchronous adoption lands
    * can drop the first. To reject a change, render the grid again with the old query; until it
    * renders, the next change builds on the rejected one. Without `onQueryChange` the query is
-   * read-only: its filters and search apply, but the grid offers no sorting (so its `sorting` does
-   * not apply), no filters button or strip, and no Clear filters button.
+   * read-only: its sort, filters and search apply, and the headers report the sort in `aria-sort`,
+   * but the headers do not sort, and the grid offers no search, no filters button or strip, and no
+   * Clear filters button. In server mode the app sorts, so there the headers claim no sort.
    */
   query?: DataGridQuery;
   /**

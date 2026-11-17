@@ -222,7 +222,8 @@ export function DataGrid<Row extends RowData>({
         typeof updater === 'function' ? updater(gridQuery.query.sorting) : updater,
       ),
     enableRowSelection: (row) => isRowSelectable?.(row.original) ?? true,
-    enableSorting: sortingEnabled,
+    // In client mode a read-only query still sorts the rows; only its headers stop sorting them.
+    enableSorting: serverMode ? sortingEnabled : enableSorting,
     enableMultiSort: multiSort,
     defaultColumn: {
       // Cycle ascending, descending, off for every type; TanStack would start numbers descending.
@@ -323,7 +324,7 @@ export function DataGrid<Row extends RowData>({
     if (event.key !== 'Enter') return;
     if (rowIndex === 0) {
       const column = leafHeaders[columnIndex - columnOffset]?.column;
-      if (column?.getCanSort()) {
+      if (sortingEnabled && column?.getCanSort()) {
         event.preventDefault();
         column.getToggleSortingHandler()?.(event);
       }
@@ -618,6 +619,7 @@ export function DataGrid<Row extends RowData>({
                 headers={headerGroup.headers}
                 columnCount={columnCount}
                 columnOffset={columnOffset}
+                sortable={sortingEnabled}
                 selectAll={
                   selecting
                     ? {
