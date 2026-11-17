@@ -720,6 +720,15 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-selected'],
   },
 
+  // The checkbox's box and the radio's dot are known by their boundary alone, so it reads the
+  // opaque control border, which the tokens hold to 3:1 (WCAG 1.4.11), not the translucent hairline.
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.controlBox \{([^}]*)\}/m,
+    contains: ['border: 1px solid var(--color-border-control);'],
+    lacks: ['--color-border-strong'],
+  },
+
   // The navigation colours. The current link's background defaults to `transparent`, so the link
   // looks as it does today until a theme gives it a fill.
   {

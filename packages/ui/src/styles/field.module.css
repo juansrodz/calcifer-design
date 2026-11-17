@@ -260,7 +260,7 @@
 }
 
 /* The small control surface a checkbox's box and a radio's dot share: the same input
-   background, the same strong border, the same accent fill once checked, the same danger
+   background, the same control border, the same accent fill once checked, the same danger
    border when the field is invalid and the same dimming when it is disabled. `.control` above
    is the same idea at a text field's size; this is it at a control's own. A component
    stylesheet adds only what this rule does not declare — the size, the radius, and the colour
@@ -275,7 +275,10 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border-strong);
+
+  /* The opaque control border, not the hairline the text controls wear: unchecked, the boundary is
+     all that says a control is there, and WCAG 1.4.11 asks 3:1 of it, which the tokens hold. */
+  border: 1px solid var(--color-border-control);
   background: var(--color-surface-input);
   cursor: pointer;
   transition-property: background-color, border-color;
