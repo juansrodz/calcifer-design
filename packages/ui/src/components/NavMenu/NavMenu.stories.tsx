@@ -21,6 +21,22 @@ type Story = StoryObj<typeof meta>;
 export const Desktop: Story = { globals: { viewport: { value: 'desktop' } } };
 export const Mobile: Story = { globals: { viewport: { value: 'mobile' } } };
 
+/**
+ * The sidebar form (`orientation="vertical"`): the links stack and each one spans the width of the
+ * box the nav sits in, here a 15rem column. Desktop only; at mobile width the menu ignores it.
+ */
+export const Vertical: Story = {
+  args: { orientation: 'vertical' },
+  globals: { viewport: { value: 'desktop' } },
+  decorators: [
+    (Story) => (
+      <div style={{ inlineSize: '15rem' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 /** Tabs to the nav at desktop width and checks the first link lands there. */
 export const FocusVisible: Story = {
   globals: { viewport: { value: 'desktop' } },

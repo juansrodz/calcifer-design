@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tokens } from '../src/tokens';
-import type { ColorName, ElevationName, RadiusName, ShadowName } from '../src/tokens';
+import type { ColorName, ElevationName, RadiusName, ShadowName, SizeName } from '../src/tokens';
 
 /**
  * C36: a theme that sets nothing looks exactly like today. Every role Task 1 added defaults to the
@@ -74,6 +74,12 @@ const radiiStandingIn: ReadonlyArray<readonly [RadiusName, RadiusName]> = [
   ['dialog', 'xl'],
 ];
 
+/** The sizes that stand in for no earlier value: each one's own literal. */
+const sizesWithOwnValue: ReadonlyArray<readonly [SizeName, string]> = [
+  /** The dialog close circle, 36 px, the mock's (O-33). */
+  ['close', '2.25rem'],
+];
+
 describe.each(['light', 'dark'] as const)('the %s mode role defaults (C36)', (mode) => {
   const { color, elevation, shadow } = tokens.themes[mode];
 
@@ -93,5 +99,11 @@ describe.each(['light', 'dark'] as const)('the %s mode role defaults (C36)', (mo
 describe('the role radius defaults (C36)', () => {
   it.each(radiiStandingIn)('radius %s defaults to %s', (role, source) => {
     expect(tokens.shared.radius[role]).toBe(tokens.shared.radius[source]);
+  });
+});
+
+describe('the role size defaults', () => {
+  it.each(sizesWithOwnValue)('size %s defaults to its own literal %s', (role, literal) => {
+    expect(tokens.shared.size[role]).toBe(literal);
   });
 });

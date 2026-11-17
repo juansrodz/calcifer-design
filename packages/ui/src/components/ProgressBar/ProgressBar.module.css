@@ -1,0 +1,154 @@
+/* A label row (the label at the start, the value at the end), the track under it, the helper text
+   under that. The fill's colour is a local property, so each status and tone only names a colour
+   once. A `finished` bar's indicator is as wide as its track, and that comes from Base UI's inline
+   width: the component hands it `max`, so no rule here has to fight the inline style.
+
+   `position: relative` on the root is what a hidden label (`visuallyHidden` is absolutely
+   positioned) resolves against, so it stays inside the bar and cannot widen the page. */
+.root {
+  --progress-bar-fill: var(--color-accent);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.root[data-tone='selected'] {
+  --progress-bar-fill: var(--color-selected);
+}
+
+/* Status wins over tone: a finished or failed bar says so in its own colour, whichever tone it was
+   given. Written after the tone rule, with the same specificity. */
+.root[data-status='finished'] {
+  --progress-bar-fill: var(--color-success);
+}
+
+.root[data-status='error'] {
+  --progress-bar-fill: var(--color-danger);
+}
+
+/* `align-items: baseline` keeps the value's smaller or bolder line on the label's. The value takes
+   its own `margin-inline-start: auto` so it stays at the end when the label is hidden and is the
+   row's only box (`space-between` alone would put a lone box at the start). */
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.label,
+.value {
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.label {
+  min-width: 0;
+  font-weight: var(--font-weight-label);
+  overflow-wrap: anywhere;
+}
+
+.value {
+  flex: none;
+  margin-inline-start: auto;
+  font-weight: var(--font-weight-button);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The track clips the indicator, so the slide of an indeterminate bar starts and ends outside it
+   without a scrollbar or a bleed past the rounded ends. Its height is the consumer hook
+   `--progress-bar-track-size`, read here and never declared: 0.5rem by default, 0.25rem at `sm`.
+   The indicator follows it (Base UI's `height: inherit`, or `block-size: 100%` below). */
+.track {
+  position: relative;
+  height: var(--progress-bar-track-size, 0.5rem);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.root[data-size='sm'] .track {
+  height: var(--progress-bar-track-size, 0.25rem);
+}
+
+/* Base UI writes `width: <n>%` and `height: inherit` on a determinate indicator, so only the
+   colour, the shape and the transition are set here. */
+.indicator {
+  border-radius: var(--radius-full);
+  background: var(--progress-bar-fill);
+  transition-property: width;
+  transition-duration: var(--motion-duration-2);
+  transition-timing-function: var(--motion-ease);
+}
+
+/* Indeterminate: Base UI writes no inline style, so the indicator is a 40% segment of its own that
+   slides across. It rests centred (30% in from the start, 30% before the end) and the slide is
+   symmetrical about that rest: `translate` percentages are of the segment's own width, so -175% (70%
+   of the track) puts it fully before the start edge and 175% fully past the end. `translate` is
+   physical and the rest position is the same from either edge, so a right-to-left page draws the
+   same slide with nothing to mirror. */
+.indicator[data-indeterminate] {
+  position: absolute;
+  inset-inline-start: 30%;
+  inline-size: 40%;
+  block-size: 100%;
+  transition: none;
+  animation-name: slide;
+  animation-duration: var(--motion-duration-4);
+  animation-timing-function: var(--motion-ease);
+  animation-iteration-count: infinite;
+}
+
+@keyframes slide {
+  from {
+    translate: -175% 0;
+  }
+
+  to {
+    translate: 175% 0;
+  }
+}
+
+/* `base.css`'s reduced-motion block only shortens an animation to its end frame, and this one's
+   end frame lies off the track, which would read as an empty bar and not as "working". So the
+   slide stops here and the segment stays where it rests: a static centred segment, 40% wide. */
+@media (prefers-reduced-motion: reduce) {
+  .indicator[data-indeterminate] {
+    animation-name: none;
+  }
+}
+
+.helper {
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+}
+
+.root[data-status='error'] .helper {
+  color: var(--color-danger);
+}
+
+/* Forced colours drop every background, so the track would vanish and the fill with it. The track
+   takes an edge in the text colour and the fill the system highlight, and a system colour is the
+   only kind that survives. */
+@media (forced-colors: active) {
+  .track {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+
+  .indicator {
+    forced-color-adjust: none;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: Highlight;
+  }
+}

@@ -1,13 +1,29 @@
 import { Avatar as BaseAvatar } from '@base-ui/react/avatar';
 import a11yStyles from '../../styles/a11y.module.css';
 import styles from './Avatar.module.css';
+import { avatarColorIndex } from './avatarColor';
+
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export interface AvatarProps {
   /** The person or thing this stands for. Used as the image's alt text and as the initials source. */
   name: string;
   src?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: AvatarSize;
   shape?: 'circle' | 'square';
+  /**
+   * A class for the root, joined after the component's own. It is how a consumer sets the two size
+   * hooks, `--avatar-size` and `--avatar-font-size`, for a size the five presets do not draw. Like
+   * any custom property the hooks inherit, so a wrapper that sets `--avatar-size` resizes every
+   * avatar inside it.
+   */
+  className?: string;
+  /**
+   * Colours the box from a seed, a stable id for the person (`avatarColorIndex(colorSeed)`, one of
+   * six theme colours), by writing `data-color` on the root. The colour fills the box behind the
+   * initials, and behind a photo while it loads. Left out, the avatar keeps its neutral fill.
+   */
+  colorSeed?: string;
 }
 
 /** Leading characters by code point, not by UTF-16 code unit. */
@@ -16,8 +32,27 @@ function leadingCharacters(word: string, count: number): string {
 }
 
 /**
+ * The word from its first letter or digit on, so punctuation that leads it is not an initial
+ * ("(Pablo)" reads as "Pablo"). A word with neither, such as an emoji, is kept whole, so its first
+ * code point is still its initial.
+ */
+function fromFirstLetterOrDigit(word: string): string {
+  const start = word.search(/[\p{L}\p{N}]/u);
+  return start === -1 ? word : word.slice(start);
+}
+
+/** A word of punctuation alone ("–", ")"), which names no one, so another word gives the initial. */
+function isPunctuationOnly(word: string): boolean {
+  return /^\p{P}+$/u.test(word);
+}
+
+/**
  * First and last word's initial, upper-cased. A one-word name gives its first two letters, which
- * reads better at these sizes than a lone character.
+ * reads better at these sizes than a lone character. Each chosen word gives its first letter or
+ * digit (`fromFirstLetterOrDigit`), or its first code point when it has neither, so "Dad (Pablo)"
+ * gives "DP", "¿Ñoño? Pérez" "ÑP" and "🎉 Party" "🎉P" (an emoji is not punctuation). A word of
+ * punctuation alone is skipped (`isPunctuationOnly`), so "Juan –" gives "J" and "Dad (Pablo )"
+ * "DP"; a name of nothing but punctuation keeps its marks ("?" gives "?", "- -" gives "--").
  *
  * `slice()` is not used here: it indexes UTF-16 code units, so a name beginning with an emoji or
  * any other astral character yields half a surrogate pair — `'😀 Lovelace'` became `'\ud83dL'`,
@@ -27,23 +62,37 @@ function leadingCharacters(word: string, count: number): string {
  */
 function initialsFrom(name: string): string {
   const words = name.normalize('NFC').trim().split(/\s+/).filter(Boolean);
-  const firstWord = words.at(0);
-  const lastWord = words.at(-1);
-  if (firstWord === undefined || lastWord === undefined) {
+  const wordsThatName = words.filter((word) => !isPunctuationOnly(word));
+  // A name of nothing but punctuation still draws its marks rather than an empty disc.
+  const namingWords = wordsThatName.length === 0 ? words : wordsThatName;
+  const firstWord = namingWords.at(0);
+  if (firstWord === undefined) {
     return '';
   }
+  const first = fromFirstLetterOrDigit(firstWord);
   if (words.length === 1) {
-    return leadingCharacters(firstWord, 2).toUpperCase();
+    return leadingCharacters(first, 2).toUpperCase();
   }
-  return `${leadingCharacters(firstWord, 1)}${leadingCharacters(lastWord, 1)}`.toUpperCase();
+  // A name of several words whose others were all punctuation keeps one initial.
+  const lastWord = namingWords.length > 1 ? namingWords.at(-1) : undefined;
+  const last = lastWord === undefined ? '' : fromFirstLetterOrDigit(lastWord);
+  return `${leadingCharacters(first, 1)}${leadingCharacters(last, 1)}`.toUpperCase();
 }
 
-export function Avatar({ name, src, size = 'md', shape = 'circle' }: AvatarProps) {
+export function Avatar({
+  name,
+  src,
+  size = 'md',
+  shape = 'circle',
+  className,
+  colorSeed,
+}: AvatarProps) {
   return (
     <BaseAvatar.Root
-      className={styles.root}
+      className={[styles.root, className].filter(Boolean).join(' ')}
       data-size={size}
       data-shape={shape}
+      data-color={colorSeed === undefined ? undefined : avatarColorIndex(colorSeed)}
       data-testid="avatar"
     >
       {src !== undefined ? (

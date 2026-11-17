@@ -3,7 +3,8 @@ import { Radio as BaseRadio } from '@base-ui/react/radio';
 import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId, type ReactNode } from 'react';
 import fieldStyles from '../../styles/field.module.css';
-import { FieldMessages, RequiredMark, type FieldFrameProps } from '../Field/Field';
+import type { FieldFrameProps } from '../Field/Field';
+import { GroupFrame } from '../Field/GroupFrame';
 import styles from './RadioGroup.module.css';
 
 export interface RadioOption {
@@ -56,26 +57,15 @@ export function RadioGroup({
 }: RadioGroupProps) {
   const labelId = useId();
   return (
-    <BaseField.Root
-      className={fieldStyles.frame}
+    <GroupFrame
+      labelId={labelId}
+      label={label}
       name={name}
+      description={description}
+      error={error}
+      required={required}
       disabled={disabled}
-      invalid={error !== undefined}
     >
-      {/* Deliberately NOT a `Field.Label`. Measured: a `Field.Label` anywhere in this frame —
-          native or rendered as a span — gives every `Radio.Root` an `aria-labelledby` pointing
-          at it and gives every option the one control id `Field.Root` owns, so every radio ends
-          up named after the group and sharing an id with its siblings. A plain element the
-          group points at with `aria-labelledby` keeps the group named and leaves each option's
-          own name alone. */}
-      {/* Base UI writes `data-disabled` on the parts it owns; this span is hand-rolled, so the
-          skin's `.legend[data-disabled]` rule only fires because the attribute is written here.
-          Without it a disabled form dims five labels and leaves the radio group's at full
-          contrast. The boolean idiom is the library's: `'' : undefined`. */}
-      <span className={fieldStyles.legend} id={labelId} data-disabled={disabled ? '' : undefined}>
-        {label}
-        <RequiredMark when={required} />
-      </span>
       <BaseRadioGroup<string>
         className={fieldStyles.options}
         data-orientation={orientation}
@@ -89,7 +79,8 @@ export function RadioGroup({
       >
         {options.map((option) => (
           // `Field.Item` is what scopes a control id per option. Without it every option's
-          // label and hidden input share one id — the other half of the measurement above.
+          // label and hidden input share one id — the other half of the measurement `GroupFrame`
+          // records.
           <BaseField.Item key={option.value} disabled={option.disabled}>
             <BaseField.Label className={fieldStyles.optionLabel}>
               <BaseRadio.Root
@@ -103,7 +94,6 @@ export function RadioGroup({
           </BaseField.Item>
         ))}
       </BaseRadioGroup>
-      <FieldMessages description={description} error={error} />
-    </BaseField.Root>
+    </GroupFrame>
   );
 }

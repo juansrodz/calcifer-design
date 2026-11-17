@@ -1,5 +1,5 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CalendarIcon } from '../../icons/CalendarIcon';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
@@ -41,6 +41,28 @@ const DEFAULT_LABELS: Omit<DatePickerLabels, 'clear'> = {
   requiredMessage: 'Choose a date.',
   unavailableMessage: 'Choose an available date.',
 };
+
+const DEFAULT_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = { dateStyle: 'medium' };
+
+// The package's `types` carry no Node globals, so the declaration build does not know `process`
+// (`TabBar` records why the literal `process.env.NODE_ENV` is the form to read).
+declare const process: { env: { NODE_ENV?: string } };
+
+/**
+ * The trigger's formatter, or the default one when `Intl` refuses the options: a `TypeError` for
+ * `dateStyle` beside a field such as `weekday`, a `RangeError` for a value it does not know. A
+ * picker never throws over its look; `refused` says so, for the development warning.
+ */
+function triggerFormatter(locale: string | undefined, options: Intl.DateTimeFormatOptions) {
+  try {
+    return { formatter: dateFormatter(locale, options), refused: false };
+  } catch (error) {
+    if (!(error instanceof TypeError || error instanceof RangeError)) {
+      throw error;
+    }
+    return { formatter: dateFormatter(locale, DEFAULT_FORMAT_OPTIONS), refused: true };
+  }
+}
 
 export interface DatePickerProps extends FieldFrameProps {
   /** The visible label, and the start of the trigger's accessible name. */
@@ -89,6 +111,20 @@ export interface DatePickerProps extends FieldFrameProps {
   clearable?: boolean;
   /** Shown on the trigger while nothing is chosen. */
   placeholder?: string;
+  /**
+   * How the chosen date reads on the trigger, in the picker's `locale`: the options of
+   * `Intl.DateTimeFormat`. Defaults to `{ dateStyle: 'medium' }`. The placeholder and the calendar's
+   * own labels do not follow it. The date is a calendar day, so `timeZone` and `calendar` are fixed
+   * (UTC and Gregorian) whatever the options say. `Intl` refuses `dateStyle` beside the individual
+   * fields (`weekday`, `month` and the rest), and a value it does not know: options it refuses fall
+   * back to the default, with a warning in development, so use one or the other.
+   */
+  formatOptions?: Intl.DateTimeFormatOptions;
+  /**
+   * Which end of the trigger the calendar icon sits at. `start` puts it before the date and packs
+   * both to the start; `end` is the trigger as it was.
+   */
+  iconPlacement?: 'start' | 'end';
   /** The words the control says itself, for an app that is not in English. */
   labels?: Partial<DatePickerLabels>;
 }
@@ -115,6 +151,8 @@ export function DatePicker({
   weekStartsOn,
   clearable = false,
   placeholder = 'Choose a date',
+  formatOptions = DEFAULT_FORMAT_OPTIONS,
+  iconPlacement = 'end',
   labels,
 }: DatePickerProps) {
   const gridRef = useRef<HTMLTableElement>(null);
@@ -130,6 +168,17 @@ export function DatePicker({
   const firstWeekday = weekStartsOn ?? weekStartOf(resolvedLocale);
   const earliest = parseIsoDate(min);
   const latest = parseIsoDate(max);
+  // Built on every render, not only once a date is chosen, so refused options warn at once.
+  const { formatter, refused } = triggerFormatter(resolvedLocale, formatOptions);
+  useEffect(() => {
+    // `refused` first, so `process` is read only when there is something to warn about: an app
+    // bundled without a `NODE_ENV` define has no `process` to read.
+    if (refused && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        'DatePicker: Intl.DateTimeFormat refused formatOptions; the default { dateStyle: "medium" } is used instead.',
+      );
+    }
+  }, [refused]);
 
   const commit = (nextValue: string | null) => {
     setHeldValue(nextValue);
@@ -147,12 +196,9 @@ export function DatePicker({
       required={required}
       disabled={disabled}
       value={chosen}
-      valueText={
-        chosen === null
-          ? placeholder
-          : dateFormatter(resolvedLocale, { dateStyle: 'medium' }).format(chosen)
-      }
+      valueText={chosen === null ? placeholder : formatter.format(chosen)}
       icon={<CalendarIcon />}
+      iconPlacement={iconPlacement}
       requiredWord={words.required}
       validate={() => {
         if (chosen === null) {

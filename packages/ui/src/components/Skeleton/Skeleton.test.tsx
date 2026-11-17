@@ -5,7 +5,7 @@ import { axe } from '../../../test/axe';
 import { Skeleton } from './Skeleton';
 import * as stories from './Skeleton.stories';
 
-const { TextLines, OneLine, Block, Circle } = composeStories(stories);
+const { TextLines, OneLine, Block, Circle, RadiusHook } = composeStories(stories);
 
 describe('Skeleton', () => {
   it.each([
@@ -13,6 +13,7 @@ describe('Skeleton', () => {
     ['OneLine', OneLine],
     ['Block', Block],
     ['Circle', Circle],
+    ['RadiusHook', RadiusHook],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();

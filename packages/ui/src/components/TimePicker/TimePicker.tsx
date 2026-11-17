@@ -1,6 +1,5 @@
-import { Input as BaseInput } from '@base-ui/react/input';
-import type { ComponentPropsWithoutRef } from 'react';
-import fieldStyles from '../../styles/field.module.css';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { AffixInput } from '../Field/AffixInput';
 import { useFieldRequired } from '../Field/Field';
 
 export interface TimePickerProps extends Omit<
@@ -30,18 +29,38 @@ export interface TimePickerProps extends Omit<
   max?: string;
   /** The granularity in seconds, as the native attribute has it: 900 is every quarter hour. */
   step?: number;
+  /**
+   * A decorative glyph inside the field, before the time: an icon from your own set, sized to 1rem
+   * and coloured by the text-muted role. The field's label still names the input. It takes the
+   * place of the browser's own picker button, which is hidden, and a press on it opens the picker
+   * where the browser has one; typing a time is unchanged.
+   *
+   * With an icon the visible field is a pill around the input, and the input's own props (`hidden`
+   * and `title` included) reach the inner input, not the pill: size the field from its container.
+   * The pill is a different element from the bare input, so changing `startIcon` between present and
+   * absent remounts the input and loses an uncontrolled value and the focus: decide the icon once,
+   * or control the value.
+   */
+  startIcon?: ReactNode;
 }
 
 /**
  * Goes inside `Field`. The native control is the choice here: it handles locale, 12 or 24-hour
  * entry, the keyboard and mobile wheels, and none of that is worth rebuilding.
  */
-export function TimePicker({ value, defaultValue, onValueChange, ...rest }: TimePickerProps) {
+export function TimePicker({
+  value,
+  defaultValue,
+  onValueChange,
+  startIcon,
+  ...rest
+}: TimePickerProps) {
   const required = useFieldRequired();
   return (
-    <BaseInput
+    <AffixInput
       {...rest}
-      className={fieldStyles.control}
+      startIcon={startIcon}
+      iconOpensPicker
       type="time"
       value={value}
       defaultValue={defaultValue}

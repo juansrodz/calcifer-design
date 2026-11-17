@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { fn } from 'storybook/test';
 import { DatePicker, type DatePickerProps } from './DatePicker';
 
@@ -50,4 +50,51 @@ function ControlledPicker(props: DatePickerProps) {
   return <DatePicker {...props} value={date} onValueChange={setDate} clearable />;
 }
 export const Controlled: Story = { render: (args) => <ControlledPicker {...args} /> };
+/** The date as a longer line, with the calendar glyph leading it, as a form that reads like a sentence has it. */
+export const LeadingIconLongDate: Story = {
+  args: {
+    locale: 'en-US',
+    defaultValue: '2026-02-17',
+    formatOptions: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
+    iconPlacement: 'start',
+  },
+};
+/**
+ * Sets `dir="rtl"` on `<html>` while the story is shown, as an app does for a right-to-left
+ * language, and puts it back after.
+ */
+function DocumentRightToLeft({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousDir = root.getAttribute('dir');
+    root.setAttribute('dir', 'rtl');
+    return () => {
+      if (previousDir === null) root.removeAttribute('dir');
+      else root.setAttribute('dir', previousDir);
+    };
+  }, []);
+  return children;
+}
+/**
+ * `iconPlacement="start"` in a right-to-left page. The direction comes from the document's `dir`
+ * (here `dir="rtl"` on `<html>`), not from `locale`: the field follows the inherited CSS direction,
+ * so the glyph leads at the inline start, on the right, and the calendar's popover, rendered at
+ * the end of the document, turns with it. A `locale` alone formats the date but does not mirror
+ * the field.
+ */
+export const LeadingIconRightToLeft: Story = {
+  args: {
+    locale: 'ar-EG',
+    defaultValue: '2026-02-17',
+    formatOptions: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
+    iconPlacement: 'start',
+  },
+  decorators: [
+    (Story) => (
+      <DocumentRightToLeft>
+        <Story />
+      </DocumentRightToLeft>
+    ),
+  ],
+};
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultValue: '2026-03-08' } };

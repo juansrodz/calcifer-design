@@ -1,0 +1,212 @@
+/* The grid is `minmax(0, 1fr)` so a long word in one card cannot widen its column past the
+   container. The column count is a local property set per `data-columns`, because the
+   `repeat()` count is not something the token lint reads as a value. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--choice-card-columns), minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.grid[data-columns='1'] {
+  --choice-card-columns: 1;
+}
+
+.grid[data-columns='2'] {
+  --choice-card-columns: 2;
+}
+
+/* The card is the `<label>`, so the whole of it is the press target. The card's outline and the
+   ring's hollow circle are inset shadows held in local properties: a `box-shadow` value that
+   starts with `inset` is not one the token lint accepts as a declaration, but it is as a custom
+   property's (the AvatarGroup route). The checked card re-points the outline; the checked ring
+   re-points its own circle.
+
+   The ring's size is named once and read by the ring and by the clearance. The clearance is the
+   room a title with no icon above it leaves at its end for the ring, and it is right only because
+   the ring's `inset-inline-end` equals the card's padding (both `--space-3`): the ring then ends
+   where the title's box ends, so the ring's size plus a `--space-2` gap is all the title yields.
+
+   There is no border: an inset shadow is drawn inside the padding box, so a border (even a
+   transparent one) would hold the empty ring's circle 1 px in, drawing it 2 px smaller than the
+   filled ring, and would leave a pale 1 px halo outside the chosen card's ring and push the
+   content 1 px in. The shadows are flush instead. Forced colours remove every `box-shadow`, so the
+   `forced-colors` block at the end gives each box the 1 px border that is then the only edge left.
+
+   The card fills its grid cell (`flex-grow`, in the `.item` column below), so the cards of a row
+   are one height whichever has the longer line. */
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+.card {
+  --choice-card-ring: inset 0 0 0 1px var(--color-border-strong);
+  --choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);
+  --choice-card-ring-size: 1.125rem;
+  --choice-card-ring-clearance: calc(var(--choice-card-ring-size) + var(--space-2));
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-raised);
+  box-shadow: var(--choice-card-ring);
+  color: var(--color-text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.card[data-checked] {
+  --choice-card-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-selected);
+
+  background: var(--color-selected-soft);
+}
+
+.card[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* The radio is the 18 px ring in the corner, but the card is what a person chose, so the keyboard
+   focus rings the card. `base.css` already draws `:focus-visible` on the ring; where `:has()` is
+   understood that is suppressed (below) and this replaces it, so there is one indicator. A browser
+   without `:has()` keeps the ring's own outline and never loses the focus indicator. */
+.card:has(.ring:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@supports selector(:has(*)) {
+  .ring:focus-visible {
+    outline: none;
+  }
+}
+
+.disc {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.card[data-checked] .disc {
+  background: var(--color-surface-raised);
+  color: var(--color-selected-soft-text);
+}
+
+.disc > svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-heading);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+}
+
+/* The gap under the disc. A card with no icon starts with its title instead, on the row the ring
+   sits in, so that title keeps clear of the ring. */
+.disc + .title {
+  margin-top: var(--space-2);
+}
+
+.title:first-child {
+  padding-inline-end: var(--choice-card-ring-clearance);
+}
+
+.description {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+/* The radio itself, drawn as the ring in the card's corner. Empty it is a hollow circle; the
+   indicator inside it only mounts once chosen. */
+.ring {
+  position: absolute;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--choice-card-ring-size);
+  height: var(--choice-card-ring-size);
+  border-radius: var(--radius-full);
+  box-shadow: var(--choice-card-dot);
+  cursor: inherit;
+}
+
+/* An errored group's rings take the danger border, as `RadioGroup`'s dots do. Before the checked
+   rule below, which has the same specificity: a chosen ring is filled and keeps no circle. */
+.ring[data-invalid] {
+  --choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);
+}
+
+.ring[data-checked] {
+  --choice-card-dot: none;
+
+  background: var(--color-selected);
+  color: var(--color-selected-text);
+}
+
+.mark {
+  display: flex;
+}
+
+.mark > svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
+}
+
+/* Forced colours remove every `box-shadow` and replace the fills, so without an edge of their own
+   the cards and rings would vanish and a chosen card would look like the rest. Each box gets a
+   transparent border here and only here (the browser paints it in the system text colour, and the
+   default look stays flush), and the chosen card's edge and its filled ring take `Highlight`.
+   `forced-color-adjust: none` on the ring because Chromium otherwise paints its Canvas backplate
+   behind the check, and `HighlightText` on that can be unreadable (`Segmented.module.css` has the
+   measurement). A disabled card's text and edge take `GrayText`, the system's own disabled colour,
+   which is the cue there, so the card is not dimmed as well (`opacity: 1`); after the chosen
+   card's rule, so a disabled chosen card reads disabled too while its filled ring still says it is
+   chosen. */
+@media (forced-colors: active) {
+  .card,
+  .ring {
+    border: 1px solid transparent;
+  }
+
+  .card[data-checked] {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: Highlight;
+  }
+
+  .card[data-disabled] {
+    opacity: 1;
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    color: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .ring[data-checked] {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+}

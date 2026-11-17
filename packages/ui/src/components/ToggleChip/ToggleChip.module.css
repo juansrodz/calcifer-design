@@ -1,0 +1,132 @@
+/* A pill that is pressed or not. Unpressed it is a quiet `--color-surface-2` fill; pressed it takes
+   the selected colour pair, which an app re-scopes on a wrapper to recolour one picker (R8). That
+   fill is the one cue every pressed chip carries, so the pair has to hold 4.5:1 for the label and
+   3:1 against the unpressed fill: the token contrast table checks the first, and the second is the
+   gap between `--color-selected` and `--color-surface-2`. A pressed chip of a multiple group adds
+   a check, and `--toggle-chip-pressed-ring` lets an app draw a bold ring round a pressed chip for
+   a group that has no check. `aria-pressed` says the same to a screen reader.
+
+   No 44 px floor (L2-9, the mock's chips are 28 and 36 px): the padding below makes a chip with no
+   icon 32 px tall (one 0.875rem line at 1.15, plus two 0.5rem) and one with the 26 px disc 42 px,
+   both past WCAG 2.5.8's 24 px target, and the row's gap keeps neighbours apart. The keyboard focus
+   ring is `base.css`'s `:focus-visible` outline, drawn round the chip itself and offset past the
+   pressed fill so the two do not merge.
+
+   `max-width` and `overflow-wrap` keep a long label from pushing the row past a phone's width. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-label);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A chip with an icon starts closer to the edge, so the disc sits in the pill's round end. */
+.chip[data-with-icon] {
+  padding-inline-start: var(--space-1);
+}
+
+@media (hover: hover) {
+  .chip:hover:not([data-disabled], [data-pressed]) {
+    background: var(--color-surface-3);
+  }
+}
+
+.chip[data-pressed] {
+  background: var(--color-selected);
+  color: var(--color-selected-text);
+  box-shadow: var(--toggle-chip-pressed-ring, none);
+}
+
+/* An errored group's unpressed chips take the danger ring, as `ChoiceCard`'s rings do; a pressed
+   chip keeps its fill. The group (the frame's `Field.Control`) carries Base UI's `data-invalid`.
+   The ring is an inset shadow held in a local property, for the reason `ChoiceCard.module.css`
+   records, and forced colours drop it with every other shadow, leaving their own edge as it is. */
+.group[data-invalid] .chip:not([data-pressed]) {
+  --toggle-chip-invalid-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);
+
+  box-shadow: var(--toggle-chip-invalid-ring);
+}
+
+/* Forced colours replace the selected fill and so erase the pressed state; system colours
+   survive. `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate
+   behind the text, and `HighlightText` on that can be unreadable.
+
+   They also drop the unpressed chip's fill, and a chip has no border, so it would have no edge at
+   all. A transparent 1 px border declared here and only here is painted in the system text colour;
+   the chip is 2 px larger in forced colours and the default look is untouched. */
+@media (forced-colors: active) {
+  .chip {
+    border: 1px solid transparent;
+  }
+
+  .chip[data-pressed] {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    outline-color: CanvasText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+}
+
+.chip[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Whatever the icon is (a disc of its own, an avatar, an image) is made a 26 px circle. */
+.icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.icon > * {
+  flex: none;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.check {
+  display: inline-flex;
+  flex: none;
+}
+
+.check > svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* The group is a `fieldset` (the frame's `Field.Control`, which `Form` reads and focuses), so the
+   browser's own border, padding and `min-inline-size` are put back to nothing. */
+.group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The row wraps, so eleven chips fall onto more lines on a phone and the page never scrolls
+   sideways. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

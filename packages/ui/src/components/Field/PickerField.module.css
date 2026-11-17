@@ -15,6 +15,14 @@
   cursor: pointer;
 }
 
+/* The icon first: the trigger stops spreading its parts to both ends and packs them to the start,
+   a `--space-2` from the value, the gap `TextInput` and `TimePicker` leave after a leading icon.
+   The attribute makes this rule the stronger one, so it never depends on source order. */
+.trigger[data-icon-placement='start'] {
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
 .value {
   overflow: hidden;
   white-space: nowrap;

@@ -156,6 +156,109 @@
   opacity: 0.55;
 }
 
+/* The affix: a control that is a wrapper rather than the input itself, so a glyph or a button can
+   sit beside the text. The wrapper wears `.control` (the border, the radius, the surface, the
+   floor) together with `.affix`, and the input inside it wears `.affixInput`: borderless,
+   transparent and stretched across what the decorations leave. `SearchField` is the first
+   wearer; `TextInput` and `TimePicker` wear the same pieces (through `AffixInput`) when they are
+   given a leading icon.
+
+   `.affix` adds only `gap` and `cursor`, which `.control` does not declare. A wearer that must
+   change the padding or the floor does it under a two-class selector of its own, for the reason
+   in this file's header: a second single-class rule would tie with `.control`.
+
+   A press on the pill outside the input (the icon, the padding, the gap) focuses the input, so the
+   pointer says text there too. A button inside keeps its own cursor, and a disabled pill's
+   `not-allowed` (below, and `.control[data-disabled]`) out-ranks this. */
+.affix {
+  gap: var(--space-2);
+  cursor: text;
+}
+
+/* The wrapper takes the input's focus, so the ring is drawn once, around the pill, and the input
+   draws none (`.affixInput:focus-visible` below). The accent border is `.control:focus-visible`'s,
+   which a wrapper that is never itself focused cannot match. */
+.affix:has(> .affixInput:focus-visible) {
+  border-color: var(--color-accent);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* `data-invalid` and `data-disabled` are written on the input, not on the wrapper, so the wrapper
+   reads them through `:has`. Each rule repeats the two declarations of `.control[data-invalid]` and
+   `.control[data-disabled]` above, which a bare input wears directly. Both weigh (0,3,0), the ring's
+   weight, and sit after it, so an invalid focused field keeps its danger border here as it does
+   there. `SearchField`'s plain input carries neither attribute, and the pill's own `data-disabled`
+   still reaches `.control[data-disabled]`. */
+.affix:has(> .affixInput[data-invalid]) {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-surface);
+}
+
+.affix:has(> .affixInput[data-disabled]) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* `align-self: stretch` makes the input as tall as the wrapper, so a press above or below its one
+   line of text lands on the input and focuses it, as a bare `.control` input does. */
+.affixInput {
+  flex: 1;
+  align-self: stretch;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* `base.css` draws a ring on every `:focus-visible`, and a bare `.affixInput` would tie with it on
+   specificity, leaving the winner to the consumer's bundle order. The pseudo-class here makes
+   this rule the stronger one whatever the order, so the input never rings inside its own pill.
+   Only where `:has()` is understood, as `ChoiceCard`'s ring: the pill's ring above needs it, so a
+   browser without it keeps the input's own outline and never loses the focus indicator. */
+@supports selector(:has(*)) {
+  .affixInput:focus-visible {
+    outline: none;
+  }
+}
+
+/* A disabled input gets the browser's arrow, which would show inside the pill where the wrapper's
+   `not-allowed` (above) covers the rest; the input says it itself, so the whole pill is one
+   cursor, as a bare `.control[data-disabled]` input is. `:disabled` reaches `SearchField`'s plain
+   input, which carries no `data-disabled`. */
+.affixInput:disabled {
+  cursor: not-allowed;
+}
+
+/* A wearer whose leading icon opens the native picker (`TimePicker`) hides the browser's own
+   picker button, so the field shows one glyph for it, at the start. */
+.affix[data-icon-opens-picker] > .affixInput::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* The input has no `.control` to give it this colour. */
+.affixInput::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.affixIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.affixIcon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* The glyph of a wearer whose icon opens the picker (`TimePicker`) is the picker's button, so it
+   shows a button's pointer over the pill's text cursor. A disabled field's glyph opens nothing and
+   keeps the pill's `not-allowed`. */
+.affix[data-icon-opens-picker]:not(:has(> .affixInput[data-disabled])) > .affixIcon {
+  cursor: pointer;
+}
+
 /* The small control surface a checkbox's box and a radio's dot share: the same input
    background, the same strong border, the same accent fill once checked, the same danger
    border when the field is invalid and the same dimming when it is disabled. `.control` above

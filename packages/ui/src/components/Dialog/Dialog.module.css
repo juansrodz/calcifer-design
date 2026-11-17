@@ -22,22 +22,58 @@
   place-items: center end;
 }
 
+/* The header row centres its children on the cross axis, as the mock's close-circle rows all do: a
+   one-line heading, a `headerStart` tag and the end group (a 44 px "More" button, the 36 px close)
+   share one centre line. A heading that wraps to three lines or more takes the end group to the
+   middle of the block with it; the mock has no such case. */
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
 }
 
+/* The three `--dialog-heading-*` hooks are set by a consumer on a `ThemeScope` (whose portal host
+   holds the popup) or a DOM ancestor of the popup, and never declared here; each defaults to the
+   step this heading always drew (`--text-h3`, the heading tracking, the snug leading), so a dialog
+   with no hook set looks as it did. */
 .heading {
   flex: 1 1 auto;
   min-width: 0;
   color: var(--color-text);
-  font-size: var(--text-h3);
+  font-size: var(--dialog-heading-size, var(--text-h3));
   font-family: var(--font-display);
   font-weight: var(--font-weight-display);
   font-stretch: var(--font-stretch-display);
   text-transform: var(--text-transform-display);
-  line-height: var(--leading-snug);
+  letter-spacing: var(--dialog-heading-tracking, var(--tracking-heading));
+  line-height: var(--dialog-heading-leading, var(--leading-snug));
+}
+
+/* `base.css` tracks `h1` to `h3` only, so an `h4` heading has always drawn with the browser's
+   `normal` tracking. This keeps it there by default, and still lets the hook move it. */
+h4.heading {
+  letter-spacing: var(--dialog-heading-tracking, normal);
+}
+
+/* The end group: whatever the caller puts in `headerEnd`, then the close control. Its auto start
+   margin holds it at the end even when the heading is visually hidden and so leaves the row's
+   flow. Centred, because a 44 px "More" button and the 36 px close circle share the row. */
+.headerEnd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+/* The sheet's grab handle: a bottom sheet's first child, drawn only for that placement. Its size is
+   a consumer hook; the colour is the theme's. */
+.handle {
+  width: var(--sheet-handle-width, 2.5rem);
+  height: var(--sheet-handle-height, 0.3125rem);
+  align-self: center;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--color-sheet-handle);
 }
 
 .description {
@@ -49,11 +85,25 @@
 }
 
 /* The body is the only part that scrolls: the header and footer stay put, which is what makes a
-   long dialog usable on a short viewport. */
+   long dialog usable on a short viewport. Scrolling clips at the body's padding edge, and a focused
+   control at the body's edge draws its ring (the ring width plus its offset) outside the control, so
+   the body pads that much and takes it back as a negative margin: the ring shows, and the content
+   sits exactly where it did. */
 .body {
+  --dialog-body-ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));
+  --dialog-body-ring-reach: calc(var(--dialog-body-ring-room) * -1);
+
   min-height: 0;
+  margin: var(--dialog-body-ring-reach);
+  padding: var(--dialog-body-ring-room);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* A body that overflows is a Tab stop (`Dialog.tsx`). Its ring is drawn inward, inside the ring
+   room above, so the popup's own scroll clip never cuts it and it covers no content. */
+.body:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .footer {
@@ -61,4 +111,22 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+/* A sheet pins its footer: the header, the description and the footer keep their size, the body
+   takes the rest and is the only part that scrolls, and the footer rests at the foot of the sheet
+   (a full-height side panel with a short body) rather than under the last line of content. */
+[data-popup='sheet'] > .header,
+[data-popup='sheet'] > .description,
+[data-popup='sheet'] > .footer {
+  flex: none;
+}
+
+[data-popup='sheet'] > .body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+[data-popup='sheet'] > .footer {
+  margin-top: auto;
 }

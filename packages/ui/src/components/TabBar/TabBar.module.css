@@ -1,0 +1,131 @@
+/* Fixed above the bottom edge, and above a phone's home indicator: the safe-area inset is added to
+   the gap (`0px` where there is none; a unitless `0` would make the `calc()` invalid). The
+   `z-index` is a literal, as in `popup.module.css`, and sits under the popup layers' 50, so an open
+   sheet covers the bar. */
+.root {
+  position: fixed;
+  inset-inline: var(--space-4);
+  inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  z-index: 40;
+}
+
+/* The nav is the root's flex item, so it carries the growth that lets the pill span the bar. */
+.nav {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The pill is 49px high: a 44px link plus 2.5px above and below. The block padding is the one
+   place that measure comes from, so it is declared as a local property (a `calc` of a token is not
+   a value the token lint accepts as a declaration, but it is as a custom property's).
+   `min-width: 0` lets the pill be narrower than its content's natural width, so a short bar (a
+   phone with the action beside the pill) shrinks the current label instead of overflowing; at
+   any width that fits, nothing shrinks and nothing moves. */
+.pill {
+  --tab-bar-pill-padding-block: calc(var(--space-1) * 0.625);
+
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  padding-block: var(--tab-bar-pill-padding-block);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-tab-bar);
+  box-shadow: var(--shadow-tab-bar);
+  list-style: none;
+}
+
+/* The 44px floor is on the item, not only the link: a flex item's automatic minimum is its
+   content's natural width, which for the current item includes the whole label. An explicit floor
+   lets that item give up width to its label, down to the touch target, while the other items
+   (already 44px) stay put. So the pill's smallest width is five targets plus its padding, 228px. */
+.item {
+  min-width: var(--size-touch);
+}
+
+/* The link keeps the 44px target. The current link's fill is its `::before`, so the fill can be
+   smaller than the target: `--tab-bar-current-inset` is how far the fill sits in from the link's
+   top and bottom, (44px - 17px icon) / 2 - 8px = 5.5px, which leaves a 33px fill around the 17px
+   icon. `isolation` keeps the fill's `z-index: -1` inside the link, behind its icon and label but
+   in front of the pill. */
+.link {
+  --tab-bar-current-inset: calc((var(--size-touch) - 1.0625rem) / 2 - var(--space-2));
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-touch);
+  min-width: var(--size-touch);
+  border-radius: var(--radius-full);
+  color: var(--color-tab-bar-text);
+  text-decoration: none;
+}
+
+.link[aria-current='page'] {
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--color-tab-bar-active-text);
+}
+
+/* axe reports the current label as Inconclusive (pseudoContent): it cannot read a pseudo-element's
+   fill. The real contrast check is the `tabBarActiveText` / `tabBarActive` tokens pair. */
+.link[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: var(--tab-bar-current-inset);
+  z-index: -1;
+  border-radius: var(--radius-full);
+  background: var(--color-tab-bar-active);
+  box-shadow: var(--shadow-soft);
+}
+
+.icon {
+  display: inline-flex;
+}
+
+.icon > svg {
+  width: 1.3125rem;
+  height: 1.3125rem;
+}
+
+.link[aria-current='page'] .icon > svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+
+/* The label gives way first when the bar is short: it may shrink below its text and ends in an
+   ellipsis, while the icon (a fixed-size flex item) and the link's 44px floor stay. The fill
+   follows the link, so it keeps wrapping the icon and whatever is left of the label. */
+.label {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-button);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Forced colours drop the pill's fill and shadow and the current link's fill, so the bar would have
+   no edge and the current page only its label. The pill gets a transparent 1 px border here and
+   only here (the browser paints it in the system text colour), and the current link's fill is
+   outlined in `Highlight`. */
+@media (forced-colors: active) {
+  .pill {
+    border: 1px solid transparent;
+  }
+
+  .link[aria-current='page']::before {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    outline: 1px solid Highlight;
+  }
+}

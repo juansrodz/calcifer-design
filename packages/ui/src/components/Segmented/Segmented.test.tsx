@@ -2,8 +2,10 @@ import { composeStories } from '@storybook/react';
 import type { ReactElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { fn } from 'storybook/test';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { axeDocument } from '../../../test/axe';
+import a11yStyles from '../../styles/a11y.module.css';
 import { Segmented } from './Segmented';
 import * as stories from './Segmented.stories';
 
@@ -12,6 +14,10 @@ const {
   Preselected,
   Small,
   WithIcons,
+  WithBadges,
+  IconOnly,
+  Fill,
+  PressedShadow,
   DisabledOption,
   LabelledByHeading,
   ManyOptions,
@@ -38,6 +44,10 @@ describe('Segmented', () => {
     ['Preselected', Preselected],
     ['Small', Small],
     ['WithIcons', WithIcons],
+    ['WithBadges', WithBadges],
+    ['IconOnly', IconOnly],
+    ['Fill', Fill],
+    ['PressedShadow', PressedShadow],
     ['DisabledOption', DisabledOption],
     ['LabelledByHeading', LabelledByHeading],
     ['ManyOptions', ManyOptions],
@@ -479,6 +489,145 @@ describe('Segmented', () => {
       expect(pressedLabels()).toEqual(['All']);
       expect(onValueChange).not.toHaveBeenCalled();
     });
+  });
+
+  describe('a badge', () => {
+    it('is part of the accessible name, after the label and a space', () => {
+      render(<WithBadges />);
+      expect(screen.getByRole('button', { name: 'Going 12' })).toBeInTheDocument();
+      const requests = screen.getByRole('button', { name: 'Requests 2' });
+      expect(requests.textContent).toBe('Requests 2');
+      expect(requests.childNodes).toHaveLength(3);
+      expect(requests.childNodes[0]).toHaveTextContent('Requests');
+      expect(requests.childNodes[1]?.nodeType).toBe(Node.TEXT_NODE);
+      expect(requests.childNodes[1]?.textContent).toBe(' ');
+      expect(requests.childNodes[2]).toHaveTextContent('2');
+    });
+
+    it('wraps a plain count in the badge span', () => {
+      render(<WithBadges />);
+      const going = screen.getByRole('button', { name: 'Going 12' });
+      expect(going.lastElementChild).toHaveClass('badge');
+      expect(going.lastElementChild).toHaveTextContent('12');
+    });
+
+    it('leaves an option with no badge as its bare label', () => {
+      render(<WithBadges />);
+      const declined = screen.getByRole('button', { name: 'Declined' });
+      expect(declined.childNodes).toHaveLength(1);
+      expect(declined.firstChild?.nodeType).toBe(Node.TEXT_NODE);
+    });
+
+    it('renders nothing, not even the space, for an empty badge', () => {
+      render(
+        <Segmented
+          aria-label="Range"
+          options={[
+            { value: 'day', label: 'Day', badge: '' },
+            { value: 'week', label: 'Week', badge: null },
+            { value: 'month', label: 'Month', badge: false },
+          ]}
+        />,
+      );
+      for (const name of ['Day', 'Week', 'Month']) {
+        const button = screen.getByRole('button', { name });
+        expect(button.querySelector('.badge')).toBeNull();
+        expect(button.textContent).toBe(name);
+        expect(button.childNodes).toHaveLength(1);
+      }
+    });
+
+    it('keeps a zero, which is a count', () => {
+      render(<Segmented aria-label="Range" options={[{ value: 'day', label: 'Day', badge: 0 }]} />);
+      expect(screen.getByRole('button', { name: 'Day 0' })).toBeInTheDocument();
+    });
+
+    it('chooses the option when the badge is pressed', async () => {
+      const onValueChange = fn();
+      render(<WithBadges onValueChange={onValueChange} />);
+      expect(screen.getByRole('button', { name: 'Requests 2' })).toHaveAttribute('data-pressed');
+      await userEvent.click(screen.getByText('12'));
+      expect(onValueChange).toHaveBeenCalledWith('going');
+      expect(screen.getByRole('button', { name: 'Going 12' })).toHaveAttribute('data-pressed');
+    });
+  });
+
+  describe('an option with its label hidden', () => {
+    it('is named by its label while only the icon shows', () => {
+      render(<IconOnly />);
+      for (const name of ['Grid view', 'List view']) {
+        const button = screen.getByRole('button', { name });
+        const label = button.querySelector(`.${a11yStyles.visuallyHidden}`);
+        expect(label).toHaveTextContent(name);
+        expect(button.querySelector('svg')).toBeInTheDocument();
+        expect(button.querySelector('svg')?.parentElement).toHaveAttribute('aria-hidden', 'true');
+      }
+    });
+
+    it('is chosen by pressing the icon', async () => {
+      const onValueChange = fn();
+      render(<IconOnly onValueChange={onValueChange} />);
+      const listButton = screen.getByRole('button', { name: 'List view' });
+      const icon = listButton.querySelector('svg');
+      expect(icon).not.toBeNull();
+      await userEvent.click(icon as SVGElement);
+      expect(onValueChange).toHaveBeenCalledTimes(1);
+      expect(onValueChange).toHaveBeenCalledWith('list');
+      expect(listButton).toHaveAttribute('data-pressed');
+    });
+
+    it('keeps the label first in the name when a badge follows it', () => {
+      render(
+        <Segmented
+          aria-label="View"
+          options={[{ value: 'grid', label: 'Grid view', hideLabel: true, badge: 3 }]}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Grid view 3' })).toBeInTheDocument();
+    });
+
+    it('leaves the label visible when there is no icon to show instead', () => {
+      render(
+        <Segmented
+          aria-label="View"
+          options={[{ value: 'grid', label: 'Grid view', hideLabel: true }]}
+        />,
+      );
+      const button = screen.getByRole('button', { name: 'Grid view' });
+      expect(button.querySelector(`.${a11yStyles.visuallyHidden}`)).toBeNull();
+      expect(button.textContent).toBe('Grid view');
+    });
+
+    it('does not hide the label of an option that does not ask', () => {
+      render(<WithIcons />);
+      const done = screen.getByRole('button', { name: 'Done' });
+      expect(done.querySelector(`.${a11yStyles.visuallyHidden}`)).toBeNull();
+    });
+  });
+
+  describe('fill', () => {
+    it('is written on the group root', () => {
+      render(<Fill />);
+      expect(screen.getByRole('group', { name: 'Range' })).toHaveAttribute('data-fill', '');
+    });
+
+    it('is absent from a default group', () => {
+      render(<Default />);
+      expect(screen.getByRole('group', { name: 'Range' })).not.toHaveAttribute('data-fill');
+    });
+
+    it('is absent when fill is false', () => {
+      render(<Segmented aria-label="Range" options={options} fill={false} />);
+      expect(screen.getByRole('group', { name: 'Range' })).not.toHaveAttribute('data-fill');
+    });
+  });
+
+  it('has the PressedShadow story set the consumer hook on a wrapper around the group', () => {
+    const { container } = render(<PressedShadow />);
+    expect(container.querySelector('style')?.textContent).toContain(
+      '--segmented-pressed-shadow: var(--shadow-soft)',
+    );
+    expect(screen.getByRole('button', { name: 'Week' })).toHaveAttribute('data-pressed');
   });
 
   it('keeps an icon out of the accessible name', () => {

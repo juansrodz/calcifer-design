@@ -1,0 +1,67 @@
+/* The pill, the glyph and the input wear the shared affix pieces in `styles/field.module.css`
+   (`.control`, `.affix`, `.affixIcon`, `.affixInput`), so the ring, the placeholder colour and the
+   borderless input live in one place. This file adds only what is a search field's own. */
+
+/* `.control` declares `padding` and `min-height`, and the header of `styles/field.module.css`
+   forbids a single-class component rule from re-declaring them: the two rules tie on specificity
+   and the winner would be the consumer's bundle order (L2-8). Two classes out-rank `.control`
+   whatever the load order, so the box's own measures sit under `.root .box`.
+
+   `padding-block: 0` is what keeps the pill one height: the floor (`--size-touch`) alone sets it,
+   and the clear control, drawn at `--size-close` plus the pill's two 1px borders, fits inside the
+   floor, so its appearing while the first character is typed never grows the pill (PF-8). The
+   floor is the larger of the touch size and the clear circle plus those borders: `--size-close` is
+   in `rem` and `--size-touch` in `px`, so at a larger root font the circle alone could outgrow the
+   floor, and the pill would grow when it appeared. The end padding is small because the clear
+   control brings its own room. */
+.root .box {
+  padding-block: 0;
+  padding-inline: var(--space-4) var(--space-1);
+  min-height: max(var(--size-touch), calc(var(--size-close) + 2px));
+}
+
+/* The same two-class reason (L2-8) and the same floor, for the small pill. */
+.root[data-size='sm'] .box {
+  min-height: max(var(--size-control-sm), calc(var(--size-close) + 2px));
+}
+
+/* The clear control is the shared close circle (`styles/closeCircle.module.css`, O-33, L2-21, PF-8):
+   drawn at `--size-close`, with a 44 px pointer target centred on it. In the md pill that target
+   reaches 4px past the circle into the 8px gap before it and into the pill's end padding after it,
+   so it never covers the input's text, and vertically it fills the pill.
+
+   The small pill is shorter than the 44 px target, so its target stops at the circle's own box.
+   The inset is measured from the circle's padding edge, 1px inside its transparent border, so
+   `-1px` reaches the border edge: a 36px target that always sits inside the pill, whose inside
+   (38px at the default root size) is never smaller than the circle. The rule weighs four classes'
+   worth, over the shared target's three, whichever stylesheet the bundle orders first. */
+.root[data-size='sm'] .clear[data-size]::before {
+  inset-block: -1px;
+}
+
+/* `IconButton`'s ghost hover is `--color-surface-2`, which a theme may also give the input surface
+   (the dark theme does), leaving no circle. Inside the pill the hover is one step further off
+   `--color-surface-input`. Five classes' worth of weight beat the ghost hover's four. */
+@media (hover: hover) {
+  .root .clear[data-size]:hover:not([data-disabled]) {
+    background: var(--color-surface-3);
+  }
+}
+
+/* The keyboard ring would reach 4px past the 36px circle, out of the small pill's 38px inside, so
+   there it is drawn inward, within the circle's own edge. */
+.root[data-size='sm'] .clear:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* The input is the affix input (borderless, transparent, flexing); this adds the body face and
+   takes the browser's own search chrome away: the UA's clear control would sit beside ours. */
+.input {
+  appearance: none;
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+}
+
+.input::-webkit-search-cancel-button {
+  appearance: none;
+}

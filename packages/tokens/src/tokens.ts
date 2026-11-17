@@ -301,6 +301,8 @@ export const shared = {
     drawer: '28rem',
     control: '44px',
     controlSm: '2.5rem',
+    /** The dialog close circle, 36px, the mock's (O-33). */
+    close: '2.25rem',
   },
   measure: '65ch',
   focusRingWidth: '2px',

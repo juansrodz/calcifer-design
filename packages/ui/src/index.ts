@@ -138,3 +138,30 @@ export { ThemeScope } from './components/ThemeScope/ThemeScope';
 export { usePortalContainer } from './components/ThemeScope/PortalContainerContext';
 export type { ThemeScopeProps, ThemeMode } from './components/ThemeScope/ThemeScope';
 export type { PortalContainer } from './components/ThemeScope/PortalContainerContext';
+export type { ButtonTone } from './components/Button/Button';
+export { SearchField } from './components/SearchField/SearchField';
+export type { SearchFieldProps } from './components/SearchField/SearchField';
+export { avatarColorIndex, AVATAR_COLOR_COUNT } from './components/Avatar/avatarColor';
+export type { AvatarColorIndex } from './components/Avatar/avatarColor';
+export type { AvatarSize } from './components/Avatar/Avatar';
+export { Collapsible } from './components/Collapsible/Collapsible';
+export type { CollapsibleProps } from './components/Collapsible/Collapsible';
+export { TabBar } from './components/TabBar/TabBar';
+export type { TabBarProps, TabBarItem } from './components/TabBar/TabBar';
+export { EmptyState } from './components/EmptyState/EmptyState';
+export type { EmptyStateProps } from './components/EmptyState/EmptyState';
+export { AvatarGroup } from './components/AvatarGroup/AvatarGroup';
+export type { AvatarGroupProps, AvatarGroupItem } from './components/AvatarGroup/AvatarGroup';
+export { ChoiceCard } from './components/ChoiceCard/ChoiceCard';
+export type { ChoiceCardProps, ChoiceCardOption } from './components/ChoiceCard/ChoiceCard';
+export { ToggleChip } from './components/ToggleChip/ToggleChip';
+export { ToggleChipGroup } from './components/ToggleChip/ToggleChipGroup';
+export type { ToggleChipProps } from './components/ToggleChip/ToggleChip';
+export type {
+  ToggleChipGroupProps,
+  ToggleChipOption,
+  ToggleChipGroupSingleProps,
+  ToggleChipGroupMultipleProps,
+} from './components/ToggleChip/ToggleChipGroup';
+export { ProgressBar } from './components/ProgressBar/ProgressBar';
+export type { ProgressBarProps } from './components/ProgressBar/ProgressBar';

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { fn } from 'storybook/test';
 import { CheckIcon } from '../../icons/CheckIcon';
+import { Tag } from '../Tag/Tag';
 import { Segmented, type SegmentedOption } from './Segmented';
 
 const options: SegmentedOption[] = [
@@ -9,6 +10,41 @@ const options: SegmentedOption[] = [
   { value: 'week', label: 'Week' },
   { value: 'month', label: 'Month' },
 ];
+
+function GridIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect x="2" y="2" width="5" height="5" rx="1" />
+      <rect x="9" y="2" width="5" height="5" rx="1" />
+      <rect x="2" y="9" width="5" height="5" rx="1" />
+      <rect x="9" y="9" width="5" height="5" rx="1" />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M5 4h8M5 8h8M5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01" />
+    </svg>
+  );
+}
 
 const meta = {
   title: 'Forms/Segmented',
@@ -29,6 +65,67 @@ export const WithIcons: Story = {
       { value: 'done', label: 'Done', icon: <CheckIcon /> },
     ],
   },
+};
+/**
+ * A count after the label: a plain number on Going, an accent pill on Requests (the chosen option,
+ * where the pill is drawn as the option's inverse), a neutral pill on Maybe. The badge is part of
+ * the option's accessible name ("Requests 2").
+ */
+export const WithBadges: Story = {
+  args: {
+    defaultValue: 'requests',
+    options: [
+      { value: 'going', label: 'Going', badge: 12 },
+      { value: 'requests', label: 'Requests', badge: <Tag tone="accent">2</Tag> },
+      { value: 'maybe', label: 'Maybe', badge: <Tag>5</Tag> },
+      { value: 'declined', label: 'Declined' },
+    ],
+  },
+};
+/** The label is still the accessible name; only the icon shows. */
+export const IconOnly: Story = {
+  args: {
+    'aria-label': 'View',
+    options: [
+      { value: 'grid', label: 'Grid view', icon: <GridIcon />, hideLabel: true },
+      { value: 'list', label: 'List view', icon: <ListIcon />, hideLabel: true },
+    ],
+  },
+};
+/** `fill` stretches the group across its row and shares the row between the options. */
+export const Fill: Story = {
+  args: {
+    fill: true,
+    options: [
+      { value: 'going', label: 'Going' },
+      { value: 'not-going', label: 'Not going' },
+    ],
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: '20rem' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+/**
+ * A consumer gives the chosen option a shadow by setting `--segmented-pressed-shadow` on a
+ * `ThemeScope` or another DOM ancestor of the group, which takes no `className`; here a story
+ * stylesheet points it at the soft surface shadow.
+ */
+export const PressedShadow: Story = {
+  args: { defaultValue: 'week' },
+  decorators: [
+    (Story) => (
+      <>
+        <style>{'.pressed-shadow-demo { --segmented-pressed-shadow: var(--shadow-soft); }'}</style>
+        <div className="pressed-shadow-demo">
+          <Story />
+        </div>
+      </>
+    ),
+  ],
 };
 export const DisabledOption: Story = {
   args: {

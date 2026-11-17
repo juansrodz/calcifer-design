@@ -1,0 +1,100 @@
+/* A heading row over a region. The root is a `section`; Base UI writes `data-open` or `data-closed`
+   on it, `data-panel-open` on the trigger and `data-disabled` on both. */
+.root {
+  min-width: 0;
+}
+
+/* The heading is the display role (the four declarations every library heading reads) at the one
+   size hook a consumer may set, `--collapsible-heading-size`, which is read here and never
+   declared. `base.css` tracks only `h1`–`h3`, so every level gets its tracking here: the house
+   heading's (`--tracking-heading`, as `Card` and `Descriptions` read it), never
+   `--tracking-display`. The margin reset repeats `base.css`'s. */
+.heading {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--collapsible-heading-size, var(--text-md));
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-display);
+  font-stretch: var(--font-stretch-display);
+  text-transform: var(--text-transform-display);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-snug);
+}
+
+/* The whole row is the button. It takes the heading's type, so the label and the aside are the
+   heading's; the chevron is quieter (below). */
+.trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: start;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* WCAG 2.5.8 (target size, minimum) asks 24 px. The row is as tall as the heading's line box, about
+   21 px at the default size and less at a smaller hook, and `padding: 0` keeps the visible header
+   at the mock's height, so this pseudo-element widens only the pointer target: it adds the missing
+   height, split above and below, and nothing when the row is already 24 px or more. It is not
+   `--size-touch`: 44 px would reach into the first item of an open panel, over its own target.
+   Between two stacked headings the later one in the DOM wins the seam. The 1.5rem is the WCAG
+   figure, not a design value. */
+.trigger::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: min(0px, calc((100% - 1.5rem) / 2));
+}
+
+/* A disabled row dims what it shows (the label, the aside and the chevron, each a child element),
+   not the button, so an outline drawn round the button keeps its full strength. */
+.trigger[data-disabled] {
+  cursor: not-allowed;
+}
+
+.trigger[data-disabled] > * {
+  opacity: 0.45;
+}
+
+.label {
+  min-width: 0;
+}
+
+/* `margin-inline-start: auto` sends the chevron to the row's end, past the aside. */
+.chevron {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-start: auto;
+  color: var(--color-text-muted);
+  transition-property: transform;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
+}
+
+.chevron > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(180deg);
+}
+
+/* The panel is kept mounted and Base UI writes `hidden` on it while closed, which the user agent's
+   own `display: none` honours. It declares no `display` so that stays true. */
+.panel {
+  padding-block-start: var(--space-3);
+}

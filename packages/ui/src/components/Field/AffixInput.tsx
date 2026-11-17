@@ -1,0 +1,92 @@
+import { Input as BaseInput } from '@base-ui/react/input';
+import { useRef, type MouseEvent, type ReactNode } from 'react';
+import fieldStyles from '../../styles/field.module.css';
+import { focusInputFromPill } from '../../utils/focusInputFromPill';
+
+export interface AffixInputProps extends Omit<BaseInput.Props, 'className' | 'ref'> {
+  /**
+   * A glyph before the text, decorative: the wrapper marks it `aria-hidden`, and the field's label
+   * names the input. Absent (or `null`, `false`), there is no wrapper and the input wears the skin
+   * itself.
+   */
+  startIcon?: ReactNode;
+  /**
+   * With `startIcon`, the browser's own picker button is hidden (the icon sits where it would be
+   * looked for) and a press on the icon opens the picker instead. `TimePicker` asks for it; typing
+   * in the input is unchanged.
+   */
+  iconOpensPicker?: boolean;
+}
+
+/**
+ * The ways `showPicker` refuses: without a user gesture (`NotAllowedError`), on a disabled or
+ * read-only input (`InvalidStateError`), and inside a cross-origin frame (`SecurityError`).
+ */
+const PICKER_REFUSALS: ReadonlySet<string> = new Set([
+  'NotAllowedError',
+  'InvalidStateError',
+  'SecurityError',
+]);
+
+/**
+ * Opens the input's native picker, where the browser has one. A refusal (`PICKER_REFUSALS`) leaves
+ * the press as a plain focus; any other error is thrown on.
+ */
+function showPickerOf(input: HTMLInputElement) {
+  try {
+    input.showPicker?.();
+  } catch (error) {
+    if (!(error instanceof DOMException) || !PICKER_REFUSALS.has(error.name)) {
+      throw error;
+    }
+  }
+}
+
+/**
+ * The `Input` that `TextInput` and `TimePicker` share, with room for a leading icon. Internal: not
+ * exported from `src/index.ts`.
+ *
+ * With an icon, the skin moves to a pill around the icon and the input (`.control` and `.affix`),
+ * and the input drops to `.affixInput`: borderless and stretched across what the icon leaves. Every
+ * other prop reaches the input exactly as it does without an icon, so the surrounding `Field`'s
+ * label, `aria-describedby`, `aria-invalid` and `data-invalid` land on the input and not on the
+ * pill. The pill reads the input's `data-invalid` and `data-disabled` through `:has`, because the
+ * state Base UI writes is on the input.
+ */
+export function AffixInput({ startIcon, iconOpensPicker = false, ...inputProps }: AffixInputProps) {
+  const inputRef = useRef<HTMLElement>(null);
+
+  if (!startIcon) {
+    return <BaseInput {...inputProps} className={fieldStyles.control} />;
+  }
+
+  // A press on the pill focuses the input (`focusInputFromPill`); a press on the icon of a picker
+  // field also opens the picker.
+  function handlePillMouseDown(event: MouseEvent<HTMLDivElement>) {
+    const input = inputRef.current;
+    if (!focusInputFromPill(event, input)) return;
+    if (
+      iconOpensPicker &&
+      input instanceof HTMLInputElement &&
+      event.target instanceof Element &&
+      event.target.closest(`.${fieldStyles.affixIcon}`) !== null
+    ) {
+      showPickerOf(input);
+    }
+  }
+
+  return (
+    // A pointer convenience only: the input inside is the focusable, keyboard-reachable control.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div
+      className={[fieldStyles.control, fieldStyles.affix].join(' ')}
+      data-icon-opens-picker={iconOpensPicker ? '' : undefined}
+      onMouseDown={handlePillMouseDown}
+    >
+      <span className={fieldStyles.affixIcon} aria-hidden="true">
+        {startIcon}
+      </span>
+      <BaseInput {...inputProps} ref={inputRef} className={fieldStyles.affixInput} />
+    </div>
+  );
+}

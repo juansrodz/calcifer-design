@@ -3,6 +3,13 @@
   align-items: center;
 }
 
+/* A sidebar nav may be taller than its links (a grown column); stretching the list down it keeps
+   the links at the top instead of centring them. The wide layout writes the orientation on the nav
+   as well as on the list. */
+.root[data-orientation='vertical'] {
+  align-items: stretch;
+}
+
 .list {
   display: flex;
   align-items: center;
@@ -10,6 +17,16 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* The sidebar form. The attribute rule out-ranks `.list` whatever the order. `flex: 1 1 auto` is for
+   the list's own box: `.root` is a row flex container, so without it the list would shrink to its
+   widest label instead of spanning the sidebar. */
+.list[data-orientation='vertical'] {
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
 }
 
 /* Plain text links, as in the mock: by default (the nav tokens) the current page is set in the
@@ -29,6 +46,11 @@
   transition-property: color;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
+}
+
+/* In the sidebar form each link is as wide as the list. */
+.list[data-orientation='vertical'] .link {
+  display: flex;
 }
 
 .link[aria-current='page'] {

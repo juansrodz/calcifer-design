@@ -41,6 +41,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The group takes its whole row and every option an equal share of it. A zero flex basis, not
+   `auto`, so the shares do not follow the labels' lengths. */
+.root[data-fill] {
+  display: flex;
+  width: 100%;
+}
+
+.root[data-fill] .option {
+  flex: 1 1 0;
+}
+
 /* The same step `Button`'s `sm` takes. */
 .root[data-size='sm'] .option {
   min-height: var(--size-control-sm);
@@ -55,10 +66,14 @@
   }
 }
 
+/* `--segmented-pressed-shadow` is a hook a consumer sets on a `ThemeScope` or another DOM ancestor
+   of the group (which takes no `className`) to lift the chosen option; the library never declares
+   it, and with none set the option stays flat. */
 .option[data-pressed] {
   background: var(--color-selected);
   color: var(--color-selected-text);
   font-weight: var(--font-weight-button);
+  box-shadow: var(--segmented-pressed-shadow, none);
 }
 
 /* Forced colours replace the accent fill and so erase the chosen option; system colours survive.
@@ -88,4 +103,26 @@
 .icon > svg {
   width: 1rem;
   height: 1rem;
+}
+
+/* A count after the label, set apart from it by the option's own `gap`, as in `Button`. The
+   component renders a space between the two for the accessible name; whitespace between flex items
+   is not painted, so the gap is the whole of the distance. */
+.badge {
+  display: inline-flex;
+}
+
+/* A pill inside the chosen option sits on `--color-selected`. Left alone, a `Tag`'s accent wash and
+   hairline (translucent accent) composite to the fill itself and its text, `--color-text`, falls
+   to 2.12:1 in the dark theme, so the pill vanishes. Inside the chosen option's badge the tokens a
+   pill reads are re-pointed to the inverse of the option: the option's text colour as the pill and
+   the fill colour as its text, the same pair the theme already guarantees for the option's own
+   label. A bare count reads none of these and keeps inheriting the option's text colour. */
+.option[data-pressed] .badge {
+  --color-surface-2: var(--color-selected-text);
+  --color-accent-soft: var(--color-selected-text);
+  --color-border: transparent;
+  --color-border-accent: transparent;
+  --color-text: var(--color-selected);
+  --color-text-muted: var(--color-selected);
 }

@@ -51,6 +51,24 @@ const UI_INLINE_PROPERTIES = [
   '--card-list-min-column',
 ] as const;
 
+// Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
+const UI_CONSUMER_HOOK_PROPERTIES = [
+  '--icon-button-shadow',
+  '--segmented-pressed-shadow',
+  '--dialog-heading-size',
+  '--dialog-heading-tracking',
+  '--dialog-heading-leading',
+  '--sheet-handle-width',
+  '--sheet-handle-height',
+  '--skeleton-radius',
+  '--avatar-size',
+  '--avatar-font-size',
+  '--collapsible-heading-size',
+  '--empty-state-heading-size',
+  '--toggle-chip-pressed-ring',
+  '--progress-bar-track-size',
+] as const;
+
 /** Every component source a consumer gets: `.tsx` under `src/components`, minus tests and stories. */
 async function collectComponentSources(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { recursive: true });
@@ -74,6 +92,7 @@ describe('@calcifer-design/ui dist', () => {
       'IconButton',
       'Alert',
       'Avatar',
+      'avatarColorIndex',
       'ErrorBoundary',
       'Popover',
       'Dialog',
@@ -112,9 +131,34 @@ describe('@calcifer-design/ui dist', () => {
       'createDataGridColumnHelper',
       'ThemeScope',
       'usePortalContainer',
+      'SearchField',
+      'Collapsible',
+      'TabBar',
+      'EmptyState',
+      'AvatarGroup',
+      'ChoiceCard',
+      'ToggleChip',
+      'ToggleChipGroup',
+      'ProgressBar',
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
+  });
+
+  // `AVATAR_COLOR_COUNT` is a number, so the function list above cannot hold it. Six is the count
+  // the theme's `avatarFill1` to `avatarFill6` roles define, and `avatarColorIndex` is modulo it.
+  it('exports the avatar colour count from dist/index.js', async () => {
+    const uiModule = (await import(path.join(distRoot, 'index.js'))) as Record<string, unknown>;
+    expect(uiModule['AVATAR_COLOR_COUNT']).toBe(6);
+  });
+
+  // L2-11: `TabBar` warns about its item count behind `process.env.NODE_ENV !== 'production'`,
+  // written as that literal expression because it is the one form a consumer's bundler replaces
+  // at build time. Rslib must leave it alone: a build that resolved it here would bake the
+  // library's own mode into every consumer's bar.
+  it('leaves TabBar’s `process.env.NODE_ENV` for the consumer’s bundler', async () => {
+    const tabBar = await readFile(path.join(distRoot, 'components/TabBar/TabBar.js'), 'utf8');
+    expect(tabBar).toContain('process.env.NODE_ENV');
   });
 
   it('emits per-component stylesheets with the hashed class-name pattern', async () => {
@@ -124,6 +168,10 @@ describe('@calcifer-design/ui dist', () => {
     expect(buttonCss).toBeDefined();
     const css = await readFile(buttonCss ?? '', 'utf8');
     expect(css).toMatch(new RegExp(`\\.${classPrefix}[a-zA-Z][a-zA-Z0-9]*-[A-Za-z0-9_-]{5}\\b`));
+    // The list-row variant (O-21) survives the build, whatever quotes the minifier keeps.
+    expect(css).toMatch(/\[data-variant=['"]?row['"]?\]/);
+    // The pending state (O-22) survives it too.
+    expect(css).toMatch(/\[data-pending\]/);
   });
 
   // R7: the class selectors are read from rule preludes only (the text before each `{` that does
@@ -262,9 +310,9 @@ describe('@calcifer-design/ui dist', () => {
 
   // A `var(--name)` the package never declares resolves to nothing at runtime and fails silently
   // (`--radius-contorl` would). `defined` is every name the tokens' generated sheet declares, every
-  // name any shipped stylesheet declares, and the two lists above. The guard keeps an empty scan
+  // name any shipped stylesheet declares, and the three lists above. The guard keeps an empty scan
   // (a moved dist folder) from passing.
-  it('reads no custom property that the package never declares', async () => {
+  async function readDistCss(): Promise<{ allDistCss: string; defined: Set<string> }> {
     const cssFiles = await collectCssFiles(distRoot);
     expect(cssFiles.length).toBeGreaterThan(5);
     const allDistCss = (await Promise.all(cssFiles.map((file) => readFile(file, 'utf8')))).join(
@@ -275,9 +323,31 @@ describe('@calcifer-design/ui dist', () => {
       ...customPropertyNamesOf(allDistCss),
       ...BASE_UI_RUNTIME_PROPERTIES,
       ...UI_INLINE_PROPERTIES,
+      ...UI_CONSUMER_HOOK_PROPERTIES,
     ]);
+    return { allDistCss, defined };
+  }
+
+  it('reads no custom property that the package never declares', async () => {
+    const { allDistCss, defined } = await readDistCss();
     expect(allDistCss).toContain('var(--');
     expect(findUnknownCustomProperties(allDistCss, defined)).toEqual([]);
+  });
+
+  // The hooks are allowed by name, not by pattern: a misspelt one (`--avatar-sise`) is still an
+  // unknown read, so the allow-list cannot hide the typo it exists to catch.
+  // Each listed hook must also be read somewhere in the shipped CSS: an entry no stylesheet reads
+  // any more (a renamed or removed hook) would otherwise stay on the allow-list unnoticed.
+  it('allows each consumer hook by name and still catches a misspelt one', async () => {
+    const { allDistCss, defined } = await readDistCss();
+    for (const hook of UI_CONSUMER_HOOK_PROPERTIES) {
+      expect(allDistCss, `${hook} is read by no shipped stylesheet`).toMatch(
+        new RegExp(`var\\(\\s*${hook}\\s*[,)]`),
+      );
+    }
+    expect(
+      findUnknownCustomProperties('.probe { inline-size: var(--avatar-sise); }', defined),
+    ).toEqual(['--avatar-sise']);
   });
 
   // L1-13: one brand symbol per page, and it is the tokens package's; a second `Symbol(` here would

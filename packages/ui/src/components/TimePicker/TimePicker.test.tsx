@@ -7,8 +7,19 @@ import { Field } from '../Field/Field';
 import { TimePicker } from './TimePicker';
 import * as stories from './TimePicker.stories';
 
-const { Default, Prefilled, Bounded, Described, Required, Disabled, WithError, Dark } =
-  composeStories(stories);
+const {
+  Default,
+  Prefilled,
+  Bounded,
+  Described,
+  Required,
+  Disabled,
+  WithError,
+  WithStartIcon,
+  StartIconWithError,
+  StartIconDisabled,
+  Dark,
+} = composeStories(stories);
 
 function timeInput(): HTMLInputElement {
   return screen.getByLabelText<HTMLInputElement>('Arrival');
@@ -23,6 +34,9 @@ describe('TimePicker', () => {
     ['Required', Required],
     ['Disabled', Disabled],
     ['WithError', WithError],
+    ['WithStartIcon', WithStartIcon],
+    ['StartIconWithError', StartIconWithError],
+    ['StartIconDisabled', StartIconDisabled],
     ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
@@ -100,5 +114,125 @@ describe('TimePicker', () => {
     render(<WithError />);
     expect(timeInput()).toHaveAttribute('aria-invalid', 'true');
     expect(timeInput()).toHaveAccessibleDescription('Arrive before the doors close.');
+  });
+
+  describe('with a leading icon', () => {
+    it('keeps the native time input and its label, inside a pill after a decorative icon', () => {
+      render(<WithStartIcon />);
+      expect(timeInput()).toHaveAttribute('type', 'time');
+      expect(timeInput()).toHaveClass('affixInput');
+      expect(timeInput()).not.toHaveClass('control');
+      // The Field's `name` still reaches the input, which is what a form submits.
+      expect(timeInput()).toHaveAttribute('name', 'arrival');
+      const pill = timeInput().parentElement;
+      expect(pill).toHaveClass('control', 'affix');
+      const icon = timeInput().previousElementSibling;
+      expect(icon).toBe(pill?.firstElementChild);
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon?.querySelector('svg')).not.toBeNull();
+    });
+
+    it('is a bare input wearing the skin when there is no icon, with no wrapper', () => {
+      render(<Default />);
+      expect(timeInput()).toHaveClass('control');
+      expect(timeInput()).not.toHaveClass('affixInput');
+      expect(timeInput().closest('.affix')).toBeNull();
+    });
+
+    it('keeps the field wiring on the input, the error as it does without an icon', () => {
+      render(
+        <Field label="Arrival" error="Arrive before the doors close.">
+          <TimePicker startIcon={<svg />} />
+        </Field>,
+      );
+      expect(timeInput()).toHaveAttribute('aria-invalid', 'true');
+      expect(timeInput()).toHaveAttribute('data-invalid');
+      expect(timeInput()).toHaveAccessibleDescription('Arrive before the doors close.');
+    });
+
+    it('focuses the input from a press on the icon, the same pill behaviour as TextInput', () => {
+      render(<WithStartIcon />);
+      const icon = timeInput().previousElementSibling;
+      if (icon === null) throw new Error('the pill has no icon');
+      expect(fireEvent.mouseDown(icon)).toBe(false);
+      expect(timeInput()).toHaveFocus();
+    });
+
+    describe('opens the native picker from a press on the icon', () => {
+      function iconOf(input: HTMLInputElement): Element {
+        const icon = input.previousElementSibling;
+        if (icon === null) throw new Error('the pill has no icon');
+        return icon;
+      }
+
+      // React reports an error thrown in an event handler on the window, not to `fireEvent`'s
+      // caller, so a throw is caught there.
+      function windowErrorsDuring(action: () => void): unknown[] {
+        const errors: unknown[] = [];
+        const record = (event: ErrorEvent) => {
+          errors.push(event.error);
+          event.preventDefault();
+        };
+        window.addEventListener('error', record);
+        try {
+          action();
+        } finally {
+          window.removeEventListener('error', record);
+        }
+        return errors;
+      }
+
+      it('calls showPicker, hides the browser’s own button, and leaves other presses alone', () => {
+        render(<WithStartIcon />);
+        const showPicker = vi.fn();
+        timeInput().showPicker = showPicker;
+        expect(timeInput().parentElement).toHaveAttribute('data-icon-opens-picker');
+        fireEvent.mouseDown(timeInput().parentElement as HTMLElement);
+        expect(showPicker).not.toHaveBeenCalled();
+        fireEvent.mouseDown(iconOf(timeInput()).querySelector('svg') as SVGElement);
+        expect(showPicker).toHaveBeenCalledTimes(1);
+        expect(timeInput()).toHaveFocus();
+      });
+
+      it.each(['NotAllowedError', 'InvalidStateError', 'SecurityError'])(
+        'swallows a %s from showPicker and still focuses the input',
+        (errorName) => {
+          render(<WithStartIcon />);
+          timeInput().showPicker = () => {
+            throw new DOMException('refused', errorName);
+          };
+          expect(windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())))).toEqual([]);
+          expect(timeInput()).toHaveFocus();
+        },
+      );
+
+      it('lets any other error from showPicker through', () => {
+        render(<WithStartIcon />);
+        timeInput().showPicker = () => {
+          throw new DOMException('aborted', 'AbortError');
+        };
+        const errors = windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())));
+        expect(errors).toHaveLength(1);
+        expect((errors[0] as DOMException).name).toBe('AbortError');
+      });
+
+      it('does nothing more where the browser has no showPicker', () => {
+        render(<WithStartIcon />);
+        Object.defineProperty(timeInput(), 'showPicker', { value: undefined });
+        expect(windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())))).toEqual([]);
+        expect(timeInput()).toHaveFocus();
+      });
+    });
+
+    it('reports the value as it does without an icon', () => {
+      const onValueChange = vi.fn();
+      render(
+        <Field label="Arrival">
+          <TimePicker startIcon={<svg />} onValueChange={onValueChange} />
+        </Field>,
+      );
+      fireEvent.change(timeInput(), { target: { value: '18:30' } });
+      expect(onValueChange).toHaveBeenCalledWith('18:30');
+    });
   });
 });

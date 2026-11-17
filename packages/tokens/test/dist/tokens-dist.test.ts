@@ -39,6 +39,7 @@ describe('@calcifer-design/tokens dist', () => {
       '--shadow-soft',
       '--color-selected',
       '--size-drawer',
+      '--size-close',
     ]) {
       expect(css).toContain(`${name}:`);
     }

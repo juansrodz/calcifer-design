@@ -45,6 +45,13 @@ const bodyRole = [
 
 const sansFamily = 'font-family: var(--font-sans);';
 
+// Any `border` shorthand declaration: the property name is not preceded by a hyphen, so the longhands
+// and `border-radius` do not match.
+const noBorderShorthand = /(?:^|\s)border\s*:/;
+
+// The band `AvatarGroup` draws around each avatar and around its overflow chip: the one value both
+// rules are pinned to, so a ring on one and not the other cannot pass.
+const avatarGroupRing = '0 0 0 var(--border-width-emphasis) var(--color-avatar-ring)';
 const expectations: ReadonlyArray<Expectation> = [
   // Whole-file rows: every weight in these files is a token now.
   {
@@ -370,13 +377,21 @@ const expectations: ReadonlyArray<Expectation> = [
       'min-height: var(--size-control-sm);',
       'min-width: var(--size-touch);',
     ],
-    lacks: ['2.5rem', '--radius-md', 'min-height: var(--size-touch);'],
+    // Whole-file: the row variant (O-21) reads `--radius-md` and `--size-touch`, so only the
+    // rule-scoped rows below pin each variant's own radius and floor.
+    lacks: ['2.5rem'],
   },
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root \{([^}]*)\}/m,
-    contains: ['min-height: var(--size-control);', 'min-width: var(--size-touch);'],
-    lacks: ['min-height: var(--size-touch);'],
+    // Primary keeps the pill: the whole-file guard on `--radius-md` went with the row variant, so
+    // the base rule pins its own radius here.
+    contains: [
+      'min-height: var(--size-control);',
+      'min-width: var(--size-touch);',
+      'border-radius: var(--radius-full);',
+    ],
+    lacks: ['min-height: var(--size-touch);', '--radius-md'],
   },
   {
     file: 'components/Button/Button.module.css',
@@ -663,9 +678,11 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
+    // No read of the accent pair. The chosen option's badge re-declares `--color-accent-soft` and
+    // `--color-border-accent` for a nested pill (row below), which is a declaration, not a read.
     file: 'components/Segmented/Segmented.module.css',
     contains: [],
-    lacks: ['--color-accent'],
+    lacks: [/var\(--color-accent/],
   },
   {
     // The track and its border: the defaults are the neutrals they replace, and the width stays
@@ -750,7 +767,1662 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: var(--color-scrim-sheet);'],
     lacks: [],
   },
+
+  // `Button`'s tones (plan L2, Task 10). The inverse and selected fills read their colour families
+  // and the inverse primary its own shadow role; a toned fill keeps its colour on hover, so the
+  // two hover rules name the accent tone; the inverse primary's disabled state paints a dimmed fill
+  // and ink (L2-3: the two `color-mix` values live in local custom properties on that rule) in
+  // place of the house 0.45 opacity; and the `lg` size reads the display role (L2-17).
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      'var(--color-inverse)',
+      'var(--color-inverse-soft)',
+      'var(--shadow-action-inverse)',
+      'var(--color-selected-soft)',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      "[data-tone='inverse'][data-disabled]",
+      '--button-inverse-disabled-fill',
+      '--button-inverse-disabled-ink',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      "[data-size='lg']",
+      '--button-lg-padding-inline',
+      'var(--font-display)',
+      'var(--font-stretch-display)',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\]\[data-tone='inverse'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-inverse);',
+      'color: var(--color-inverse-text);',
+      'box-shadow: var(--shadow-action-inverse);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='secondary'\]\[data-tone='inverse'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-inverse-soft);',
+      'color: var(--color-inverse-soft-text);',
+      'border-color: transparent;',
+    ],
+    lacks: ['--color-border-strong'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\]\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='secondary'\]\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'color: var(--color-selected-soft-text);',
+      'border-color: transparent;',
+    ],
+    lacks: ['--color-accent', '--color-border-strong'],
+  },
+  // Forced colours: a chosen primary or secondary keeps a `Highlight` edge, its only cue once the
+  // fills are replaced. The bare `[data-variant]` weighs it (0,4,0), over the selected secondary's
+  // (0,3,0) transparent border, so it does not win by source order alone.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]\[data-variant\]:is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
+  {
+    // The dimmed fill and ink sit inside the `@supports` block, and nothing else in the file mixes a
+    // colour: a browser without `color-mix()` keeps the house 0.45 opacity of `.root[data-disabled]`
+    // instead of an unset fill at full opacity. The regex takes the `@supports` header and the rule
+    // directly inside it, so a rule hoisted out of the block fails to match.
+    file: 'components/Button/Button.module.css',
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{\n {2}\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}\n\}/m,
+    contains: [
+      '--button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);',
+      '--button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);',
+      'opacity: 1;',
+      'background: var(--button-inverse-disabled-fill);',
+      'color: var(--button-inverse-disabled-ink);',
+    ],
+    lacks: ['opacity: 0.45;'],
+  },
+  {
+    // Outside the `@supports` block nothing reads the two disabled properties, and the house
+    // disabled rule keeps its 0.45 opacity for every tone.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: ['--button-inverse-disabled', 'color-mix'],
+  },
+  {
+    // Hover repaints the accent tone only; a toned fill keeps its colour.
+    file: 'components/Button/Button.module.css',
+    contains: [
+      ".root[data-variant='primary'][data-tone='accent']:hover:not([data-disabled])",
+      ".root[data-variant='secondary'][data-tone='accent']:hover:not([data-disabled])",
+    ],
+    lacks: [
+      ".root[data-variant='primary']:hover",
+      ".root[data-variant='secondary']:hover",
+      /\[data-tone='(?:inverse|selected)'\]:hover/,
+    ],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-size='lg'\] \{([^}]*)\}/m,
+    contains: [
+      '--button-lg-padding-inline: calc(var(--space-5) + var(--space-1));',
+      'min-height: 3rem;',
+      'padding: var(--space-2) var(--button-lg-padding-inline);',
+      'font-size: var(--text-lg);',
+      ...displayRole,
+    ],
+    lacks: [anyWeightLiteral, 'var(--font-sans)', 'padding: var(--space-3)'],
+  },
+  {
+    // The label-to-count distance is the button's own `gap`; the badge adds no margin of its own.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.badge \{([^}]*)\}/m,
+    contains: ['display: inline-flex;'],
+    lacks: ['margin'],
+  },
+
+  // `Button`'s list-row variant (plan L2, Task 15; O-21, L2-19). A row is as wide as the box it
+  // sits in, start-aligned, with no fill or border at rest, the 44 px touch floor where R17 lowers
+  // `--size-control` for the other variants, and `--color-surface-2` on hover and press. jsdom
+  // loads no CSS, so these rows are where the full width is pinned; Task 14 measures it.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\] \{([^}]*)\}/m,
+    contains: [
+      'display: flex;',
+      'width: 100%;',
+      'justify-content: flex-start;',
+      'text-align: start;',
+      'white-space: normal;',
+      'min-height: var(--size-touch);',
+      'padding: var(--space-2) var(--space-3);',
+      'border-color: transparent;',
+      'border-radius: var(--radius-md);',
+      'background: transparent;',
+      'color: var(--color-text);',
+    ],
+    lacks: ['--size-control', '--radius-control', '--radius-full', '--color-link'],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\] \.label \{([^}]*)\}/m,
+    contains: ['flex: 1 1 auto;', 'min-width: 0;'],
+    lacks: [],
+  },
+  {
+    // Hover sits inside the `@media (hover: hover)` block (two-space indent); the press is outside
+    // it, so a touch press paints too, and it also drops the 2 % shrink that would move both edges
+    // of a full-width row.
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root\[data-variant='row'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\]:active:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-2);', 'transform: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      "[data-variant='row']:hover:not([data-disabled])",
+      "[data-variant='row']:active:not([data-disabled])",
+      'var(--color-surface-2)',
+      '.endIcon',
+      'var(--color-text-muted)',
+    ],
+    lacks: [],
+  },
+  {
+    // The two icon slots share one rule: a decorative holder that never shrinks and sizes its glyph.
+    // The end icon is pushed to the row's end by the label, and only the row draws it in the muted
+    // ink.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.icon,\n\.endIcon \{([^}]*)\}/m,
+    contains: ['display: inline-flex;', 'flex: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.icon > svg,\n\.endIcon > svg \{([^}]*)\}/m,
+    contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\] \.endIcon \{([^}]*)\}/m,
+    contains: ['color: var(--color-text-muted);'],
+    lacks: [],
+  },
+
+  // `Button`'s leading icon and pending state (plan L2, Task 16; O-22, L2-20). A pending button
+  // keeps the label in the layout and the accessible name, so the label is hidden with `opacity`
+  // and a transparent ink, never `visibility`; the spinner's head reads the accent, which vanishes
+  // on the accent fill, so the primary variant hands it the button's own ink; the pending look
+  // lifts the disabled dimming; and the inverse primary's dimmed fill leaves a pending button
+  // alone. jsdom loads no CSS, so these rows pin it and Task 14 checks the name in the browser.
+  {
+    file: 'components/Button/Button.module.css',
+    contains: ['.icon > svg', '--color-accent: currentcolor', ':not([data-pending])'],
+    lacks: [],
+  },
+  {
+    // One rule for both places the spinner sits: the start slot and the overlay.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\] \.icon,\n\.root\[data-variant='primary'\] \.pendingOverlay \{([^}]*)\}/m,
+    contains: ['--color-accent: currentcolor;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-pending\] \{([^}]*)\}/m,
+    contains: ['position: relative;', 'opacity: 1;', 'cursor: progress;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.pendingOverlay \{([^}]*)\}/m,
+    contains: [
+      'position: absolute;',
+      'inset: 0;',
+      'display: flex;',
+      'align-items: center;',
+      'justify-content: center;',
+      'pointer-events: none;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.pendingOverlay \+ \.label \{([^}]*)\}/m,
+    contains: ['opacity: 0;', 'color: transparent;'],
+    lacks: ['visibility'],
+  },
+  {
+    // The badge and the end icon hide under the spinner too, by opacity: the badge is named.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.pendingOverlay ~ \.badge,\n\.pendingOverlay ~ \.endIcon \{([^}]*)\}/m,
+    contains: ['opacity: 0;'],
+    lacks: ['visibility', 'display'],
+  },
+
+  // `Skeleton`'s radius hook (plan L2, Task 16; O-22): a consumer rounds the text and block bars
+  // through `--skeleton-radius`, each falling back to the step it read before; the circle keeps
+  // the full radius and never reads the hook.
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    contains: [
+      'var(--skeleton-radius, var(--radius-sm))',
+      'var(--skeleton-radius, var(--radius-md))',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['border-radius: var(--skeleton-radius, var(--radius-sm));'],
+    lacks: [],
+  },
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    rule: /^\.root\[data-variant='block'\] \{([^}]*)\}/m,
+    contains: ['border-radius: var(--skeleton-radius, var(--radius-md));'],
+    lacks: [],
+  },
+  {
+    file: 'components/Skeleton/Skeleton.module.css',
+    rule: /^\.root\[data-variant='circle'\] \{([^}]*)\}/m,
+    contains: ['var(--radius-full)'],
+    lacks: ['--skeleton-radius'],
+  },
+
+  // `IconButton`'s `soft` variant: a quiet fill that reads the surface roles, a hover one step up,
+  // the one consumer hook (L2-17, `--icon-button-shadow`, on `soft` only) and the 16 px glyph in
+  // both sizes (L2-12).
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    contains: [
+      "[data-variant='soft']",
+      'var(--color-surface-3)',
+      "[data-variant='soft'] .icon > svg",
+      'var(--icon-button-shadow, none)',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='soft'\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-surface-2);',
+      'color: var(--color-text);',
+      'border-color: transparent;',
+      'box-shadow: var(--icon-button-shadow, none);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='soft'\] \.icon > svg \{([^}]*)\}/m,
+    contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+  {
+    // The hook is read on `soft` alone: the base, secondary and primary rules do not read it (ghost
+    // has no rule of its own beyond its hover).
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--icon-button-shadow'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='secondary'\] \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--icon-button-shadow'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='primary'\] \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--icon-button-shadow'],
+  },
+
+  // `Segmented`'s badge slot (contract §2.2, styled as `Button`'s badge), the full-width group
+  // (L2-17) and the one consumer hook on the chosen option, `--segmented-pressed-shadow`.
+  {
+    // As on `Button`: the option's `gap` spaces the count from the label, the badge adds no margin.
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.badge \{([^}]*)\}/m,
+    contains: ['display: inline-flex;'],
+    lacks: ['margin'],
+  },
+  {
+    // A pill in the chosen option is drawn as the option's inverse: every token a `Tag` reads is
+    // re-pointed to the selected pair, so it stays legible on `--color-selected`.
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-pressed\] \.badge \{([^}]*)\}/m,
+    contains: [
+      '--color-surface-2: var(--color-selected-text);',
+      '--color-accent-soft: var(--color-selected-text);',
+      '--color-border: transparent;',
+      '--color-border-accent: transparent;',
+      '--color-text: var(--color-selected);',
+      '--color-text-muted: var(--color-selected);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root\[data-fill\] \{([^}]*)\}/m,
+    contains: ['display: flex;', 'width: 100%;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.root\[data-fill\] \.option \{([^}]*)\}/m,
+    contains: ['flex: 1 1 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-pressed\] \{([^}]*)\}/m,
+    contains: ['box-shadow: var(--segmented-pressed-shadow, none);'],
+    lacks: [],
+  },
+  {
+    // The hook is read on the chosen option alone.
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option \{([^}]*)\}/m,
+    contains: [],
+    lacks: ['--segmented-pressed-shadow'],
+  },
+
+  // `Dialog`'s header slots, pinned sheet footer, grab handle and heading hooks (contract §2.2,
+  // L2-17). Its close control wears the shared close circle (the rows below).
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    contains: [
+      'margin-top: auto',
+      'flex: 1 1 auto',
+      'var(--color-sheet-handle)',
+      'var(--dialog-heading-size, var(--text-h3))',
+      'var(--dialog-heading-tracking, var(--tracking-heading))',
+      'var(--dialog-heading-leading, var(--leading-snug))',
+      'h4.heading',
+      'var(--sheet-handle-width, 2.5rem)',
+    ],
+    lacks: [],
+  },
+  // The close circle `Dialog`'s close and `SearchField`'s clear control wear (L2-21 / O-33, PF-8):
+  // drawn at `--size-close` by a three-class rule that beats `IconButton`'s
+  // `.root[data-size='sm']`, and a `::before` grows its pointer target to `--size-touch` without
+  // changing the drawn size.
+  {
+    file: 'styles/closeCircle.module.css',
+    rule: /^\.close\[data-variant\]\[data-size\] \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'min-height: var(--size-close);',
+      'min-width: var(--size-close);',
+    ],
+    lacks: ['--size-touch', '--size-control'],
+  },
+  {
+    file: 'styles/closeCircle.module.css',
+    rule: /^\.close\[data-variant\]\[data-size\]::before \{([^}]*)\}/m,
+    contains: ["content: '';", 'position: absolute;', 'inset: calc(50% - var(--size-touch) / 2);'],
+    lacks: [],
+  },
+  {
+    // The mock centres every close-circle header row, so the row centres its children.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.header \{([^}]*)\}/m,
+    contains: ['display: flex;', 'align-items: center;'],
+    lacks: ['flex-start'],
+  },
+  {
+    // The body pads the focus ring's room and takes it back as a negative margin, so a focused
+    // control at its edge is not clipped by `overflow-y: auto` and the layout does not move.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.body \{([^}]*)\}/m,
+    contains: [
+      '--dialog-body-ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));',
+      '--dialog-body-ring-reach: calc(var(--dialog-body-ring-room) * -1);',
+      'margin: var(--dialog-body-ring-reach);',
+      'padding: var(--dialog-body-ring-room);',
+      'overflow-y: auto;',
+    ],
+    lacks: [],
+  },
+  {
+    // A body that overflows is a Tab stop; its ring is drawn inward, inside the ring room.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.body:focus-visible \{([^}]*)\}/m,
+    contains: ['outline-offset: calc(-1 * var(--focus-ring-width));'],
+    lacks: [],
+  },
+  {
+    // The sheet pin, one row per rule. The footer's own rule is told apart from the grouped one by
+    // what precedes it: the grouped rule's last selector follows a comma.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\[data-popup='sheet'\] > \.header,\n\[data-popup='sheet'\] > \.description,\n\[data-popup='sheet'\] > \.footer \{([^}]*)\}/m,
+    contains: ['flex: none;'],
+    lacks: ['margin-top', 'min-height'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\[data-popup='sheet'\] > \.body \{([^}]*)\}/m,
+    contains: ['flex: 1 1 auto;', 'min-height: 0;'],
+    lacks: ['flex: none'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /(?<!,\n)^\[data-popup='sheet'\] > \.footer \{([^}]*)\}/m,
+    contains: ['margin-top: auto;'],
+    lacks: ['flex: none'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.headerEnd \{([^}]*)\}/m,
+    contains: ['margin-inline-start: auto;', 'display: flex;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.handle \{([^}]*)\}/m,
+    contains: [
+      'width: var(--sheet-handle-width, 2.5rem);',
+      'height: var(--sheet-handle-height, 0.3125rem);',
+      'align-self: center;',
+      'flex: none;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-sheet-handle);',
+    ],
+    lacks: [],
+  },
+  {
+    // `base.css` tracks `h1` to `h3` only, so an `h4` heading keeps the browser's `normal`; the hook
+    // still moves it (the default of the hook on `h4.heading` is `normal`, not the heading tracking).
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^h4\.heading \{([^}]*)\}/m,
+    contains: ['letter-spacing: var(--dialog-heading-tracking, normal);'],
+    lacks: ['--tracking-heading'],
+  },
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.heading \{([^}]*)\}/m,
+    contains: [
+      'font-size: var(--dialog-heading-size, var(--text-h3));',
+      'letter-spacing: var(--dialog-heading-tracking, var(--tracking-heading));',
+      'line-height: var(--dialog-heading-leading, var(--leading-snug));',
+    ],
+    lacks: [],
+  },
+
+  // The affix pieces (`field.module.css`, PF-9): a wrapper that wears `.control` plus `.affix`, an
+  // input that wears `.affixInput`, a glyph that wears `.affixIcon`. One ring, drawn on the wrapper
+  // and never on the input; one placeholder colour, because the input has no `.control` to give it.
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix \{([^}]*)\}/m,
+    // The pill's non-input area says text, as a press there focuses the input.
+    contains: ['gap: var(--space-2);', 'cursor: text;'],
+    // The padding and the floor stay `.control`'s: a single-class re-declaration would tie with it.
+    lacks: ['padding', 'min-height'],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix:has\(> \.affixInput:focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      'border-color: var(--color-accent);',
+      'outline: var(--focus-ring-width) solid var(--color-focus);',
+      'outline-offset: var(--focus-ring-offset);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput \{([^}]*)\}/m,
+    contains: [
+      'flex: 1;',
+      'align-self: stretch;',
+      'min-width: 0;',
+      'padding: 0;',
+      'border: 0;',
+      'background: transparent;',
+    ],
+    lacks: ['outline'],
+  },
+  {
+    // Two classes' worth of weight over `base.css`'s `:focus-visible` ring, whatever the bundle order,
+    // and only where `:has()` draws the pill's ring instead.
+    file: 'styles/field.module.css',
+    rule: /^@supports selector\(:has\(\*\)\) \{\n {2}\.affixInput:focus-visible \{([^}]*)\}/m,
+    contains: ['outline: none;'],
+    lacks: [],
+  },
+  {
+    // A disabled input would show the browser's arrow over the wrapper's `not-allowed`; `:disabled`
+    // reaches `SearchField`'s plain input too.
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput:disabled \{([^}]*)\}/m,
+    contains: ['cursor: not-allowed;'],
+    lacks: [],
+  },
+  {
+    // `TimePicker`'s leading icon opens the picker, so the browser's own button is hidden.
+    file: 'styles/field.module.css',
+    rule: /^\.affix\[data-icon-opens-picker\] > \.affixInput::-webkit-calendar-picker-indicator \{([^}]*)\}/m,
+    contains: ['display: none;'],
+    lacks: [],
+  },
+  {
+    // The icon that opens the picker shows a pointer, unless the field is disabled.
+    file: 'styles/field.module.css',
+    rule: /^\.affix\[data-icon-opens-picker\]:not\(:has\(> \.affixInput\[data-disabled\]\)\) > \.affixIcon \{([^}]*)\}/m,
+    contains: ['cursor: pointer;'],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixInput::placeholder \{([^}]*)\}/m,
+    contains: ['color: var(--color-text-subtle);'],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixIcon \{([^}]*)\}/m,
+    contains: ['display: inline-flex;', 'flex: none;', 'color: var(--color-text-muted);'],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affixIcon > svg \{([^}]*)\}/m,
+    contains: ['width: 1rem;', 'height: 1rem;'],
+    lacks: [],
+  },
+
+  // `TextInput` and `TimePicker` with a leading icon (L2-18): the wrapper is not the input, so the
+  // input's `data-invalid` and `data-disabled` are read through `:has`, repeating `.control`'s own
+  // declarations. Both rules weigh (0,3,0), the focus ring's weight, and follow it, so an invalid
+  // focused field keeps the danger border as a bare `.control` one does.
+  {
+    file: 'styles/field.module.css',
+    contains: [
+      '.affix:has(> .affixInput:focus-visible)',
+      '.affix:has(> .affixInput[data-invalid])',
+      '.affix:has(> .affixInput[data-disabled])',
+      'var(--focus-ring-width)',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix:has\(> \.affixInput\[data-invalid\]\) \{([^}]*)\}/m,
+    contains: [
+      'border-color: var(--color-danger-border);',
+      'background: var(--color-danger-surface);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'styles/field.module.css',
+    rule: /^\.affix:has\(> \.affixInput\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['cursor: not-allowed;', 'opacity: 0.55;'],
+    lacks: [],
+  },
+  {
+    // `PickerField`'s icon at the start: the trigger packs its parts to the start instead of
+    // spreading them across it, and says so through the attribute.
+    file: 'components/Field/PickerField.module.css',
+    contains: ["[data-icon-placement='start']"],
+    lacks: [],
+  },
+  {
+    file: 'components/Field/PickerField.module.css',
+    rule: /^\.trigger\[data-icon-placement='start'\] \{([^}]*)\}/m,
+    // One gap after a leading icon across `DatePicker`, `TextInput` and `TimePicker`.
+    contains: ['justify-content: flex-start;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
+
+  // `SearchField` (L2-8, PF-8): the pill is one height with or without the clear control. Its
+  // padding-block is zero, so the `--size-touch` floor alone sets it (`.control`'s); the clear
+  // control is drawn at `--size-close` rather than a 40 px `IconButton` floor, and the 44 px hit
+  // area is an absolutely positioned `::before` that adds nothing to the layout.
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root \.box \{([^}]*)\}/m,
+    contains: [
+      'padding-block: 0;',
+      'padding-inline: var(--space-4) var(--space-1);',
+      // The larger of the touch floor and the clear circle plus the pill's two 1px borders, so a
+      // larger root font (the circle is `rem`, the floor `px`) cannot make the circle outgrow it.
+      'min-height: max(var(--size-touch), calc(var(--size-close) + 2px));',
+    ],
+    lacks: ['gap'],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root\[data-size='sm'\] \.box \{([^}]*)\}/m,
+    // The same `max()` over the small floor: the md rule above reads `--size-touch`, this one never.
+    contains: ['min-height: max(var(--size-control-sm), calc(var(--size-close) + 2px));'],
+    lacks: ['padding', '--size-touch'],
+  },
+  {
+    // The small pill's target stops at the pill's inner edge, not the shared circle's 44 px. Four
+    // classes' worth of weight, over the shared rule's three.
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root\[data-size='sm'\] \.clear\[data-size\]::before \{([^}]*)\}/m,
+    contains: ['inset-block: -1px;'],
+    lacks: [],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.input \{([^}]*)\}/m,
+    contains: ['appearance: none;', ...bodyRole],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.input::-webkit-search-cancel-button \{([^}]*)\}/m,
+    contains: ['appearance: none;'],
+    lacks: [],
+  },
+  {
+    // No bare `.box` rule: every declaration the box adds sits under `.root`, out-ranking `.control`.
+    file: 'components/SearchField/SearchField.module.css',
+    contains: [],
+    lacks: [/^\.box\b/m],
+  },
+  // The clear control's hover is one surface step off the input's, so it shows where a theme gives
+  // the input `--color-surface-2`; the small pill's keyboard ring is drawn inward.
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^@media \(hover: hover\) \{\n {2}\.root \.clear\[data-size\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-3);'],
+    lacks: ['--color-surface-2'],
+  },
+  {
+    file: 'components/SearchField/SearchField.module.css',
+    rule: /^\.root\[data-size='sm'\] \.clear:focus-visible \{([^}]*)\}/m,
+    contains: ['outline-offset: calc(-1 * var(--focus-ring-width));'],
+    lacks: [],
+  },
+
+  // `Avatar` sizes from its two consumer hooks over the five presets, and wears the theme's six
+  // fill and ink pairs through `data-color`. The hooks are read, never declared, so only this row
+  // and the dist scan's allow-list stand between a misspelt one and a silent fallback.
+  {
+    file: 'components/Avatar/Avatar.module.css',
+    contains: [
+      'inline-size: var(--avatar-size, var(--avatar-preset));',
+      'block-size: var(--avatar-size, var(--avatar-preset));',
+      'font-size: var(--avatar-font-size, var(--avatar-preset-font));',
+      '--avatar-preset: 1.5rem;',
+      '--avatar-preset: 1.75rem;',
+      '--avatar-preset: 2.5rem;',
+      '--avatar-preset: 4rem;',
+      '--avatar-preset: 6rem;',
+      ...[1, 2, 3, 4, 5, 6].flatMap((index) => [
+        `.root[data-color='${index}']`,
+        `background: var(--color-avatar-fill-${index});`,
+        `color: var(--color-avatar-ink-${index});`,
+      ]),
+    ],
+    lacks: [],
+  },
+
+  // `Collapsible`'s heading is a display reader (the four declarations and nothing else of the
+  // role: its tracking and leading stay its own) at one consumer hook, which is read here and
+  // never declared, so only this row and the dist scan's allow-list stand between a misspelt hook
+  // and a silent fallback. The chevron turns on the motion tokens.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.heading \{([^}]*)\}/m,
+    contains: [
+      ...displayRole,
+      'font-size: var(--collapsible-heading-size, var(--text-md));',
+      'letter-spacing: var(--tracking-heading);',
+      'line-height: var(--leading-snug);',
+      'color: var(--color-text);',
+    ],
+    lacks: [anyWeightLiteral, '--tracking-display', '--leading-display'],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'display: flex;',
+      'align-items: center;',
+      'gap: var(--space-2);',
+      'width: 100%;',
+      'padding: 0;',
+      'background: transparent;',
+    ],
+    lacks: [],
+  },
+  // The pointer target is at least 24 px tall (WCAG 2.5.8) without a taller row: the pseudo-element
+  // adds only what the row lacks, and the row keeps `padding: 0`.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger::before \{([^}]*)\}/m,
+    contains: [
+      "content: '';",
+      'position: absolute;',
+      'inset-inline: 0;',
+      'inset-block: min(0px, calc((100% - 1.5rem) / 2));',
+    ],
+    lacks: ['--size-touch'],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['cursor: not-allowed;'],
+    // The button itself is not dimmed, so a ring round it keeps its strength; what it shows is.
+    lacks: ['opacity'],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-disabled\] > \* \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.chevron \{([^}]*)\}/m,
+    contains: [
+      'width: 1rem;',
+      'height: 1rem;',
+      'margin-inline-start: auto;',
+      'color: var(--color-text-muted);',
+      'transition-duration: var(--motion-duration-1);',
+      'transition-timing-function: var(--motion-ease);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-panel-open\] \.chevron \{([^}]*)\}/m,
+    contains: ['transform: rotate(180deg);'],
+    lacks: [],
+  },
+  // The gap between the heading and what it opens. The visual check reads 12 px against the mock.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.panel \{([^}]*)\}/m,
+    contains: ['padding-block-start: var(--space-3);'],
+    lacks: [],
+  },
+
+  // `NavMenu`'s sidebar form. `flex: 1 1 auto` is what makes the list span the sidebar: `.root` is
+  // a row flex container, so without it the list shrinks to its widest label. The link rule makes
+  // each link as wide as the list, and the nav's own rule keeps the list at the top of a grown nav.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.root\[data-orientation='vertical'\] \{([^}]*)\}/m,
+    contains: ['align-items: stretch;'],
+    lacks: [],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.list\[data-orientation='vertical'\] \{([^}]*)\}/m,
+    contains: [
+      'flex: 1 1 auto;',
+      'flex-direction: column;',
+      'align-items: stretch;',
+      'gap: var(--space-2);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^\.list\[data-orientation='vertical'\] \.link \{([^}]*)\}/m,
+    contains: ['display: flex;'],
+    lacks: [],
+  },
+
+  // `SkipLink` reads the inverse pair, which no brand's accent exemption reaches, not the accent.
+  {
+    file: 'components/SkipLink/SkipLink.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: ['background: var(--color-inverse);', 'color: var(--color-inverse-text);'],
+    lacks: ['--color-accent'],
+  },
+
+  // `TabBar`'s measure. The pill is 44 + 2 x 2.5 = 49 px through its block padding alone (the mock
+  // draws 49; the items keep the 44 px target), and the current link's fill is its `::before`, 33 px
+  // high, so a 44 px link carries a smaller fill. A jsdom test sees none of this, so each declaration
+  // that produces a number is pinned here and the browser check measures the result.
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'position: fixed;',
+      'inset-inline: var(--space-4);',
+      'inset-block-end: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));',
+      'display: flex;',
+      'gap: var(--space-3);',
+      'align-items: center;',
+      'z-index: 40;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.nav \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex: 1;', 'min-width: 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.pill \{([^}]*)\}/m,
+    contains: [
+      '--tab-bar-pill-padding-block: calc(var(--space-1) * 0.625);',
+      'padding-block: var(--tab-bar-pill-padding-block);',
+      'padding-inline: var(--space-1);',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-tab-bar);',
+      'box-shadow: var(--shadow-tab-bar);',
+      'justify-content: space-around;',
+      'flex: 1;',
+      'min-width: 0;',
+    ],
+    lacks: [],
+  },
+  // A short bar (five items and the action at 360 px) shrinks the current label rather than
+  // overflowing: the pill and the label may go below their content, the item keeps the 44 px floor.
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['min-width: var(--size-touch);'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link \{([^}]*)\}/m,
+    contains: [
+      '--tab-bar-current-inset: calc((var(--size-touch) - 1.0625rem) / 2 - var(--space-2));',
+      'position: relative;',
+      'isolation: isolate;',
+      'min-height: var(--size-touch);',
+      'min-width: var(--size-touch);',
+      'border-radius: var(--radius-full);',
+      'color: var(--color-tab-bar-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link\[aria-current='page'\] \{([^}]*)\}/m,
+    contains: [
+      'gap: var(--space-2);',
+      'padding-inline: var(--space-3);',
+      'color: var(--color-tab-bar-active-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link\[aria-current='page'\]::before \{([^}]*)\}/m,
+    contains: [
+      "content: '';",
+      'position: absolute;',
+      'inset-inline: 0;',
+      'inset-block: var(--tab-bar-current-inset);',
+      'z-index: -1;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-tab-bar-active);',
+      'box-shadow: var(--shadow-soft);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.icon > svg \{([^}]*)\}/m,
+    contains: ['width: 1.3125rem;', 'height: 1.3125rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.link\[aria-current='page'\] \.icon > svg \{([^}]*)\}/m,
+    contains: ['width: 1.0625rem;', 'height: 1.0625rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^\.label \{([^}]*)\}/m,
+    contains: [
+      sansFamily,
+      'font-size: var(--text-sm);',
+      'font-weight: var(--font-weight-button);',
+      'min-width: 0;',
+      'overflow: hidden;',
+      'text-overflow: ellipsis;',
+      'white-space: nowrap;',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  // Forced colours: the pill keeps an edge and the current link's fill a `Highlight` outline.
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.pill \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
+    lacks: [],
+  },
+  {
+    file: 'components/TabBar/TabBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.link\[aria-current='page'\]::before \{([^}]*)\}/m,
+    contains: ['outline: 1px solid Highlight;'],
+    lacks: [],
+  },
+
+  // `EmptyState`'s card. The tone and the alignment are data attributes the component always
+  // writes, so each rule is pinned on its own: a misspelt attribute selector would fall silent.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      'display: flex;',
+      'flex-direction: column;',
+      'gap: var(--space-3);',
+      'padding: var(--space-5);',
+      'border-radius: var(--radius-card);',
+      'background: var(--color-surface-raised);',
+      'box-shadow: var(--shadow-soft);',
+      'color: var(--color-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-align='center'\] \{([^}]*)\}/m,
+    contains: ['align-items: center;', 'text-align: center;'],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-align='start'\] \{([^}]*)\}/m,
+    contains: ['align-items: flex-start;', 'text-align: start;'],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
+    lacks: [],
+  },
+  // The picture's slot places nothing itself: a `position` here would make an absolutely
+  // positioned picture spill from the slot's box instead of the card's.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.illustration \{([^}]*)\}/m,
+    contains: ['display: flex;'],
+    lacks: ['position'],
+  },
+  // The headline is the display role at one consumer hook (read, never declared) and the one
+  // library reader of `--leading-display`; it reads no `--tracking-display`, and its tracking is
+  // the house heading's at every level.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.heading \{([^}]*)\}/m,
+    contains: [
+      ...displayRole,
+      'margin: 0;',
+      'font-size: var(--empty-state-heading-size, var(--text-h3));',
+      'letter-spacing: var(--tracking-heading);',
+      'line-height: var(--leading-display);',
+    ],
+    lacks: [anyWeightLiteral, '--tracking-display', '--leading-snug'],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.body \{([^}]*)\}/m,
+    contains: [
+      ...bodyRole,
+      'max-width: 28ch;',
+      'font-size: var(--text-md);',
+      'line-height: var(--leading-prose);',
+    ],
+    lacks: [anyWeightLiteral, 'color:'],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-tone='neutral'\] \.body \{([^}]*)\}/m,
+    contains: ['color: var(--color-text-muted);'],
+    lacks: [],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.actions \{([^}]*)\}/m,
+    contains: [
+      'display: flex;',
+      'flex-wrap: wrap;',
+      'gap: var(--space-2);',
+      'margin-top: var(--space-2);',
+    ],
+    lacks: ['justify-content'],
+  },
+  // Only under `center`: the row shrink-wraps its buttons, so a wrapped line would otherwise
+  // start-align inside it. `start` keeps the default `flex-start`, which no rule restates.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-align='center'\] \.actions \{([^}]*)\}/m,
+    contains: ['justify-content: center;'],
+    lacks: [],
+  },
+
+  // `AvatarGroup`'s overlap and its ring. The overlap is a local property, because a `calc` of a
+  // token is not a value the token lint accepts as a `margin` declaration, and the avatars after
+  // the first read it. The ring is the ground colour, so where two avatars overlap a band of the
+  // page cuts the later one from the earlier one.
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.list \{([^}]*)\}/m,
+    contains: [
+      '--avatar-group-overlap: calc(-1 * var(--space-2));',
+      'display: flex;',
+      'list-style: none;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.item \+ \.item \{([^}]*)\}/m,
+    contains: ['margin-inline-start: var(--avatar-group-overlap);'],
+    lacks: [],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.ring \{([^}]*)\}/m,
+    contains: [`box-shadow: ${avatarGroupRing};`],
+    lacks: [],
+  },
+  // The chip: a pill as tall as the avatars beside it, with its count at their initials size. Its
+  // box and text read the avatars' own two consumer hooks (`--avatar-size`, `--avatar-font-size`:
+  // read here, never declared) and fall back to the group's `--avatar-group-size` and
+  // `--avatar-group-font-size`, which the size test at the end of the file keeps equal to
+  // `Avatar`'s presets. A chip with no hook read would stay at the preset when a wrapper resizes
+  // the avatars. The fill is the raised neutral with the muted ink, ringed as the avatars are and
+  // over the chip shadow. The two shadows are one local property, because a two-shadow value is
+  // not one the token lint accepts as a `box-shadow` declaration.
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.overflow \{([^}]*)\}/m,
+    contains: [
+      `${avatarGroupRing}, var(--shadow-chip);`,
+      'box-shadow: var(--avatar-group-chip-shadow);',
+      'min-width: var(--avatar-size, var(--avatar-group-size));',
+      'height: var(--avatar-size, var(--avatar-group-size));',
+      'padding-inline: var(--space-1);',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-3);',
+      'color: var(--color-text-muted);',
+      sansFamily,
+      'font-size: var(--avatar-font-size, var(--avatar-group-font-size));',
+      'font-weight: var(--font-weight-heading);',
+    ],
+    lacks: [anyWeightLiteral, 'font-size: var(--text-'],
+  },
+
+  // `ChoiceCard`: a radio group drawn as cards. The grid's column count is a local property set per
+  // `data-columns`; the card's outline and the ring's hollow circle are inset shadows held in local
+  // properties too, because an `inset` value is not one the token lint accepts as a `box-shadow`
+  // declaration. The checked card swaps the outline for the selected colour at the emphasis width.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.grid \{([^}]*)\}/m,
+    contains: [
+      'display: grid;',
+      'grid-template-columns: repeat(var(--choice-card-columns), minmax(0, 1fr));',
+      'gap: var(--space-2);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.grid\[data-columns='1'\] \{([^}]*)\}/m,
+    contains: ['--choice-card-columns: 1;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.grid\[data-columns='2'\] \{([^}]*)\}/m,
+    contains: ['--choice-card-columns: 2;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-ring: inset 0 0 0 1px var(--color-border-strong);',
+      '--choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-border-strong);',
+      // The ring's size is named once; the clearance reads it, so the two cannot drift apart.
+      '--choice-card-ring-size: 1.125rem;',
+      '--choice-card-ring-clearance: calc(var(--choice-card-ring-size) + var(--space-2));',
+      // The card is a column that starts every part at the start edge, so the disc keeps its own
+      // width instead of stretching, and a long word breaks inside the card instead of widening it.
+      'position: relative;',
+      'display: flex;',
+      'flex-direction: column;',
+      'align-items: flex-start;',
+      // The card fills its grid cell, so the cards of a row are one height.
+      'flex-grow: 1;',
+      'padding: var(--space-3);',
+      'border-radius: var(--radius-panel);',
+      'background: var(--color-surface-raised);',
+      'box-shadow: var(--choice-card-ring);',
+      'overflow-wrap: anywhere;',
+    ],
+    // No border at the top level, not even a transparent one: an inset shadow is drawn inside the
+    // padding box, so a border holds the empty ring in a smaller circle than the filled one, leaves
+    // a halo outside the chosen card's ring and pushes the content in. The forced-colours block
+    // below declares the border, which is then the only edge left.
+    lacks: [noBorderShorthand],
+  },
+  // The wrapper Base UI renders for each option is the grid's item. A column the card grows to fill.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.item \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex-direction: column;'],
+    lacks: [],
+  },
+  // The keyboard focus rings the whole card, with the base focus ring's own width, colour and
+  // offset. Where `:has()` is understood the ring's own outline is dropped, and only there: an
+  // unconditional `.ring:focus-visible { outline: none }` would leave a browser without `:has()`
+  // with no focus indicator, so the whole-file row below refuses one at the top level.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card:has\(\.ring:focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      'outline: var(--focus-ring-width) solid var(--color-focus);',
+      'outline-offset: var(--focus-ring-offset);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@supports selector\(:has\(\*\)\) \{\s*\.ring:focus-visible \{([^}]*)\}/m,
+    contains: ['outline: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    contains: [],
+    lacks: [/^\.ring:focus-visible/m, /^\.ring:focus-visible,/m],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card\[data-checked\] \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-selected);',
+      'background: var(--color-selected-soft);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: [],
+  },
+  // The icon disc: a circle on the second neutral surface with the muted ink, and on a chosen card
+  // the raised surface with the selected-soft ink.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.disc \{([^}]*)\}/m,
+    contains: [
+      'width: 1.875rem;',
+      'height: 1.875rem;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-2);',
+      'color: var(--color-text-muted);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.card\[data-checked\] \.disc \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-surface-raised);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.disc > svg \{([^}]*)\}/m,
+    contains: ['width: 0.9375rem;', 'height: 0.9375rem;'],
+    lacks: [],
+  },
+  // The title is the sans heading weight and the line under it the body role, as the contract's
+  // type roles name them; the gap under the disc exists only where a disc does.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.title \{([^}]*)\}/m,
+    contains: [
+      sansFamily,
+      'font-weight: var(--font-weight-heading);',
+      'font-size: var(--text-md);',
+      'line-height: var(--leading-snug);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.disc \+ \.title \{([^}]*)\}/m,
+    contains: ['margin-top: var(--space-2);'],
+    lacks: [],
+  },
+  // A card with no icon starts with its title, on the row the ring sits in, so that title keeps
+  // clear of the ring by the clearance the card computes.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.title:first-child \{([^}]*)\}/m,
+    contains: ['padding-inline-end: var(--choice-card-ring-clearance);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.description \{([^}]*)\}/m,
+    contains: [
+      'margin-top: var(--space-1);',
+      ...bodyRole,
+      'font-size: var(--text-sm);',
+      'line-height: var(--leading-snug);',
+      'color: var(--color-text-muted);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  // The ring: the radio itself, 18 px in the card's corner, hollow until chosen and then filled
+  // with the selected colour around an 11 px check in the selected text colour.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.ring \{([^}]*)\}/m,
+    contains: [
+      'inset-block-start: var(--space-3);',
+      'inset-inline-end: var(--space-3);',
+      'width: var(--choice-card-ring-size);',
+      'height: var(--choice-card-ring-size);',
+      'border-radius: var(--radius-full);',
+      'box-shadow: var(--choice-card-dot);',
+    ],
+    // No border here either: with one the empty ring would draw at 16 px and grow to 18 when chosen.
+    lacks: [noBorderShorthand],
+  },
+  // An errored group's rings take the danger border, as `RadioGroup`'s dots do.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.ring\[data-invalid\] \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-dot: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.ring\[data-checked\] \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-dot: none;',
+      'background: var(--color-selected);',
+      'color: var(--color-selected-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^\.mark > svg \{([^}]*)\}/m,
+    contains: ['width: 0.6875rem;', 'height: 0.6875rem;'],
+    lacks: [],
+  },
+  // Forced colours remove the shadows and the fills, so each box gets the 1 px border that is then
+  // its only edge, and the chosen card and its ring are told apart by system colours on it.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card,\n {2}\.ring \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
+  {
+    // A disabled card reads the system's disabled colour, after the chosen card's rule. `GrayText`
+    // is the cue, so the card is not dimmed as well.
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{[^}]*\}\n\n {2}\.card\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 1;', 'border-color: GrayText;', 'color: GrayText;'],
+    lacks: ['opacity: 0.45'],
+  },
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.ring\[data-checked\] \{([^}]*)\}/m,
+    contains: [
+      'forced-color-adjust: none;',
+      'border-color: Highlight;',
+      'background: Highlight;',
+      'color: HighlightText;',
+    ],
+    lacks: [],
+  },
+
+  // `ToggleChip` and `ToggleChipGroup`, one stylesheet. An unpressed chip is the quiet surface fill
+  // and a pressed one the selected pair, whose ring an app sets through `--toggle-chip-pressed-ring`
+  // (default `none`, so the look without the hook is the fill alone). The chip's label is the sans
+  // face at the label weight, in a token size.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip \{([^}]*)\}/m,
+    contains: [
+      'display: inline-flex;',
+      'gap: var(--space-1);',
+      'padding: var(--space-2) var(--space-3);',
+      'border: 0;',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-2);',
+      'color: var(--color-text);',
+      sansFamily,
+      'font-weight: var(--font-weight-label);',
+      'font-size: var(--text-sm);',
+      'line-height: var(--leading-tight);',
+    ],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-with-icon\] \{([^}]*)\}/m,
+    contains: ['padding-inline-start: var(--space-1);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^ {2}\.chip:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    contains: ['background: var(--color-surface-3);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected);',
+      'color: var(--color-selected-text);',
+      'box-shadow: var(--toggle-chip-pressed-ring, none);',
+    ],
+    lacks: [],
+  },
+  // An errored group's unpressed chips draw the danger ring `ChoiceCard`'s rings draw.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.group\[data-invalid\] \.chip:not\(\[data-pressed\]\) \{([^}]*)\}/m,
+    contains: [
+      '--toggle-chip-invalid-ring: inset 0 0 0 var(--border-width-emphasis) var(--color-danger-border);',
+      'box-shadow: var(--toggle-chip-invalid-ring);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^ {2}\.chip\[data-pressed\] \{([^}]*)\}/m,
+    contains: ['forced-color-adjust: none;', 'outline-color: CanvasText;'],
+    lacks: [],
+  },
+  // An unpressed chip has no fill in forced colours and no border by default, so it would have no
+  // edge. The border is declared in the forced-colours block only; the top-level rule keeps none.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 0.45;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.icon > \* \{([^}]*)\}/m,
+    contains: ['width: 1.625rem;', 'height: 1.625rem;', 'border-radius: var(--radius-full);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.check > svg \{([^}]*)\}/m,
+    contains: ['width: 0.75rem;', 'height: 0.75rem;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.group \{([^}]*)\}/m,
+    contains: ['min-width: 0;', 'margin: 0;', 'padding: 0;', 'border: 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.row \{([^}]*)\}/m,
+    contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
+
+  // `ProgressBar`: a label row, a track and a helper line. The fill's colour is a local property,
+  // so each tone and status names a colour once: the accent by default, the selected colour for the
+  // `selected` tone, and the success and danger colours for the statuses, which win over a tone.
+  // The label is the sans face at the label weight and the value at the button weight, both in a
+  // token size; every weight in the file is a token.
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    contains: [],
+    lacks: [anyWeightLiteral],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      '--progress-bar-fill: var(--color-accent);',
+      'position: relative;',
+      'display: flex;',
+      'flex-direction: column;',
+      'gap: var(--space-2);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-tone='selected'\] \{([^}]*)\}/m,
+    contains: ['--progress-bar-fill: var(--color-selected);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-status='finished'\] \{([^}]*)\}/m,
+    contains: ['--progress-bar-fill: var(--color-success);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-status='error'\] \{([^}]*)\}/m,
+    contains: ['--progress-bar-fill: var(--color-danger);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.row \{([^}]*)\}/m,
+    contains: ['display: flex;', 'justify-content: space-between;', 'gap: var(--space-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.label,\n\.value \{([^}]*)\}/m,
+    contains: [
+      'color: var(--color-text);',
+      sansFamily,
+      'font-size: var(--text-sm);',
+      'line-height: var(--leading-snug);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.label \{([^}]*)\}/m,
+    contains: ['font-weight: var(--font-weight-label);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    // After a blank line: `.value {` also begins the line of the shared `.label,\n.value {` rule.
+    rule: /\n\n\.value \{([^}]*)\}/,
+    contains: ['font-weight: var(--font-weight-button);'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.track \{([^}]*)\}/m,
+    contains: [
+      'position: relative;',
+      // The consumer hook, read and never declared, over the default height.
+      'height: var(--progress-bar-track-size, 0.5rem);',
+      'border-radius: var(--radius-full);',
+      'background: var(--color-surface-3);',
+      'overflow: hidden;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-size='sm'\] \.track \{([^}]*)\}/m,
+    contains: ['height: var(--progress-bar-track-size, 0.25rem);'],
+    lacks: [],
+  },
+  // The fill: the local colour, and a width transition on the motion tokens (Base UI writes the
+  // width itself, inline).
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.indicator \{([^}]*)\}/m,
+    contains: [
+      'border-radius: var(--radius-full);',
+      'background: var(--progress-bar-fill);',
+      'transition-property: width;',
+      'transition-duration: var(--motion-duration-2);',
+      'transition-timing-function: var(--motion-ease);',
+    ],
+    lacks: [],
+  },
+  // Indeterminate: a 40% segment that rests centred and slides on `translate`, symmetrically about
+  // its rest (its own width's percentages: 175% is 70% of the track, fully off either edge).
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.indicator\[data-indeterminate\] \{([^}]*)\}/m,
+    contains: [
+      'position: absolute;',
+      'inset-inline-start: 30%;',
+      'inline-size: 40%;',
+      'animation-name: slide;',
+      'animation-duration: var(--motion-duration-4);',
+      'animation-timing-function: var(--motion-ease);',
+      'animation-iteration-count: infinite;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    contains: ['translate: -175% 0;', 'translate: 175% 0;'],
+    lacks: [],
+  },
+  // Reduced motion: `base.css` only shortens an animation to its end frame, which here lies off the
+  // track, so the slide stops and the segment stays at its rest: centred, 40% wide, 30% in.
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^ {2}\.indicator\[data-indeterminate\] \{([^}]*)\}/m,
+    contains: ['animation-name: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.helper \{([^}]*)\}/m,
+    contains: [
+      'color: var(--color-text-muted);',
+      ...bodyRole,
+      'font-size: var(--text-xs);',
+      'line-height: var(--leading-snug);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^\.root\[data-status='error'\] \.helper \{([^}]*)\}/m,
+    contains: ['color: var(--color-danger);'],
+    lacks: [],
+  },
+  // Forced colours: the track keeps an edge in the text colour and the fill the system highlight.
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^ {2}\.track \{([^}]*)\}/m,
+    contains: ['outline: 1px solid CanvasText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ProgressBar/ProgressBar.module.css',
+    rule: /^ {2}\.indicator \{([^}]*)\}/m,
+    contains: ['forced-color-adjust: none;', 'background: Highlight;'],
+    lacks: [],
+  },
 ];
+
+// The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each
+// `data-size` on the list must set them to what `Avatar` draws for that size (`--avatar-preset` and
+// `--avatar-preset-font`), or the chip is taller, shorter or smaller-typed than the avatars beside
+// it. Both stylesheets declare one `[data-size='…'] { --name: value; }` rule per size; this reads
+// the two sets and requires them equal, so a size added to `Avatar` and not to the group (or a
+// preset changed in one place) fails here instead of drawing a chip that does not match.
+function sizeDeclarations(file: string, property: string): Record<string, string> {
+  const contents = readFileSync(join(sourceRoot, file), 'utf-8');
+  const byRule: Record<string, string> = {};
+  for (const rule of contents.matchAll(/\[data-size='(\w+)'\] \{([^}]*)\}/g)) {
+    const [, size, body] = rule;
+    const value = body?.match(new RegExp(`${property}: ([^;]+);`))?.[1];
+    if (size !== undefined && value !== undefined) {
+      byRule[size] = value;
+    }
+  }
+  return byRule;
+}
 
 describe('the theme tokens the component CSS reads', () => {
   for (const { file, rule, contains, lacks } of expectations) {
@@ -775,4 +2447,20 @@ describe('the theme tokens the component CSS reads', () => {
       }
     });
   }
+});
+
+describe('AvatarGroup’s chip box', () => {
+  it.each([
+    ['--avatar-group-size', '--avatar-preset'],
+    ['--avatar-group-font-size', '--avatar-preset-font'],
+  ])('%s equals Avatar’s %s at every size', (groupProperty, avatarProperty) => {
+    const avatarPresets = sizeDeclarations('components/Avatar/Avatar.module.css', avatarProperty);
+    const groupSizes = sizeDeclarations(
+      'components/AvatarGroup/AvatarGroup.module.css',
+      groupProperty,
+    );
+    // An empty read on both sides would pass the equality below, so the presets must be found.
+    expect(Object.keys(avatarPresets).length).toBeGreaterThan(0);
+    expect(groupSizes).toEqual(avatarPresets);
+  });
 });

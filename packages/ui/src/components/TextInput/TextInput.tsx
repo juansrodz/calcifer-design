@@ -1,7 +1,6 @@
-import { Input as BaseInput } from '@base-ui/react/input';
-import type { ComponentPropsWithoutRef, ReactElement } from 'react';
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from 'react';
+import { AffixInput } from '../Field/AffixInput';
 import { useFieldRequired } from '../Field/Field';
-import fieldStyles from '../../styles/field.module.css';
 
 export type TextInputType =
   'text' | 'email' | 'password' | 'search' | 'tel' | 'url' | 'date' | 'number';
@@ -22,6 +21,18 @@ export interface TextInputProps extends Omit<
    * is the tier's escape hatch for a control the library does not ship.
    */
   render?: ReactElement;
+  /**
+   * A decorative glyph inside the field, before the text: an icon from your own set, sized to 1rem
+   * and coloured by the text-muted role. The field's label still names the input. Ignored when
+   * `render` is given, as `type` is: the caller's element is the control and has no pill to hold it.
+   *
+   * With an icon the visible field is a pill around the input, and the input's own props (`style`,
+   * `hidden` and `title` included) reach the inner input, not the pill: size the field from its
+   * container. The pill is a different element from the bare input, so changing `startIcon` between
+   * present and absent remounts the input and loses an uncontrolled value and the focus: decide the
+   * icon once, or control the value.
+   */
+  startIcon?: ReactNode;
 }
 
 export function TextInput({
@@ -30,6 +41,7 @@ export function TextInput({
   defaultValue,
   onValueChange,
   render,
+  startIcon,
   ...rest
 }: TextInputProps) {
   // `name`, `disabled` and the id come from the surrounding `Field.Root` through Base UI's own
@@ -37,9 +49,9 @@ export function TextInput({
   // prop here. `required` is the exception: `Field.Root` has no such prop to propagate.
   const required = useFieldRequired();
   return (
-    <BaseInput
+    <AffixInput
       {...rest}
-      className={fieldStyles.control}
+      startIcon={render === undefined ? startIcon : undefined}
       type={render === undefined ? type : undefined}
       value={value}
       defaultValue={defaultValue}
