@@ -244,6 +244,17 @@ describe('the filtered-empty state', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
+  // The state cell spans the table, which can be wider than the scroll area (a phone), so the
+  // message and its button keep to the scroll area's width, where they can be seen.
+  it('keeps the filtered-empty state to the width of the scroll area', () => {
+    renderGrid({ initialQuery: matchesNothing });
+
+    const button = within(screen.getByRole('grid')).getByRole('button', { name: 'Clear filters' });
+    const stateBox = button.closest('td')?.firstElementChild as HTMLElement;
+    // The scroll area is 800px wide in the stubbed layout.
+    expect(stateBox.style.inlineSize).toBe('800px');
+  });
+
   it('keeps the Clear filters button in the tab order', async () => {
     const user = userEvent.setup();
     renderGrid({ initialQuery: matchesNothing });

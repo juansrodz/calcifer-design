@@ -544,9 +544,20 @@
 
 /* The message fills the body's width, centred, under the header band. */
 .stateCell {
-  padding: var(--space-8) var(--space-5);
+  padding: var(--space-8) 0;
   text-align: center;
   color: var(--color-text-muted);
+}
+
+/*
+ * A cell across a table wider than the scroll area: its content takes the scroll area's width (set
+ * inline once measured) and sticks to its inline start, so it stays in view as the body scrolls
+ * sideways. The cell's inline padding moves here so that it holds at both edges of the view.
+ */
+.inView {
+  position: sticky;
+  inset-inline-start: 0;
+  padding-inline: var(--space-5);
 }
 
 .state {

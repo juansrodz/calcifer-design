@@ -21,6 +21,8 @@ export interface GridStateRowProps {
   columnCount: number;
   /** The keyboard row of entry 0: the grid's `headRowCount`. The state row sits where it would. */
   firstEntryRow: number;
+  /** The scroll area's inner width, 0 until it is measured. */
+  viewportWidth: number;
 }
 
 /**
@@ -28,7 +30,9 @@ export interface GridStateRowProps {
  * The live region speaks the message, so the visible copy of the loading and empty states is
  * hidden from assistive technology. The filtered-empty state is the library's `EmptyState`, whose
  * message is a heading and stays readable (a hidden heading would be an empty one), with the Clear
- * filters button as its action; the button stays a tab stop, as the row is no keyboard row.
+ * filters button as its action; the button stays a tab stop, as the row is no keyboard row. The
+ * cell spans a table that can be wider than the scroll area, so its content keeps to the scroll
+ * area's width and stays in view while the body scrolls sideways.
  */
 export function GridStateRow({
   kind,
@@ -38,6 +42,7 @@ export function GridStateRow({
   headingLevel,
   columnCount,
   firstEntryRow,
+  viewportWidth,
 }: GridStateRowProps) {
   let content: ReactNode;
   if (kind === 'loading') {
@@ -72,7 +77,12 @@ export function GridStateRow({
   return (
     <tr aria-rowindex={firstEntryRow + 1}>
       <td role="gridcell" className={styles.stateCell} colSpan={columnCount} aria-colindex={1}>
-        {content}
+        <div
+          className={styles.inView}
+          style={viewportWidth > 0 ? { inlineSize: viewportWidth } : undefined}
+        >
+          {content}
+        </div>
       </td>
     </tr>
   );

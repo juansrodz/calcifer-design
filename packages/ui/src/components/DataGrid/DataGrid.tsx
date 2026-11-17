@@ -241,7 +241,10 @@ export function DataGrid<Row extends RowData>({
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLTableSectionElement>(null);
-  const { viewportHeight, headerHeight, rightToLeft } = useGridMetrics(scrollRef, headRef);
+  const { viewportHeight, viewportWidth, headerHeight, rightToLeft } = useGridMetrics(
+    scrollRef,
+    headRef,
+  );
   const tableRows = table.getRowModel().rows;
   const entries = useGridEntries(tableRows, expansion.expandedIds, (row) =>
     isExpandable(row.original),
@@ -690,6 +693,7 @@ export function DataGrid<Row extends RowData>({
                 headingLevel={headingLevel === 2 ? 3 : 4}
                 columnCount={columnCount}
                 firstEntryRow={headRowCount}
+                viewportWidth={viewportWidth}
               />
             ) : null}
             {bodyRows}

@@ -2,6 +2,8 @@ import { useLayoutEffect, useState, type RefObject } from 'react';
 
 export interface GridMetrics {
   viewportHeight: number;
+  /** The scroll area's inner width: what the body shows of a table that can be wider. */
+  viewportWidth: number;
   /** The sticky header band, which covers the top of the scroll area. */
   headerHeight: number;
   /**
@@ -11,9 +13,14 @@ export interface GridMetrics {
   rightToLeft: boolean;
 }
 
-const initialMetrics: GridMetrics = { viewportHeight: 0, headerHeight: 0, rightToLeft: false };
+const initialMetrics: GridMetrics = {
+  viewportHeight: 0,
+  viewportWidth: 0,
+  headerHeight: 0,
+  rightToLeft: false,
+};
 
-/** The scroll area's height and the header band's, kept current as either resizes. */
+/** The scroll area's size and the header band's height, kept current as either resizes. */
 export function useGridMetrics(
   scrollRef: RefObject<HTMLElement | null>,
   headRef: RefObject<HTMLElement | null>,
@@ -25,14 +32,16 @@ export function useGridMetrics(
     if (scrollElement === null || head === null) return;
     const measure = () => {
       const viewportHeight = scrollElement.clientHeight;
+      const viewportWidth = scrollElement.clientWidth;
       const headerHeight = head.offsetHeight;
       const rightToLeft = getComputedStyle(scrollElement).direction === 'rtl';
       setMetrics((current) =>
         current.viewportHeight === viewportHeight &&
+        current.viewportWidth === viewportWidth &&
         current.headerHeight === headerHeight &&
         current.rightToLeft === rightToLeft
           ? current
-          : { viewportHeight, headerHeight, rightToLeft },
+          : { viewportHeight, viewportWidth, headerHeight, rightToLeft },
       );
     };
     measure();
