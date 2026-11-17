@@ -769,10 +769,15 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     // The state and error rows' content sticks to the scroll area's inline start, so it stays in
-    // view while the body scrolls sideways; jsdom lays nothing out, so the stylesheet is the pin.
+    // view while the body scrolls sideways, and keeps to the width the grid measures and sets on
+    // the scroll area; jsdom lays nothing out, so the stylesheet is the pin.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.inView \{([^}]*)\}/m,
-    contains: ['position: sticky;', 'inset-inline-start: 0;'],
+    contains: [
+      'position: sticky;',
+      'inset-inline-start: 0;',
+      'max-inline-size: var(--data-grid-view-inline-size, none);',
+    ],
     lacks: [],
   },
   {

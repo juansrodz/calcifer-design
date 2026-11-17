@@ -24,8 +24,6 @@ export interface GridStateRowProps {
   columnCount: number;
   /** The keyboard row of entry 0: the grid's `headRowCount`. The state row sits where it would. */
   firstEntryRow: number;
-  /** The scroll area's inner width, 0 until it is measured. */
-  viewportWidth: number;
 }
 
 /**
@@ -45,7 +43,6 @@ export function GridStateRow({
   headingLevel,
   columnCount,
   firstEntryRow,
-  viewportWidth,
 }: GridStateRowProps) {
   let content: ReactNode;
   if (kind === 'loading') {
@@ -80,12 +77,7 @@ export function GridStateRow({
   return (
     <tr aria-rowindex={firstEntryRow + 1}>
       <td role="gridcell" className={styles.stateCell} colSpan={columnCount} aria-colindex={1}>
-        <div
-          className={styles.inView}
-          style={viewportWidth > 0 ? { maxInlineSize: viewportWidth } : undefined}
-        >
-          {content}
-        </div>
+        <div className={styles.inView}>{content}</div>
       </td>
     </tr>
   );
@@ -101,8 +93,6 @@ export interface GridErrorRowProps {
   retryLabel: string;
   onRetry: () => void;
   getCellProps: GetCellProps;
-  /** The scroll area's inner width, 0 until it is measured. */
-  viewportWidth: number;
 }
 
 /**
@@ -117,7 +107,6 @@ export function GridErrorRow({
   retryLabel,
   onRetry,
   getCellProps,
-  viewportWidth,
 }: GridErrorRowProps) {
   const rowIndex = entryIndex + firstEntryRow;
   return (
@@ -129,10 +118,7 @@ export function GridErrorRow({
         aria-colindex={1}
         {...getCellProps(rowIndex, 0, columnCount)}
       >
-        <div
-          className={`${styles.inView} ${styles.errorContent}`}
-          style={viewportWidth > 0 ? { maxInlineSize: viewportWidth } : undefined}
-        >
+        <div className={`${styles.inView} ${styles.errorContent}`}>
           <span role="alert">{message}</span>
           <Button variant="secondary" size="sm" onClick={onRetry}>
             {retryLabel}

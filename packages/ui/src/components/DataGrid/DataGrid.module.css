@@ -570,13 +570,15 @@
 
 /*
  * A cell across a table wider than the scroll area: its content keeps to the scroll area's width (a
- * maximum set inline once measured, which, unlike a width, adds nothing to the table's minimum, so
- * the grid can still shrink) and sticks to its inline start, so it stays in view as the body
- * scrolls sideways. The cell's inline padding moves here so that it holds at both edges of the view.
+ * maximum, which the grid sets on the scroll area once measured and which, unlike a width, adds
+ * nothing to the table's minimum, so the grid can still shrink) and sticks to its inline start, so
+ * it stays in view as the body scrolls sideways. Unmeasured, there is no maximum. The cell's inline
+ * padding moves here so that it holds at both edges of the view.
  */
 .inView {
   position: sticky;
   inset-inline-start: 0;
+  max-inline-size: var(--data-grid-view-inline-size, none);
   padding-inline: var(--space-5);
 }
 

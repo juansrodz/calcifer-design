@@ -58,6 +58,30 @@ function scrollArea(): HTMLElement {
   return document.querySelector('[data-grid-scroll]') as HTMLElement;
 }
 
+/** The custom property the grid sets on the scroll area: its measured inner width. */
+const viewInlineSize = '--data-grid-view-inline-size';
+
+/**
+ * Stubs `ResizeObserver` so that the test can report a resize to every observer the grid makes, as
+ * a browser would. The caller unstubs it with `vi.unstubAllGlobals()`.
+ */
+function watchResizeObservers(): () => void {
+  const resizeCallbacks: ResizeObserverCallback[] = [];
+  class WatchedResizeObserver {
+    constructor(callback: ResizeObserverCallback) {
+      resizeCallbacks.push(callback);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  vi.stubGlobal('ResizeObserver', WatchedResizeObserver);
+  return () =>
+    act(() => {
+      for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
+    });
+}
+
 /** jsdom has no `scrollTo`; a browser scrolls and then fires a scroll event, and so does this. */
 function emulateScrollTo() {
   const scrollElement = scrollArea();
@@ -251,40 +275,54 @@ describe('the filtered-empty state', () => {
 
     const button = within(screen.getByRole('grid')).getByRole('button', { name: 'Clear filters' });
     const stateBox = button.closest('td')?.firstElementChild as HTMLElement;
-    // The scroll area is 800px wide in the stubbed layout. A maximum, not a width: a width would
-    // count toward the table's minimum and keep the grid from shrinking in a flex item or a grid
-    // track once it had been measured wide.
-    expect(stateBox.style.maxInlineSize).toBe('800px');
+    // The scroll area is 800px wide in the stubbed layout. The grid sets the width on the scroll
+    // area, and the stylesheet makes it the content's maximum (pinned in token-reads). A maximum,
+    // not a width: a width would count toward the table's minimum and keep the grid from shrinking
+    // in a flex item or a grid track once it had been measured wide.
+    expect(scrollArea()).toContainElement(stateBox);
+    expect(scrollArea().style.getPropertyValue(viewInlineSize)).toBe('800px');
     expect(stateBox.style.inlineSize).toBe('');
   });
 
   it('follows the scroll area when only its width changes', () => {
-    // Every observer the grid makes, so the test can report a resize as a browser would.
-    const resizeCallbacks: ResizeObserverCallback[] = [];
-    class WatchedResizeObserver {
-      constructor(callback: ResizeObserverCallback) {
-        resizeCallbacks.push(callback);
-      }
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    }
-    vi.stubGlobal('ResizeObserver', WatchedResizeObserver);
+    const reportResize = watchResizeObservers();
     try {
       renderGrid({ initialQuery: matchesNothing });
-      const button = within(screen.getByRole('grid')).getByRole('button', {
-        name: 'Clear filters',
-      });
-      const stateBox = button.closest('td')?.firstElementChild as HTMLElement;
-      expect(stateBox.style.maxInlineSize).toBe('800px');
+      expect(scrollArea().style.getPropertyValue(viewInlineSize)).toBe('800px');
 
       // A phone turned upright: narrower, and just as tall.
       Object.defineProperty(scrollArea(), 'clientWidth', { configurable: true, value: 390 });
-      act(() => {
-        for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
-      });
+      reportResize();
 
-      expect(stateBox.style.maxInlineSize).toBe('390px');
+      expect(scrollArea().style.getPropertyValue(viewInlineSize)).toBe('390px');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  // Only the stylesheet reads the width, so the grid renders nothing for it.
+  it('renders no row when only the width of the scroll area changes', () => {
+    const reportResize = watchResizeObservers();
+    try {
+      // Called for every rendered row each time the rows render.
+      let rowRenders = 0;
+      renderGrid({
+        renderRowActions: () => {
+          rowRenders += 1;
+          return null;
+        },
+      });
+      const rowRendersBeforeResize = rowRenders;
+      expect(rowRendersBeforeResize).toBeGreaterThan(0);
+
+      Object.defineProperty(scrollArea(), 'clientWidth', { configurable: true, value: 390 });
+      reportResize();
+      expect(rowRenders).toBe(rowRendersBeforeResize);
+
+      // A height change is one the grid renders for, which shows the count is live.
+      Object.defineProperty(scrollArea(), 'clientHeight', { configurable: true, value: 300 });
+      reportResize();
+      expect(rowRenders).toBeGreaterThan(rowRendersBeforeResize);
     } finally {
       vi.unstubAllGlobals();
     }
