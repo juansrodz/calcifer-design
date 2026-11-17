@@ -26,7 +26,7 @@ export interface IconButtonProps extends Omit<
   /** Swaps the icon for a spinner, keeps the button focusable, and blocks activation. */
   loading?: boolean;
   /**
-   * Makes the button a toggle: sets `aria-pressed` and, when true, draws the accent state. Leave it
+   * Makes the button a toggle: sets `aria-pressed` and, when true, draws the selected state. Leave it
    * undefined for a plain button, which then carries no `aria-pressed` but one you pass yourself.
    */
   pressed?: boolean;
