@@ -739,9 +739,15 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // A pinned cell lays the tint under its content and half a hairline past its block edges, where
+    // the row's own background reaches under the row's divider.
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^\.row\[data-highlighted\] \.cell\.pinnedCell,\n\.row\[aria-selected='true'\] \.cell\.pinnedCell \{([^}]*)\}/m,
-    contains: ['var(--color-selected-soft)'],
+    rule: /^\.row\[data-highlighted\] \.cell\.pinnedCell::after,\n\.row\[aria-selected='true'\] \.cell\.pinnedCell::after \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'inset-block: calc(1px / -2);',
+      'z-index: -1;',
+    ],
     lacks: ['--color-accent'],
   },
   {

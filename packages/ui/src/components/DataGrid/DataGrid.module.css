@@ -351,18 +351,21 @@
   }
 }
 
-.row[data-highlighted] .cell.pinnedCell,
-.row[aria-selected='true'] .cell.pinnedCell {
-  background-image: linear-gradient(var(--color-selected-soft), var(--color-selected-soft));
-}
-
-@media (hover: hover) {
-  .row[data-highlighted]:hover .cell.pinnedCell,
-  .row[aria-selected='true']:hover .cell.pinnedCell {
-    background-image:
-      linear-gradient(var(--color-selected-soft), var(--color-selected-soft)),
-      linear-gradient(var(--color-surface-2), var(--color-surface-2));
-  }
+/*
+ * A tinted row's pinned cell lays the tint over its surface (and the hover's) as a layer under its
+ * content. A positioned cell does not get the row's background under the row's divider, so without
+ * the layer the divider shows over the bare surface there and vanishes into the tint. The layer
+ * reaches half the 1px divider past each block edge, as the row's own background does.
+ */
+.row[data-highlighted] .cell.pinnedCell::after,
+.row[aria-selected='true'] .cell.pinnedCell::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: calc(1px / -2);
+  z-index: -1;
+  background: var(--color-selected-soft);
+  pointer-events: none;
 }
 
 /* The checkbox column: 2.5rem (about 40px), first at the start. */
