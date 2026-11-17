@@ -50,9 +50,11 @@ describe('DatePicker', () => {
     expect(await axeDocument()).toHaveNoViolations();
   });
 
-  it('sets dir="rtl" on the document for the right-to-left icon story and puts it back after', () => {
+  // Storybook's own page carries no `dir`, so the story must leave none behind: a leaked `rtl`
+  // (or an `ltr` written in its place) would turn every story opened after it.
+  it('sets dir="rtl" on the document for the right-to-left icon story and leaves no dir after', () => {
     const root = document.documentElement;
-    root.setAttribute('dir', 'ltr');
+    root.removeAttribute('dir');
     const { unmount } = render(<LeadingIconRightToLeft />);
     expect(root).toHaveAttribute('dir', 'rtl');
     expect(screen.getByRole('button', { name: /Event date/ })).toHaveAttribute(
@@ -60,8 +62,7 @@ describe('DatePicker', () => {
       'start',
     );
     unmount();
-    expect(root).toHaveAttribute('dir', 'ltr');
-    root.removeAttribute('dir');
+    expect(root).not.toHaveAttribute('dir');
   });
 
   it.each(['Chosen', 'RightToLeft', 'Dark', 'Bounded'] as const)(
