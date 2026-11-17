@@ -26,8 +26,8 @@ import {
   type GridStateRowProps,
 } from './GridStateRows';
 import { resolveDataGridLabels } from './labels';
-import { createQueryMatcher } from './query';
-import type { DataGridProps, DataGridRowEvent } from './types';
+import { createQueryMatcher, isSameQuery } from './query';
+import type { DataGridProps, DataGridQuery, DataGridRowEvent } from './types';
 import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
 import { useGridQuery } from './useGridQuery';
@@ -137,10 +137,14 @@ export function DataGrid<Row extends RowData>({
   // The header, then the filter strip while it shows; body entry `n` is keyboard row
   // `n + headRowCount`. The header stays keyboard row 0.
   const headRowCount = showsFilterStrip ? 2 : 1;
-  // The rows the grid held when the query last changed. Until the app replaces them the loaded
-  // rows answer the old query, so nothing more is asked of them.
-  const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
-  const awaitingNewRows = rowsOfOldQuery === rows;
+  // The rows the grid held when the query last changed, and the query they answer. Until the app
+  // replaces them they answer that query, not the shown one, so nothing more is asked of them. A
+  // query that comes back to theirs before new rows arrive (a filter typed and deleted, three
+  // header clicks) is theirs again, and an app that caches by query answers it with the same rows.
+  const [oldQueryRows, setOldQueryRows] = useState<{
+    rows: readonly Row[];
+    query: DataGridQuery;
+  } | null>(null);
   const gridQuery = useGridQuery({
     columns,
     initialQuery: queryEnabled ? initialQuery : { ...initialQuery, filters: {}, search: '' },
@@ -148,17 +152,25 @@ export function DataGrid<Row extends RowData>({
     query,
     onQueryChange,
     // Called from event handlers and layout effects only, after everything below exists.
-    onChange: () => {
+    onChange: (_nextQuery, previousQuery) => {
       // Rows that move under the selection would make it hard to see what it covers.
       selection.clear();
       virtualizer.scrollToOffset(0);
       if (serverMode) {
-        // The app starts again from the first page.
-        setRowsOfOldQuery(committedRowsRef.current);
+        // The app starts again from the first page. Rows already waited on keep the query they
+        // answer, which a second change before new rows arrive would otherwise lose.
+        const committedRows = committedRowsRef.current;
+        setOldQueryRows((current) =>
+          current?.rows === committedRows ? current : { rows: committedRows, query: previousQuery },
+        );
         loadMore.reset();
       }
     },
   });
+  const awaitingNewRows =
+    oldQueryRows !== null &&
+    oldQueryRows.rows === rows &&
+    !isSameQuery(oldQueryRows.query, gridQuery.query);
   // Search, like the filters, only where the user can change the query.
   const searching = enableSearch && queryEnabled;
   // The field shows while the user has it open or a search is active, so an active search is never

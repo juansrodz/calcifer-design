@@ -1,5 +1,5 @@
 import type { RowData, SortingState } from '@tanstack/react-table';
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { DataGridColumnDef } from './columns';
 import { countActiveCriteria, isSameQuery, normaliseQuery } from './query';
 import type { DataGridFilterValue, DataGridQuery } from './types';
@@ -14,8 +14,9 @@ export interface UseGridQueryOptions<Row extends RowData> {
   /**
    * The shown query changed. Called from the setter that changed it, in the same event, with the
    * new query; for a controlled query, from a layout effect once the app passes a different one.
+   * `previousQuery` is the one it heard of before, the query the rows on screen were for.
    */
-  onChange: (query: DataGridQuery) => void;
+  onChange: (query: DataGridQuery, previousQuery: DataGridQuery) => void;
   /**
    * A setter changed the query: called in the same event with the new query, after `onChange` when
    * the query is the grid's own.
@@ -73,9 +74,13 @@ export function useGridQuery<Row extends RowData>({
   // controlled query that differs from it is the app's change, answered before the next paint.
   const [actedOnQuery, setActedOnQuery] = useState(shownQuery);
   const pendingChange = !isSameQuery(shownQuery, actedOnQuery);
+  // The same query, kept current within an event, where two setters can act one after the other.
+  const actedOnQueryRef = useRef(actedOnQuery);
   const actOn = (nextQuery: DataGridQuery) => {
+    const previousQuery = actedOnQueryRef.current;
+    actedOnQueryRef.current = nextQuery;
     setActedOnQuery(nextQuery);
-    onChange(nextQuery);
+    onChange(nextQuery, previousQuery);
   };
   const actOnRef = useLatest(actOn);
   useLayoutEffect(() => {

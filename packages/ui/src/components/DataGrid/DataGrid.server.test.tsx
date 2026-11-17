@@ -523,6 +523,109 @@ describe('a controlled query in server mode', () => {
   });
 });
 
+// A cache keyed by the query answers a query it has seen with the very array it gave before, so
+// when the user goes from A to B and back to A before B's page arrives, the rows on screen are
+// A's again and loading must go on.
+describe('a query that comes back before its new rows', () => {
+  const rows = makeInventoryRows(50);
+
+  it('loads more after the app brings back the first query with the same rows', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const searchedQuery: DataGridQuery = { ...emptyDataGridQuery, search: 'bolt' };
+    const { rerender } = renderGrid({ rows, query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    rerender(gridElement({ rows, query: searchedQuery, onQueryChange, onLoadMore }));
+    rerender(gridElement({ rows, query: { ...emptyDataGridQuery }, onQueryChange, onLoadMore }));
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads more after three header clicks bring the sort back to none', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    renderGrid({ rows, onQueryChange, onLoadMore });
+    emulateScrollTo();
+
+    const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+    await user.click(nameHeader);
+    await user.click(nameHeader);
+    await user.click(nameHeader);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads more after a text filter is typed and then deleted', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    renderGrid({ rows, columns: filterableInventoryColumns, onQueryChange, onLoadMore });
+    emulateScrollTo();
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    const nameFilter = screen.getByRole('searchbox', { name: 'Filter by Name' });
+
+    fireEvent.change(nameFilter, { target: { value: 'hex' } });
+    fireEvent.keyDown(nameFilter, { key: 'Enter' });
+    fireEvent.change(nameFilter, { target: { value: '' } });
+    fireEvent.keyDown(nameFilter, { key: 'Enter' });
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads more after a select filter goes back to All', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    renderGrid({ rows, columns: filterableInventoryColumns, onQueryChange, onLoadMore });
+    emulateScrollTo();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    const statusFilter = screen.getByRole('combobox', { name: 'Filter by Status' });
+
+    await user.click(statusFilter);
+    await user.click(await screen.findByRole('option', { name: 'Low' }));
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    await user.click(statusFilter);
+    await user.click(await screen.findByRole('option', { name: 'All' }));
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('still waits while the query differs from the one the rows answer', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const { rerender } = renderGrid({ rows, query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    rerender(
+      gridElement({
+        rows,
+        query: { ...emptyDataGridQuery, search: 'bolt' },
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    rerender(
+      gridElement({
+        rows,
+        query: { ...emptyDataGridQuery, search: 'nut' },
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).not.toHaveBeenCalled();
+  });
+});
+
 describe('ServerMode story', () => {
   it('loads, recovers from a failed page and sorts on the server', async () => {
     const user = userEvent.setup();
