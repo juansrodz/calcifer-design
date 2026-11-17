@@ -722,11 +722,13 @@ const expectations: ReadonlyArray<Expectation> = [
 
   // The checkbox's box and the radio's dot are known by their boundary alone, so it reads the
   // opaque control border, which the tokens hold to 3:1 (WCAG 1.4.11), not the translucent hairline.
+  // The hairline stays as the fallback only: a page still on a tokens sheet older than 0.4.0 has
+  // no `--color-border-control`, and without a fallback the whole `border` would drop to none.
   {
     file: 'styles/field.module.css',
     rule: /^\.controlBox \{([^}]*)\}/m,
-    contains: ['border: 1px solid var(--color-border-control);'],
-    lacks: ['--color-border-strong'],
+    contains: ['border: 1px solid var(--color-border-control, var(--color-border-strong));'],
+    lacks: [/border: 1px solid var\(--color-border-strong\)/],
   },
 
   // Invalid, the box is still unchecked and its boundary still all that marks it, so the error
