@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { fn } from 'storybook/test';
+import { Dialog } from '../Dialog/Dialog';
+import { Field } from '../Field/Field';
+import { TextInput } from '../TextInput/TextInput';
 import { DatePicker, type DatePickerProps } from './DatePicker';
 
 const meta = {
@@ -98,3 +101,30 @@ export const LeadingIconRightToLeft: Story = {
   ],
 };
 export const Dark: Story = { globals: { theme: 'dark' }, args: { defaultValue: '2026-03-08' } };
+
+/**
+ * The picker halfway down an end drawer, as an item editor has it. At 1280 × 800 there is not room
+ * for the calendar above or below the trigger, and it must still open on that axis, inside the
+ * drawer, rather than beside the trigger over the scrim. November 2026 has five weeks, so the
+ * calendar below its trigger keeps no sixth row of room.
+ */
+export const InEndDrawer: Story = {
+  args: { defaultValue: '2026-11-20' },
+  decorators: [],
+  render: (args) => (
+    <Dialog heading="Edit the potluck" variant="sheet" side="end" defaultOpen>
+      <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+        <Field label="Name">
+          <TextInput defaultValue="Friendsgiving" />
+        </Field>
+        <Field label="Where">
+          <TextInput defaultValue="The Rodriguez house" />
+        </Field>
+        <Field label="Host">
+          <TextInput defaultValue="Sebastian" />
+        </Field>
+        <DatePicker {...args} />
+      </div>
+    </Dialog>
+  ),
+};
