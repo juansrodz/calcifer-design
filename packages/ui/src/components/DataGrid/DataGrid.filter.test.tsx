@@ -506,6 +506,8 @@ describe('a controlled query', () => {
     await user.keyboard('{Enter}');
     expect(nameHeader).toHaveAttribute('aria-sort', 'descending');
     expect(cellTextsOf('Name')).toEqual(outNamesDescending);
+    // The grid does not take the key: a header it cannot sort leaves Enter to the page.
+    expect(fireEvent.keyDown(nameHeader, { key: 'Enter' })).toBe(true);
     await user.click(screen.getByRole('columnheader', { name: 'SKU' }));
     expect(screen.getByRole('columnheader', { name: 'SKU' })).not.toHaveAttribute('aria-sort');
     expect(cellTextsOf('Name')).toEqual(outNamesDescending);
