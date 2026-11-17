@@ -910,6 +910,22 @@ describe('the filter strip', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('lets each filter take its width from its column', async () => {
+    const user = userEvent.setup();
+    renderGrid();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+
+    // A browser gives an input 20 characters of width by default, which widened the filtered
+    // columns and squeezed the others when the strip opened; one character leaves the width to the
+    // cell, whose control fills it.
+    const controls = [
+      ...within(stripRow()).getAllByRole('searchbox'),
+      ...within(stripRow()).getAllByRole('combobox'),
+    ];
+    expect(controls).toHaveLength(4);
+    for (const control of controls) expect(control).toHaveAttribute('size', '1');
+  });
+
   it('filters 300ms after typing stops, at once on Enter', () => {
     vi.useFakeTimers();
     renderGrid();

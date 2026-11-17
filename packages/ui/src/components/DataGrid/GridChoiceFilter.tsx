@@ -135,6 +135,8 @@ export function GridChoiceFilter({
         <Combobox.Input
           className={`${fieldStyles.control} ${styles.choiceInput}`}
           aria-label={label}
+          // The cell sizes the input, as it does a text filter.
+          size={1}
           placeholder={multiple ? summary : undefined}
           aria-describedby={multiple ? summaryId : undefined}
           onPointerDown={(event) => {

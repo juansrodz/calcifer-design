@@ -161,6 +161,11 @@
  */
 .choiceFilter {
   position: relative;
+
+  /* No width of its own for the table to size the column by: the room for the chevron would
+     widen a narrow column when the strip opens. It fills the cell the column's other cells size. */
+  inline-size: 0;
+  min-inline-size: 100%;
 }
 
 .choiceFilter > .choiceInput {

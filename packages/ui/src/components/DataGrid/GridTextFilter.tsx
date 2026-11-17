@@ -23,6 +23,9 @@ export function GridTextFilter({ label, value, onValueChange }: GridTextFilterPr
     <TextInput
       type="search"
       aria-label={label}
+      // The cell sizes the field, which fills it: a browser's default of 20 characters would
+      // widen the column whenever the strip opens.
+      size={1}
       value={draft}
       onValueChange={change}
       onKeyDown={(event) => {
