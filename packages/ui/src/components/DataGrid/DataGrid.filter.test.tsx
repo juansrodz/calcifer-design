@@ -20,6 +20,10 @@ type GridProps = React.ComponentProps<typeof DataGrid<InventoryRow>>;
 
 const rowTotal = 40;
 
+// axe over a grid with its strip or a choice list open takes a few hundred milliseconds alone and
+// has failed the 5 s default on a loaded machine; these tests get more room. Nothing else changes.
+const axeUnderLoad = { timeout: 15_000 };
+
 function renderGrid(overrides: Partial<GridProps> = {}) {
   return render(
     <DataGrid<InventoryRow>
@@ -1278,43 +1282,47 @@ describe('the filter strip', () => {
     );
   }
 
-  it('opens the strip with a labelled filter for each filterable column', async () => {
-    const user = userEvent.setup();
-    const { container } = renderGrid({
-      selectionMode: 'multiple',
-      renderExpandedRow: (row) => <p>{row.name}</p>,
-      renderRowActions: (row) => <button type="button">Edit {row.name}</button>,
-    });
-    const grid = screen.getByRole('grid');
-    expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 1));
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+  it(
+    'opens the strip with a labelled filter for each filterable column',
+    axeUnderLoad,
+    async () => {
+      const user = userEvent.setup();
+      const { container } = renderGrid({
+        selectionMode: 'multiple',
+        renderExpandedRow: (row) => <p>{row.name}</p>,
+        renderRowActions: (row) => <button type="button">Edit {row.name}</button>,
+      });
+      const grid = screen.getByRole('grid');
+      expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 1));
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Filters' }));
+      await user.click(screen.getByRole('button', { name: 'Filters' }));
 
-    const stripCells = within(stripRow()).getAllByRole('gridcell');
-    // The checkbox and expand columns, the seven columns, then the row actions column.
-    expect(stripCells.map((cell) => cell.getAttribute('aria-colindex'))).toEqual(
-      Array.from({ length: 10 }, (_unused, index) => String(index + 1)),
-    );
-    // Name, Category, Location and Status are the second, third, fourth and sixth columns, after
-    // the checkbox and expand ones.
-    expect(stripCells[3]).toContainElement(filterField('Name'));
-    expect(stripCells[4]).toContainElement(
-      screen.getByRole('combobox', { name: 'Filter by Category' }),
-    );
-    expect(stripCells[5]).toContainElement(filterField('Location'));
-    expect(stripCells[7]).toContainElement(
-      screen.getByRole('combobox', { name: 'Filter by Status' }),
-    );
-    expect(screen.getAllByRole('searchbox')).toHaveLength(2);
-    expect(screen.getAllByRole('combobox')).toHaveLength(2);
-    for (const [index, cell] of stripCells.entries()) {
-      if (![3, 4, 5, 7].includes(index)) expect(cell).toBeEmptyDOMElement();
-    }
-    expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
-    expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '3');
-    expect(await axe(container)).toHaveNoViolations();
-  });
+      const stripCells = within(stripRow()).getAllByRole('gridcell');
+      // The checkbox and expand columns, the seven columns, then the row actions column.
+      expect(stripCells.map((cell) => cell.getAttribute('aria-colindex'))).toEqual(
+        Array.from({ length: 10 }, (_unused, index) => String(index + 1)),
+      );
+      // Name, Category, Location and Status are the second, third, fourth and sixth columns, after
+      // the checkbox and expand ones.
+      expect(stripCells[3]).toContainElement(filterField('Name'));
+      expect(stripCells[4]).toContainElement(
+        screen.getByRole('combobox', { name: 'Filter by Category' }),
+      );
+      expect(stripCells[5]).toContainElement(filterField('Location'));
+      expect(stripCells[7]).toContainElement(
+        screen.getByRole('combobox', { name: 'Filter by Status' }),
+      );
+      expect(screen.getAllByRole('searchbox')).toHaveLength(2);
+      expect(screen.getAllByRole('combobox')).toHaveLength(2);
+      for (const [index, cell] of stripCells.entries()) {
+        if (![3, 4, 5, 7].includes(index)) expect(cell).toBeEmptyDOMElement();
+      }
+      expect(grid).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
+      expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '3');
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
 
   it('lets each filter take its width from its column', async () => {
     const user = userEvent.setup();
@@ -1943,7 +1951,7 @@ describe('the choice filters', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('has no axe violations with the list open', async () => {
+  it('has no axe violations with the list open', axeUnderLoad, async () => {
     const user = userEvent.setup();
     renderGrid({ initialQuery: { filters: { category: ['Tools', 'Safety'] } } });
     await openStrip(user, 'Filters, 1 active');

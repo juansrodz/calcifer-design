@@ -91,6 +91,11 @@ function countOfServerRowsWhere(test: (row: InventoryRow) => boolean): number {
   return makeInventoryRows(240).filter(test).length;
 }
 
+// The ServerMode story's walk, with its axe check, takes about a second alone, the slowest of the
+// grid's axe tests, and this file has timed out on a loaded machine; it gets more room. Nothing
+// else changes.
+const axeUnderLoad = { timeout: 15_000 };
+
 let restoreElementSize: () => void;
 
 beforeEach(() => {
@@ -610,7 +615,7 @@ describe('a query that comes back before its new rows', () => {
 });
 
 describe('ServerMode story', () => {
-  it('loads, recovers from a failed page and sorts on the server', async () => {
+  it('loads, recovers from a failed page and sorts on the server', axeUnderLoad, async () => {
     const user = userEvent.setup();
     const { container } = render(<ServerMode />);
     expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
