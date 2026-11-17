@@ -129,6 +129,7 @@ describe('@calcifer-design/ui dist', () => {
       'Timeline',
       'DataGrid',
       'createDataGridColumnHelper',
+      'dataGridSearchPattern',
       'ThemeScope',
       'usePortalContainer',
       'SearchField',
@@ -143,6 +144,15 @@ describe('@calcifer-design/ui dist', () => {
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
+  });
+
+  // The built helper is the grid's own matcher: `?` stands for one character and the term
+  // matches anywhere in the text, so a server can match exactly as client mode does.
+  it('exports the DataGrid search pattern from dist/index.js', async () => {
+    const uiModule = (await import(path.join(distRoot, 'index.js'))) as {
+      dataGridSearchPattern?: (term: string) => RegExp | null;
+    };
+    expect(uiModule.dataGridSearchPattern?.('ab?d')?.test('xabcdx')).toBe(true);
   });
 
   // `AVATAR_COLOR_COUNT` is a number, so the function list above cannot hold it. Six is the count
