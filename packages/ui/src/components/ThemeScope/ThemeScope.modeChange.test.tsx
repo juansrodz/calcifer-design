@@ -89,37 +89,32 @@ describe('ThemeScope across a mode change', () => {
     expect(wrapper).not.toHaveAttribute(THEME_CHANGING_ATTRIBUTE);
   });
 
-  it('has the mark on by the end of the commit that writes the new data-theme', () => {
-    // A child's layout effect runs before the scope's own; one that reads layout would flush
-    // styles before the mark is on. Such a flush starts transitions, and the mark the scope then
-    // sets cancels them: this pins that the mark is on by the end of the same commit.
-    const seen: { theme: string | null; marked: boolean }[] = [];
-    function Probe() {
+  it('marks the wrapper in a layout effect, before the browser can paint the new mode', () => {
+    // A parent's layout effect runs after the scope's own and before any passive effect. A mark
+    // set in a passive effect would be missing here, and on a default-lane update (an appearance
+    // read from storage, a transition) the browser could paint the new `data-theme` without it.
+    const seenByParent: { theme: string | null; marked: boolean }[] = [];
+    function Parent({ mode }: { mode: ThemeMode }) {
       const probeRef = useRef<HTMLSpanElement>(null);
       useLayoutEffect(() => {
         const wrapper = probeRef.current?.closest('.theme-demo');
-        queueMicrotask(() => {
-          seen.push({
-            theme: wrapper?.getAttribute('data-theme') ?? null,
-            marked: wrapper?.hasAttribute(THEME_CHANGING_ATTRIBUTE) ?? false,
-          });
+        seenByParent.push({
+          theme: wrapper?.getAttribute('data-theme') ?? null,
+          marked: wrapper?.hasAttribute(THEME_CHANGING_ATTRIBUTE) ?? false,
         });
       });
-      return <span ref={probeRef} />;
+      return (
+        <ThemeScope theme={demoTheme} mode={mode}>
+          <span ref={probeRef} />
+        </ThemeScope>
+      );
     }
-    const { rerender } = render(
-      <ThemeScope theme={demoTheme} mode="light">
-        <Probe />
-      </ThemeScope>,
-    );
-    rerender(
-      <ThemeScope theme={demoTheme} mode="dark">
-        <Probe />
-      </ThemeScope>,
-    );
-    return Promise.resolve().then(() => {
-      expect(seen.at(-1)).toEqual({ theme: 'dark', marked: true });
-    });
+    const { rerender } = render(<Parent mode="light" />);
+    rerender(<Parent mode="dark" />);
+    expect(seenByParent).toEqual([
+      { theme: 'light', marked: false },
+      { theme: 'dark', marked: true },
+    ]);
   });
 
   it('marks nothing when it re-renders in the same mode', () => {
