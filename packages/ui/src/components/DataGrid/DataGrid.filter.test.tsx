@@ -4,6 +4,7 @@ import { act, useState, type FormEvent } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, axeDocument } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
+import { emulateScrollTo, scrollArea } from '../../../test/gridScroll';
 import { DataGrid } from './DataGrid';
 import {
   filterableInventoryColumns,
@@ -54,10 +55,6 @@ function cellTextsOf(columnName: string): string[] {
     });
 }
 
-function scrollArea(): HTMLElement {
-  return document.querySelector('[data-grid-scroll]') as HTMLElement;
-}
-
 /** The custom property the grid sets on the scroll area: its measured inner width. */
 const viewInlineSize = '--data-grid-view-inline-size';
 
@@ -80,15 +77,6 @@ function watchResizeObservers(): () => void {
     act(() => {
       for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
     });
-}
-
-/** jsdom has no `scrollTo`; a browser scrolls and then fires a scroll event, and so does this. */
-function emulateScrollTo() {
-  const scrollElement = scrollArea();
-  scrollElement.scrollTo = ((options: ScrollToOptions) => {
-    scrollElement.scrollTop = options.top ?? 0;
-    scrollElement.dispatchEvent(new Event('scroll'));
-  }) as typeof scrollElement.scrollTo;
 }
 
 let restoreElementSize: () => void;

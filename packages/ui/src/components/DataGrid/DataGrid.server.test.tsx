@@ -5,6 +5,7 @@ import { act, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
+import { emulateScrollTo, scrollArea, scrollGridTo } from '../../../test/gridScroll';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
 import type * as FixturesModule from './fixtures';
@@ -61,26 +62,6 @@ function gridElement(overrides: Partial<GridProps> = {}) {
 
 function renderGrid(overrides: Partial<GridProps> = {}) {
   return render(gridElement(overrides));
-}
-
-function scrollArea(): HTMLElement {
-  return document.querySelector('[data-grid-scroll]') as HTMLElement;
-}
-
-function scrollGridTo(scrollTop: number) {
-  act(() => {
-    scrollArea().scrollTop = scrollTop;
-    scrollArea().dispatchEvent(new Event('scroll'));
-  });
-}
-
-/** jsdom has no `scrollTo`; a browser scrolls and then fires a scroll event, and so does this. */
-function emulateScrollTo() {
-  const scrollElement = scrollArea();
-  scrollElement.scrollTo = ((options: ScrollToOptions) => {
-    scrollElement.scrollTop = options.top ?? 0;
-    scrollElement.dispatchEvent(new Event('scroll'));
-  }) as typeof scrollElement.scrollTo;
 }
 
 function ariaRowIndexes(): string[] {

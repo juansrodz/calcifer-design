@@ -1,9 +1,9 @@
 import { composeStories } from '@storybook/react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installElementSize } from '../../../test/elementSize';
+import { scrollGridTo } from '../../../test/gridScroll';
 import { Button } from '../Button/Button';
 import { Popover } from '../Popover/Popover';
 import { createDataGridColumnHelper } from './columns';
@@ -70,14 +70,6 @@ function cellAt(ariaRowIndex: number, ariaColIndex: number): HTMLElement {
 
 function expectFocusAt(ariaRowIndex: number, ariaColIndex: number) {
   expect(document.activeElement).toBe(cellAt(ariaRowIndex, ariaColIndex));
-}
-
-function scrollGridTo(scrollTop: number) {
-  const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
-  act(() => {
-    scrollElement.scrollTop = scrollTop;
-    scrollElement.dispatchEvent(new Event('scroll'));
-  });
 }
 
 /** Tabs from the button before the grid onto its one tab stop. */
