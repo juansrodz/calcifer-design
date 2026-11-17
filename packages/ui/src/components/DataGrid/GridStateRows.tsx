@@ -101,9 +101,14 @@ export interface GridErrorRowProps {
   retryLabel: string;
   onRetry: () => void;
   getCellProps: GetCellProps;
+  /** The scroll area's inner width, 0 until it is measured. */
+  viewportWidth: number;
 }
 
-/** A failed load in server mode: the error and a retry button, after the last entry. */
+/**
+ * A failed load in server mode: the error and a retry button, after the last entry. As in the
+ * state row, the content keeps to the scroll area's width so that it stays in view.
+ */
 export function GridErrorRow({
   entryIndex,
   firstEntryRow,
@@ -112,6 +117,7 @@ export function GridErrorRow({
   retryLabel,
   onRetry,
   getCellProps,
+  viewportWidth,
 }: GridErrorRowProps) {
   const rowIndex = entryIndex + firstEntryRow;
   return (
@@ -123,7 +129,10 @@ export function GridErrorRow({
         aria-colindex={1}
         {...getCellProps(rowIndex, 0, columnCount)}
       >
-        <div className={styles.errorContent}>
+        <div
+          className={`${styles.inView} ${styles.errorContent}`}
+          style={viewportWidth > 0 ? { inlineSize: viewportWidth } : undefined}
+        >
           <span role="alert">{message}</span>
           <Button variant="secondary" size="sm" onClick={onRetry}>
             {retryLabel}

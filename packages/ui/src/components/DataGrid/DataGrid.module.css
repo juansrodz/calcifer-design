@@ -497,7 +497,7 @@
 
 /* The error row closes the body: the message and its retry button, centred. */
 .errorCell {
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) 0;
   text-align: center;
   color: var(--color-text);
 }

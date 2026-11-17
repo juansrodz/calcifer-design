@@ -709,6 +709,7 @@ export function DataGrid<Row extends RowData>({
                 retryLabel={resolvedLabels.retry}
                 onRetry={loadMore.retry}
                 getCellProps={keyboard.getCellProps}
+                viewportWidth={viewportWidth}
               />
             ) : null}
           </tbody>

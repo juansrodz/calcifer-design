@@ -234,6 +234,18 @@ describe('server mode', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  // The error cell spans the table, which can be wider than the scroll area (a phone), so the
+  // message and its retry button keep to the scroll area's width, where they can be seen.
+  it('keeps the error row to the width of the scroll area', () => {
+    renderGrid({ rows: [], hasMore: true, loadError: 'Could not load rows' });
+
+    const errorBox = screen.getByText('Could not load rows').closest('td')
+      ?.firstElementChild as HTMLElement;
+    // The scroll area is 800px wide in the stubbed layout.
+    expect(errorBox.style.inlineSize).toBe('800px');
+    expect(errorBox).toContainElement(screen.getByRole('button', { name: 'Try again' }));
+  });
+
   it('numbers the error row within the rows of the grid', () => {
     const { rerender } = renderGrid({ loadError: 'Could not load rows' });
     // Header, 50 rows, then the error row; the total is not known, so the count is ARIA's -1.
