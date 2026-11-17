@@ -5,6 +5,7 @@ import { fn } from 'storybook/test';
 import { describe, expect, it, vi } from 'vitest';
 import { axe, axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
+import closeCircleStyles from '../../styles/closeCircle.module.css';
 import fieldStyles from '../../styles/field.module.css';
 import { Form } from '../Form/Form';
 import { SearchField } from './SearchField';
@@ -348,7 +349,7 @@ describe('SearchField', () => {
       render(<WithValue />);
       const clear = screen.getByRole('button', { name: 'Clear search' });
       expect(clear.parentElement).toBe(pill());
-      expect(clear).toHaveClass(styles.clear);
+      expect(clear).toHaveClass(styles.clear, closeCircleStyles.close);
       expect(clear).toHaveAttribute('data-size');
     });
   });

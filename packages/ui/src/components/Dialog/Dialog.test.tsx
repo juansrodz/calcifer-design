@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
+import closeCircleStyles from '../../styles/closeCircle.module.css';
 import * as stories from './Dialog.stories';
 
 const {
@@ -167,8 +168,9 @@ describe('Dialog', () => {
   });
 
   describe('the close control', () => {
-    // L2-21 / O-33: the close is drawn at the `--size-close` circle through Dialog's own class, so
-    // it is `sm` in both variants, never `md`, and its 44 px hit area is the stylesheet's.
+    // L2-21 / O-33: the close is drawn at the `--size-close` circle through the shared close-circle
+    // class (`styles/closeCircle.module.css`), so it is `sm` in both variants, never `md`, and its
+    // 44 px hit area is that stylesheet's.
     it('is a ghost control carrying the close class by default', async () => {
       render(<OpenOnLoad />);
       const close = within(await screen.findByRole('dialog')).getByRole('button', {
@@ -176,7 +178,7 @@ describe('Dialog', () => {
       });
       expect(close).toHaveAttribute('data-variant', 'ghost');
       expect(close).toHaveAttribute('data-size', 'sm');
-      expect(close).toHaveClass('close');
+      expect(close).toHaveClass(closeCircleStyles.close);
     });
 
     it('is soft and still the close circle with closeVariant="soft"', async () => {
@@ -186,7 +188,7 @@ describe('Dialog', () => {
       });
       expect(close).toHaveAttribute('data-variant', 'soft');
       expect(close).toHaveAttribute('data-size', 'sm');
-      expect(close).toHaveClass('close');
+      expect(close).toHaveClass(closeCircleStyles.close);
     });
   });
 

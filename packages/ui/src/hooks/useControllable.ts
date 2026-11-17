@@ -7,7 +7,8 @@ import { useState } from 'react';
  * chosen card, to submit to a `Form`) reads it from here.
  *
  * The setter changes the held value and does nothing while the caller controls it, so a change
- * handler sets it and reports the change without a branch of its own.
+ * handler sets it and reports the change without a branch of its own. The setter is a new function
+ * every render, so it must not go in a dependency array.
  */
 export function useControllable<Value>(
   controlledValue: Value | undefined,
