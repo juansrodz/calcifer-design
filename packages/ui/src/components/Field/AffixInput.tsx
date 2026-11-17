@@ -19,18 +19,24 @@ export interface AffixInputProps extends Omit<BaseInput.Props, 'className' | 're
 }
 
 /**
- * Opens the input's native picker, where the browser has one. `showPicker` refuses without a user
- * gesture (`NotAllowedError`) and on a disabled or read-only input (`InvalidStateError`), and a
- * refusal leaves the press as a plain focus.
+ * The ways `showPicker` refuses: without a user gesture (`NotAllowedError`), on a disabled or
+ * read-only input (`InvalidStateError`), and inside a cross-origin frame (`SecurityError`).
+ */
+const PICKER_REFUSALS: ReadonlySet<string> = new Set([
+  'NotAllowedError',
+  'InvalidStateError',
+  'SecurityError',
+]);
+
+/**
+ * Opens the input's native picker, where the browser has one. A refusal (`PICKER_REFUSALS`) leaves
+ * the press as a plain focus; any other error is thrown on.
  */
 function showPickerOf(input: HTMLInputElement) {
   try {
     input.showPicker?.();
   } catch (error) {
-    if (
-      !(error instanceof DOMException) ||
-      (error.name !== 'NotAllowedError' && error.name !== 'InvalidStateError')
-    ) {
+    if (!(error instanceof DOMException) || !PICKER_REFUSALS.has(error.name)) {
       throw error;
     }
   }

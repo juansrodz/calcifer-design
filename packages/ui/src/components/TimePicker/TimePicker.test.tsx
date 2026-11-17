@@ -190,7 +190,7 @@ describe('TimePicker', () => {
         expect(timeInput()).toHaveFocus();
       });
 
-      it.each(['NotAllowedError', 'InvalidStateError'])(
+      it.each(['NotAllowedError', 'InvalidStateError', 'SecurityError'])(
         'swallows a %s from showPicker and still focuses the input',
         (errorName) => {
           render(<WithStartIcon />);
@@ -205,11 +205,11 @@ describe('TimePicker', () => {
       it('lets any other error from showPicker through', () => {
         render(<WithStartIcon />);
         timeInput().showPicker = () => {
-          throw new DOMException('cross-origin', 'SecurityError');
+          throw new DOMException('aborted', 'AbortError');
         };
         const errors = windowErrorsDuring(() => fireEvent.mouseDown(iconOf(timeInput())));
         expect(errors).toHaveLength(1);
-        expect((errors[0] as DOMException).name).toBe('SecurityError');
+        expect((errors[0] as DOMException).name).toBe('AbortError');
       });
 
       it('does nothing more where the browser has no showPicker', () => {
