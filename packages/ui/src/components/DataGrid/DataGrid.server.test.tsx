@@ -457,7 +457,7 @@ describe('server mode', () => {
       initialQuery,
       onQueryChange: vi.fn(),
     });
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
   });
 });
@@ -652,7 +652,7 @@ describe('finding rows in server mode', () => {
       query: { ...emptyDataGridQuery, filters: { name: 'Anvil' } },
     });
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.'),
+      expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.'),
     );
 
     fetchPageRequests.mockClear();

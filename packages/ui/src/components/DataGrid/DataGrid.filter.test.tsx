@@ -222,9 +222,9 @@ describe('the filtered-empty state', () => {
     const grid = screen.getByRole('grid');
     // The empty state's heading, under the card's h2.
     expect(
-      within(grid).getByRole('heading', { level: 3, name: 'No rows match the filters.' }),
+      within(grid).getByRole('heading', { level: 3, name: 'No rows match the search or filters.' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
     expect(screen.getByText(`0 of ${rowTotal} rows`)).toBeInTheDocument();
     expect(grid).toHaveAttribute('aria-rowcount', '2');
     expect(await axe(container)).toHaveNoViolations();
@@ -270,7 +270,7 @@ describe('the filtered-empty state', () => {
       ),
     });
     expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
 
     await user.click(screen.getByRole('button', { name: 'Show every item' }));
 
@@ -363,7 +363,7 @@ describe('a controlled query', () => {
     expect(onQueryChange).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('textbox', { name: 'Find items' }), ' nowhere');
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
 
@@ -503,7 +503,7 @@ describe('a controlled query', () => {
     rerender(
       readOnlyGrid({ ...emptyDataGridQuery, filters: { status: 'out' }, search: 'Hex bolt' }),
     );
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
     expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
   });
 });
@@ -995,7 +995,7 @@ describe('search', () => {
   it('drops a pending search when Clear filters clears the query', () => {
     vi.useFakeTimers();
     renderGrid({ enableSearch: true, initialQuery: { search: 'Nothing like this' } });
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
     act(() => searchField().focus());
 
     fireEvent.change(searchField(), { target: { value: 'Nothing like this at all' } });
@@ -1351,7 +1351,7 @@ describe('the filter strip', () => {
     await user.click(screen.getByRole('button', { name: 'Filters, 1 active' }));
 
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', '3');
-    const stateMessage = within(screen.getByRole('grid')).getByText('No rows match the filters.');
+    const stateMessage = within(screen.getByRole('grid')).getByText('No rows match the search or filters.');
     expect(stateMessage.closest('tr')).toHaveAttribute('aria-rowindex', '3');
     unmount();
 

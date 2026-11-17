@@ -102,7 +102,7 @@ describe('DataGrid stories', () => {
   it('the filtered-empty story clears its filters', async () => {
     const user = userEvent.setup();
     render(<FilteredEmpty />);
-    expect(screen.getByRole('status')).toHaveTextContent('No rows match the filters.');
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(screen.getByRole('status')).toBeEmptyDOMElement();

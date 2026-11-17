@@ -66,7 +66,7 @@ export const defaultDataGridLabels: DataGridLabels = {
   loadingMore: 'Loading more rows…',
   retry: 'Try again',
   empty: 'No rows to show.',
-  filteredEmpty: 'No rows match the filters.',
+  filteredEmpty: 'No rows match the search or filters.',
   clearFilters: 'Clear filters',
   selectAll: 'Select all rows',
   selectRow: (rowLabel) => `Select ${rowLabel}`,
