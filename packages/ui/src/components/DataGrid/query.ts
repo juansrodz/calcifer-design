@@ -58,12 +58,16 @@ export function dataGridSearchPattern(term: string): RegExp | null {
   return new RegExp(source, 'isu');
 }
 
+/** No sort, filter or search. Frozen: grids and tests share it, so nothing may change it in place. */
 export const emptyDataGridQuery: DataGridQuery = {
   sorting: [],
   filters: {},
   matchMode: 'all',
   search: '',
 };
+Object.freeze(emptyDataGridQuery.sorting);
+Object.freeze(emptyDataGridQuery.filters);
+Object.freeze(emptyDataGridQuery);
 
 function columnsById<Row extends RowData>(
   columns: readonly DataGridColumnDef<Row, unknown>[],

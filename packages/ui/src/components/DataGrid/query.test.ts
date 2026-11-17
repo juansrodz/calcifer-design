@@ -493,3 +493,12 @@ describe('createQueryMatcher', () => {
     });
   });
 });
+
+describe('emptyDataGridQuery', () => {
+  // Shared by every grid that starts empty, so nothing may change it in place.
+  it('is frozen, its sorting and filters too', () => {
+    expect(Object.isFrozen(emptyDataGridQuery)).toBe(true);
+    expect(Object.isFrozen(emptyDataGridQuery.sorting)).toBe(true);
+    expect(Object.isFrozen(emptyDataGridQuery.filters)).toBe(true);
+  });
+});
