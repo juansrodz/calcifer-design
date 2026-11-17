@@ -27,7 +27,9 @@ export function columnNameOf<Row extends RowData, Value = unknown>(
  * A search term as a case-insensitive, unanchored RegExp: `*` is any run of characters, `?` is one
  * character (a new line or a code point of two units too), everything else is literal. The term
  * is trimmed; an empty term gives null. A term of only stars matches every text, the empty one
- * included.
+ * included. It is a JavaScript RegExp (a capturing lookahead, a backreference, `[^]` and the `u`
+ * flag), so a JavaScript server matches with it exactly as client mode does; its `source` is not
+ * portable to other engines, such as a database's.
  */
 export function dataGridSearchPattern(term: string): RegExp | null {
   const trimmed = term.trim();
