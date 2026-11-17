@@ -49,8 +49,10 @@
 }
 
 /* Room for the header row and six weeks, so a four or five-week month does not move the buttons
-   out from under a pointer when the popup is placed above its trigger. */
-.gridSlot {
+   out from under a pointer when the popup is placed above its trigger. Above only: below, the
+   header stays put whatever the month, and the empty row would cost the height that lets the
+   calendar fit under a trigger halfway down an end drawer at 1280 × 800. */
+.popup[data-side='top'] .gridSlot {
   min-height: calc(7 * var(--size-touch));
 }
 
