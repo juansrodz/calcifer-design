@@ -51,6 +51,20 @@ export interface ButtonProps extends Omit<
    * disabled look, with its icon and label as they are and no spinner.
    */
   pending?: boolean;
+  /**
+   * A class for the button, joined after the component's own. It is how a consumer gives a button
+   * a fill of its own, through four hooks, each a custom property that inherits, so a wrapper that
+   * sets one reaches every `Button` and `LinkButton` inside it, whatever the variant:
+   * - `--button-fill` and `--button-label-color`, the fill and the label colour at rest;
+   * - `--button-fill-hover` and `--button-label-color-hover`, the pair on hover (and a row's
+   *   press). Each falls back to its rest hook, so a fill set without a hover pair keeps its colour
+   *   on hover.
+   *
+   * The library declares no hook, so a class that sets one wins in every state (rest, hover,
+   * pressed, focused, disabled, loading, pending and chosen) at any weight, with no `[data-tone]`
+   * to match. Each defaults to the variant and tone's own colour. A disabled button dims the
+   * consumer's pair as it dims its own; under forced colours the system colours win.
+   */
   className?: string;
 }
 
