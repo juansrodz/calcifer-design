@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { expect, fn, within } from 'storybook/test';
 import { ToggleChip } from './ToggleChip';
+import styles from './ToggleChip.module.css';
 import { ToggleChipGroup, type ToggleChipOption } from './ToggleChipGroup';
 
 // Five decorative drawings for the single group's icon discs. The component rounds and sizes
@@ -205,7 +206,8 @@ export const DisabledOption: Story = {
 
 /** The label's box and the check's, for the stories that check which side the check is on. */
 function labelAndCheckBoxes(chipElement: HTMLElement): { label: DOMRect; check: DOMRect } {
-  const checkElement = chipElement.querySelector('svg')?.parentElement;
+  // By the check's own class: a chip's icon is an `svg` too.
+  const checkElement = chipElement.querySelector(`.${styles.check ?? 'check'}`);
   const labelNode = Array.from(chipElement.childNodes).find(
     (node) => node.nodeType === Node.TEXT_NODE,
   );

@@ -3,6 +3,12 @@ import type { ReactNode } from 'react';
 import { InlineField, type FieldFrameProps } from '../Field/Field';
 import styles from './Switch.module.css';
 
+/**
+ * Two consumer hooks restyle the unchecked track, set from a class on any ancestor (they inherit):
+ * `--switch-track-unchecked-background` (the fill) and `--switch-track-unchecked-border-color` (a
+ * colour, not a border shorthand). They apply unchecked only; checked, the track is the accent. A
+ * consumer that sets them owns the 3:1 the track needs against its surface (WCAG 1.4.11).
+ */
 export interface SwitchProps extends FieldFrameProps {
   /** The text beside the track, and the switch's accessible name. */
   label: string;

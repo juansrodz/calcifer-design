@@ -16,7 +16,8 @@ import { describe, expect, it } from 'vitest';
 interface Expectation {
   file: string;
   rule?: RegExp;
-  contains: readonly string[];
+  // A RegExp where the layout of a declaration is Prettier's to choose (a wrapped value).
+  contains: readonly (string | RegExp)[];
   lacks: readonly (string | RegExp)[];
 }
 
@@ -2688,7 +2689,9 @@ const expectations: ReadonlyArray<Expectation> = [
       ' padding-block: var(--space-1);',
       ' font-size: var(--text-xs);',
     ],
-    lacks: [],
+    // The inline padding and the icon chip's start inset stay md's: a `padding` shorthand here,
+    // at the icon rule's (0,2,0) and after it, would silently drop the inset.
+    lacks: [' padding:', ' padding-inline', ' height:'],
   },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
@@ -3103,18 +3106,12 @@ const expectations: ReadonlyArray<Expectation> = [
   // the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The hairline it
   // replaces measured 1.44 to 1.78:1 on the five surfaces. The border hook is a colour, not a
   // shorthand, so the 1 px width the thumb's travel counts stays, and forced colours still paint it.
-  // Prettier wraps the border's value, so it is pinned as Prettier prints it.
+  // Prettier wraps the border's value, so the pin allows any whitespace where a wrap can fall.
   {
     file: 'components/Switch/Switch.module.css',
     rule: /^\.track \{([^}]*)\}/m,
     contains: [
-      [
-        ' border: 1px solid',
-        '    var(',
-        '      --switch-track-unchecked-border-color,',
-        '      var(--color-border-control, var(--color-border-strong))',
-        '    );',
-      ].join('\n'),
+      / border: 1px solid\s+var\(\s*--switch-track-unchecked-border-color,\s*var\(--color-border-control,\s*var\(--color-border-strong\)\)\s*\);/,
       ' background: var(--switch-track-unchecked-background, var(--color-surface-3));',
     ],
     lacks: [
@@ -3162,7 +3159,11 @@ describe('the theme tokens the component CSS reads', () => {
         scope = match?.[1] ?? '';
       }
       for (const declaration of contains) {
-        expect(scope).toContain(declaration);
+        if (typeof declaration === 'string') {
+          expect(scope).toContain(declaration);
+        } else {
+          expect(scope).toMatch(declaration);
+        }
       }
       for (const forbidden of lacks) {
         if (typeof forbidden === 'string') {

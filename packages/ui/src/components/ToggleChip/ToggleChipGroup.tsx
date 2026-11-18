@@ -56,7 +56,8 @@ export interface ToggleChipGroupMultipleProps extends ToggleChipGroupBaseProps {
   onValueChange?: (value: string[]) => void;
   /**
    * Where a pressed chip draws its check: after the label (`end`, the default) or before it
-   * (`start`, after any icon), in the reading direction (`ToggleChipCheckPosition`).
+   * (`start`, after any icon), in the reading direction (`ToggleChipCheckPosition`). A single
+   * group and a lone chip draw no check, so they take no position.
    */
   checkPosition?: ToggleChipCheckPosition;
 }
@@ -101,7 +102,7 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
   );
   const multiple = props.selectionMode === 'multiple';
   // A single group draws no check, so only a multiple group has a position to hand on.
-  const checkPosition = props.selectionMode === 'multiple' ? props.checkPosition : undefined;
+  const checkPosition = multiple ? props.checkPosition : undefined;
   const pressedChips = options.flatMap((option, index) =>
     pressedValues.includes(option.value) ? [{ option, index }] : [],
   );

@@ -9,9 +9,9 @@
    No 44 px floor (L2-9, the mock's chips are 28 and 36 px): at the default size, `md`, the padding
    below makes a chip with no icon 32 px tall (one 0.875rem line at 1.15, plus two 0.5rem) and one
    with the 26 px disc 42 px; `sm` is the mock's 28 and 36 px (below). Each is past WCAG 2.5.8's
-   24 px target, and the row's gap keeps neighbours apart. The keyboard focus
-   ring is `base.css`'s `:focus-visible` outline, drawn round the chip itself and offset past the
-   pressed fill so the two do not merge.
+   24 px target, and the row's gap keeps neighbours apart. The keyboard focus ring is `base.css`'s
+   `:focus-visible` outline, drawn round the chip itself and offset past the pressed fill so the
+   two do not merge.
 
    `max-width` and `overflow-wrap` keep a long label from pushing the row past a phone's width. */
 .chip {
