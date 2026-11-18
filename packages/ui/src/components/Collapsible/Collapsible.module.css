@@ -22,14 +22,17 @@
 }
 
 /* The whole row is the button. It takes the heading's type, so the label and the aside are the
-   heading's; the chevron is quieter (below). */
+   heading's; the chevron is quieter (below). It has no padding unless a consumer sets one of the
+   two hooks, `--collapsible-trigger-padding-block` and `--collapsible-trigger-padding-inline`,
+   which are read here and never declared. */
 .trigger {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  padding: 0;
+  padding-block: var(--collapsible-trigger-padding-block, 0);
+  padding-inline: var(--collapsible-trigger-padding-inline, 0);
   border: 0;
   background: transparent;
   font: inherit;
@@ -42,12 +45,13 @@
 }
 
 /* WCAG 2.5.8 (target size, minimum) asks 24 px. The row is as tall as the heading's line box, about
-   21 px at the default size and less at a smaller hook, and `padding: 0` keeps the visible header
-   at the mock's height, so this pseudo-element widens only the pointer target: it adds the missing
-   height, split above and below, and nothing when the row is already 24 px or more. It is not
-   `--size-touch`: 44 px would reach into the first item of an open panel, over its own target.
-   Between two stacked headings the later one in the DOM wins the seam. The 1.5rem is the WCAG
-   figure, not a design value. */
+   21 px at the default size and less at a smaller hook, and the trigger has no padding by default,
+   which keeps the visible header at the mock's height. So this pseudo-element widens only the
+   pointer target: it adds the missing height, split above and below, and nothing when the row is
+   already 24 px or more. The `100%` is the padding box, so a block padding hook counts toward the
+   24 px. It is not `--size-touch`: 44 px would reach into the first item of an open panel, over its
+   own target. Between two stacked headings the later one in the DOM wins the seam. The 1.5rem is
+   the WCAG figure, not a design value. */
 .trigger::before {
   content: '';
   position: absolute;
@@ -89,8 +93,24 @@
   height: 100%;
 }
 
+/* `down-up`, the default: down while closed, turned up while open. */
 .trigger[data-panel-open] .chevron {
   transform: rotate(180deg);
+}
+
+/* `end-down`: closed, the down glyph turns a quarter to the reading end; open, it is the glyph as
+   drawn, pointing down at the panel. Each rule outranks the one before it, and the open rule, at
+   (0,4,0), outranks the default's (0,3,0) above as well. The component writes `data-direction`. */
+.chevron[data-chevron='end-down'] {
+  transform: rotate(-90deg);
+}
+
+.chevron[data-chevron='end-down'][data-direction='rtl'] {
+  transform: rotate(90deg);
+}
+
+.trigger[data-panel-open] .chevron[data-chevron='end-down'] {
+  transform: none;
 }
 
 /* The panel is kept mounted and Base UI writes `hidden` on it while closed, which the user agent's

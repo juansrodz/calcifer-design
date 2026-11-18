@@ -1,9 +1,16 @@
 import { Collapsible as BaseCollapsible } from '@base-ui/react/collapsible';
-import { useId } from 'react';
+import { useId, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
 import { hasContent } from '../../utils/hasContent';
 import styles from './Collapsible.module.css';
+
+/**
+ * Which way the chevron points, closed then open. `down-up` points down at a closed panel and up
+ * once it is open. `end-down` points to the reading end (right, or left in a right-to-left page)
+ * while closed and down at the panel once it is open, as a disclosure triangle does.
+ */
+export type CollapsibleChevron = 'down-up' | 'end-down';
 
 export interface CollapsibleProps {
   /** The label on the row. It is the trigger's accessible name, with `headingAside` after it. */
@@ -27,12 +34,26 @@ export interface CollapsibleProps {
    * would not learn the row exists.
    */
   disabled?: boolean;
+  /**
+   * Which way the chevron points, closed then open (`CollapsibleChevron`). The default, `down-up`,
+   * is the look every collapsible had before the option.
+   *
+   * `end-down` reads the computed direction (a `dir` on any ancestor, or a stylesheet's
+   * `direction`) after each render, so a direction changed under a memoised subtree takes effect on
+   * its next render. Server-rendered HTML carries no direction until hydration, so before then a
+   * closed chevron in a right-to-left page points right.
+   */
+  chevron?: CollapsibleChevron;
   children: ReactNode;
   /**
-   * A class for the root, joined after the component's own. It is how a consumer sets the one
-   * size hook, `--collapsible-heading-size`, which resizes the heading (default `--text-md`). Like
-   * any custom property the hook inherits, so a wrapper that sets it resizes every collapsible
-   * inside it.
+   * A class for the root, joined after the component's own. It is how a consumer sets the three
+   * hooks, each a custom property that inherits, so a wrapper that sets one reaches every
+   * collapsible inside it:
+   * - `--collapsible-heading-size` resizes the heading (default `--text-md`);
+   * - `--collapsible-trigger-padding-block` and `--collapsible-trigger-padding-inline` pad the
+   *   trigger row inside its edges (default `0` each). Each takes what `padding-block` and
+   *   `padding-inline` take, one value or a start and an end. The padding is inside the button, so
+   *   it is pointer target too, and the focus ring goes round it.
    */
   className?: string;
 }
@@ -53,6 +74,7 @@ export function Collapsible({
   defaultOpen = false,
   onOpenChange,
   disabled = false,
+  chevron = 'down-up',
   children,
   className,
 }: CollapsibleProps) {
@@ -62,6 +84,29 @@ export function Collapsible({
   // Base UI writes `aria-controls` on the trigger only while the panel is open. This panel is
   // always mounted, so the id is passed to both and the relationship holds when it is closed too.
   const panelId = useId();
+  // The `end-down` chevron's closed turn depends on the reading direction. It is read from the page
+  // and written straight to the node, as `Tree` and `DatePicker`'s `Calendar` do, so there is no
+  // second render. Not `:dir()`: at the build's browser targets lightningcss rewrites it to a list
+  // of `:lang()`, which ignores `dir`. A new or changed direction corrects the glyph rather than
+  // changing its state, so it is written with the transition off (a closed group mounting in a
+  // right-to-left page would otherwise turn from its first, left-to-right guess through a half
+  // turn), and only when it differs, so a re-render mid-toggle leaves a running turn alone.
+  const chevronRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const chevronElement = chevronRef.current;
+    if (chevron !== 'end-down' || chevronElement === null) {
+      return;
+    }
+    const readingDirection = getComputedStyle(chevronElement).direction;
+    if (chevronElement.dataset.direction === readingDirection) {
+      return;
+    }
+    chevronElement.style.transition = 'none';
+    chevronElement.dataset.direction = readingDirection;
+    // Reading the transform makes the browser apply the new turn while the transition is off.
+    void getComputedStyle(chevronElement).transform;
+    chevronElement.style.removeProperty('transition');
+  });
   return (
     <BaseCollapsible.Root
       render={<section />}
@@ -84,7 +129,12 @@ export function Collapsible({
               <span>{headingAside}</span>
             </>
           ) : null}
-          <span className={styles.chevron} aria-hidden="true">
+          <span
+            ref={chevronRef}
+            className={styles.chevron}
+            data-chevron={chevron}
+            aria-hidden="true"
+          >
             <ChevronDownIcon />
           </span>
         </BaseCollapsible.Trigger>

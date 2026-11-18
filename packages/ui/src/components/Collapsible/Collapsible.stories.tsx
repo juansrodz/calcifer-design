@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, within } from 'storybook/test';
 import { Collapsible } from './Collapsible';
 
 const meta = {
@@ -14,6 +15,7 @@ const meta = {
     open: { control: 'boolean' },
     defaultOpen: { control: 'boolean' },
     disabled: { control: 'boolean' },
+    chevron: { control: 'radio', options: ['down-up', 'end-down'] },
   },
 } satisfies Meta<typeof Collapsible>;
 
@@ -74,6 +76,89 @@ export const HeadingSize: Story = {
       <style>{`.collapsible-heading-size { --collapsible-heading-size: var(--text-sm); }`}</style>
       <Collapsible heading="Sides" className="collapsible-heading-size" defaultOpen>
         <p>Bread, a green salad and the good olives.</p>
+      </Collapsible>
+    </>
+  ),
+};
+
+/**
+ * `chevron="end-down"`: the chevron points to the reading end while a group is closed and down at
+ * the panel once it is open, as a disclosure triangle does. The default, `down-up`, points down
+ * while closed and up while open. Mains is open on arrival and Desserts is closed.
+ */
+export const ChevronEndDown: Story = {
+  args: { chevron: 'end-down' },
+  render: (args) => (
+    <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+      <Collapsible {...args} heading="Mains" headingAside={<span>2</span>} defaultOpen>
+        <p>Lasagna for six, and a roast chicken if the oven is free.</p>
+      </Collapsible>
+      <Collapsible {...args} heading="Desserts" headingAside={<span>1</span>}>
+        <p>Lemon tart.</p>
+      </Collapsible>
+    </div>
+  ),
+};
+
+/**
+ * `end-down` in a right-to-left page: the closed chevron points left, to the reading end. The
+ * component reads the computed direction, so a `dir` on any ancestor (or a stylesheet's
+ * `direction`) is enough.
+ */
+export const ChevronEndDownRightToLeft: Story = {
+  ...ChevronEndDown,
+  decorators: [
+    (Story) => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+  // Runs in a browser only (jsdom has no transitions). A closed group mounting in this page must
+  // land pointing left with no turn running: the direction is written with the transition off, so
+  // the glyph never spins through a half turn from its first, left-to-right guess. The story mounts
+  // itself so the check comes in the same task as the mount, well inside the turn's 120 ms.
+  play: async ({ mount, canvasElement }) => {
+    await mount();
+    const trigger = within(canvasElement).getByRole('button', { name: 'Desserts 1' });
+    const chevron = trigger.querySelector('svg')?.parentElement;
+    if (!chevron) throw new Error('Desserts has no chevron');
+    await expect(chevron.getAnimations()).toHaveLength(0);
+    await expect(getComputedStyle(chevron).transform).toBe('matrix(0, 1, -1, 0, 0, 0)');
+  },
+};
+
+/**
+ * The trigger's inner padding, from the two hooks `--collapsible-trigger-padding-block` and
+ * `--collapsible-trigger-padding-inline`, set from a class on the root (or on any wrapper, since
+ * they inherit). Each takes what `padding-block` and `padding-inline` take: one value, or a start
+ * and an end. Here the row is inset from a tinted group's edge as a phone's category group draws
+ * it: no padding above, 2 px below (`0 2px`) and 6 px at each side. The default is no padding.
+ */
+export const TriggerPadding: Story = {
+  parameters: { controls: { disable: true } },
+  render: () => (
+    <>
+      <style>{`.collapsible-trigger-padding {
+  --collapsible-trigger-padding-block: 0 2px;
+  --collapsible-trigger-padding-inline: 6px;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+}`}</style>
+      <Collapsible
+        heading={
+          <>
+            <span style={tintCircle} aria-hidden="true" />
+            Mains
+          </>
+        }
+        headingAside={<span>2</span>}
+        className="collapsible-trigger-padding"
+        chevron="end-down"
+        defaultOpen
+      >
+        <p>Lasagna for six, and a roast chicken if the oven is free.</p>
       </Collapsible>
     </>
   ),

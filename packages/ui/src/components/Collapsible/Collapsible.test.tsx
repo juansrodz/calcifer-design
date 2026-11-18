@@ -7,8 +7,18 @@ import { Collapsible } from './Collapsible';
 import styles from './Collapsible.module.css';
 import * as stories from './Collapsible.stories';
 
-const { Default, OpenOnArrival, WithAside, Controlled, Disabled, HeadingSize, Dark } =
-  composeStories(stories);
+const {
+  Default,
+  OpenOnArrival,
+  WithAside,
+  Controlled,
+  Disabled,
+  HeadingSize,
+  ChevronEndDown,
+  ChevronEndDownRightToLeft,
+  TriggerPadding,
+  Dark,
+} = composeStories(stories);
 
 describe('Collapsible', () => {
   it.each([
@@ -18,6 +28,9 @@ describe('Collapsible', () => {
     ['Controlled', Controlled],
     ['Disabled', Disabled],
     ['HeadingSize', HeadingSize],
+    ['ChevronEndDown', ChevronEndDown],
+    ['ChevronEndDownRightToLeft', ChevronEndDownRightToLeft],
+    ['TriggerPadding', TriggerPadding],
     ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
@@ -154,5 +167,102 @@ describe('Collapsible', () => {
     // each is asserted on its own.
     expect(icon?.parentElement).toHaveAttribute('aria-hidden', 'true');
     expect(icon).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  /**
+   * jsdom draws nothing, so these prove the marks the stylesheet turns the chevron by; the turns
+   * themselves are pinned in `token-reads.test.ts` and seen in the `ChevronEndDown` story.
+   */
+  describe('the chevron', () => {
+    const chevronOf = (name: string) =>
+      screen.getByRole('button', { name }).querySelector('svg')?.parentElement;
+
+    const inDirection = (direction: 'ltr' | 'rtl') => (
+      <div dir={direction}>
+        <Collapsible heading="Mains" chevron="end-down">
+          Lasagna for six
+        </Collapsible>
+      </div>
+    );
+
+    it('is marked down-up by default: down while closed and up while open, as before', () => {
+      render(<Default />);
+      expect(chevronOf('Mains')).toHaveAttribute('data-chevron', 'down-up');
+    });
+
+    it('is marked end-down when asked, with the reading direction it turns by', () => {
+      render(<Default chevron="end-down" />);
+      const chevron = chevronOf('Mains');
+      expect(chevron).toHaveAttribute('data-chevron', 'end-down');
+      expect(chevron).toHaveAttribute('data-direction', 'ltr');
+    });
+
+    it('marks the direction it is read in, from a dir attribute', () => {
+      render(inDirection('rtl'));
+      expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
+    });
+
+    it('marks the computed direction, with no dir attribute at all', () => {
+      document.documentElement.style.direction = 'rtl';
+      try {
+        render(<Default chevron="end-down" />);
+        expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
+      } finally {
+        document.documentElement.style.removeProperty('direction');
+      }
+    });
+
+    it('reads no direction for down-up, which turns the same either way', () => {
+      render(
+        <div dir="rtl">
+          <Collapsible heading="Mains">Lasagna for six</Collapsible>
+        </div>,
+      );
+      expect(chevronOf('Mains')).not.toHaveAttribute('data-direction');
+    });
+
+    it('follows a dir change on its next render, not only on mount', () => {
+      const { rerender } = render(inDirection('ltr'));
+      expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'ltr');
+      rerender(inDirection('rtl'));
+      expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
+    });
+
+    /**
+     * A changed `data-direction` changes the transform, and the transform transitions, so a write
+     * with the transition on would spin the glyph through a half turn (a closed group mounting in
+     * a right-to-left page did). The write is a correction, not a state change: it is made with the
+     * transition off, and only when the direction differs, so a re-render mid-toggle leaves the
+     * running transition alone. A real browser's `getAnimations()` is checked in the story's play.
+     */
+    it('writes the direction only when it changes, with the transition off for that write', () => {
+      const { rerender } = render(inDirection('ltr'));
+      const chevron = chevronOf('Mains');
+      if (!chevron) throw new Error('no chevron');
+      const observer = new MutationObserver(() => {});
+      observer.observe(chevron, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['style', 'data-direction'],
+      });
+      try {
+        rerender(inDirection('ltr'));
+        expect(observer.takeRecords()).toEqual([]);
+
+        rerender(inDirection('rtl'));
+        const records = observer.takeRecords();
+        const directionWrite = records.findIndex(
+          (record) => record.attributeName === 'data-direction',
+        );
+        expect(directionWrite).toBeGreaterThan(0);
+        expect(records[directionWrite]?.oldValue).toBe('ltr');
+        expect(records[directionWrite - 1]?.attributeName).toBe('style');
+        expect(records[directionWrite + 1]?.attributeName).toBe('style');
+        expect(records[directionWrite + 1]?.oldValue).toContain('transition: none');
+        expect(chevron.style.transition).toBe('');
+      } finally {
+        observer.disconnect();
+      }
+    });
   });
 });
