@@ -776,15 +776,6 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: GrayText;', 'color: Canvas;'],
     lacks: ['Highlight'],
   },
-  // The pressed rule's `forced-color-adjust: none` reaches the spinner a loading button holds, which
-  // would then draw its token colours (a blue quarter on a `GrayText` fill); its ring takes the
-  // glyph colour of the disabled pressed rule above instead (loading is always disabled).
-  {
-    file: 'components/IconButton/IconButton.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-pressed\]\[data-loading\] \.icon > \* \{([^}]*)\}/m,
-    contains: ['border-color: Canvas;'],
-    lacks: [],
-  },
   // The badge's fill is the page colour in forced colours, so its shape needs an edge of its own.
   // The border is declared in the forced-colours block only; the top-level rule keeps none.
   {

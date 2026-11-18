@@ -153,8 +153,9 @@
    as well (`opacity: 1`), as on `ChoiceCard`: the 45% dim left the glyph and edge under 3:1 and
    dimmed a focused loading button's ring. A pressed one is filled `GrayText` instead of
    `Highlight`, its rule (a class and two attributes) outweighing the pressed rule; its badge
-   follows. The pressed rule's `forced-color-adjust: none` also reaches a loading button's spinner,
-   so the spinner's ring takes the glyph colour, `Canvas`.
+   follows. The pressed rule's `forced-color-adjust: none` also reaches a loading button's spinner;
+   Spinner's own forced-colours rule draws its head in the glyph colour, `Canvas`, and its track in
+   `GrayText`, which vanishes on the fill and leaves an open arc.
 
    The badge's fill is the page colour here, so it gets a 1 px border, declared in this block only:
    the badge grows 2 px, and the default look is untouched. The border is `transparent`, which the
@@ -186,11 +187,6 @@
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
-  }
-
-  .root[data-pressed][data-loading] .icon > * {
-    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
-    border-color: Canvas;
   }
 
   .badge {
