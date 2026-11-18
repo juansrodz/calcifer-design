@@ -21,10 +21,20 @@ function nextFrame(): Promise<void> {
 // first. Awaiting two frames inside `act()` — Base UI may schedule one frame's callback from
 // inside another, so one frame is not a bound we can rely on — acts that update before axe looks
 // at the DOM, which is also the DOM we want axe scanning: settled, not mid-transition.
+//
+// Only violations are asked for (`resultTypes`). By default axe also serialises every node that
+// passed every rule — a CSS selector and an HTML snippet each — and on the token gallery's ~1,300
+// elements that reporting was about two thirds of the scan (axe call 670 ms, 235 ms without it;
+// the whole test went from 3.6-4.2 s to 1.7-2.0 s of its 5 s timeout on an oversubscribed machine).
+// `toHaveNoViolations` reads nothing else, every rule still runs against every node, and
+// `src/axe-helper.test.tsx` pins that a violation still shows.
 export async function axe(container: Element) {
   await act(async () => {
     await nextFrame();
     await nextFrame();
   });
-  return runAxe(container, { rules: { 'color-contrast': { enabled: false } } });
+  return runAxe(container, {
+    resultTypes: ['violations'],
+    rules: { 'color-contrast': { enabled: false } },
+  });
 }
