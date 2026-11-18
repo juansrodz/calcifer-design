@@ -31,8 +31,8 @@ export interface GridStateRowProps {
  * The live region speaks the message, so the visible copy of the loading and empty states is
  * hidden from assistive technology. The filtered-empty state is the library's `EmptyState`, bare,
  * whose message is a heading and stays readable (a hidden heading would be an empty one), with the
- * Clear filters button as its action; the button stays a tab stop, as the row is no keyboard row. The
- * cell spans a table that can be wider than the scroll area, so its content keeps to the scroll
+ * Clear filters button as its action; the button stays a tab stop, as the row is no keyboard row.
+ * The cell spans a table that can be wider than the scroll area, so its content keeps to the scroll
  * area's width and stays in view while the body scrolls sideways.
  */
 export function GridStateRow({
