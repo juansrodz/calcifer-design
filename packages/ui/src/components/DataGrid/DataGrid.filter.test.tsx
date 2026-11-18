@@ -2001,3 +2001,124 @@ describe('the choice filters', () => {
     expect(screen.getByRole('option', { name: 'Todas' })).toBeInTheDocument();
   });
 });
+
+// An app that drives a filterable column from its own controls, such as tabs over the grid, still
+// declares the column's `filter` so that the grid matches it. `enableFilters={false}` keeps that
+// matching and leaves out the grid's own filter controls.
+describe('enableFilters', () => {
+  function stripRow(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('thead tr[aria-rowindex="2"]');
+  }
+
+  function bodyRows(): HTMLElement[] {
+    return screen.getAllByRole('row').filter((row) => row.closest('tbody') !== null);
+  }
+
+  it('offers the filters by default', () => {
+    renderGrid();
+
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
+  });
+
+  it('turned off, offers no filters button, match mode or strip', () => {
+    renderGrid({ enableFilters: false, initialQuery: { filters: { status: 'out' } } });
+
+    expect(screen.queryByRole('button', { name: /^Filters/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+    // Nothing else is in the toolbar, so there is none.
+    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(stripRow()).toBeNull();
+    expect(screen.getAllByRole('rowgroup')[0]?.querySelectorAll('tr')).toHaveLength(1);
+  });
+
+  it('turned off, still applies the filters of initialQuery', () => {
+    renderGrid({
+      enableFilters: false,
+      initialQuery: { filters: { status: 'out', location: 'B-07' }, matchMode: 'any' },
+    });
+
+    const matchingIds = idsOfRowsWhere((row) => row.status === 'out' || row.location === 'B-07');
+    expect(matchingIds.length).toBeGreaterThan(0);
+    expect(matchingIds.length).toBeLessThan(rowTotal);
+    expect(screen.getByText(`${matchingIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(screen.getByRole('grid')).toHaveAttribute(
+      'aria-rowcount',
+      String(matchingIds.length + 1),
+    );
+    expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '2');
+  });
+
+  it("turned off, still applies a controlled query's filters, set by the app's own controls", async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    function TabsOverGrid() {
+      const [query, setQuery] = useState<DataGridQuery>(emptyDataGridQuery);
+      return (
+        <>
+          <button type="button" onClick={() => setQuery({ ...query, filters: { status: 'low' } })}>
+            Low stock
+          </button>
+          <DataGrid<InventoryRow>
+            gridId="tabs-over-grid"
+            heading="Inventory"
+            rows={makeInventoryRows(rowTotal)}
+            columns={filterableInventoryColumns}
+            getRowId={(row) => row.id}
+            enableFilters={false}
+            enableSearch
+            query={query}
+            onQueryChange={(nextQuery) => {
+              onQueryChange(nextQuery);
+              setQuery(nextQuery);
+            }}
+          />
+        </>
+      );
+    }
+    render(<TabsOverGrid />);
+
+    await user.click(screen.getByRole('button', { name: 'Low stock' }));
+
+    const lowIds = idsOfRowsWhere((row) => row.status === 'low');
+    expect(screen.getByText(`${lowIds.length} of ${rowTotal} rows`)).toBeInTheDocument();
+    expect(cellTextsOf('Status').every((status) => status === 'low')).toBe(true);
+    // The search stays, alone in the toolbar, and no filters button counts the app's filter.
+    const toolbar = screen.getByRole('toolbar', { name: 'Grid tools' });
+    expect(
+      within(toolbar)
+        .getAllByRole('button')
+        .map((button) => button.ariaLabel),
+    ).toEqual(['Search']);
+    expect(onQueryChange).not.toHaveBeenCalled();
+  });
+
+  it('turned off while the strip is open, takes the strip and its keyboard row away', async () => {
+    const user = userEvent.setup();
+    const rows = makeInventoryRows(rowTotal);
+    const props = {
+      gridId: 'toggled-filters-grid',
+      heading: 'Inventory',
+      rows,
+      columns: filterableInventoryColumns,
+      getRowId: (row: InventoryRow) => row.id,
+    };
+    const { rerender } = render(<DataGrid<InventoryRow> {...props} />);
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    expect(stripRow()).not.toBeNull();
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
+
+    rerender(<DataGrid<InventoryRow> {...props} enableFilters={false} />);
+
+    expect(stripRow()).toBeNull();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', String(rowTotal + 1));
+    expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '2');
+    // ArrowDown from the header lands on the first row, with no strip row between them.
+    const skuHeader = screen.getByRole('columnheader', { name: 'SKU' });
+    act(() => skuHeader.focus());
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('gridcell', { name: 'SKU-1000' })).toHaveFocus();
+  });
+});
