@@ -77,6 +77,23 @@ export interface DialogProps {
    * deliberately does not expose.
    */
   dismissOnOutsidePress?: boolean;
+  /**
+   * Where focus goes when the dialog closes. Left out, Base UI returns it to the `trigger`, or to
+   * whatever held focus when the dialog opened. That target is gone for a dialog opened with no
+   * trigger and no focused control (from a URL parameter, say) or whose opener unmounted while it
+   * was open, and focus then falls to `<body>`; pass `finalFocus` to say where it goes instead.
+   *
+   * - a ref: focus moves to that ref's element, in preference to the trigger. A ref with nothing
+   *   in it falls back to the default.
+   * - a function: called with how the dialog was closed (`'mouse'`, `'touch'`, `'pen'`,
+   *   `'keyboard'`, or `''` when that is unknown). Return an element to focus it; `true` or `null`
+   *   for the default above; `false` or nothing to move focus nowhere.
+   * - `false`: move focus nowhere, not even back to the trigger.
+   * - `true` (or left out): the default above.
+   *
+   * It takes the same values as Base UI's `Dialog.Popup` `finalFocus`.
+   */
+  finalFocus?: BaseDialog.Popup.Props['finalFocus'];
   open?: boolean;
   defaultOpen?: boolean;
   /** Base UI calls this as `(open, eventDetails)`; the second argument is passed through. */
@@ -101,6 +118,7 @@ export function Dialog({
   closeVariant = 'ghost',
   closeHidden = false,
   dismissOnOutsidePress = true,
+  finalFocus,
   open,
   defaultOpen,
   onOpenChange,
@@ -156,6 +174,7 @@ export function Dialog({
             // write `aria-modal`, so the popup says it here, as the DatePicker's calendar does.
             aria-modal="true"
             initialFocus={initialFocus}
+            finalFocus={finalFocus}
           >
             {sheetSide === 'bottom' ? <div className={styles.handle} aria-hidden="true" /> : null}
             <div className={styles.header}>
