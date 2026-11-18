@@ -1060,11 +1060,11 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   // Forced colours: a chosen primary or secondary is a `Highlight` fill with `HighlightText` ink,
   // drawn outside the browser's own recolouring (`forced-color-adjust: none`) as a pressed
-  // `IconButton` is. The `Highlight` edge on its 1 px border alone moved it only 1.9:1 (light) and
-  // 2.3:1 (dark) from the resting edge, so the fill is the cue. The opt-out would keep the primary's
-  // shadow, so it is cleared, and the ring is `CanvasText`, as the fill would swallow a `Highlight`
-  // one. The bare `[data-variant]` weighs it (0,4,0), over the selected secondary's (0,3,0)
-  // transparent border, so it does not win by source order alone.
+  // `IconButton` is. The `Highlight` edge alone moved it only 1.9:1 (light) and 2.3:1 (dark) from
+  // the resting edge, so the fill is the cue. The opt-out would keep the primary's shadow, so it is
+  // cleared, and the ring is `CanvasText`, as the fill would swallow a `Highlight` one. The bare
+  // `[data-variant]` weighs it (0,4,0), over the selected secondary's (0,3,0) transparent border,
+  // so it does not win by source order alone.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]\[data-variant\]:is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
@@ -1081,9 +1081,9 @@ const expectations: ReadonlyArray<Expectation> = [
   // A disabled or loading button (Base UI sets `data-disabled` on both) is `GrayText`, the system's
   // own disabled colour, and not dimmed as well, as on `ChoiceCard`: the 45% dim on top of it left
   // the label and the edge at 3.0 and 3.3:1, and a loading button (not natively disabled) was
-  // `ButtonText` at 45%. A pending button is exempt: it is busy, not dimmed. The rule weighs (0,5,0),
-  // the inverse primary's disabled rule inside `@supports` weighs the same, and comes first, so this
-  // one follows it in the file.
+  // `ButtonText` at 45%. A pending button is exempt: it is busy, not dimmed. The rule weighs
+  // (0,5,0), as the inverse primary's disabled rule inside `@supports` does, so it comes after that
+  // one in the file.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}/m,
@@ -1091,8 +1091,8 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['opacity: 0.45'],
   },
   // A chosen button that is disabled or loading reads disabled while its fill still says chosen: a
-  // `GrayText` fill with a `Canvas` ink, as a pressed disabled `IconButton`. It weighs (0,6,0), over
-  // the disabled rule above whatever the order.
+  // `GrayText` fill with a `Canvas` ink, as a pressed disabled `IconButton`. It weighs (0,6,0),
+  // over the disabled rule above whatever the order.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]\[data-disabled\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
@@ -1117,8 +1117,8 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 0;'],
     lacks: [],
   },
-  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back from
-  // the block (its rules tie with the `@supports` rule and the base rules, and win by coming later).
+  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back, as
+  // the block's rules tie with the `@supports` rule and the base rules and win by coming later.
   // Every rule inside the block is indented, so the first `}` at the start of a line closes it.
   {
     file: 'components/Button/Button.module.css',
@@ -2509,10 +2509,10 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 0.45;'],
     lacks: [],
   },
-  // A disabled chip is `GrayText` and not dimmed as well: the 45% dim on top of it left the label and
-  // the edge at 3.0 and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink, not a dimmed
-  // `Highlight` (2.4:1): it reads disabled and its fill still says pressed. Both follow the
-  // top-level disabled rule, which they tie with (0,2,0) and would lose to by source order.
+  // A disabled chip is `GrayText` and not dimmed as well: the 45% dim on top of it left the label
+  // and the edge at 3.0 and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink, not a
+  // dimmed `Highlight` (2.4:1): it reads disabled and its fill still says pressed. Both follow the
+  // top-level disabled rule, as the first ties it at (0,2,0) and wins by coming later.
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.chip\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-disabled\] \{([^}]*)\}/m,
@@ -2550,11 +2550,11 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
 
-  // Forced colours on `Segmented`: the chosen option is a `Highlight` fill with `HighlightText` ink,
-  // drawn outside the recolouring. A disabled option is `GrayText` and not dimmed as well (the dim
-  // took the label to 3.0 and 3.3:1), and a chosen one that is disabled is a `GrayText` fill with a
-  // `Canvas` ink, not a dimmed `Highlight` (2.4:1). Both follow the top-level disabled rule they tie
-  // with (0,2,0).
+  // Forced colours on `Segmented`: the chosen option is a `Highlight` fill with `HighlightText`
+  // ink, drawn outside the recolouring. A disabled option is `GrayText` and not dimmed as well (the
+  // dim took the label to 3.0 and 3.3:1), and a chosen one that is disabled is a `GrayText` fill
+  // with a `Canvas` ink, not a dimmed `Highlight` (2.4:1). Both follow the top-level disabled rule,
+  // as the first ties it at (0,2,0) and wins by coming later.
   {
     file: 'components/Segmented/Segmented.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.option\[data-pressed\] \{([^}]*)\}/m,
@@ -2747,8 +2747,8 @@ const expectations: ReadonlyArray<Expectation> = [
   // `forced-color-adjust: none` (a pressed control) let the token colours through. The forced rule
   // names the colours: a head in the ink the spinner inherits (a local property holds `currentcolor`
   // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
-  // thinner `GrayText` track, so the head is told apart by its weight and not by colour alone (`GrayText`
-  // and the text colour are close in luminance). The head keeps its width; the track is 1 px.
+  // thinner `GrayText` track, so the head is told apart by weight, not by colour alone. The head
+  // keeps its width; the track is 1 px.
   {
     file: 'components/Spinner/Spinner.module.css',
     rule: /^\.root \{([^}]*)\}/m,
