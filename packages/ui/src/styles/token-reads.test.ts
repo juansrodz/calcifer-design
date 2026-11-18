@@ -839,9 +839,10 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     // Forced colours replace the mixed border and fill, so a dimmed control's edge takes `GrayText`,
-    // the system's own disabled colour, as a disabled `ChoiceCard`'s does.
+    // the system's own disabled colour, as a disabled `ChoiceCard`'s does. It is read after the
+    // `@supports` block, because both rules weigh the same and the later one wins the tie.
     file: 'styles/field.module.css',
-    rule: /^@media \(forced-colors: active\) \{\n {2}\.dimmedControl \{([^}]*)\}/m,
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{[\s\S]*?^@media \(forced-colors: active\) \{\n {2}\.dimmedControl \{([^}]*)\}/m,
     contains: ['border-color: GrayText;'],
     lacks: [],
   },

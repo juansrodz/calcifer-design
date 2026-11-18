@@ -183,7 +183,8 @@
 
 /* Forced colours replace the mixed border and fill with the system's own, so the dim would be gone
    and the control would draw a full-strength edge. `GrayText`, the system's disabled colour, is the
-   cue there instead, as on a disabled `ChoiceCard`. */
+   cue there instead, as on a disabled `ChoiceCard`. This block must sit after the `@supports` block
+   above: both rules weigh (0,1,0), so the later one wins the tie. */
 @media (forced-colors: active) {
   .dimmedControl {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
