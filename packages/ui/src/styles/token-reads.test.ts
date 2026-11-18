@@ -52,6 +52,20 @@ const noBorderShorthand = /(?:^|\s)border\s*:/;
 // The band `AvatarGroup` draws around each avatar and around its overflow chip: the one value both
 // rules are pinned to, so a ring on one and not the other cannot pass.
 const avatarGroupRing = '0 0 0 var(--border-width-emphasis) var(--color-avatar-ring)';
+
+// The consumer-content rules in a component's forced-colours block carry `!important`, so a
+// consumer's inline colour cannot beat the system colours, as the browser's own recolouring beats
+// it outside an opt-out. The declaration lives in that block only: this row reads what precedes the
+// block and requires it free of `!important`.
+function importantOnlyInForcedBlock(file: string): Expectation {
+  return {
+    file,
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/!important;/],
+  };
+}
+
 const expectations: ReadonlyArray<Expectation> = [
   // Whole-file rows: every weight in these files is a token now.
   {
@@ -772,12 +786,7 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
-  {
-    file: 'components/IconButton/IconButton.module.css',
-    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
-    contains: [],
-    lacks: [/!important;/],
-  },
+  importantOnlyInForcedBlock('components/IconButton/IconButton.module.css'),
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkIconButton` had no hover cue under forced colours. The rule gives it the one an
   // `IconButton`, a `Button` and a `LinkButton` have; a disabled button keeps its `GrayText` edge,
@@ -1235,14 +1244,7 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
-  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
-  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
-  {
-    file: 'components/Button/Button.module.css',
-    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
-    contains: [],
-    lacks: [/!important;/],
-  },
+  importantOnlyInForcedBlock('components/Button/Button.module.css'),
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkButton` had no hover cue under forced colours. The rule gives it the one a `Button` has
   // (a ghost `Button`'s, painted in the text colour before, turns `Highlight` too). A disabled
@@ -2591,14 +2593,7 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
-  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
-  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
-  {
-    file: 'components/ChoiceCard/ChoiceCard.module.css',
-    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
-    contains: [],
-    lacks: [/!important;/],
-  },
+  importantOnlyInForcedBlock('components/ChoiceCard/ChoiceCard.module.css'),
   // Nothing follows the block, for the reasons given for `ToggleChip`: the guard above reads only
   // what precedes it.
   {
@@ -2722,14 +2717,7 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
-  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
-  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
-  {
-    file: 'components/ToggleChip/ToggleChip.module.css',
-    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
-    contains: [],
-    lacks: [/!important;/],
-  },
+  importantOnlyInForcedBlock('components/ToggleChip/ToggleChip.module.css'),
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.icon > \* \{([^}]*)\}/m,
@@ -2839,14 +2827,7 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
-  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
-  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
-  {
-    file: 'components/Segmented/Segmented.module.css',
-    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
-    contains: [],
-    lacks: [/!important;/],
-  },
+  importantOnlyInForcedBlock('components/Segmented/Segmented.module.css'),
   // The block comes after the chosen option's badge rule (the last normal-mode rule), and nothing
   // follows it, for the reasons given for `ToggleChip` above.
   {
