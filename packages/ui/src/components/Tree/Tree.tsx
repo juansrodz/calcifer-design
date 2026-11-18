@@ -436,7 +436,10 @@ export function TreeView({
  * tree reads the computed direction (a `dir` on any ancestor, or a stylesheet's `direction`) after
  * each render, so a direction changed under a memoised subtree takes effect on its next render.
  * Server-rendered HTML carries no direction until hydration, so before then a closed chevron in a
- * right-to-left page points right. A new direction is applied without the chevrons' turn.
+ * right-to-left page points right. A new direction is applied without the chevrons' turn, so a
+ * branch toggled in the very render that finds a new direction snaps to its state instead of
+ * turning. That is accepted: it takes a direction changed outside React with no render before the
+ * press.
  */
 export function Tree(props: TreeProps) {
   return <TreeView {...props} />;
