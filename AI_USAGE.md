@@ -20,7 +20,8 @@ added below, newest first, in the same shape: decision, options, why, cost if wr
   frameworks; this repo's Storybook is `storybook-react-rsbuild`, so it would need a second,
   Vite-built copy of the Storybook configuration kept in step with the rsbuild one. The
   test-runner works with any builder because it drives the built site, and it reports a
-  throwing play itself (Storybook 10's `storyFinished` event alone says "success" then).
+  throwing play itself (a review warned that Storybook 10's `storyFinished` event alone can say
+  "success" after one, so a home-made harness has to listen for `playFunctionThrewException`).
 - Cost if wrong: the test-runner is at the end of its support. 0.26.0 prints
   "Official support for Test Runner has ended" on every run (Storybook's migration guide
   points to addon-vitest); it still declares Storybook 10 and 11 as peers and works today. It
