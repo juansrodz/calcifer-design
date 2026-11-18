@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { fn } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { Tree, type TreeItem, type TreeProps } from './Tree';
 
 const items: TreeItem[] = [
@@ -99,6 +99,18 @@ export const RightToLeft: Story = {
       </div>
     ),
   ],
+  // Runs in a browser only (jsdom has no transitions). A closed branch mounting in this page must
+  // land pointing left with no turn running: the direction is written with the turns held still,
+  // so the glyph never spins through a half turn from its first, left-to-right guess. The story
+  // mounts itself so the check comes in the same task as the mount, well inside the turn's 120 ms.
+  play: async ({ mount, canvasElement }) => {
+    await mount();
+    const reference = within(canvasElement).getByRole('treeitem', { name: 'Reference' });
+    const chevron = reference.querySelector('[data-toggle] > svg');
+    if (!chevron) throw new Error('Reference has no chevron');
+    await expect(chevron.getAnimations()).toHaveLength(0);
+    await expect(getComputedStyle(chevron).transform).toBe('matrix(0, 1, -1, 0, 0, 0)');
+  },
 };
 
 function ControlledTree(props: TreeProps) {
