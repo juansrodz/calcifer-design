@@ -284,9 +284,9 @@ describe('Dialog', () => {
     });
   });
 
-  // Base UI returns focus to the control that held it when the dialog opened, and to the trigger
-  // when there is one. A dialog opened from a URL, or whose opener unmounts while it is open,
-  // leaves it nowhere to go, so the page says where with `finalFocus`.
+  // Base UI returns focus to the trigger, or to the control that held it when the dialog opened. A
+  // dialog opened from a URL, or whose opener unmounts while it is open, has neither, so the page
+  // says where focus goes with `finalFocus`.
   describe('the focus returned on close', () => {
     type ReturnMode =
       'none' | 'ref' | 'function' | 'recording' | 'null' | 'nothing' | 'true' | 'off';
@@ -384,12 +384,16 @@ describe('Dialog', () => {
 
     const getTarget = () => screen.getByTestId('return-target');
     const getOpener = () => screen.getByRole('button', { name: 'Open item' });
+    const getElsewhere = () => screen.getByRole('button', { name: 'Somewhere else' });
 
-    async function closeWithEscape() {
-      const popup = await screen.findByRole('dialog');
+    async function waitForFocusInside(popup: HTMLElement) {
       // Base UI moves focus in a frame after the popup mounts; closing before that would leave
       // focus where it began, which tells the tests nothing about where it returns to.
       await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
+    }
+
+    async function closeWithEscape() {
+      await waitForFocusInside(await screen.findByRole('dialog'));
       await userEvent.keyboard('{Escape}');
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     }
@@ -415,7 +419,7 @@ describe('Dialog', () => {
       ['a centred dialog', 'center', undefined],
       ['a bottom sheet', 'sheet', 'bottom'],
       ['an end sheet', 'sheet', 'end'],
-    ] as const)('does so for %s', async (_name, variant, side) => {
+    ] as const)('sends focus to the named element for %s', async (_name, variant, side) => {
       render(<ItemPage returnMode="ref" variant={variant} side={side} startOpen />);
       await closeWithEscape();
       expect(getTarget()).toHaveFocus();
@@ -442,19 +446,18 @@ describe('Dialog', () => {
       expect(getTarget()).toHaveFocus();
     });
 
-    it('moves focus nowhere with false, not even back to the opener', async () => {
-      render(<ItemPage returnMode="off" />);
-      await openFromOpenerAndClose();
-      expect(getOpener()).not.toHaveFocus();
-      expect(getTarget()).not.toHaveFocus();
-    });
-
-    it('moves focus nowhere from a function that returns nothing', async () => {
-      render(<ItemPage returnMode="nothing" />);
-      await openFromOpenerAndClose();
-      expect(getOpener()).not.toHaveFocus();
-      expect(getTarget()).not.toHaveFocus();
-    });
+    it.each([
+      ['false', 'off'],
+      ['a function that returns nothing', 'nothing'],
+    ] as const)(
+      'moves focus nowhere with %s, not even back to the opener',
+      async (_form, returnMode) => {
+        render(<ItemPage returnMode={returnMode} />);
+        await openFromOpenerAndClose();
+        expect(getOpener()).not.toHaveFocus();
+        expect(getTarget()).not.toHaveFocus();
+      },
+    );
 
     it.each([
       ['true', 'true'],
@@ -496,15 +499,13 @@ describe('Dialog', () => {
       it('is unchanged without the prop: focus stays where the page put it', async () => {
         render(<ItemPage returnMode="none" movesFocusOnClose />);
         await openFromOpenerAndClose();
-        expect(screen.getByRole('button', { name: 'Somewhere else' })).toHaveFocus();
+        expect(getElsewhere()).toHaveFocus();
       });
 
       it('lets the named element win over it', async () => {
         render(<ItemPage returnMode="ref" movesFocusOnClose />);
         const focusedElsewhere = vi.fn();
-        screen
-          .getByRole('button', { name: 'Somewhere else' })
-          .addEventListener('focusin', focusedElsewhere);
+        getElsewhere().addEventListener('focusin', focusedElsewhere);
         await openFromOpenerAndClose();
         // The page did move focus, so the named element beat a real move.
         expect(focusedElsewhere).toHaveBeenCalledOnce();
@@ -533,10 +534,10 @@ describe('Dialog', () => {
       it('keeps the outer dialog’s target for the outer dialog, not its confirm', async () => {
         render(<NestedPage />);
         const outer = await screen.findByRole('dialog', { name: 'The item' });
-        await waitFor(() => expect(outer.contains(document.activeElement)).toBe(true));
+        await waitForFocusInside(outer);
         await userEvent.click(within(outer).getByRole('button', { name: 'Remove' }));
         const confirm = await screen.findByRole('dialog', { name: 'Remove the item?' });
-        await waitFor(() => expect(confirm.contains(document.activeElement)).toBe(true));
+        await waitForFocusInside(confirm);
         await userEvent.keyboard('{Escape}');
         await waitFor(() =>
           expect(
