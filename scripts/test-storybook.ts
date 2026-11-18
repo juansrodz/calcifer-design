@@ -38,7 +38,8 @@ const server = Bun.serve({
 
 // `detached` puts the runner in a process group of its own, which jest and its workers join, so
 // a signal sent to this script alone can be passed to all of them instead of orphaning the
-// workers. Ctrl-C in a terminal now reaches only this script, which passes it on the same way.
+// workers. Ctrl-C in a terminal, or closing it, reaches only this script, which passes the signal
+// on the same way.
 const runner = spawn(
   resolve(repoRoot, 'node_modules/.bin/test-storybook'),
   ['--url', `http://127.0.0.1:${server.port}`, ...process.argv.slice(2)],
@@ -52,38 +53,32 @@ const runnerExited = new Promise<number | null>((settle) => {
   });
 });
 
-function signalRunnerGroup(signal: NodeJS.Signals) {
+// A negative pid addresses the runner's whole process group, and signal 0 only tests that the group
+// exists. Returns whether the group was there to receive the signal.
+function signalRunnerGroup(signal: NodeJS.Signals | 0): boolean {
   if (runner.pid === undefined) {
-    return;
+    return false;
   }
   try {
-    // A negative pid signals the whole group.
     process.kill(-runner.pid, signal);
+    return true;
   } catch {
-    // The group has already gone.
+    return false;
   }
 }
 
+function runnerGroupAlive(): boolean {
+  return signalRunnerGroup(0);
+}
+
 let stopped = false;
-function stop() {
+function stop(): void {
   stopped = true;
   signalRunnerGroup('SIGTERM');
 }
 process.on('SIGHUP', stop);
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
-
-function runnerGroupAlive(): boolean {
-  if (runner.pid === undefined) {
-    return false;
-  }
-  try {
-    process.kill(-runner.pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 const exitCode = await runnerExited;
 // `test-storybook` is a wrapper that can exit before jest has finished its teardown (which closes
