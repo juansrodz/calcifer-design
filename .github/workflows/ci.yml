@@ -32,6 +32,13 @@ jobs:
       - name: Every changed package has a changeset
         if: github.event_name == 'pull_request'
         run: bun run changeset:status
+      # `bun run check` ends with `storybook:test`, which runs every story and its play function in
+      # headless Chromium. The headless shell alone is enough for that, and smaller than the full
+      # browser; the version is the one the pinned `playwright` devDependency names. Not cached:
+      # Playwright's CI guidance is that restoring the cache takes about as long as downloading.
+      - name: Install headless Chromium for the Storybook tests
+        working-directory: packages/ui
+        run: ./node_modules/.bin/playwright install --with-deps --only-shell chromium
       - run: bun run check
       - name: Build the Storybook image
         run: docker build --file docker/storybook.Dockerfile --tag storybook-check:${{ github.sha }} .
