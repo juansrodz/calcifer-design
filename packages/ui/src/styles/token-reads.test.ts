@@ -1058,13 +1058,53 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: ['--color-accent', '--color-border-strong'],
   },
-  // Forced colours: a chosen primary or secondary keeps a `Highlight` edge, its only cue once the
-  // fills are replaced. The bare `[data-variant]` weighs it (0,4,0), over the selected secondary's
-  // (0,3,0) transparent border, so it does not win by source order alone.
+  // Forced colours: a chosen primary or secondary is a `Highlight` fill with `HighlightText` ink,
+  // drawn outside the browser's own recolouring (`forced-color-adjust: none`) as a pressed
+  // `IconButton` is. The `Highlight` edge on its 1 px border alone moved it only 1.9:1 (light) and
+  // 2.3:1 (dark) from the resting edge, so the fill is the cue. The opt-out would keep the primary's
+  // shadow, so it is cleared, and the ring is `CanvasText`, as the fill would swallow a `Highlight`
+  // one. The bare `[data-variant]` weighs it (0,4,0), over the selected secondary's (0,3,0)
+  // transparent border, so it does not win by source order alone.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]\[data-variant\]:is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
-    contains: ['border-color: Highlight;'],
+    contains: [
+      'forced-color-adjust: none;',
+      'box-shadow: none;',
+      'border-color: Highlight;',
+      'background: Highlight;',
+      ' color: HighlightText;',
+      'outline-color: CanvasText;',
+    ],
+    lacks: [],
+  },
+  // A disabled or loading button (Base UI sets `data-disabled` on both) is `GrayText`, the system's
+  // own disabled colour, and not dimmed as well, as on `ChoiceCard`: the 45% dim on top of it left
+  // the label and the edge at 3.0 and 3.3:1, and a loading button (not natively disabled) was
+  // `ButtonText` at 45%. A pending button is exempt: it is busy, not dimmed. The rule weighs (0,5,0),
+  // the inverse primary's disabled rule inside `@supports` weighs the same, and comes first, so this
+  // one follows it in the file.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}/m,
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
+    lacks: ['opacity: 0.45'],
+  },
+  // A chosen button that is disabled or loading reads disabled while its fill still says chosen: a
+  // `GrayText` fill with a `Canvas` ink, as a pressed disabled `IconButton`. It weighs (0,6,0), over
+  // the disabled rule above whatever the order.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]\[data-disabled\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
+    contains: ['background: GrayText;', ' color: Canvas;'],
+    lacks: ['Highlight'],
+  },
+  // The loading label's own 70% dim would take the `GrayText` label under 7:1; a pending button's
+  // label is hidden by the overlay, so it is left to that rule.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-loading\]:not\(\[data-pending\]\) \.label \{([^}]*)\}/m,
+    contains: ['opacity: 1;'],
     lacks: [],
   },
   {
