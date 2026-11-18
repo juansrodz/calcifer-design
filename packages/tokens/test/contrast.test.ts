@@ -107,6 +107,9 @@ describe('the danger colour on a field', () => {
 
   it('is held to 3:1 for every theme, through the ui pair list', () => {
     expect(uiContrastPairs).toContainEqual(['danger', 'surfaceInput']);
+  });
+
+  it('is not held to the higher 4.5:1 there, through the text pair list', () => {
     expect(textContrastPairs).not.toContainEqual(['danger', 'surfaceInput']);
   });
 });
