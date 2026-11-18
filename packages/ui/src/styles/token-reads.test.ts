@@ -748,6 +748,15 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['forced-color-adjust: none;'],
     lacks: [],
   },
+  // Nothing follows the block either: a normal-mode rule appended after it would win the cascade
+  // back from the block, and the row above, which anchors on a rule before it, would not notice.
+  // Every rule inside the block is indented, so the first `}` at the start of a line closes it.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
   // The bare `color:` entries below carry a leading space: `contains` is a substring test, and
   // `color: GrayText;` alone is also found in `border-color: GrayText;`, so the row could not fail.
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
