@@ -3,6 +3,7 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronDownIcon } from '../../icons/ChevronDownIcon';
+import { hasContent } from '../../utils/hasContent';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import fieldStyles from '../../styles/field.module.css';
 import popupStyles from '../../styles/popup.module.css';
@@ -26,6 +27,23 @@ export interface SelectProps extends FieldFrameProps {
   description?: ReactNode;
   /** Shown on the trigger while nothing is chosen. */
   placeholder?: string;
+  /**
+   * Content inside the trigger, before the value: an icon from your own set (an `<svg>` is sized
+   * to 1rem and coloured by the text-muted role, as on `TextInput`) or a small avatar, such as an
+   * `<Avatar size="xs" />` for the person the value names. Update it from `onValueChange` so it
+   * follows the value. Absent (or `null`, `false`, `''`), the trigger is exactly what it is without
+   * the prop.
+   *
+   * It is decorative: the slot is `aria-hidden`, so nothing in it (an avatar's hidden name
+   * included) joins the trigger's accessible name, which stays the `label`, or the value announced
+   * with it. A press on it opens the select like any other press on the trigger. Keep it phrasing content with nothing focusable inside, since it
+   * sits in a `<button>`. When it carries meaning the value text does not, say it in words the
+   * trigger already reads: the option's `label` (`'Sebastian (host)'`) or the `description`.
+   *
+   * The trigger keeps its 44 px floor; content up to 26 px tall fits inside it unchanged, and
+   * taller content grows the trigger.
+   */
+  startIcon?: ReactNode;
   /**
    * `null` is a real state — a select that has been cleared — so it is in the type rather than
    * narrowed away. Use with `onValueChange` for a controlled select; `defaultValue` otherwise.
@@ -59,6 +77,7 @@ export function Select({
   required = false,
   disabled = false,
   placeholder = 'Select…',
+  startIcon,
   value,
   defaultValue,
   onValueChange,
@@ -68,6 +87,7 @@ export function Select({
   sideOffset = 8,
 }: SelectProps) {
   const container = usePortalContainer();
+  const valueText = <BaseSelect.Value className={styles.value} placeholder={placeholder} />;
   return (
     <BaseField.Root
       className={fieldStyles.frame}
@@ -99,7 +119,19 @@ export function Select({
           className={[fieldStyles.control, styles.trigger].join(' ')}
           onBlur={onBlur}
         >
-          <BaseSelect.Value className={styles.value} placeholder={placeholder} />
+          {hasContent(startIcon) ? (
+            // The slot and the value share a row of their own, so the slot sits right before the
+            // value at the affix gap while the trigger's `space-between` keeps the chevron at the
+            // end. Without a slot the value stays the trigger's own child, as before the prop.
+            <span className={styles.lead}>
+              <span className={fieldStyles.affixIcon} aria-hidden="true">
+                {startIcon}
+              </span>
+              {valueText}
+            </span>
+          ) : (
+            valueText
+          )}
           <BaseSelect.Icon className={styles.icon}>
             <ChevronDownIcon />
           </BaseSelect.Icon>

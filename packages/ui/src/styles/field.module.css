@@ -197,7 +197,8 @@
    floor) together with `.affix`, and the input inside it wears `.affixInput`: borderless,
    transparent and stretched across what the decorations leave. `SearchField` is the first
    wearer; `TextInput` and `TimePicker` wear the same pieces (through `AffixInput`) when they are
-   given a leading icon.
+   given a leading icon. `Select`'s trigger is a button, not a wrapper around an input, so it wears
+   `.affixIcon` alone for its `startIcon` and lays it out in its own row (`Select.module.css`).
 
    `.affix` adds only `gap` and `cursor`, which `.control` does not declare. A wearer that must
    change the padding or the floor does it under a two-class selector of its own, for the reason

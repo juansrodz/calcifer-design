@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import { Avatar } from '../Avatar/Avatar';
 import { Select } from './Select';
 
 const meta = {
@@ -32,6 +34,47 @@ export const Required: Story = { args: { required: true } };
 export const WithError: Story = { args: { error: 'Choose a category.' } };
 export const Disabled: Story = { args: { disabled: true } };
 export const Dark: Story = { globals: { theme: 'dark' }, args: { error: 'Choose a category.' } };
+
+const bringers = [
+  { value: 'sebastian', label: 'Sebastian' },
+  { value: 'christian', label: 'Christian' },
+];
+
+/**
+ * The bringer's 24 px avatar inside the trigger, before the chosen name, following the value. The
+ * slot is decorative: it is hidden from assistive technology, so the avatar's own name is not read
+ * a second time after the option's label, which already says who it is.
+ */
+export const WithStartIcon: Story = {
+  args: {
+    label: 'Who is bringing',
+    name: 'bringer',
+    options: bringers,
+    defaultValue: 'sebastian',
+  },
+  render: function WithStartIconRender({ onValueChange, defaultValue, ...args }) {
+    const [bringer, setBringer] = useState(defaultValue ?? null);
+    const bringerName = bringers.find((option) => option.value === bringer)?.label;
+    return (
+      <Select
+        {...args}
+        value={bringer}
+        onValueChange={(value) => {
+          setBringer(value);
+          onValueChange?.(value);
+        }}
+        startIcon={
+          bringer === null || bringerName === undefined ? undefined : (
+            <Avatar name={bringerName} size="xs" colorSeed={bringer} />
+          )
+        }
+      />
+    );
+  },
+};
+
+/** The same in the dark theme. */
+export const WithStartIconDark: Story = { ...WithStartIcon, globals: { theme: 'dark' } };
 
 /** Opens from the keyboard and checks the highlight lands on an option, so arrows work at once. */
 export const KeyboardOpen: Story = {

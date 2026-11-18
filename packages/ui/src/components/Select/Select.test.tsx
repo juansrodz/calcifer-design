@@ -1,13 +1,26 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import fieldStyles from '../../styles/field.module.css';
+import { Avatar } from '../Avatar/Avatar';
 import { Select } from './Select';
+import styles from './Select.module.css';
 import * as stories from './Select.stories';
 
-const { Default, Chosen, Described, Required, WithError, Disabled } = composeStories(stories);
+const {
+  Default,
+  Chosen,
+  Described,
+  Required,
+  WithError,
+  Disabled,
+  WithStartIcon,
+  WithStartIconDark,
+} = composeStories(stories);
 
 const options = [
   { value: 'mains', label: 'Mains' },
@@ -23,6 +36,8 @@ describe('Select', () => {
     ['Required', Required],
     ['WithError', WithError],
     ['Disabled', Disabled],
+    ['WithStartIcon', WithStartIcon],
+    ['WithStartIconDark', WithStartIconDark],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -180,5 +195,169 @@ describe('Select', () => {
     const listbox = await screen.findByRole('listbox');
     // The listbox is `Select.List`; the surface that wears the skin is its parent, `Select.Popup`.
     expect(listbox.parentElement).toHaveAttribute('data-popup', 'select');
+  });
+
+  describe('startIcon', () => {
+    const avatar = <Avatar name="Ada Lovelace" size="xs" />;
+
+    function triggerParts(trigger: HTMLElement) {
+      const value = trigger.querySelector(`.${styles.value}`);
+      const chevron = trigger.querySelector(`.${styles.icon}`);
+      const slot = trigger.querySelector(`.${fieldStyles.affixIcon}`);
+      if (!(value instanceof HTMLElement) || !(chevron instanceof HTMLElement)) {
+        throw new Error('the trigger has lost its value or its chevron');
+      }
+      return { value, chevron, slot };
+    }
+
+    it('draws the start icon inside the trigger, before the value and the chevron', () => {
+      render(<WithStartIcon />);
+      const trigger = screen.getByRole('combobox', { name: 'Who is bringing' });
+      const { value, chevron, slot } = triggerParts(trigger);
+      expect(slot).not.toBeNull();
+      expect(within(trigger).getByTestId('avatar')).toBeInTheDocument();
+      expect(slot?.contains(within(trigger).getByTestId('avatar'))).toBe(true);
+      expect((slot?.compareDocumentPosition(value) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      expect(value.compareDocumentPosition(chevron) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      expect(value).toHaveTextContent('Sebastian');
+    });
+
+    it('hides the start icon from assistive technology, so it adds nothing to the trigger', () => {
+      render(<WithStartIcon />);
+      const trigger = screen.getByRole('combobox', { name: 'Who is bringing' });
+      const { slot } = triggerParts(trigger);
+      expect(slot).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('keeps the trigger’s accessible name and description', () => {
+      render(
+        <Select
+          label="Category"
+          name="category"
+          options={options}
+          defaultValue="sides"
+          description="Where the item shows up on the list."
+          startIcon={avatar}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      expect(trigger).toHaveAccessibleName('Category');
+      expect(trigger).toHaveAccessibleDescription('Where the item shows up on the list.');
+      expect(screen.getByLabelText('Category')).toBe(trigger);
+    });
+
+    it('still shows the placeholder before the value is chosen', () => {
+      render(<Select label="Category" name="category" options={options} startIcon={avatar} />);
+      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const { value, slot } = triggerParts(trigger);
+      expect(slot).not.toBeNull();
+      expect(value).toHaveAttribute('data-placeholder');
+      expect(value).toHaveTextContent('Select…');
+    });
+
+    it.each([
+      ['left out', undefined],
+      ['null', null],
+      ['false', false],
+    ])('draws no slot when it is %s', (_name, startIcon) => {
+      render(<Select label="Category" name="category" options={options} startIcon={startIcon} />);
+      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const { value, slot } = triggerParts(trigger);
+      expect(slot).toBeNull();
+      expect(trigger.querySelector(`.${styles.lead}`)).toBeNull();
+      // Without a slot the value is the trigger's own child, as it was before the prop existed.
+      expect(value.parentElement).toBe(trigger);
+    });
+
+    it('picks an option with the keyboard as it does without one', async () => {
+      const onValueChange = vi.fn();
+      render(
+        <Select
+          label="Category"
+          name="category"
+          options={options}
+          startIcon={avatar}
+          onValueChange={onValueChange}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      trigger.focus();
+      await userEvent.keyboard('{Enter}');
+      const mains = await screen.findByRole('option', { name: 'Mains' });
+      await waitFor(() => expect(mains).toHaveFocus());
+      await userEvent.keyboard('{ArrowDown}{Enter}');
+      await waitFor(() => expect(onValueChange).toHaveBeenCalledWith('sides'));
+      await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+      expect(trigger).toHaveFocus();
+    });
+
+    it('opens from a press on the start icon, which is part of the trigger', async () => {
+      render(<WithStartIcon />);
+      const trigger = screen.getByRole('combobox', { name: 'Who is bringing' });
+      await userEvent.click(within(trigger).getByTestId('avatar'));
+      expect(await screen.findByRole('listbox')).toBeInTheDocument();
+    });
+
+    it('follows the chosen value in the story, as an app would', async () => {
+      render(<WithStartIcon />);
+      const trigger = screen.getByRole('combobox', { name: 'Who is bringing' });
+      await userEvent.click(trigger);
+      await userEvent.click(await screen.findByRole('option', { name: 'Christian' }));
+      await waitFor(() => expect(triggerParts(trigger).value).toHaveTextContent('Christian'));
+      expect(within(trigger).getByTestId('avatar')).toHaveTextContent('CH');
+    });
+  });
+
+  // jsdom draws no layout, so the trigger's height is pinned in the stylesheets: the floor and the
+  // padding are `.control`'s alone, and neither the trigger nor the slot's row declares a height or
+  // a block padding of its own. Select has one size, so this is every size it draws. A 24 px avatar
+  // fits the 26 px left inside `.control`'s 44 px floor, its 8 px block padding and its 1 px border.
+  describe('the trigger’s height with a start icon', () => {
+    function readStylesheet(file: string) {
+      return readFileSync(path.join(import.meta.dirname, file), 'utf8').replace(
+        /\/\*[\s\S]*?\*\//g,
+        '',
+      );
+    }
+
+    function ruleBody(stylesheet: string, selector: RegExp) {
+      const body = stylesheet.match(selector)?.[1];
+      if (body === undefined) {
+        throw new Error(`${selector.source} matches nothing`);
+      }
+      return body;
+    }
+
+    const selectStylesheet = readStylesheet('Select.module.css');
+    const fieldStylesheet = readStylesheet('../../styles/field.module.css');
+    const blockSizing =
+      /(?:^|\s)(?:height|min-height|max-height|block-size|min-block-size|max-block-size|padding|padding-block|padding-top|padding-bottom|margin|margin-block|margin-top|margin-bottom|line-height)\s*:/;
+
+    it('leaves the floor and the block padding to `.control`', () => {
+      const control = ruleBody(fieldStylesheet, /^\.control \{([^}]*)\}/m);
+      expect(control).toContain('min-height: var(--size-touch);');
+      expect(control).toContain('padding: var(--space-2) var(--space-3);');
+      expect(ruleBody(selectStylesheet, /^\.trigger \{([^}]*)\}/m)).not.toMatch(blockSizing);
+    });
+
+    it('lays the slot and the value out in a row that declares no height of its own', () => {
+      const lead = ruleBody(selectStylesheet, /^\.lead \{([^}]*)\}/m);
+      expect(lead).toContain('display: flex;');
+      expect(lead).toContain('flex: 1;');
+      expect(lead).toContain('align-items: center;');
+      expect(lead).toContain('gap: var(--space-2);');
+      expect(lead).toContain('min-width: 0;');
+      expect(lead).not.toMatch(blockSizing);
+    });
+
+    it('keeps the slot itself free of block sizing, so its content sets its height', () => {
+      const slot = ruleBody(fieldStylesheet, /^\.affixIcon \{([^}]*)\}/m);
+      expect(slot).toContain('flex: none;');
+      expect(slot).not.toMatch(blockSizing);
+    });
   });
 });
