@@ -69,6 +69,8 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--collapsible-trigger-padding-block',
   '--collapsible-trigger-padding-inline',
   '--empty-state-heading-size',
+  '--switch-track-unchecked-background',
+  '--switch-track-unchecked-border-color',
   '--toggle-chip-pressed-ring',
   '--progress-bar-track-size',
 ] as const;

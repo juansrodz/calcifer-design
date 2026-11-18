@@ -1,6 +1,19 @@
 /* Switch adds the track and the thumb; the row, the label type, the description and the error
    are `field.module.css`. There is deliberately no `[data-invalid]` rule — a switch's state is
-   binary and visible, so the message below it is the error signal. */
+   binary and visible, so the message below it is the error signal.
+
+   Unchecked, the track's fill and its border colour are two consumer hooks, read here and never
+   declared: `--switch-track-unchecked-background` and `--switch-track-unchecked-border-color`, set
+   from a class on any ancestor (they inherit). Checked, the track is the accent whatever they say.
+   The border hook is a colour and not a shorthand, so the 1 px width the thumb's travel counts
+   stays; a consumer that wants no edge sets it to the fill or to `transparent`. Forced colours
+   paint the edge `ButtonText` whatever the hook says (the block at the end of this file).
+
+   The default border is the opaque control colour, as the checkbox's, not the hairline: unchecked,
+   the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The control colour
+   holds 3.26:1 or more on the five surfaces in both modes, where the hairline held 1.44 to 1.78:1.
+   A consumer that sets the hooks owns that ratio for its own colours. The hairline is the fallback
+   for a page on a tokens sheet older than 0.4.0, which declares no `--color-border-control`. */
 .track {
   display: inline-flex;
   flex: none;
@@ -8,9 +21,13 @@
   width: 2.5rem;
   height: 1.5rem;
   padding: var(--space-1);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid
+    var(
+      --switch-track-unchecked-border-color,
+      var(--color-border-control, var(--color-border-strong))
+    );
   border-radius: var(--radius-full);
-  background: var(--color-surface-3);
+  background: var(--switch-track-unchecked-background, var(--color-surface-3));
   cursor: pointer;
   transition-property: background-color, border-color;
   transition-duration: var(--motion-duration-1);
@@ -42,4 +59,75 @@
    padding − 1rem thumb. base.css collapses the transition under prefers-reduced-motion. */
 .thumb[data-checked] {
   transform: translateX(0.875rem);
+}
+
+/* Forced colours drop every fill to Canvas, and the thumb has no border, so it vanished into the
+   track in both states. The track opts out (`forced-color-adjust` inherits to the thumb) and names
+   system colours instead, which also overrides the unchecked-track hooks:
+
+   - unchecked, a Canvas track with a ButtonText edge and a solid ButtonText thumb;
+   - checked, a Highlight track with a HighlightText thumb, the system's own selected pair;
+   - disabled, GrayText, and not dimmed as well (`opacity: 1`), as `ToggleChip` does: the 55% dim
+     on top of it would take GrayText under 3:1. Disabled and checked, a GrayText track with a
+     Canvas thumb, so it reads disabled while its fill still says checked;
+   - the focus ring CanvasText: the opt-out would otherwise let `base.css`'s token colour through.
+
+   Each rule ties the top-level rule it overrides, or beats it, and wins by coming later, so this
+   block stays the last thing in the file. */
+@media (forced-colors: active) {
+  .track {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: ButtonText;
+    background: Canvas;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .track:focus-visible {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    outline-color: CanvasText;
+  }
+
+  .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: ButtonText;
+    box-shadow: none;
+  }
+
+  .track[data-checked] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
+    background: Highlight;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .track[data-checked] .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: HighlightText;
+  }
+
+  .track[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: GrayText;
+  }
+
+  .track[data-disabled] .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: GrayText;
+  }
+
+  .track[data-checked][data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    background: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .track[data-checked][data-disabled] .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: Canvas;
+  }
 }

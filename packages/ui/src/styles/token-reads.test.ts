@@ -16,7 +16,8 @@ import { describe, expect, it } from 'vitest';
 interface Expectation {
   file: string;
   rule?: RegExp;
-  contains: readonly string[];
+  // A RegExp where the layout of a declaration is Prettier's to choose (a wrapped value).
+  contains: readonly (string | RegExp)[];
   lacks: readonly (string | RegExp)[];
 }
 
@@ -2731,6 +2732,28 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['padding-inline-start: var(--space-1);'],
     lacks: [],
   },
+  // `size="sm"` is the WBW mock's chip (4e, 4f, 10g): 28 px tall with no icon and 36 px with the
+  // 26 px disc, in the 12 px type, against md's 32 and 42 px at 14 px. The heights are floors, not
+  // padding sums, so the line's leading cannot move them and a wrapped label still grows the chip.
+  // Both are past WCAG 2.5.8's 24 px.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-size='sm'\] \{([^}]*)\}/m,
+    contains: [
+      ' min-height: 1.75rem;',
+      ' padding-block: var(--space-1);',
+      ' font-size: var(--text-xs);',
+    ],
+    // The inline padding and the icon chip's start inset stay md's: a `padding` shorthand here,
+    // at the icon rule's (0,2,0) and after it, would silently drop the inset.
+    lacks: [' padding:', ' padding-inline', ' height:'],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-size='sm'\]\[data-with-icon\] \{([^}]*)\}/m,
+    contains: [' min-height: 2.25rem;'],
+    lacks: [],
+  },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^ {2}\.chip:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
@@ -3133,6 +3156,110 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/\{/],
   },
+
+  // `Switch`'s unchecked track. Its fill and its border colour are two consumer hooks, read here and
+  // never declared, so a misspelt one falls back silently past everything but this row and the dist
+  // scan's allow-list. The default border is the opaque control colour, as the checkbox's: unchecked,
+  // the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The hairline it
+  // replaces measured 1.44 to 1.78:1 on the five surfaces. The border hook is a colour, not a
+  // shorthand, so the 1 px width the thumb's travel counts stays, and forced colours still paint it.
+  // Prettier wraps the border's value, so the pin allows any whitespace where a wrap can fall.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.track \{([^}]*)\}/m,
+    contains: [
+      / border: 1px solid\s+var\(\s*--switch-track-unchecked-border-color,\s*var\(--color-border-control,\s*var\(--color-border-strong\)\)\s*\);/,
+      ' background: var(--switch-track-unchecked-background, var(--color-surface-3));',
+    ],
+    lacks: [
+      ' border: 1px solid var(--color-border-strong);',
+      ' background: var(--color-surface-3);',
+    ],
+  },
+  // Checked, the track is the accent whatever the hooks say: they are the unchecked look only.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.track\[data-checked\] \{([^}]*)\}/m,
+    contains: [' border-color: var(--color-accent);', ' background: var(--color-accent);'],
+    lacks: ['--switch-track-unchecked'],
+  },
+
+  // Forced colours on `Switch`. The browser drops the fills to Canvas, so the thumb (no border of its
+  // own) vanished into the track in both states. The track opts out (`forced-color-adjust` inherits
+  // to the thumb) and names system colours: unchecked, a Canvas track with a ButtonText edge and a
+  // solid ButtonText thumb; checked, a Highlight track with a HighlightText thumb; disabled,
+  // GrayText and not dimmed as well; the focus ring CanvasText, not the token the opt-out lets
+  // through. The block overrides the unchecked-track hooks too.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track \{([^}]*)\}/m,
+    contains: [' forced-color-adjust: none;', ' border-color: ButtonText;', ' background: Canvas;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track:focus-visible \{([^}]*)\}/m,
+    contains: [' outline-color: CanvasText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.thumb \{([^}]*)\}/m,
+    contains: [' background: ButtonText;', ' box-shadow: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\] \{([^}]*)\}/m,
+    contains: [' border-color: Highlight;', ' background: Highlight;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\] \.thumb \{([^}]*)\}/m,
+    contains: [' background: HighlightText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-disabled\] \{([^}]*)\}/m,
+    contains: [' opacity: 1;', ' border-color: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-disabled\] \.thumb \{([^}]*)\}/m,
+    contains: [' background: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: [' border-color: GrayText;', ' background: GrayText;'],
+    lacks: ['Highlight'],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\]\[data-disabled\] \.thumb \{([^}]*)\}/m,
+    contains: [' background: Canvas;'],
+    lacks: [],
+  },
+  // The block comes right after the last normal-mode rule (`.thumb[data-checked]`), and nothing
+  // follows it: its rules tie the top-level ones they override and win by coming later, so a
+  // normal-mode rule appended after it would win the cascade back. Every rule inside is indented,
+  // so the first `}` at the start of a line closes the block.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.thumb\[data-checked\] \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n/m,
+    contains: [' .track {', ' .thumb {'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
 ];
 
 // The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each
@@ -3166,7 +3293,11 @@ describe('the theme tokens the component CSS reads', () => {
         scope = match?.[1] ?? '';
       }
       for (const declaration of contains) {
-        expect(scope).toContain(declaration);
+        if (typeof declaration === 'string') {
+          expect(scope).toContain(declaration);
+        } else {
+          expect(scope).toMatch(declaration);
+        }
       }
       for (const forbidden of lacks) {
         if (typeof forbidden === 'string') {

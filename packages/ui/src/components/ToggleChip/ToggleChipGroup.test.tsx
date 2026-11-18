@@ -9,7 +9,8 @@ import * as stories from './ToggleChip.stories';
 import styles from './ToggleChip.module.css';
 import { ToggleChipGroup, type ToggleChipOption } from './ToggleChipGroup';
 
-const { SingleGroup, MultipleGroup, Required, WithError, DisabledOption } = composeStories(stories);
+const { SingleGroup, MultipleGroup, Required, WithError, DisabledOption, Small, CheckAtStart } =
+  composeStories(stories);
 
 // The stories' fixtures, for the tests that need a plain `vi.fn()` handler: a composed story types
 // its handler with Storybook's own spy, which a `vi.fn()` does not satisfy.
@@ -399,6 +400,90 @@ describe('ToggleChipGroup, multiple', () => {
     await userEvent.click(chip('No restrictions'));
     expect(onValueChange.mock.calls[0]).toEqual([['']]);
     expect(pressedLabels()).toEqual(['No restrictions']);
+  });
+});
+
+describe('ToggleChipGroup, size', () => {
+  it('draws every chip at md unless the group asks for sm', () => {
+    const { rerender } = render(
+      <ToggleChipGroup selectionMode="multiple" label="Dietary needs" options={dietaryOptions} />,
+    );
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toHaveAttribute('data-size', 'md');
+    }
+    rerender(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        size="sm"
+      />,
+    );
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toHaveAttribute('data-size', 'sm');
+    }
+  });
+
+  it('draws the Small story’s chips at sm, in both groups', () => {
+    render(<Small />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) {
+      expect(button).toHaveAttribute('data-size', 'sm');
+    }
+  });
+});
+
+describe('ToggleChipGroup, the check position', () => {
+  // A chip's children in order, by what each is: the check's span, the icon's span or the label.
+  function chipParts(name: string): string[] {
+    return Array.from(chip(name).childNodes).map((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return `label:${node.textContent ?? ''}`;
+      }
+      const element = node as HTMLElement;
+      if (element.classList.contains(styles.check ?? '')) return 'check';
+      if (element.classList.contains(styles.icon ?? '')) return 'icon';
+      return element.tagName;
+    });
+  }
+
+  it('draws the check after the label by default', () => {
+    render(<MultipleGroup />);
+    expect(chipParts('Vegan')).toEqual(['label:Vegan', 'check']);
+  });
+
+  it('draws it before the label for checkPosition="start", and keeps it out of the name', () => {
+    render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        defaultValue={['vegan']}
+        checkPosition="start"
+      />,
+    );
+    expect(chipParts('Vegan')).toEqual(['check', 'label:Vegan']);
+    expect(chipParts('Spicy')).toEqual(['label:Spicy']);
+    expect(chip('Vegan')).toHaveAccessibleName('Vegan');
+  });
+
+  it('keeps an icon at the very start, before a start check', () => {
+    render(
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={[{ value: 'vegan', label: 'Vegan', icon: <span /> }]}
+        defaultValue={['vegan']}
+        checkPosition="start"
+      />,
+    );
+    expect(chipParts('Vegan')).toEqual(['icon', 'check', 'label:Vegan']);
+  });
+
+  it('draws the CheckAtStart story’s checks before their labels', () => {
+    render(<CheckAtStart />);
+    expect(chipParts('Vegetarian')).toEqual(['check', 'label:Vegetarian']);
   });
 });
 

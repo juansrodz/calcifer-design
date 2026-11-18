@@ -6,7 +6,7 @@ import { useIndexedToggleGroup } from '../../hooks/useIndexedToggleGroup';
 import type { FieldFrameProps } from '../Field/Field';
 import { GroupFrame } from '../Field/GroupFrame';
 import { useFormValue } from '../Form/FormContext';
-import { ChipToggle } from './ToggleChip';
+import { ChipToggle, type ToggleChipCheckPosition, type ToggleChipSize } from './ToggleChip';
 import styles from './ToggleChip.module.css';
 
 export interface ToggleChipOption {
@@ -31,6 +31,8 @@ interface ToggleChipGroupBaseProps extends FieldFrameProps {
   required?: boolean;
   /** Called when the focus leaves a chip, as `RadioGroup`'s `onBlur` is. */
   onBlur?: () => void;
+  /** Every chip's size: `md` by default, `sm` for the smaller chip (`ToggleChipSize`). */
+  size?: ToggleChipSize;
 }
 
 export interface ToggleChipGroupSingleProps extends ToggleChipGroupBaseProps {
@@ -52,6 +54,12 @@ export interface ToggleChipGroupMultipleProps extends ToggleChipGroupBaseProps {
   defaultValue?: readonly string[];
   /** Every pressed value, in the options' order and not the order they were pressed in. */
   onValueChange?: (value: string[]) => void;
+  /**
+   * Where a pressed chip draws its check: after the label (`end`, the default) or before it
+   * (`start`, after any icon), in the reading direction (`ToggleChipCheckPosition`). A single
+   * group and a lone chip draw no check, so they take no position.
+   */
+  checkPosition?: ToggleChipCheckPosition;
 }
 
 export type ToggleChipGroupProps = ToggleChipGroupSingleProps | ToggleChipGroupMultipleProps;
@@ -83,6 +91,7 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
     description,
     error,
     onBlur,
+    size,
     required = false,
     disabled = false,
   } = props;
@@ -92,6 +101,8 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
     valuesOf(props.defaultValue),
   );
   const multiple = props.selectionMode === 'multiple';
+  // A single group draws no check, so only a multiple group has a position to hand on.
+  const checkPosition = multiple ? props.checkPosition : undefined;
   const pressedChips = options.flatMap((option, index) =>
     pressedValues.includes(option.value) ? [{ option, index }] : [],
   );
@@ -174,6 +185,8 @@ export function ToggleChipGroup(props: ToggleChipGroupProps) {
                     value={String(index)}
                     {...toggleGroup.itemProps(option, index)}
                     showCheck={multiple && pressedValues.includes(option.value)}
+                    checkPosition={checkPosition}
+                    size={size}
                     icon={option.icon}
                     disabled={option.disabled}
                   >
