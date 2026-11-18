@@ -40,7 +40,16 @@ export const Restricted: Story = {
   },
 };
 export const Required: Story = { args: { required: true } };
-export const Disabled: Story = { args: { disabled: true, defaultFiles: [report] } };
+export const Disabled: Story = {
+  args: { disabled: true, defaultFiles: [report] },
+  parameters: {
+    // TODO: the disabled drop zone's hint ("or drop it here") measures 2.61:1 against its
+    // surface in the light theme (#a19e9b on #fdfdfc), under axe's 4.5:1. WCAG 1.4.3 exempts
+    // text in an inactive control, but the repo treats contrast findings as library or tokens
+    // decisions, not rule exclusions, so this stays reported (not failing) until one is made.
+    a11y: { test: 'todo' },
+  },
+};
 export const WithError: Story = {
   args: { error: 'Attach the signed form.', defaultFiles: [photo] },
 };
