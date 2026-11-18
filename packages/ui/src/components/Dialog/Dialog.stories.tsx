@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
@@ -61,6 +61,49 @@ export const KeyboardOpen: Story = {
     const popup = await screen.findByRole('dialog', { name: 'Remove the showcase remote?' });
     // Base UI moves focus a frame after the popup mounts, so the assertion waits for it.
     await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
+  },
+};
+
+/**
+ * A sheet that opens from a card's title and takes the title away while it is open, as an item
+ * sheet does when the list behind it re-renders. Base UI has no trigger or focused control left
+ * to return to, so `finalFocus` names where focus goes on close: the "Back to the list" button.
+ * Without it, focus would fall to the page body.
+ */
+export const FinalFocus: Story = {
+  args: { variant: 'sheet', trigger: undefined, heading: 'Potluck salad' },
+  render: function FinalFocusRender(args) {
+    const [open, setOpen] = useState(false);
+    const returnRef = useRef<HTMLButtonElement>(null);
+    return (
+      <>
+        {open ? null : (
+          <Button variant="secondary" onClick={() => setOpen(true)}>
+            Open item
+          </Button>
+        )}
+        <Button variant="secondary" nativeButton render={<button ref={returnRef} type="button" />}>
+          Back to the list
+        </Button>
+        <Dialog
+          {...args}
+          open={open}
+          onOpenChange={(nextOpen) => setOpen(nextOpen)}
+          finalFocus={returnRef}
+        />
+      </>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Open item' }));
+    const popup = await screen.findByRole('dialog', { name: 'Potluck salad' });
+    // Base UI moves focus a frame after the popup mounts; closing before that proves nothing.
+    await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: 'Back to the list' })).toHaveFocus(),
+    );
   },
 };
 
