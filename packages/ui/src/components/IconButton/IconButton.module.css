@@ -160,7 +160,11 @@
    The badge's fill is the page colour here, so it gets a 1 px border, declared in this block only:
    the badge grows 2 px, and the default look is untouched. The border is `transparent`, which the
    browser paints in the system text colour. A pressed badge is outside the recolouring and names
-   its border, `Highlight`. */
+   its border, `Highlight`.
+
+   The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
+   rule gives a `LinkIconButton` the cue an `IconButton` already has, as `Button.module.css` does for
+   `LinkButton`. */
 @media (forced-colors: active) {
   .root[data-pressed],
   .root[data-pressed]:hover:not([data-disabled]) {
@@ -187,6 +191,13 @@
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  @media (hover: hover) {
+    .root:hover:not([data-disabled]) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: Highlight;
+    }
   }
 
   .badge {
