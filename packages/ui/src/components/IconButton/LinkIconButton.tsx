@@ -1,8 +1,8 @@
 import { useRender } from '@base-ui/react/use-render';
 import type { ComponentPropsWithRef } from 'react';
-import { IconButtonContent } from './IconButton';
 import type { IconButtonSize, IconButtonVariant } from './IconButton';
 import styles from './IconButton.module.css';
+import { IconButtonContent } from './IconButtonContent';
 
 export interface LinkIconButtonProps extends Omit<
   ComponentPropsWithRef<'a'>,

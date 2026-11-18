@@ -1,7 +1,8 @@
 import { Button as BaseButton } from '@base-ui/react/button';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
 import { Spinner } from '../Spinner/Spinner';
 import styles from './IconButton.module.css';
+import { IconButtonContent } from './IconButtonContent';
 
 export type IconButtonVariant = 'primary' | 'secondary' | 'ghost' | 'soft';
 export type IconButtonSize = 'md' | 'sm';
@@ -37,25 +38,6 @@ export interface IconButtonProps extends Omit<
    */
   badge?: number;
   className?: string;
-}
-
-const BADGE_CAP = 99;
-
-/**
- * The glyph and the corner count, the same inside an `IconButton` and a `LinkIconButton`. Internal:
- * the barrel does not export it.
- */
-export function IconButtonContent({ icon, badge }: { icon: ReactNode; badge?: number }) {
-  return (
-    <>
-      <span className={styles.icon}>{icon}</span>
-      {badge !== undefined && badge > 0 ? (
-        <span className={styles.badge} aria-hidden="true">
-          {badge > BADGE_CAP ? `${BADGE_CAP}+` : badge}
-        </span>
-      ) : null}
-    </>
-  );
 }
 
 /**
