@@ -30,6 +30,16 @@ export const OpenOnLoad: Story = { args: { defaultOpen: true } };
 
 /** Opens with the keyboard and checks the first item takes focus, so arrow keys work at once. */
 export const KeyboardOpen: Story = {
+  parameters: {
+    a11y: {
+      // While the popup is open, Base UI renders focus guards beside the trigger: visually hidden
+      // spans that are `aria-hidden` and `tabIndex={0}`, so Tab into or out of the portalled
+      // popup lands on a guard and is redirected (Base UI's `utils/FocusGuard`). Deliberate, and
+      // it trips axe's `aria-hidden-focus` in a real browser; nothing in this library renders
+      // them, so the rule is excluded for this open state, as for ToastRegion's close control.
+      options: { rules: { 'aria-hidden-focus': { enabled: false } } },
+    },
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     canvas.getByRole('button', { name: 'Remote actions' }).focus();
