@@ -168,6 +168,13 @@ export const FocusVisible: Story = {
   },
 };
 
+// What DangerViaHooks paints on hover, for both of its elements: the hover fill its class sets and
+// the rest ink, which its hover label falls back to.
+const dangerHoverPaint = {
+  backgroundColor: 'color-mix(in srgb, var(--color-danger) 88%, var(--color-text))',
+  color: 'var(--color-inverse-text)',
+};
+
 /**
  * A destructive action on a fill of the consumer's own, from the hooks alone: a class on the
  * button sets `--button-fill`, `--button-fill-hover` and `--button-label-color`. No selector
@@ -181,25 +188,11 @@ export const FocusVisible: Story = {
 export const DangerViaHooks: Story = {
   parameters: {
     controls: { disable: true },
-    // Run by `.storybook/test-runner.ts` with a real pointer: the hover fill, on both elements,
-    // and the system colours under forced colours.
+    // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
+    // pointer: the hover fill, on both elements, and the system colours under forced colours.
     paintChecks: [
-      {
-        target: 'button',
-        interaction: 'hover',
-        expected: {
-          backgroundColor: 'color-mix(in srgb, var(--color-danger) 88%, var(--color-text))',
-          color: 'var(--color-inverse-text)',
-        },
-      },
-      {
-        target: 'a',
-        interaction: 'hover',
-        expected: {
-          backgroundColor: 'color-mix(in srgb, var(--color-danger) 88%, var(--color-text))',
-          color: 'var(--color-inverse-text)',
-        },
-      },
+      { target: 'button', interaction: 'hover', expected: dangerHoverPaint },
+      { target: 'a', interaction: 'hover', expected: dangerHoverPaint },
       {
         target: 'button',
         interaction: 'hover',
@@ -246,6 +239,12 @@ export const DangerViaHooks: Story = {
   },
 };
 
+// What RowViaHooks paints on hover and on a press: its hover pair.
+const rowHoverPaint = {
+  backgroundColor: 'var(--color-danger)',
+  color: 'var(--color-inverse-text)',
+};
+
 /**
  * A destructive list row, from the hooks: danger text at rest on no fill, and a solid danger fill
  * with the inverse ink on hover and press. The hover pair differs from the rest pair in both
@@ -255,19 +254,11 @@ export const DangerViaHooks: Story = {
 export const RowViaHooks: Story = {
   parameters: {
     controls: { disable: true },
-    // Run by `.storybook/test-runner.ts`: a press with no pointer over the row (a touch press),
-    // and a real hover.
+    // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`): a press
+    // with no pointer over the row (a touch press), and a real hover. Both paint the hover pair.
     paintChecks: [
-      {
-        target: 'button',
-        interaction: 'press',
-        expected: { backgroundColor: 'var(--color-danger)', color: 'var(--color-inverse-text)' },
-      },
-      {
-        target: 'button',
-        interaction: 'hover',
-        expected: { backgroundColor: 'var(--color-danger)', color: 'var(--color-inverse-text)' },
-      },
+      { target: 'button', interaction: 'press', expected: rowHoverPaint },
+      { target: 'button', interaction: 'hover', expected: rowHoverPaint },
     ],
   },
   decorators: inRowBox,
