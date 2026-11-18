@@ -105,7 +105,7 @@ describe('LinkIconButton', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it('navigates once on a click, and runs a caller onClick before it', async () => {
+  it("navigates once on a click, and runs a caller's onClick", async () => {
     const onClick = vi.fn();
     const onNavigate = vi.fn();
     render(
