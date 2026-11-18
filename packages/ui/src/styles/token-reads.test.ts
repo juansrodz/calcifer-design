@@ -69,8 +69,13 @@ function importantOnlyInForcedBlock(file: string): Expectation {
 // A consumer-content rule in a forced-colours block (a chosen or pressed control's content takes its
 // ink) sets colours only. A `Spinner` among that content draws its track dotted under a solid head,
 // and that style is its one cue when the rule paints both in one ink; a `border` shorthand or a
-// `border-style` in the rule would reset it.
-const consumerContentKeepsStyles = [/border-style/, noBorderShorthand] as const;
+// border style in the rule, on any side and in any spelling (`border-top-style`,
+// `border-block-style`, `border-top:`), would reset it.
+const borderSide = '(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?';
+const consumerContentKeepsStyles = [
+  new RegExp(`border${borderSide}-style`),
+  new RegExp(`(?:^|\\s)border${borderSide}\\s*:`),
+] as const;
 
 const expectations: ReadonlyArray<Expectation> = [
   // Whole-file rows: every weight in these files is a token now.
@@ -3056,7 +3061,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
   // thinner `GrayText` track, so the head is told apart by weight, not by colour alone. The head
   // keeps its width; the track is 1 px and dotted, under a solid head: where one ink paints both (a
-  // disabled `IconButton`'s `GrayText`, the content rule of a chosen or pressed control) the style
+  // loading `IconButton`'s `GrayText`, the content rule of a chosen or pressed control) the style
   // still tells them apart, and the consumer-content rules set colours only, never the style.
   {
     file: 'components/Spinner/Spinner.module.css',
