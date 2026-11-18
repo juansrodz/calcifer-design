@@ -81,8 +81,8 @@ export interface DialogProps {
    * Where focus goes when the dialog closes. Left out, Base UI returns it to the `trigger`, or to
    * whatever held focus when the dialog opened. A dialog opened with no trigger and no focused
    * control (from a URL parameter, say), or whose opener unmounted while it was open, has neither,
-   * and focus then falls to `<body>`, or to a control an earlier popup remembered. Pass
-   * `finalFocus` to say where it goes instead.
+   * and focus then falls to `<body>`, or to a control an earlier popup remembered. `finalFocus`
+   * says where it goes instead. It takes the same values as Base UI's `Dialog.Popup` `finalFocus`:
    *
    * - a ref: focus moves to that ref's element, in preference to the trigger. A ref with nothing
    *   in it falls back to the default.
@@ -95,20 +95,17 @@ export interface DialogProps {
    * - `true`, or left out: the default above.
    *
    * The element has to be able to take focus: a button, a link, a field, or an element with a
-   * `tabIndex`. A heading needs `tabIndex={-1}`. An element that is not in the tab order but holds
-   * a tabbable one hands focus to the first such descendant, so a `tabIndex={-1}` heading that
-   * holds a link focuses the link. An element that cannot take focus (a plain heading) moves
-   * nothing, so focus falls to `<body>`; it does not fall back to the default.
+   * `tabIndex` (a heading needs `tabIndex={-1}`). An element that is not in the tab order hands
+   * focus to its first tabbable descendant, so a `tabIndex={-1}` heading that holds a link focuses
+   * the link. An element that cannot take focus, such as a plain heading, moves nothing: focus
+   * falls to `<body>`, not to the default.
    *
-   * An element named by a ref or a function also wins over focus that your own `onOpenChange`
-   * moves as the dialog closes. `true`, or leaving it out, keeps Base UI's rule of leaving focus
-   * where the app put it.
+   * A ref or function target also wins over focus that your own `onOpenChange` moves as the dialog
+   * closes. `true`, or leaving it out, keeps Base UI's rule of leaving focus where the app put it.
    *
    * Set it on the outermost dialog. Leave it out on a dialog nested in another: closing the
    * nested one would send focus to the target while the outer modal is still open, out of the
    * focus trap.
-   *
-   * It takes the same values as Base UI's `Dialog.Popup` `finalFocus`.
    */
   finalFocus?: BaseDialog.Popup.Props['finalFocus'];
   open?: boolean;
