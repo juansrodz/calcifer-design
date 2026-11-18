@@ -128,12 +128,57 @@ describe('Upload', () => {
     ] as const;
     const backdrops = ['surface1', 'surface2', 'surface3', 'surfaceRaised'] as const;
 
-    it('wears the shared dimmed frame only while disabled', () => {
+    it('wears the shared dimmed control only while disabled', () => {
       const { unmount } = render(<allStories.Disabled />);
       expect(screen.getByText('or drop it here').parentElement).toHaveClass('dimmedControl');
       unmount();
       render(<allStories.Default />);
       expect(screen.getByText('or drop it here').parentElement).not.toHaveClass('dimmedControl');
+    });
+
+    it("dims the face's button through Button's own disabled state, only while disabled", () => {
+      const { unmount } = render(<allStories.Disabled />);
+      expect(screen.getByText('Choose a file').closest('button')).toHaveAttribute('data-disabled');
+      unmount();
+      render(<allStories.Default />);
+      expect(screen.getByText('Choose a file').closest('button')).not.toHaveAttribute(
+        'data-disabled',
+      );
+    });
+
+    // The invariant behind the hint's ratio, whatever route a regression takes: nothing in the
+    // stylesheet makes the zone, the face or the hint translucent. The one opacity is the input's 0,
+    // which hides the real file input over the zone.
+    it("declares no opacity but the hidden input's", () => {
+      const opacities = uploadRules.flatMap((rule) =>
+        Array.from(rule.body.matchAll(/(?:^|;)\s*opacity:\s*([^;]+)/g), (match) => ({
+          selectors: rule.selectors,
+          value: (match[1] ?? '').trim(),
+        })),
+      );
+      expect(opacities).toEqual([{ selectors: ['.input'], value: '0' }]);
+    });
+
+    it('keeps an invalid zone its danger colours, dimmed at the same share as the frame', () => {
+      render(<allStories.DisabledWithError />);
+      // The rule below keys on the input's `data-invalid`, which a disabled field still carries.
+      expect(input()).toHaveAttribute('data-invalid');
+      const invalid = declarationsOf(
+        uploadRules,
+        '.zone[data-disabled] .input[data-invalid] + .face',
+      );
+      const resolve = (property: string) => {
+        const value = invalid.get(property) ?? '';
+        return invalid.get(/^var\((--[\w-]+)\)$/.exec(value)?.[1] ?? '') ?? value;
+      };
+      const shareOf = (value: string, token: string) =>
+        Number(
+          new RegExp(`^color-mix\\(in srgb, var\\(${token}\\) (\\d+)%, transparent\\)$`).exec(
+            value,
+          )?.[1] ?? 'NaN',
+        ) / 100;
+      expect(shareOf(resolve('border-color'), '--color-danger-border')).toBe(fillShare);
+      expect(shareOf(resolve('background'), '--color-danger-surface')).toBe(fillShare);
     });
 
     it('dims its frame, not the face that holds the hint', () => {
