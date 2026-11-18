@@ -277,9 +277,8 @@
    pending button only the spinner is left out, as it draws its own track: with a start icon the
    spinner takes that slot and the label, badge and end icon stay in view, so they are covered.
 
-   Being `!important`, the rule also overrides a forced-colours system colour the caller chose for
-   that content: inside a chosen button it gives way to the button's ink, as the browser's own
-   recolouring does elsewhere.
+   Being `!important`, the rule also beats a forced-colours system colour the caller chose for that
+   content, which gives way to the button's ink.
 
    The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
    rule gives a `LinkButton` the cue a `Button` has. A ghost `Button`'s hovered border was painted
