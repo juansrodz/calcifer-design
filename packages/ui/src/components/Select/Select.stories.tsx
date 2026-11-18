@@ -1,6 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import fieldStyles from '../../styles/field.module.css';
+import { Avatar } from '../Avatar/Avatar';
 import { Select } from './Select';
+import styles from './Select.module.css';
 
 const meta = {
   title: 'Forms/Select',
@@ -32,6 +36,141 @@ export const Required: Story = { args: { required: true } };
 export const WithError: Story = { args: { error: 'Choose a category.' } };
 export const Disabled: Story = { args: { disabled: true } };
 export const Dark: Story = { globals: { theme: 'dark' }, args: { error: 'Choose a category.' } };
+
+const bringers = [
+  { value: 'sebastian', label: 'Sebastian' },
+  { value: 'christian', label: 'Christian' },
+];
+
+/** The trigger's parts, found by the classes `Select` puts on them, or a thrown error. */
+function triggerParts(canvasElement: HTMLElement, label: string) {
+  const trigger = within(canvasElement).getByRole('combobox', { name: label });
+  const slot = trigger.querySelector(`.${fieldStyles.affixIcon}`);
+  const value = trigger.querySelector(`.${styles.value}`);
+  const chevron = trigger.querySelector(`.${styles.icon}`);
+  if (
+    !(slot instanceof HTMLElement) ||
+    !(value instanceof HTMLElement) ||
+    !(chevron instanceof HTMLElement)
+  ) {
+    throw new Error('the trigger is missing its slot, its value or its chevron');
+  }
+  return { trigger, slot, value, chevron };
+}
+
+/**
+ * The trigger's height with the slot, and with the slot taken out of the layout for one measure:
+ * the same trigger without a start icon. Both must be the control's floor.
+ */
+async function expectFloorHeight(trigger: HTMLElement, slot: HTMLElement) {
+  const withSlot = trigger.getBoundingClientRect().height;
+  slot.style.display = 'none';
+  const withoutSlot = trigger.getBoundingClientRect().height;
+  slot.style.removeProperty('display');
+  await expect(withSlot).toBe(withoutSlot);
+  await expect(withSlot).toBe(Number.parseFloat(getComputedStyle(trigger).minHeight));
+}
+
+/**
+ * The bringer's 24 px avatar inside the trigger, before the chosen name, following the value. The
+ * slot is decorative: it is hidden from assistive technology, so the avatar's own name is not read
+ * a second time after the option's label, which already says who it is. The `play` measures the
+ * trigger: the avatar leaves its height at the control's floor.
+ */
+export const WithStartIcon: Story = {
+  args: {
+    label: 'Who is bringing',
+    name: 'bringer',
+    options: bringers,
+    defaultValue: 'sebastian',
+  },
+  render: function WithStartIconRender({ onValueChange, defaultValue, ...args }) {
+    const [bringer, setBringer] = useState(defaultValue ?? null);
+    const bringerOption = args.options.find((option) => option.value === bringer);
+    return (
+      <Select
+        {...args}
+        value={bringer}
+        onValueChange={(value) => {
+          setBringer(value);
+          onValueChange?.(value);
+        }}
+        startIcon={
+          bringerOption === undefined ? undefined : (
+            <Avatar name={bringerOption.label} size="xs" colorSeed={bringerOption.value} />
+          )
+        }
+      />
+    );
+  },
+  play: async ({ canvasElement, args }) => {
+    const { trigger, slot } = triggerParts(canvasElement, args.label);
+    await expectFloorHeight(trigger, slot);
+  },
+};
+
+/** The same in the dark theme. */
+export const WithStartIconDark: Story = {
+  ...WithStartIcon,
+  globals: { theme: 'dark' },
+  // Named, not left to the spread: Storybook's indexer does not follow the spread, so without this
+  // key the story is indexed as a smoke test and the play never runs.
+  play: WithStartIcon.play,
+};
+
+/** A 200 px field, too narrow for the long name in the stories below. */
+const inNarrowField: Decorator = (Story) => (
+  <div style={{ inlineSize: 200 }}>
+    <Story />
+  </div>
+);
+
+/**
+ * A name too long for a 200 px field. The value shrinks into its ellipsis, the avatar keeps its
+ * 24 px, the chevron stays inside the trigger's inline-end edge, and the height stays the floor.
+ */
+export const WithStartIconLongValue: Story = {
+  ...WithStartIcon,
+  args: {
+    ...WithStartIcon.args,
+    options: [
+      { value: 'sebastian', label: 'Juan Sebastian Rodriguez, bringing the lasagne for everyone' },
+      { value: 'christian', label: 'Christian' },
+    ],
+  },
+  decorators: [inNarrowField],
+  play: async ({ canvasElement, args }) => {
+    const { trigger, slot, value, chevron } = triggerParts(canvasElement, args.label);
+    await expect(value.scrollWidth).toBeGreaterThan(value.clientWidth);
+    await expect(slot.getBoundingClientRect().width).toBe(24);
+    const triggerBox = trigger.getBoundingClientRect();
+    const chevronBox = chevron.getBoundingClientRect();
+    if (getComputedStyle(trigger).direction === 'rtl') {
+      await expect(chevronBox.left).toBeGreaterThanOrEqual(triggerBox.left);
+    } else {
+      await expect(chevronBox.right).toBeLessThanOrEqual(triggerBox.right);
+    }
+    await expectFloorHeight(trigger, slot);
+  },
+};
+
+/**
+ * The same long name in a right-to-left page: the row mirrors, and the `play` of the story above
+ * takes its right-to-left branch, with the chevron inside the trigger's left edge.
+ */
+export const WithStartIconRightToLeft: Story = {
+  ...WithStartIconLongValue,
+  decorators: [
+    inNarrowField,
+    (Story) => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+  // Named, not left to the spread, for the reason `WithStartIconDark` gives.
+  play: WithStartIconLongValue.play,
+};
 
 /** Opens from the keyboard and checks the highlight lands on an option, so arrows work at once. */
 export const KeyboardOpen: Story = {
