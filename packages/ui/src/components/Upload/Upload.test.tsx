@@ -60,14 +60,15 @@ describe('Upload', () => {
    * and works the hint's pixel out from the tokens, on every surface a form sits on, in each theme.
    */
   describe('the disabled drop zone', () => {
-    function rulesOf(file: string) {
+    type Rule = { selectors: string[]; body: string };
+
+    function rulesOf(file: string): Rule[] {
       const stylesheet = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
       return Array.from(stylesheet.matchAll(/([^{}]+)\{([^{}]*)\}/g), (match) => ({
         selectors: (match[1] ?? '').split(',').map((selector) => selector.trim()),
         body: match[2] ?? '',
       }));
     }
-    type Rule = ReturnType<typeof rulesOf>[number];
 
     const uploadRules = rulesOf(path.join(import.meta.dirname, 'Upload.module.css'));
     const fieldRules = rulesOf(path.join(import.meta.dirname, '../../styles/field.module.css'));
@@ -86,6 +87,19 @@ describe('Upload', () => {
       return declarations;
     }
 
+    /** A declaration's value, a lone `var(--name)` read through to the `--name` set beside it. */
+    function valueOf(declarations: Map<string, string>, property: string): string {
+      const value = declarations.get(property) ?? '';
+      return declarations.get(/^var\((--[\w-]+)\)$/.exec(value)?.[1] ?? '') ?? value;
+    }
+
+    /** The share, as a fraction, that a `color-mix()` of `token` over `transparent` keeps. */
+    function mixShareOf(value: string, token: string): number | undefined {
+      const mix = new RegExp(`^color-mix\\(in srgb, var\\(${token}\\) (\\d+)%, transparent\\)$`);
+      const percent = mix.exec(value)?.[1];
+      return percent === undefined ? undefined : Number(percent) / 100;
+    }
+
     // What a disabled face wears over `.control`: the shared `.dimmedControl`. Upload has no
     // `.zone[data-disabled] .face` rule of its own now; it is read last so that one added back
     // (which would out-rank the class) is caught here.
@@ -94,15 +108,7 @@ describe('Upload', () => {
       ...declarationsOf(uploadRules, '.zone[data-disabled] .face'),
     ]);
     const faceOpacity = Number(face.get('opacity') ?? '1');
-    const faceBackground = face.get('background') ?? '';
-    const resolvedBackground =
-      face.get(/^var\((--[\w-]+)\)$/.exec(faceBackground)?.[1] ?? '') ?? faceBackground;
-    const fillShare =
-      Number(
-        /^color-mix\(in srgb, var\(--color-surface-input\) (\d+)%, transparent\)$/.exec(
-          resolvedBackground,
-        )?.[1] ?? '100',
-      ) / 100;
+    const fillShare = mixShareOf(valueOf(face, 'background'), '--color-surface-input') ?? 1;
 
     function channelsOf(hex: string): number[] {
       return [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
@@ -163,22 +169,17 @@ describe('Upload', () => {
       render(<allStories.DisabledWithError />);
       // The rule below keys on the input's `data-invalid`, which a disabled field still carries.
       expect(input()).toHaveAttribute('data-invalid');
-      const invalid = declarationsOf(
+      const invalidFace = declarationsOf(
         uploadRules,
         '.zone[data-disabled] .input[data-invalid] + .face',
       );
-      const resolve = (property: string) => {
-        const value = invalid.get(property) ?? '';
-        return invalid.get(/^var\((--[\w-]+)\)$/.exec(value)?.[1] ?? '') ?? value;
-      };
-      const shareOf = (value: string, token: string) =>
-        Number(
-          new RegExp(`^color-mix\\(in srgb, var\\(${token}\\) (\\d+)%, transparent\\)$`).exec(
-            value,
-          )?.[1] ?? 'NaN',
-        ) / 100;
-      expect(shareOf(resolve('border-color'), '--color-danger-border')).toBe(fillShare);
-      expect(shareOf(resolve('background'), '--color-danger-surface')).toBe(fillShare);
+      const borderShare = mixShareOf(valueOf(invalidFace, 'border-color'), '--color-danger-border');
+      const backgroundShare = mixShareOf(
+        valueOf(invalidFace, 'background'),
+        '--color-danger-surface',
+      );
+      expect(borderShare).toBe(fillShare);
+      expect(backgroundShare).toBe(fillShare);
     });
 
     it('dims its frame, not the face that holds the hint', () => {
