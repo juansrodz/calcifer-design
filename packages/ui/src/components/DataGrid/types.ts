@@ -89,6 +89,15 @@ export interface DataGridProps<Row extends RowData> {
    * `onQueryChange` in server mode, and it is not offered for a read-only `query`.
    */
   enableSearch?: boolean;
+  /**
+   * Offers the grid's own filter controls for the columns that declare a `filter`: the filters
+   * button, the filter strip it opens and the All / Any switch. On by default. Turn it off when the
+   * app sets those columns' filters from controls of its own, such as tabs over the grid driving a
+   * controlled `query`: the filters still apply, from `query` or `initialQuery`, but the grid draws
+   * none of its filter controls. Like the search, the filters need `onQueryChange` in server mode,
+   * and they are not offered for a read-only `query`.
+   */
+  enableFilters?: boolean;
   enableSorting?: boolean;
   multiSort?: boolean;
   loading?: boolean;

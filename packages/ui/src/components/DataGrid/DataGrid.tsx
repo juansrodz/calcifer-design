@@ -93,6 +93,7 @@ export function DataGrid<Row extends RowData>({
   query,
   initialSorting,
   enableSearch = false,
+  enableFilters = true,
   enableSorting = true,
   multiSort = false,
   density = 'comfortable',
@@ -131,7 +132,9 @@ export function DataGrid<Row extends RowData>({
   // replace. Only the grid's own query in client mode needs no handler.
   const queryEnabled = (!serverMode && query === undefined) || onQueryChange !== undefined;
   const sortingEnabled = enableSorting && queryEnabled;
-  const filtering = queryEnabled && columns.some((column) => column.filter !== undefined);
+  // The grid's own filter controls. Without them a column's `filter` still applies, from the query.
+  const filtering =
+    enableFilters && queryEnabled && columns.some((column) => column.filter !== undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const showsFilterStrip = filtering && filtersOpen;
   // The header, then the filter strip while it shows; body entry `n` is keyboard row
