@@ -71,9 +71,7 @@ describe('the control boundary', () => {
 describe('the danger colour on a field', () => {
   for (const [themeName, theme] of Object.entries(themes)) {
     it(`${themeName}: danger reaches 3:1 on surfaceInput`, () => {
-      expect(
-        contrastRatio(theme.color.danger, theme.color.surfaceInput),
-      ).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(theme.color.danger, theme.color.surfaceInput)).toBeGreaterThanOrEqual(3);
     });
   }
 
