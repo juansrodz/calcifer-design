@@ -738,12 +738,14 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+  // The bare `color:` entries below carry a leading space: `contains` is a substring test, and
+  // `color: GrayText;` alone is also found in `border-color: GrayText;`, so the row could not fail.
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
   // `GrayText`: the dim took the glyph, the edge and a focused loading button's ring under 3:1.
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-disabled\] \{([^}]*)\}/m,
-    contains: ['opacity: 1;', 'border-color: GrayText;', 'color: GrayText;'],
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
     lacks: [],
   },
   // A pressed one that is disabled reads disabled while its fill still says pressed: the pressed
@@ -782,7 +784,7 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-disabled\] \.badge \{([^}]*)\}/m,
-    contains: ['color: GrayText;', 'border-color: GrayText;'],
+    contains: [' color: GrayText;', 'border-color: GrayText;'],
     lacks: [],
   },
   // The pressed badge is drawn outside the recolouring, so its border is named: `Highlight`, the
@@ -790,13 +792,13 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-pressed\] \.badge \{([^}]*)\}/m,
-    contains: ['background: HighlightText;', 'color: Highlight;', 'border-color: Highlight;'],
+    contains: ['background: HighlightText;', ' color: Highlight;', 'border-color: Highlight;'],
     lacks: [],
   },
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-pressed\]\[data-disabled\] \.badge \{([^}]*)\}/m,
-    contains: ['background: Canvas;', 'color: GrayText;', 'border-color: GrayText;'],
+    contains: ['background: Canvas;', ' color: GrayText;', 'border-color: GrayText;'],
     lacks: ['Highlight'],
   },
   {
