@@ -1,8 +1,22 @@
 /* The mock's three button shapes: a filled pill (primary), a raised bordered rectangle
    (secondary) and a bare link-coloured text button (ghost), plus a list row (row). A tone
    (`data-tone`) recolours the two filled shapes: `accent` is the default look, `inverse` and
-   `selected` read their own colour families. Ghost and row have no tone rule. */
+   `selected` read their own colour families. Ghost and row have no tone rule.
+
+   The fill and the ink are painted by one rule, `.root[data-variant]`, from two layers. The
+   variant, tone and state rules set the library's default for the state (`--button-default-*`).
+   Over it sit four consumer hooks, read here and declared nowhere: `--button-fill` and
+   `--button-label-color` at rest, `--button-fill-hover` and `--button-label-color-hover` on hover
+   (each falling back to its rest hook). `--button-state-*` holds the hook in force for the state.
+   Since no rule declares a hook, a consumer's class that sets one wins in every state at any
+   weight, with no `[data-tone]` to match. The state rules paint nothing, so a `background` or
+   `color` a consumer sets at (0,2,0) or more, loaded after this file, wins in every state as well,
+   except the disabled inverse primary: that rule repeats the paint at (0,5,0), as in 0.12, so a
+   direct override under that weight cannot undo its dimming. */
 .root {
+  --button-state-fill: var(--button-fill);
+  --button-state-label-color: var(--button-label-color);
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -49,24 +63,34 @@
   text-transform: var(--text-transform-display);
 }
 
+/* The one rule that paints the fill and the ink, at (0,2,0), the weight the variant rules had: a
+   consumer's own `background` that beat a primary before still does. */
+.root[data-variant] {
+  background: var(--button-state-fill, var(--button-default-background));
+  color: var(--button-state-label-color, var(--button-default-color));
+}
+
 .root[data-variant='primary'] {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
+  --button-default-background: var(--color-accent);
+  --button-default-color: var(--color-accent-text);
+
   box-shadow: var(--shadow-action);
 }
 
 .root[data-variant='secondary'] {
+  --button-default-background: var(--color-surface-raised);
+  --button-default-color: var(--color-text);
+
   border-radius: var(--radius-control);
-  background: var(--color-surface-raised);
-  color: var(--color-text);
   border-color: var(--color-border-strong);
 }
 
 .root[data-variant='ghost'] {
+  --button-default-background: transparent;
+  --button-default-color: var(--color-link);
+
   padding-inline: var(--space-2);
   border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--color-link);
 }
 
 /* A list row (O-21): as wide as the box it sits in, start-aligned, with no fill or border at rest.
@@ -74,6 +98,9 @@
    the size step, and has no tone rule (as ghost). Its label and end icon rules follow the base
    `.label` and `.endIcon` rules below. */
 .root[data-variant='row'] {
+  --button-default-background: transparent;
+  --button-default-color: var(--color-text);
+
   display: flex;
   width: 100%;
   justify-content: flex-start;
@@ -83,43 +110,52 @@
   padding: var(--space-2) var(--space-3);
   border-color: transparent;
   border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text);
 }
 
 .root[data-variant='primary'][data-tone='inverse'] {
-  background: var(--color-inverse);
-  color: var(--color-inverse-text);
+  --button-default-background: var(--color-inverse);
+  --button-default-color: var(--color-inverse-text);
+
   box-shadow: var(--shadow-action-inverse);
 }
 
 .root[data-variant='secondary'][data-tone='inverse'] {
-  background: var(--color-inverse-soft);
-  color: var(--color-inverse-soft-text);
+  --button-default-background: var(--color-inverse-soft);
+  --button-default-color: var(--color-inverse-soft-text);
+
   border-color: transparent;
 }
 
 .root[data-variant='primary'][data-tone='selected'] {
-  background: var(--color-selected);
-  color: var(--color-selected-text);
+  --button-default-background: var(--color-selected);
+  --button-default-color: var(--color-selected-text);
 }
 
 /* The chosen secondary is its soft fill alone: the resting grey edge goes, and a ring round it,
    where one is wanted, is the consumer's to draw. */
 .root[data-variant='secondary'][data-tone='selected'] {
-  background: var(--color-selected-soft);
-  color: var(--color-selected-soft-text);
+  --button-default-background: var(--color-selected-soft);
+  --button-default-color: var(--color-selected-soft-text);
+
   border-color: transparent;
 }
 
 @media (hover: hover) {
-  /* Only the accent tone repaints on hover: a toned fill keeps its colour. */
+  /* A hovered button takes the hover hooks, each falling back to its rest hook: a consumer fill
+     with no hover pair keeps its colour on hover instead of meeting the accent hover. */
+  .root:hover:not([data-disabled]) {
+    --button-state-fill: var(--button-fill-hover, var(--button-fill));
+    --button-state-label-color: var(--button-label-color-hover, var(--button-label-color));
+  }
+
+  /* Only the accent tone repaints on hover by default: a toned fill keeps its colour. These set
+     the default and paint nothing, so at (0,5,0) they outrank no consumer's fill. */
   .root[data-variant='primary'][data-tone='accent']:hover:not([data-disabled]) {
-    background: var(--color-accent-hover);
+    --button-default-background: var(--color-accent-hover);
   }
 
   .root[data-variant='secondary'][data-tone='accent']:hover:not([data-disabled]) {
-    background: var(--color-surface-2);
+    --button-default-background: var(--color-surface-2);
   }
 
   .root[data-variant='ghost']:hover:not([data-disabled]) {
@@ -127,7 +163,7 @@
   }
 
   .root[data-variant='row']:hover:not([data-disabled]) {
-    background: var(--color-surface-2);
+    --button-default-background: var(--color-surface-2);
   }
 }
 
@@ -136,9 +172,13 @@
 }
 
 /* A full-width row that shrank by 2% would move both of its edges, which a pill does not, so the
-   row paints its press and stays put. */
+   row paints its press and stays put. The press is its hover surface, so it takes the hover pair,
+   fill and label, on a touch screen too, where the hover rules never run. */
 .root[data-variant='row']:active:not([data-disabled]) {
-  background: var(--color-surface-2);
+  --button-state-fill: var(--button-fill-hover, var(--button-fill));
+  --button-state-label-color: var(--button-label-color-hover, var(--button-label-color));
+  --button-default-background: var(--color-surface-2);
+
   transform: none;
 }
 
@@ -153,15 +193,22 @@
    `Timeline.module.css` assumes; the rule sits behind `@supports` so a browser without it keeps the
    plain 0.45 opacity of the `[data-disabled]` rule above, rather than an unset fill and undimmed
    ink at full opacity. A pending button is exempt (`:not([data-pending])`): it keeps the regular
-   inverse fill, and the pending rule below lifts its opacity. */
+   inverse fill, and the pending rule below lifts its opacity. A consumer's pair is dimmed by the
+   same mixes; with no hook set, its mix is invalid and the dimmed default shows. The rule repeats
+   the paint so the state keeps its 0.12 weight, (0,5,0): a consumer's direct `background` under it
+   would otherwise show at full strength, on a button that looks enabled. */
 @supports (color: color-mix(in srgb, red, blue)) {
   .root[data-variant='primary'][data-tone='inverse'][data-disabled]:not([data-pending]) {
     --button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);
     --button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);
+    --button-default-background: var(--button-inverse-disabled-fill);
+    --button-default-color: var(--button-inverse-disabled-ink);
+    --button-state-fill: color-mix(in srgb, var(--button-fill) 55%, transparent);
+    --button-state-label-color: color-mix(in srgb, var(--button-label-color) 50%, transparent);
 
     opacity: 1;
-    background: var(--button-inverse-disabled-fill);
-    color: var(--button-inverse-disabled-ink);
+    background: var(--button-state-fill, var(--button-default-background));
+    color: var(--button-state-label-color, var(--button-default-color));
   }
 }
 

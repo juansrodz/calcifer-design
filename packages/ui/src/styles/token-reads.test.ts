@@ -1208,8 +1208,8 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-variant='primary'\]\[data-tone='inverse'\] \{([^}]*)\}/m,
     contains: [
-      'background: var(--color-inverse);',
-      'color: var(--color-inverse-text);',
+      ' --button-default-background: var(--color-inverse);',
+      ' --button-default-color: var(--color-inverse-text);',
       'box-shadow: var(--shadow-action-inverse);',
     ],
     lacks: ['--color-accent'],
@@ -1218,8 +1218,8 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-variant='secondary'\]\[data-tone='inverse'\] \{([^}]*)\}/m,
     contains: [
-      'background: var(--color-inverse-soft);',
-      'color: var(--color-inverse-soft-text);',
+      ' --button-default-background: var(--color-inverse-soft);',
+      ' --button-default-color: var(--color-inverse-soft-text);',
       'border-color: transparent;',
     ],
     lacks: ['--color-border-strong'],
@@ -1227,15 +1227,18 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-variant='primary'\]\[data-tone='selected'\] \{([^}]*)\}/m,
-    contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
+    contains: [
+      ' --button-default-background: var(--color-selected);',
+      ' --button-default-color: var(--color-selected-text);',
+    ],
     lacks: ['--color-accent'],
   },
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-variant='secondary'\]\[data-tone='selected'\] \{([^}]*)\}/m,
     contains: [
-      'background: var(--color-selected-soft);',
-      'color: var(--color-selected-soft-text);',
+      ' --button-default-background: var(--color-selected-soft);',
+      ' --button-default-color: var(--color-selected-soft-text);',
       'border-color: transparent;',
     ],
     lacks: ['--color-accent', '--color-border-strong'],
@@ -1347,8 +1350,8 @@ const expectations: ReadonlyArray<Expectation> = [
       '--button-inverse-disabled-fill: color-mix(in srgb, var(--color-inverse) 55%, transparent);',
       '--button-inverse-disabled-ink: color-mix(in srgb, var(--color-inverse-text) 50%, transparent);',
       'opacity: 1;',
-      'background: var(--button-inverse-disabled-fill);',
-      'color: var(--button-inverse-disabled-ink);',
+      ' --button-default-background: var(--button-inverse-disabled-fill);',
+      ' --button-default-color: var(--button-inverse-disabled-ink);',
     ],
     lacks: ['opacity: 0.45;'],
   },
@@ -1371,6 +1374,149 @@ const expectations: ReadonlyArray<Expectation> = [
       ".root[data-variant='primary']:hover",
       ".root[data-variant='secondary']:hover",
       /\[data-tone='(?:inverse|selected)'\]:hover/,
+    ],
+  },
+
+  // `Button`'s fill hooks: `--button-fill`, `--button-fill-hover`, `--button-label-color` and
+  // `--button-label-color-hover`, set from a consumer's class. The variant, tone and state rules
+  // set only the library's defaults (`--button-default-background`, `--button-default-color`), and
+  // one rule paints them, under the hook for the state. The rows above pin each default by its full
+  // private name; these pin the hooks and the paint, a declaration with a leading space so a longer
+  // property name cannot match it. Nothing in the file declares a hook, so a consumer's class wins
+  // in every state at any weight, with no `[data-tone]` to match.
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      'var(--button-fill)',
+      'var(--button-fill-hover, var(--button-fill))',
+      'var(--button-label-color)',
+      'var(--button-label-color-hover, var(--button-label-color))',
+    ],
+    lacks: [/--button-(?:fill|label-color)(?:-hover)?\s*:/],
+  },
+  {
+    // At rest the hook in force is the rest pair.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      ' --button-state-fill: var(--button-fill);',
+      ' --button-state-label-color: var(--button-label-color);',
+    ],
+    lacks: [],
+  },
+  {
+    // The one rule that paints the root's fill and ink, at (0,2,0), the weight of today's variant
+    // rules: under the state's hook, the state's default.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant\] \{([^}]*)\}/m,
+    contains: [
+      ' background: var(--button-state-fill, var(--button-default-background));',
+      ' color: var(--button-state-label-color, var(--button-default-color));',
+    ],
+    lacks: [],
+  },
+  {
+    // Hovered, the hook in force is the hover pair, each falling back to its rest hook, so a consumer
+    // who sets only the rest pair keeps it on hover instead of meeting the accent hover. Inside the
+    // `@media (hover: hover)` block (two-space indent), as every other hover rule.
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      ' --button-state-fill: var(--button-fill-hover, var(--button-fill));',
+      ' --button-state-label-color: var(--button-label-color-hover, var(--button-label-color));',
+    ],
+    lacks: [],
+  },
+  {
+    // The (0,5,0) accent hover sets the default only: it paints nothing, so it outranks no
+    // consumer's fill (WBW's danger button met it at #E0433B).
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root\[data-variant='primary'\]\[data-tone='accent'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [' --button-default-background: var(--color-accent-hover);'],
+    lacks: [/(?:^|[\s{;])background(?:-color)?\s*:/, /(?:^|[\s{;])color\s*:/],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root\[data-variant='secondary'\]\[data-tone='accent'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [' --button-default-background: var(--color-surface-2);'],
+    lacks: [/(?:^|[\s{;])background(?:-color)?\s*:/],
+  },
+  {
+    // A row's press paints its hover surface, so it takes the hover pair too, fill and label (on a
+    // touch screen, where no hover rule runs, as well).
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\]:active:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      ' --button-state-fill: var(--button-fill-hover, var(--button-fill));',
+      ' --button-state-label-color: var(--button-label-color-hover, var(--button-label-color));',
+      ' --button-default-background: var(--color-surface-2);',
+    ],
+    lacks: [/(?:^|[\s{;])background(?:-color)?\s*:/],
+  },
+  {
+    // The disabled inverse primary dims a consumer's pair as it dims its own: 55% of the fill, 50%
+    // of the ink. With no hook set the mix is invalid and the dimmed default shows. It repeats the
+    // paint, so that state weighs (0,5,0) as in 0.12: a consumer's direct `background` under that
+    // weight cannot show at full strength on a button that looks enabled.
+    file: 'components/Button/Button.module.css',
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{\n {2}\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}\n\}/m,
+    contains: [
+      ' --button-state-fill: color-mix(in srgb, var(--button-fill) 55%, transparent);',
+      ' --button-state-label-color: color-mix(in srgb, var(--button-label-color) 50%, transparent);',
+      ' background: var(--button-state-fill, var(--button-default-background));',
+      ' color: var(--button-state-label-color, var(--button-default-color));',
+    ],
+    lacks: [],
+  },
+  {
+    // The rest defaults of the three untoned variants (the row's is pinned with its other rows).
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='primary'\] \{([^}]*)\}/m,
+    contains: [
+      ' --button-default-background: var(--color-accent);',
+      ' --button-default-color: var(--color-accent-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='secondary'\] \{([^}]*)\}/m,
+    contains: [
+      ' --button-default-background: var(--color-surface-raised);',
+      ' --button-default-color: var(--color-text);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='ghost'\] \{([^}]*)\}/m,
+    contains: [
+      ' --button-default-background: transparent;',
+      ' --button-default-color: var(--color-link);',
+    ],
+    lacks: [],
+  },
+  {
+    // The private properties the file may declare, by name: a misspelt default
+    // (`--button-defualt-background`) or a stray one (`--button-fill-background`) is never read by
+    // the paint, and the rows above, which look for the right name, would not see it.
+    file: 'components/Button/Button.module.css',
+    contains: [],
+    lacks: [
+      /(?:^|[\s{;])--button-(?!(?:default-background|default-color|state-fill|state-label-color|inverse-disabled-fill|inverse-disabled-ink|lg-padding-inline|content-edge)\s*:)[\w-]+\s*:/,
+    ],
+  },
+  {
+    // Outside the forced-colours block nothing else paints the root's fill or ink: every variant,
+    // tone and state goes through the hooks. The only other inks are on descendants, the pending
+    // label's transparent one and the row's muted end icon. (The forced block paints system colours
+    // over all of it, at (0,4,0) and above.)
+    file: 'components/Button/Button.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [
+      /(?:^|[\s{;])background(?:-color)?\s*:(?!\s*var\(--button-state-fill, var\(--button-default-background\)\);)/m,
+      /(?:^|[\s{;])color\s*:(?!\s*(?:var\(--button-state-label-color, var\(--button-default-color\)\)|transparent|var\(--color-text-muted\));)/m,
     ],
   },
   {
@@ -1410,8 +1556,8 @@ const expectations: ReadonlyArray<Expectation> = [
       'padding: var(--space-2) var(--space-3);',
       'border-color: transparent;',
       'border-radius: var(--radius-md);',
-      'background: transparent;',
-      'color: var(--color-text);',
+      ' --button-default-background: transparent;',
+      ' --button-default-color: var(--color-text);',
     ],
     lacks: ['--size-control', '--radius-control', '--radius-full', '--color-link'],
   },
@@ -1427,13 +1573,13 @@ const expectations: ReadonlyArray<Expectation> = [
     // of a full-width row.
     file: 'components/Button/Button.module.css',
     rule: /^ {2}\.root\[data-variant='row'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
-    contains: ['background: var(--color-surface-2);'],
+    contains: [' --button-default-background: var(--color-surface-2);'],
     lacks: [],
   },
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-variant='row'\]:active:not\(\[data-disabled\]\) \{([^}]*)\}/m,
-    contains: ['background: var(--color-surface-2);', 'transform: none;'],
+    contains: [' --button-default-background: var(--color-surface-2);', 'transform: none;'],
     lacks: [],
   },
   {

@@ -4,6 +4,7 @@ import { expect, userEvent, within } from 'storybook/test';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronRightIcon } from '../../icons/ChevronRightIcon';
 import { Button } from './Button';
+import { LinkButton } from './LinkButton';
 
 /**
  * The surface an inverse button is made for: a solid fill the button's own fill must read against.
@@ -165,4 +166,112 @@ export const FocusVisible: Story = {
     await userEvent.tab();
     await expect(canvas.getByRole('button')).toHaveFocus();
   },
+};
+
+// What DangerViaHooks paints on hover, for both of its elements: the hover fill its class sets and
+// the rest ink, which its hover label falls back to.
+const dangerHoverPaint = {
+  backgroundColor: 'color-mix(in srgb, var(--color-danger) 88%, var(--color-text))',
+  color: 'var(--color-inverse-text)',
+};
+
+/**
+ * A destructive action on a fill of the consumer's own, from the hooks alone: a class on the
+ * button sets `--button-fill`, `--button-fill-hover` and `--button-label-color`. No selector
+ * matches `[data-tone]` and none weighs more than the class: the library declares no hook, so the
+ * class wins at rest, on hover, pressed, focused, disabled and busy. `--button-label-color-hover`
+ * is left out, so the hover label falls back to `--button-label-color`. Here the fill is the
+ * theme's danger colour on the inverse ink (white in light, near-black in dark), and the hover
+ * fill moves it a step toward the text colour, which deepens it in light and lifts it in dark.
+ * A `LinkButton` shares the stylesheet, so the same class reaches it.
+ */
+export const DangerViaHooks: Story = {
+  parameters: {
+    controls: { disable: true },
+    // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
+    // pointer: the hover fill, on both elements, and the system colours under forced colours.
+    paintChecks: [
+      { target: 'button', interaction: 'hover', expected: dangerHoverPaint },
+      { target: 'a', interaction: 'hover', expected: dangerHoverPaint },
+      {
+        target: 'button',
+        interaction: 'hover',
+        forcedColors: true,
+        expected: { backgroundColor: 'ButtonFace', color: 'ButtonText' },
+      },
+    ],
+  },
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+      <style>{`.button-danger {
+  --button-fill: var(--color-danger);
+  --button-fill-hover: color-mix(in srgb, var(--color-danger) 88%, var(--color-text));
+  --button-label-color: var(--color-inverse-text);
+}`}</style>
+      <Button className="button-danger">Delete event</Button>
+      <LinkButton className="button-danger" href="#delete-series">
+        Delete the series
+      </LinkButton>
+    </div>
+  ),
+  // Runs in a browser only (jsdom loads no CSS): both elements paint the hooks' pair at rest, not
+  // the accent's, though they carry `data-tone="accent"`. A probe resolves the two tokens in this
+  // theme.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: 'Delete event' });
+    const link = canvas.getByRole('link', { name: 'Delete the series' });
+    const probe = canvasElement.ownerDocument.createElement('span');
+    probe.style.background = 'var(--color-danger)';
+    probe.style.color = 'var(--color-inverse-text)';
+    canvasElement.append(probe);
+    try {
+      const expected = getComputedStyle(probe);
+      for (const element of [button, link]) {
+        const painted = getComputedStyle(element);
+        await expect(element).toHaveAttribute('data-tone', 'accent');
+        await expect(painted.backgroundColor).toBe(expected.backgroundColor);
+        await expect(painted.color).toBe(expected.color);
+      }
+    } finally {
+      probe.remove();
+    }
+  },
+};
+
+// What RowViaHooks paints on hover and on a press: its hover pair.
+const rowHoverPaint = {
+  backgroundColor: 'var(--color-danger)',
+  color: 'var(--color-inverse-text)',
+};
+
+/**
+ * A destructive list row, from the hooks: danger text at rest on no fill, and a solid danger fill
+ * with the inverse ink on hover and press. The hover pair differs from the rest pair in both
+ * colours, so a press that took one hook of the pair and not the other would show danger text on
+ * a danger fill. On a touch screen no hover rule runs, so the press sets the pair itself.
+ */
+export const RowViaHooks: Story = {
+  parameters: {
+    controls: { disable: true },
+    // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`): a press
+    // with no pointer over the row (a touch press), and a real hover. Both paint the hover pair.
+    paintChecks: [
+      { target: 'button', interaction: 'press', expected: rowHoverPaint },
+      { target: 'button', interaction: 'hover', expected: rowHoverPaint },
+    ],
+  },
+  decorators: inRowBox,
+  render: () => (
+    <>
+      <style>{`.row-danger {
+  --button-label-color: var(--color-danger);
+  --button-fill-hover: var(--color-danger);
+  --button-label-color-hover: var(--color-inverse-text);
+}`}</style>
+      <Button variant="row" className="row-danger" endIcon={<ChevronRightIcon />}>
+        Delete account
+      </Button>
+    </>
+  ),
 };

@@ -15,6 +15,14 @@ const DEFAULT_BUTTON_HTML =
 const GHOST_BUTTON_HTML =
   '<button type="button" tabindex="0" data-variant="ghost" data-size="md" data-tone="accent" class="root"><span class="label">Open projects</span></button>';
 
+// The style block a hooks story renders. It may set the hooks and nothing else: a `background` or
+// a `color` of its own would be a direct paint, which these stories exist to avoid.
+const directPaint = /(?:^|[\s{;])(?:background|color)\s*:/m;
+
+function storyCss(container: HTMLElement): string {
+  return container.querySelector('style')?.textContent ?? '';
+}
+
 const {
   Primary,
   Secondary,
@@ -36,6 +44,8 @@ const {
   Pending,
   PendingNoIcon,
   PendingInverse,
+  DangerViaHooks,
+  RowViaHooks,
 } = composeStories(stories);
 
 describe('Button', () => {
@@ -60,9 +70,44 @@ describe('Button', () => {
     ['Pending', Pending],
     ['PendingNoIcon', PendingNoIcon],
     ['PendingInverse', PendingInverse],
+    ['DangerViaHooks', DangerViaHooks],
+    ['RowViaHooks', RowViaHooks],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  // jsdom loads no CSS, so this pins the story's side of the hooks: a class on the button sets
+  // them, and nothing else. The library's side (every state reads them, nothing declares them) is
+  // pinned in `token-reads.test.ts`, and the story's play checks the painted pair in a browser.
+  it('has the DangerViaHooks story set the hooks from a class on the button, with no [data-tone] and no paint of its own', () => {
+    const { container } = render(<DangerViaHooks />);
+    const css = storyCss(container);
+    const button = screen.getByRole('button', { name: 'Delete event' });
+    expect(button).toHaveClass('root', 'button-danger');
+    expect(button).toHaveAttribute('data-tone', 'accent');
+    // A LinkButton shares the stylesheet, so the same class reaches it.
+    const link = screen.getByRole('link', { name: 'Delete the series' });
+    expect(link).toHaveClass('root', 'button-danger');
+    expect(link).toHaveAttribute('data-tone', 'accent');
+    expect(css).toMatch(/^\.button-danger \{/m);
+    expect(css).toContain('--button-fill: var(--color-danger);');
+    expect(css).toContain('--button-fill-hover: ');
+    expect(css).toContain('--button-label-color: var(--color-inverse-text);');
+    expect(css).not.toContain('data-tone');
+    expect(css).not.toMatch(directPaint);
+  });
+
+  it('has the RowViaHooks story set a hover pair that differs from its rest pair in both colours', () => {
+    const { container } = render(<RowViaHooks />);
+    const css = storyCss(container);
+    const row = screen.getByRole('button', { name: 'Delete account' });
+    expect(row).toHaveClass('root', 'row-danger');
+    expect(row).toHaveAttribute('data-variant', 'row');
+    expect(css).toContain('--button-label-color: var(--color-danger);');
+    expect(css).toContain('--button-fill-hover: var(--color-danger);');
+    expect(css).toContain('--button-label-color-hover: var(--color-inverse-text);');
+    expect(css).not.toMatch(directPaint);
   });
 
   it('calls onClick when pressed', async () => {
