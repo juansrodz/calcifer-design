@@ -14,7 +14,9 @@ export interface ThemeScopeProps {
    * Pins the mode by writing `data-theme` on the wrapper. Left unset, the scope follows `<html>`'s
    * `data-theme` and then the OS preference. An unpinned scope nested in a pinned one does not
    * inherit the outer pin (it resolves from `<html>` and the OS); pin the inner one too. A change
-   * of pin holds every transition in the scope still for that frame, so colours flip at once.
+   * of pin holds every transition in the scope still for that frame, so colours flip at once; an
+   * unpinned scope holds the frame the same way when `<html>`'s `data-theme` or the OS colour
+   * scheme changes.
    */
   mode?: ThemeMode;
   /** Joined after the theme's class on the wrapper (an app's own layout class). */
