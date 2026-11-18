@@ -2574,6 +2574,14 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/!important;/],
   },
+  // Nothing follows the block, for the reasons given for `ToggleChip`: the guard above reads only
+  // what precedes it.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.ring\[data-checked\] \{([^}]*)\}/m,
@@ -2721,15 +2729,23 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
     lacks: [],
   },
-  // The forced-colours block is the last thing in the file, as in `Button` and `IconButton`: its
-  // rules tie with the top-level ones they override, or beat them by a little, so a normal-mode rule
-  // appended after it could win the cascade back. Every rule inside the block is indented, so the
-  // first `}` at the start of a line closes it.
+  // The forced-colours block comes after the last normal-mode rule (`.row`), as in `Button` and
+  // `IconButton`: its rules tie with the top-level ones they override, or beat them by a little.
+  // This row pins the position only; the next one pins that nothing follows the block, as a
+  // normal-mode rule appended after it would win the cascade back (and the `!important` guard above
+  // reads only what precedes the block). Every rule inside the block is indented, so the first `}`
+  // at the start of a line closes it.
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
-    rule: /^\.row \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n(?![\s\S])/m,
+    rule: /^\.row \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n/m,
     contains: ['.chip[data-pressed] {'],
     lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
 
   // Forced colours on `Segmented`: the chosen option is a `Highlight` fill with `HighlightText`
@@ -2806,13 +2822,19 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/!important;/],
   },
-  // The block is the last thing in the file, after the chosen option's badge rule (the last
-  // normal-mode rule), for the reason given for `ToggleChip` above.
+  // The block comes after the chosen option's badge rule (the last normal-mode rule), and nothing
+  // follows it, for the reasons given for `ToggleChip` above.
   {
     file: 'components/Segmented/Segmented.module.css',
-    rule: /^\.option\[data-pressed\] \.badge \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n(?![\s\S])/m,
+    rule: /^\.option\[data-pressed\] \.badge \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n/m,
     contains: ['.option[data-pressed] {'],
     lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
 
   // `ProgressBar`: a label row, a track and a helper line. The fill's colour is a local property,
