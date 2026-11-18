@@ -177,6 +177,14 @@ describe('Collapsible', () => {
     const chevronOf = (name: string) =>
       screen.getByRole('button', { name }).querySelector('svg')?.parentElement;
 
+    const inDirection = (direction: 'ltr' | 'rtl') => (
+      <div dir={direction}>
+        <Collapsible heading="Mains" chevron="end-down">
+          Lasagna for six
+        </Collapsible>
+      </div>
+    );
+
     it('is marked down-up by default: down while closed and up while open, as before', () => {
       render(<Default />);
       expect(chevronOf('Mains')).toHaveAttribute('data-chevron', 'down-up');
@@ -190,13 +198,7 @@ describe('Collapsible', () => {
     });
 
     it('marks the direction it is read in, from a dir attribute', () => {
-      render(
-        <div dir="rtl">
-          <Collapsible heading="Mains" chevron="end-down">
-            Lasagna for six
-          </Collapsible>
-        </div>,
-      );
+      render(inDirection('rtl'));
       expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
     });
 
@@ -218,14 +220,6 @@ describe('Collapsible', () => {
       );
       expect(chevronOf('Mains')).not.toHaveAttribute('data-direction');
     });
-
-    const inDirection = (direction: 'ltr' | 'rtl') => (
-      <div dir={direction}>
-        <Collapsible heading="Mains" chevron="end-down">
-          Lasagna for six
-        </Collapsible>
-      </div>
-    );
 
     it('follows a dir change on its next render, not only on mount', () => {
       const { rerender } = render(inDirection('ltr'));
