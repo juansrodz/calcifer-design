@@ -267,7 +267,14 @@
 
    A pending button's label is hidden by `opacity: 0` alone here: the `color: transparent` that
    hides it elsewhere reverts to the system text colour, and a `loading` button's 70% (0,3,0) beat
-   the overlay's (0,2,0). The last rule lifts it to (0,4,0). */
+   the overlay's (0,2,0). The last rule lifts it to (0,4,0).
+
+   What the caller puts inside a chosen button (a `Tag`, an icon with a colour of its own) is inside
+   the opt-out, so its token colours were painted as they are: a light `Tag` pill, a red icon at
+   1.3:1 on the fill. Every descendant takes the button's ink instead, drops its fill and draws any
+   border in that ink (a local property, as the lint takes neither spelling of `currentcolor` bare);
+   a disabled or loading button's content does the same, so it reads `GrayText` with the label. A
+   pending button is left out, as its spinner draws its own track. */
 @media (forced-colors: active) {
   .root[data-tone='selected'][data-variant]:is(
       [data-variant='primary'],
@@ -301,6 +308,19 @@
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-tone='selected'][data-variant]:not([data-pending]):is(
+      [data-variant='primary'],
+      [data-variant='secondary']
+    )
+    *,
+  .root[data-variant][data-tone][data-disabled]:not([data-pending]) * {
+    --button-content-edge: currentcolor;
+
+    border-color: var(--button-content-edge);
+    background-color: transparent;
+    color: inherit;
   }
 
   .root[data-loading]:not([data-pending]) .label {

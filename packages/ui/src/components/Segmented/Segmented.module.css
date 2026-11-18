@@ -120,7 +120,11 @@
    (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label at 3.0 and 3.3:1. A
    chosen one that is disabled is a `GrayText` fill with a `Canvas` ink instead of a dimmed
    `Highlight` (2.4:1), so it reads disabled while its fill still says chosen. Both tie with the
-   disabled rule above at (0,2,0) or beat it, and it comes first, so the tie falls to these. */
+   disabled rule above at (0,2,0) or beat it, and it comes first, so the tie falls to these.
+
+   A badge or an icon inside the chosen option is inside the opt-out, so a `Tag` kept the token
+   pill the default look re-points and a tinted icon fell to 1.4:1. They take the option's ink
+   instead, drop their fill and draw any border in that ink, as in `Button`. */
 @media (forced-colors: active) {
   .option[data-pressed] {
     forced-color-adjust: none;
@@ -144,5 +148,13 @@
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .option[data-pressed] :is(.icon, .badge) * {
+    --segmented-content-edge: currentcolor;
+
+    border-color: var(--segmented-content-edge);
+    background-color: transparent;
+    color: inherit;
   }
 }

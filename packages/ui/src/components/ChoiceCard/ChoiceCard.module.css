@@ -180,7 +180,9 @@
    measurement). A disabled card's text and edge take `GrayText`, the system's own disabled colour,
    which is the cue there, so the card is not dimmed as well (`opacity: 1`); after the chosen
    card's rule, so a disabled chosen card reads disabled too while its filled ring still says it is
-   chosen. */
+   chosen. The disc and the description, and whatever the caller put in them (a `Tag`, an icon),
+   kept the system text colour the browser gives a coloured element, so they take the card's
+   `GrayText` too; the ring is left out, as a chosen one keeps its fill. */
 @media (forced-colors: active) {
   .card,
   .ring {
@@ -198,6 +200,14 @@
     border-color: GrayText;
     color: GrayText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .card[data-disabled] :is(.disc, .description, .disc *, .description *) {
+    --choice-card-content-edge: currentcolor;
+
+    border-color: var(--choice-card-content-edge);
+    background-color: transparent;
+    color: inherit;
   }
 
   .ring[data-checked] {
