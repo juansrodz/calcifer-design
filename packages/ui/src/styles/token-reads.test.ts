@@ -1196,11 +1196,19 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\)\s*\*,\n {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \* \{([^}]*)\}/m,
     contains: [
       '--button-content-edge: currentcolor;',
-      'border-color: var(--button-content-edge);',
-      'background-color: transparent;',
-      ' color: inherit;',
+      'border-color: var(--button-content-edge) !important;',
+      'background-color: transparent !important;',
+      ' color: inherit !important;',
     ],
     lacks: [],
+  },
+  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
+  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/!important;/],
   },
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkButton` had no hover cue under forced colours. The rule gives it the one a `Button` has
@@ -2543,11 +2551,19 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-disabled\] :is\(\.disc, \.description, \.disc \*, \.description \*\) \{([^}]*)\}/m,
     contains: [
       '--choice-card-content-edge: currentcolor;',
-      'border-color: var(--choice-card-content-edge);',
-      'background-color: transparent;',
-      ' color: inherit;',
+      'border-color: var(--choice-card-content-edge) !important;',
+      'background-color: transparent !important;',
+      ' color: inherit !important;',
     ],
     lacks: [],
+  },
+  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
+  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/!important;/],
   },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
@@ -2658,11 +2674,19 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-pressed\] \.icon \* \{([^}]*)\}/m,
     contains: [
       '--toggle-chip-content-edge: currentcolor;',
-      'border-color: var(--toggle-chip-content-edge);',
-      'background-color: transparent;',
-      ' color: inherit;',
+      'border-color: var(--toggle-chip-content-edge) !important;',
+      'background-color: transparent !important;',
+      ' color: inherit !important;',
     ],
     lacks: [],
+  },
+  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
+  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/!important;/],
   },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
@@ -2759,11 +2783,19 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\] :is\(\.icon, \.badge\) \* \{([^}]*)\}/m,
     contains: [
       '--segmented-content-edge: currentcolor;',
-      'border-color: var(--segmented-content-edge);',
-      'background-color: transparent;',
-      ' color: inherit;',
+      'border-color: var(--segmented-content-edge) !important;',
+      'background-color: transparent !important;',
+      ' color: inherit !important;',
     ],
     lacks: [],
+  },
+  // `!important` so a consumer's inline colour cannot beat the system colours, as the browser's
+  // own recolouring beats it outside an opt-out; it lives in the forced-colours block only.
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/!important;/],
   },
   // The block is the last thing in the file, after the chosen option's badge rule (the last
   // normal-mode rule), for the reason given for `ToggleChip` above.
