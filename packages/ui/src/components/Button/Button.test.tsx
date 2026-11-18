@@ -37,6 +37,7 @@ const {
   PendingNoIcon,
   PendingInverse,
   DangerViaHooks,
+  RowViaHooks,
 } = composeStories(stories);
 
 describe('Button', () => {
@@ -62,6 +63,7 @@ describe('Button', () => {
     ['PendingNoIcon', PendingNoIcon],
     ['PendingInverse', PendingInverse],
     ['DangerViaHooks', DangerViaHooks],
+    ['RowViaHooks', RowViaHooks],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -76,11 +78,27 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Delete event' });
     expect(button).toHaveClass('root', 'button-danger');
     expect(button).toHaveAttribute('data-tone', 'accent');
+    // A LinkButton shares the stylesheet, so the same class reaches it.
+    const link = screen.getByRole('link', { name: 'Delete the series' });
+    expect(link).toHaveClass('root', 'button-danger');
+    expect(link).toHaveAttribute('data-tone', 'accent');
     expect(css).toMatch(/^\.button-danger \{/m);
     expect(css).toContain('--button-fill: var(--color-danger);');
     expect(css).toContain('--button-fill-hover: ');
     expect(css).toContain('--button-label-color: var(--color-inverse-text);');
     expect(css).not.toContain('data-tone');
+    expect(css).not.toMatch(/(?:^|[\s{;])(?:background|color)\s*:/m);
+  });
+
+  it('has the RowViaHooks story set a hover pair that differs from its rest pair in both colours', () => {
+    const { container } = render(<RowViaHooks />);
+    const css = container.querySelector('style')?.textContent ?? '';
+    const row = screen.getByRole('button', { name: 'Delete account' });
+    expect(row).toHaveClass('root', 'row-danger');
+    expect(row).toHaveAttribute('data-variant', 'row');
+    expect(css).toContain('--button-label-color: var(--color-danger);');
+    expect(css).toContain('--button-fill-hover: var(--color-danger);');
+    expect(css).toContain('--button-label-color-hover: var(--color-inverse-text);');
     expect(css).not.toMatch(/(?:^|[\s{;])(?:background|color)\s*:/m);
   });
 
