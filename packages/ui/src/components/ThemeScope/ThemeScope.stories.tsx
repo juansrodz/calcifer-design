@@ -1,13 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Card } from '../Card/Card';
 import { Dialog } from '../Dialog/Dialog';
 import { Menu } from '../Menu/Menu';
+import { NavMenu } from '../NavMenu/NavMenu';
+import { Segmented } from '../Segmented/Segmented';
 import { Tag } from '../Tag/Tag';
 import { ToastRegion, createToastManager } from '../ToastRegion/ToastRegion';
 import { demoTheme, demoThemeCss } from './fixtures';
-import { ThemeScope } from './ThemeScope';
+import { ThemeScope, type ThemeMode } from './ThemeScope';
 
 // Created outside React, as a host creates its own: it outlives every render of the story.
 const storyToastManager = createToastManager();
@@ -143,5 +146,95 @@ export const EmbeddedInABox: Story = {
         </Dialog>
       </ThemeScope>
     </div>
+  ),
+};
+
+/** Text that transitions its colour: the nav links and the segments. */
+function ColourFadingControls() {
+  return (
+    <>
+      <NavMenu
+        orientation="vertical"
+        label="Sections"
+        currentPath="/projects"
+        items={[
+          { href: '/', label: 'Home' },
+          { href: '/projects', label: 'Projects' },
+          { href: '/about', label: 'About' },
+        ]}
+      />
+      <Segmented
+        aria-label="Range"
+        defaultValue="week"
+        options={[
+          { value: 'day', label: 'Day' },
+          { value: 'week', label: 'Week' },
+          { value: 'month', label: 'Month' },
+        ]}
+      />
+    </>
+  );
+}
+
+function ModeSwitchDemo() {
+  const [mode, setMode] = useState<ThemeMode>('light');
+  const otherMode: ThemeMode = mode === 'light' ? 'dark' : 'light';
+  return (
+    <ThemeScope theme={demoTheme} mode={mode}>
+      <div style={{ display: 'grid', gap: 'var(--space-4)', inlineSize: '15rem' }}>
+        <Button variant="secondary" onClick={() => setMode(otherMode)}>
+          Switch to {otherMode}
+        </Button>
+        <ColourFadingControls />
+      </div>
+    </ThemeScope>
+  );
+}
+
+/**
+ * The pinned mode flips under a button. Text that transitions its colour (the nav links, the
+ * segments) changes in the same frame as the surface behind it, never fading through a pairing
+ * of the old text on the new surface.
+ */
+export const ModeSwitch: Story = {
+  render: () => <ModeSwitchDemo />,
+  // Runs in a browser only (jsdom has no transitions): flips the mode both ways and, in the first
+  // frame after each flip, finds no colour transition running on a link or a segment.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const fadingCandidates = [
+      ...canvas.queryAllByRole('link'),
+      ...canvas.getAllByRole('button', { name: /^(Day|Week|Month)$/ }),
+    ];
+    for (const nextMode of ['dark', 'light']) {
+      await userEvent.click(canvas.getByRole('button', { name: `Switch to ${nextMode}` }));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const runningColourTransitions = fadingCandidates.flatMap((element) =>
+        element
+          .getAnimations()
+          .filter(
+            (animation) =>
+              animation instanceof CSSTransition &&
+              animation.transitionProperty.endsWith('color') &&
+              animation.playState === 'running',
+          ),
+      );
+      await expect(runningColourTransitions).toHaveLength(0);
+    }
+  },
+};
+
+/**
+ * Unpinned, so the scope follows `<html>`'s `data-theme` and then the OS preference. A change from
+ * either (the toolbar's theme, a host page's own toggle, the OS switching) lands in one frame, as
+ * a change of pin does.
+ */
+export const FollowsThePage: Story = {
+  render: () => (
+    <ThemeScope theme={demoTheme}>
+      <div style={{ display: 'grid', gap: 'var(--space-4)', inlineSize: '15rem' }}>
+        <ColourFadingControls />
+      </div>
+    </ThemeScope>
   ),
 };

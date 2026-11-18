@@ -163,7 +163,15 @@ export function TreeSelect({
       onOpenChange={changeOpen}
     >
       <BasePopover.Portal container={container}>
-        <BasePopover.Positioner className={popupStyles.layer} align="start" sideOffset={8}>
+        {/* Above or below, never beside, as the DatePicker: Base UI's popover default falls back
+            to the trigger's side when neither fits, which in an end drawer is the scrim. Without
+            that fallback the tree takes the roomier of the two and clamps to it. */}
+        <BasePopover.Positioner
+          className={popupStyles.layer}
+          align="start"
+          sideOffset={8}
+          collisionAvoidance={{ fallbackAxisSide: 'none' }}
+        >
           <BasePopover.Popup
             ref={popupRef}
             className={[popupStyles.surface, styles.popup].join(' ')}

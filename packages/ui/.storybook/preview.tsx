@@ -2,6 +2,8 @@ import type { Preview } from '@storybook/react';
 import { useEffect } from 'react';
 import '@calcifer-design/tokens/tokens.css';
 import '../src/styles/base.css';
+import './preview.css';
+import { suppressTransitionsForAFrame } from '../src/utils/suppressTransitions';
 
 const preview: Preview = {
   globalTypes: {
@@ -28,7 +30,13 @@ const preview: Preview = {
     (Story, context) => {
       const theme = String(context.globals['theme'] ?? 'light');
       useEffect(() => {
-        document.documentElement.dataset['theme'] = theme;
+        const root = document.documentElement;
+        if (root.dataset['theme'] === theme) {
+          return undefined;
+        }
+        root.dataset['theme'] = theme;
+        // The page's root setter, so it lands as a scope's mode change does: no colour fades.
+        return suppressTransitionsForAFrame(root);
       }, [theme]);
       return <Story />;
     },

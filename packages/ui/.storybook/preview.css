@@ -1,0 +1,8 @@
+/* The frame of a toolbar theme change (`suppressTransitionsForAFrame` on `<html>`, preview.tsx):
+   every transition on the page lands at once, as inside a `ThemeScope` whose mode changes. */
+:root[data-theme-changing],
+:root[data-theme-changing] *,
+:root[data-theme-changing] *::before,
+:root[data-theme-changing] *::after {
+  transition: none !important;
+}
