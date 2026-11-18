@@ -745,27 +745,27 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
-    // The row's divider is each cell's own inset line, so a pinned cell's surface never covers it
-    // and the row itself draws no border to be covered.
+    // A body row's divider is the line along the top of each of its cells, drawn by every row but
+    // the first. A pinned cell is sticky, and a sticky box's top edge lands on the same device pixel
+    // as its neighbours' while its bottom edge can land one off, so a line along the bottom went
+    // missing or jogged in the pinned columns at fractional row offsets.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^tr:not\(:first-child\) > :is\(\.cell, \.detailCell, \.errorCell\) \{([^}]*)\}/m,
+    contains: ['box-shadow: inset 0 1px 0 var(--color-border);'],
+    lacks: [],
+  },
+  {
+    // No cell draws a line along its bottom edge any more, and the last row needs no rule to drop
+    // one; the expanded row's panel draws the line above itself and the row after it the one below.
+    file: 'components/DataGrid/DataGrid.module.css',
+    contains: [],
+    lacks: ['inset 0 -1px 0', /^\.row:last-child \.cell/m, /^\.detailRow \{/m],
+  },
+  {
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.cell \{([^}]*)\}/m,
-    contains: ['box-shadow: inset 0 -1px 0 var(--color-border);'],
-    lacks: [],
-  },
-  {
-    // The last row closes the body with no divider under it.
-    file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^\.row:last-child \.cell \{([^}]*)\}/m,
-    contains: ['box-shadow: none;'],
-    lacks: [],
-  },
-  {
-    // The expanded row's own divider is the line above its panel; the panel adds only the one
-    // below, so the two never double.
-    file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^\.detailRow \{([^}]*)\}/m,
-    contains: ['border-block-end: 1px solid var(--color-border);'],
-    lacks: ['border-block:', 'border-block-start'],
+    contains: [],
+    lacks: ['box-shadow'],
   },
   {
     // The state and error rows' content sticks to the scroll area's inline start, so it stays in
@@ -781,15 +781,16 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // Forced colours drop box-shadow, so there the row draws its divider as a border again.
+    // Forced colours drop box-shadow, so there each row and each open panel draws the line under
+    // it as a border instead, all but the last.
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^@media \(forced-colors: active\) \{\n {2}\.row \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.row,\n {2}\.detailRow \{([^}]*)\}/m,
     contains: ['border-block-end: 1px solid var(--color-border);'],
     lacks: [],
   },
   {
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^ {2}\.row:last-child \{([^}]*)\}/m,
+    rule: /^ {2}\.row:last-child,\n {2}\.detailRow:last-child \{([^}]*)\}/m,
     contains: ['border-block-end: 0;'],
     lacks: [],
   },
