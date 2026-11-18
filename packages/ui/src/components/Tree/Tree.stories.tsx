@@ -105,6 +105,10 @@ export const RightToLeft: Story = {
   // open and close must still turn, which a direction written (and held) on every render would
   // stop. The story mounts itself and clicks the toggle itself, so each check comes in the same
   // task as what it checks, well inside a turn's 120 ms.
+  //
+  // The first story a page renders cannot show a spin: the preview holds every transition while the
+  // page first sets its theme. CI catches it because the runner reuses one page for a file's
+  // stories and this one is not the file's first, so it stays after `Default`.
   play: async ({ mount, canvasElement }) => {
     await mount();
     const reference = within(canvasElement).getByRole('treeitem', { name: 'Reference' });
