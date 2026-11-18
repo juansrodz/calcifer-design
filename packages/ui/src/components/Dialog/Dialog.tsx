@@ -77,6 +77,37 @@ export interface DialogProps {
    * deliberately does not expose.
    */
   dismissOnOutsidePress?: boolean;
+  /**
+   * Where focus goes when the dialog closes. Left out, Base UI returns it to the `trigger`, or to
+   * whatever held focus when the dialog opened. A dialog opened with no trigger and no focused
+   * control (from a URL parameter, say), or whose opener unmounted while it was open, has neither,
+   * and focus then falls to `<body>`, or to a control an earlier popup remembered. `finalFocus`
+   * says where it goes instead. It takes the same values as Base UI's `Dialog.Popup` `finalFocus`:
+   *
+   * - a ref: focus moves to that ref's element, in preference to the trigger. A ref with nothing
+   *   in it falls back to the default.
+   * - a function: called as the dialog closes with how it was closed (`'mouse'`, `'touch'`,
+   *   `'pen'`, `'keyboard'`, or `''` when that is unknown). Return an element to focus it, or
+   *   `true` or `null` for the default. Return `false` or nothing (`undefined`) to move focus
+   *   nowhere, so write `ref.current ?? null`, not `ref.current ?? undefined`, to keep the default
+   *   while a ref is empty.
+   * - `false`: move focus nowhere, not even back to the trigger.
+   * - `true`, or left out: the default above.
+   *
+   * The element has to be able to take focus: a button, a link, a field, or an element with a
+   * `tabIndex` (a heading needs `tabIndex={-1}`). An element that is not in the tab order hands
+   * focus to its first tabbable descendant, so a `tabIndex={-1}` heading that holds a link focuses
+   * the link. An element that cannot take focus, such as a plain heading, moves nothing: focus
+   * falls to `<body>`, not to the default.
+   *
+   * A ref or function target also wins over focus that your own `onOpenChange` moves as the dialog
+   * closes. `true`, or leaving it out, keeps Base UI's rule of leaving focus where the app put it.
+   *
+   * Set it on the outermost dialog. Leave it out on a dialog nested in another: closing the
+   * nested one would send focus to the target while the outer modal is still open, out of the
+   * focus trap.
+   */
+  finalFocus?: BaseDialog.Popup.Props['finalFocus'];
   open?: boolean;
   defaultOpen?: boolean;
   /** Base UI calls this as `(open, eventDetails)`; the second argument is passed through. */
@@ -101,6 +132,7 @@ export function Dialog({
   closeVariant = 'ghost',
   closeHidden = false,
   dismissOnOutsidePress = true,
+  finalFocus,
   open,
   defaultOpen,
   onOpenChange,
@@ -156,6 +188,7 @@ export function Dialog({
             // write `aria-modal`, so the popup says it here, as the DatePicker's calendar does.
             aria-modal="true"
             initialFocus={initialFocus}
+            finalFocus={finalFocus}
           >
             {sheetSide === 'bottom' ? <div className={styles.handle} aria-hidden="true" /> : null}
             <div className={styles.header}>
