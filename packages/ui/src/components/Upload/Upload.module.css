@@ -62,30 +62,18 @@
   background: var(--color-danger-surface);
 }
 
-/* Disabled, the frame dims as `field.module.css`'s `.control[data-disabled]` dims a text field, and
-   the button dims itself (Button's own disabled rule). The hint does not: it says what the zone
-   takes, so a disabled zone keeps saying it at `--color-text-muted`, 4.5:1 on the dimmed frame in
-   every theme. So the frame's own border and fill are mixed at the 0.55 the opacity was, rather
-   than the whole face going translucent. The mixes are local properties because the token lint
-   refuses `color-mix()` inline; a browser without `color-mix()` keeps the plain opacity, hint and
-   all, rather than an unset border and fill. An invalid zone keeps its danger colours, dimmed. */
-.zone[data-disabled] .face {
-  opacity: 0.55;
-}
-
+/* Disabled, the face also wears `field.module.css`'s `.dimmedFrame`: the frame dims as a disabled
+   text field's does, the button dims itself (Button's own disabled rule), and the hint keeps
+   `--color-text-muted`, because it says what the zone takes. An invalid zone's danger colours
+   out-rank that class, so they are dimmed the same way here; a browser without `color-mix()` dims
+   them with the class's opacity instead. */
 @supports (color: color-mix(in srgb, red, blue)) {
-  .zone[data-disabled] .face {
-    --upload-disabled-border: color-mix(in srgb, var(--color-border-strong) 55%, transparent);
-    --upload-disabled-fill: color-mix(in srgb, var(--color-surface-input) 55%, transparent);
-
-    opacity: 1;
-    border-color: var(--upload-disabled-border);
-    background: var(--upload-disabled-fill);
-  }
-
   .zone[data-disabled] .input[data-invalid] + .face {
-    --upload-disabled-border: color-mix(in srgb, var(--color-danger-border) 55%, transparent);
-    --upload-disabled-fill: color-mix(in srgb, var(--color-danger-surface) 55%, transparent);
+    --upload-dimmed-danger-border: color-mix(in srgb, var(--color-danger-border) 55%, transparent);
+    --upload-dimmed-danger-fill: color-mix(in srgb, var(--color-danger-surface) 55%, transparent);
+
+    border-color: var(--upload-dimmed-danger-border);
+    background: var(--upload-dimmed-danger-fill);
   }
 }
 

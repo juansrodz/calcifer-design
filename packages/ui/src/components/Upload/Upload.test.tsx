@@ -60,17 +60,20 @@ describe('Upload', () => {
    * and works the hint's pixel out from the tokens, on every surface a form sits on, in each theme.
    */
   describe('the disabled drop zone', () => {
-    const stylesheet = readFileSync(
-      path.join(import.meta.dirname, 'Upload.module.css'),
-      'utf8',
-    ).replace(/\/\*[\s\S]*?\*\//g, '');
-    const rules = Array.from(stylesheet.matchAll(/([^{}]+)\{([^{}]*)\}/g), (match) => ({
-      selectors: (match[1] ?? '').split(',').map((selector) => selector.trim()),
-      body: match[2] ?? '',
-    }));
+    function rulesOf(file: string) {
+      const stylesheet = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      return Array.from(stylesheet.matchAll(/([^{}]+)\{([^{}]*)\}/g), (match) => ({
+        selectors: (match[1] ?? '').split(',').map((selector) => selector.trim()),
+        body: match[2] ?? '',
+      }));
+    }
+    type Rule = ReturnType<typeof rulesOf>[number];
+
+    const uploadRules = rulesOf(path.join(import.meta.dirname, 'Upload.module.css'));
+    const fieldRules = rulesOf(path.join(import.meta.dirname, '../../styles/field.module.css'));
 
     /** The declarations of every rule with exactly this selector, later ones winning. */
-    function declarationsOf(selector: string): Map<string, string> {
+    function declarationsOf(rules: Rule[], selector: string): Map<string, string> {
       const declarations = new Map<string, string>();
       for (const rule of rules.filter((candidate) => candidate.selectors.includes(selector))) {
         for (const declaration of rule.body.split(';')) {
@@ -83,7 +86,12 @@ describe('Upload', () => {
       return declarations;
     }
 
-    const face = declarationsOf('.zone[data-disabled] .face');
+    // What a disabled face wears over `.control`: the shared `.dimmedFrame`, then Upload's own
+    // disabled rule, which out-ranks the class and so wins wherever the two say the same thing.
+    const face = new Map([
+      ...declarationsOf(fieldRules, '.dimmedFrame'),
+      ...declarationsOf(uploadRules, '.zone[data-disabled] .face'),
+    ]);
     const faceOpacity = Number(face.get('opacity') ?? '1');
     const faceBackground = face.get('background') ?? '';
     const resolvedBackground =
@@ -119,14 +127,22 @@ describe('Upload', () => {
     ] as const;
     const backdrops = ['surface1', 'surface2', 'surface3', 'surfaceRaised'] as const;
 
+    it('wears the shared dimmed frame only while disabled', () => {
+      const { unmount } = render(<allStories.Disabled />);
+      expect(screen.getByText('or drop it here').parentElement).toHaveClass('dimmedFrame');
+      unmount();
+      render(<allStories.Default />);
+      expect(screen.getByText('or drop it here').parentElement).not.toHaveClass('dimmedFrame');
+    });
+
     it('dims its frame, not the face that holds the hint', () => {
       expect(faceOpacity).toBe(1);
       expect(fillShare).toBeLessThan(1);
     });
 
     it('leaves the hint its own colour, with no disabled rule of its own', () => {
-      expect(declarationsOf('.hint').get('color')).toBe('var(--color-text-muted)');
-      const hintRules = rules.filter((rule) =>
+      expect(declarationsOf(uploadRules, '.hint').get('color')).toBe('var(--color-text-muted)');
+      const hintRules = uploadRules.filter((rule) =>
         rule.selectors.some((selector) => selector.includes('.hint')),
       );
       expect(hintRules.flatMap((rule) => rule.selectors)).toEqual(['.hint']);
