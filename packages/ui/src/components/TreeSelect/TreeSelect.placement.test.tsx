@@ -1,26 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { forwardRef, type ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type * as PopoverModule from '@base-ui/react/popover';
+import { recordedPositionerProps } from '../../../test/recordingPositioner';
 import { TreeSelect } from './TreeSelect';
 
 // jsdom lays nothing out, so where Floating UI would put the tree cannot be measured here; the
 // browser check in the release report does that against the `InEndDrawer` story. This file pins
 // what decides it: what the positioner is told.
 
-const recordedPositionerProps = vi.hoisted(() => [] as Record<string, unknown>[]);
-
 vi.mock('@base-ui/react/popover', async (importOriginal) => {
-  const original = await importOriginal<typeof PopoverModule>();
-  const OriginalPositioner = original.Popover.Positioner;
-  const RecordingPositioner = forwardRef<HTMLDivElement, ComponentProps<typeof OriginalPositioner>>(
-    function RecordingPositioner(props, ref) {
-      recordedPositionerProps.push(props as Record<string, unknown>);
-      return <OriginalPositioner ref={ref} {...props} />;
-    },
-  );
-  return { ...original, Popover: { ...original.Popover, Positioner: RecordingPositioner } };
+  const { withRecordingPositioner } = await import('../../../test/recordingPositioner');
+  return withRecordingPositioner(await importOriginal<typeof PopoverModule>());
 });
 
 describe('TreeSelect placement', () => {
