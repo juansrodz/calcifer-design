@@ -162,6 +162,11 @@
    browser paints in the system text colour. A pressed badge is outside the recolouring and names
    its border, `Highlight`.
 
+   The icon a caller puts in a pressed button is inside the opt-out, so its own token colours were
+   painted as they are (a tinted icon at 1.4:1 on the fill). It takes the button's ink instead,
+   drops its fill and draws any border in that ink, as in `Button`; a loading button is left out,
+   as its spinner in the same slot draws its own track.
+
    The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
    rule gives a `LinkIconButton` the cue an `IconButton` already has, as `Button.module.css` does for
    `LinkButton`. */
@@ -191,6 +196,15 @@
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-pressed]:not([data-loading]) .icon * {
+    --icon-button-content-edge: currentcolor;
+
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--icon-button-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
   }
 
   @media (hover: hover) {
