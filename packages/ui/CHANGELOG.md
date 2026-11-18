@@ -1,5 +1,12 @@
 # @calcifer-design/ui
 
+## 0.9.1
+
+### Patch Changes
+
+- abe75a2: `ThemeScope`: when the scope's mode changes, every transition inside it (its portalled dialogs, menus and toasts included) is held still for the frame of the change, so text that transitions its colour, such as `NavMenu`'s links, `Segmented` and the icon buttons, flips in the same frame as the surface behind it. Before, that text faded over `--motion-duration-1` (about 120 ms) from its old colour while the surface changed at once, and for that window the pairing could fall below 4.5:1. This covers every way the mode can change: a change of the `mode` prop and, while no `mode` is pinned, a change of `<html>`'s `data-theme` (a host page's own theme toggle) or of the OS colour scheme. Transitions run as before from the next frame on, and `prefers-reduced-motion` is unchanged. A nested `ThemeScope` is left alone, because its colours never follow its parent's mode. The scope marks itself with a `data-theme-changing` attribute for that frame; nothing is injected into the document, so a strict `style-src` is not involved. The rule is an `@scope` block, so a browser without `@scope` support (before Chrome 118, Safari 17.4 or Firefox 146) ignores it and keeps the old fade.
+- e747c46: `TreeSelect`: the tree opens above or below its trigger and never beside it, as the `DatePicker` has since 0.8.0. Before, when neither side had room for the whole tree, as halfway down an end drawer at 1280 × 800, it fell back to the trigger's side, which in a drawer is over the scrim. It now takes the roomier of the two and fits itself to that space, scrolling if it must.
+
 ## 0.9.0
 
 ### Minor Changes
