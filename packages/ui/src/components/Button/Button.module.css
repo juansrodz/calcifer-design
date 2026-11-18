@@ -267,7 +267,22 @@
 
    A pending button's label is hidden by `opacity: 0` alone here: the `color: transparent` that
    hides it elsewhere reverts to the system text colour, and a `loading` button's 70% (0,3,0) beat
-   the overlay's (0,2,0). The last rule lifts it to (0,4,0). */
+   the overlay's (0,2,0). The last rule lifts it to (0,4,0).
+
+   What the caller puts inside a chosen button (a `Tag`, an icon with a colour of its own) is inside
+   the opt-out, so its token colours were painted as they are: a light `Tag` pill, a red icon at
+   1.3:1 on the fill. Every descendant takes the button's ink instead, drops its fill and draws any
+   border in that ink (a local property, as the lint takes neither spelling of `currentcolor` bare);
+   a disabled or loading button's content does the same, so it reads `GrayText` with the label. In a
+   pending button only the spinner is left out, as it draws its own track: with a start icon the
+   spinner takes that slot and the label, badge and end icon stay in view, so they are covered.
+
+   Being `!important`, the rule also beats a forced-colours system colour the caller chose for that
+   content, which gives way to the button's ink.
+
+   The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
+   rule gives a `LinkButton` the cue a `Button` has. A ghost `Button`'s hovered border was painted
+   in the text colour, with the underline its only cue; it turns `Highlight` too. */
 @media (forced-colors: active) {
   .root[data-tone='selected'][data-variant]:is(
       [data-variant='primary'],
@@ -282,6 +297,13 @@
     color: HighlightText;
     outline-color: CanvasText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  @media (hover: hover) {
+    .root:hover:not([data-disabled]) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: Highlight;
+    }
   }
 
   .root[data-variant][data-tone][data-disabled]:not([data-pending]) {
@@ -301,6 +323,26 @@
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-tone='selected'][data-variant]:not([data-pending]):is(
+      [data-variant='primary'],
+      [data-variant='secondary']
+    )
+    *,
+  .root[data-variant][data-tone][data-disabled]:not([data-pending]) *,
+  .root[data-tone='selected'][data-variant][data-pending]:is(
+      [data-variant='primary'],
+      [data-variant='secondary']
+    )
+    :is(.label, .badge, .endIcon)
+    * {
+    --button-content-edge: currentcolor;
+
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--button-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
   }
 
   .root[data-loading]:not([data-pending]) .label {

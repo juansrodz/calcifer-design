@@ -67,51 +67,6 @@
   opacity: 0.45;
 }
 
-/* Forced colours replace the selected fill and so erase the pressed state; system colours
-   survive. `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate
-   behind the text, and `HighlightText` on that can be unreadable.
-
-   They also drop the unpressed chip's fill, and a chip has no border, so it would have no edge at
-   all. A transparent 1 px border declared here and only here is painted in the system text colour;
-   the chip is 2 px larger in forced colours and the default look is untouched.
-
-   A disabled chip is `GrayText`, the system's own disabled colour, and not dimmed as well
-   (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label and the edge at 3.0
-   and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink instead of a dimmed `Highlight`
-   (2.4:1), so it reads disabled while its fill still says pressed. Both tie with the disabled rule
-   above at (0,2,0) or beat it, and it comes first, so the tie falls to these. */
-@media (forced-colors: active) {
-  .chip {
-    border: 1px solid transparent;
-  }
-
-  .chip[data-pressed] {
-    forced-color-adjust: none;
-
-    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
-    background: Highlight;
-    color: HighlightText;
-    outline-color: CanvasText;
-    /* stylelint-enable scale-unlimited/declaration-strict-value */
-  }
-
-  .chip[data-disabled] {
-    opacity: 1;
-
-    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
-    border-color: GrayText;
-    color: GrayText;
-    /* stylelint-enable scale-unlimited/declaration-strict-value */
-  }
-
-  .chip[data-pressed][data-disabled] {
-    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
-    background: GrayText;
-    color: Canvas;
-    /* stylelint-enable scale-unlimited/declaration-strict-value */
-  }
-}
-
 /* Whatever the icon is (a disc of its own, an avatar, an image) is made a 26 px circle. */
 .icon {
   display: inline-flex;
@@ -151,4 +106,62 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* Forced colours replace the selected fill and so erase the pressed state; system colours
+   survive. `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate
+   behind the text, and `HighlightText` on that can be unreadable.
+
+   They also drop the unpressed chip's fill, and a chip has no border, so it would have no edge at
+   all. A transparent 1 px border declared here and only here is painted in the system text colour;
+   the chip is 2 px larger in forced colours and the default look is untouched.
+
+   A disabled chip is `GrayText`, the system's own disabled colour, and not dimmed as well
+   (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label and the edge at 3.0
+   and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink instead of a dimmed `Highlight`
+   (2.4:1), so it reads disabled while its fill still says pressed. Both tie with the disabled rule
+   above at (0,2,0) or beat it, and it comes first, so the tie falls to these.
+
+   The icon of a pressed chip is inside the opt-out, so its own token colours were painted as they
+   are (a tinted icon at 1.4:1 on the fill). It takes the chip's ink instead, drops its fill and
+   draws any border in that ink, as in `Button`, over an inline `style` too. */
+@media (forced-colors: active) {
+  .chip {
+    border: 1px solid transparent;
+  }
+
+  .chip[data-pressed] {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    outline-color: CanvasText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .chip[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    color: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .chip[data-pressed][data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: GrayText;
+    color: Canvas;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .chip[data-pressed] .icon * {
+    --toggle-chip-content-edge: currentcolor;
+
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--toggle-chip-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
+  }
 }

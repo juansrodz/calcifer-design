@@ -81,41 +81,6 @@
   opacity: 0.45;
 }
 
-/* Forced colours replace the accent fill and so erase the chosen option; system colours survive.
-   `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate behind the
-   text, and `HighlightText` on that can be unreadable: measured white on white.
-
-   A disabled option is `GrayText`, the system's own disabled colour, and not dimmed as well
-   (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label at 3.0 and 3.3:1. A
-   chosen one that is disabled is a `GrayText` fill with a `Canvas` ink instead of a dimmed
-   `Highlight` (2.4:1), so it reads disabled while its fill still says chosen. Both tie with the
-   disabled rule above at (0,2,0) or beat it, and it comes first, so the tie falls to these. */
-@media (forced-colors: active) {
-  .option[data-pressed] {
-    forced-color-adjust: none;
-
-    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
-    background: Highlight;
-    color: HighlightText;
-    outline-color: CanvasText;
-    /* stylelint-enable scale-unlimited/declaration-strict-value */
-  }
-
-  .option[data-disabled] {
-    opacity: 1;
-
-    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
-    color: GrayText;
-  }
-
-  .option[data-pressed][data-disabled] {
-    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
-    background: GrayText;
-    color: Canvas;
-    /* stylelint-enable scale-unlimited/declaration-strict-value */
-  }
-}
-
 .icon {
   display: inline-flex;
 }
@@ -145,4 +110,71 @@
   --color-border-accent: transparent;
   --color-text: var(--color-selected);
   --color-text-muted: var(--color-selected);
+}
+
+/* Forced colours replace the accent fill and so erase the chosen option; system colours survive.
+   `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate behind the
+   text, and `HighlightText` on that can be unreadable: measured white on white.
+
+   A disabled option is `GrayText`, the system's own disabled colour, and not dimmed as well
+   (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label at 3.0 and 3.3:1. A
+   chosen one that is disabled is a `GrayText` fill with a `Canvas` ink instead of a dimmed
+   `Highlight` (2.4:1), so it reads disabled while its fill still says chosen. Both tie with the
+   disabled rule above at (0,2,0) or beat it, and it comes first, so the tie falls to these.
+
+   The browser paints a hovered button's border `Highlight`, but an option has none, so it had no
+   hover cue. Each option gets a 1 px `Canvas` border, unseen on the track (an option is 2 px wider
+   here), which hover turns `Highlight` as on `Button` and `ToggleChip`; the chosen and the
+   disabled chosen fills carry it in their own colour, so they stay flush.
+
+   A badge or an icon inside the chosen option is inside the opt-out, so a `Tag` kept the token
+   pill the default look re-points and a tinted icon fell to 1.4:1. They take the option's ink
+   instead, drop their fill and draw any border in that ink, as in `Button`. */
+@media (forced-colors: active) {
+  .option {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border: 1px solid Canvas;
+  }
+
+  .option[data-pressed] {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    outline-color: CanvasText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .option[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    color: GrayText;
+  }
+
+  @media (hover: hover) {
+    .option:hover:not([data-disabled], [data-pressed]) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: Highlight;
+    }
+  }
+
+  .option[data-pressed][data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    background: GrayText;
+    color: Canvas;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .option[data-pressed] :is(.icon, .badge) * {
+    --segmented-content-edge: currentcolor;
+
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--segmented-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
+  }
 }
