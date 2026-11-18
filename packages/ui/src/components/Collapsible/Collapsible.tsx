@@ -36,7 +36,12 @@ export interface CollapsibleProps {
   disabled?: boolean;
   /**
    * Which way the chevron points, closed then open (`CollapsibleChevron`). The default, `down-up`,
-   * is the look every collapsible had before the option; `end-down` reads the page's direction.
+   * is the look every collapsible had before the option.
+   *
+   * `end-down` reads the computed direction (a `dir` on any ancestor, or a stylesheet's
+   * `direction`) after each render, so a direction changed under a memoised subtree takes effect on
+   * its next render. Server-rendered HTML carries no direction until hydration, so before then a
+   * closed chevron in a right-to-left page points right.
    */
   chevron?: CollapsibleChevron;
   children: ReactNode;
@@ -80,13 +85,27 @@ export function Collapsible({
   // always mounted, so the id is passed to both and the relationship holds when it is closed too.
   const panelId = useId();
   // The `end-down` chevron's closed turn depends on the reading direction. It is read from the page
-  // and written straight to the node, as `Tree` and `DatePicker`'s `Calendar` do (not `:dir()`,
-  // which a bundler can rewrite), so there is no second render and no frame turned the wrong way.
+  // and written straight to the node, as `Tree` and `DatePicker`'s `Calendar` do, so there is no
+  // second render. Not `:dir()`: at the build's browser targets lightningcss rewrites it to a list
+  // of `:lang()`, which ignores `dir`. A new or changed direction corrects the glyph rather than
+  // changing its state, so it is written with the transition off (a closed group mounting in a
+  // right-to-left page would otherwise turn from its first, left-to-right guess through a half
+  // turn), and only when it differs, so a re-render mid-toggle leaves a running turn alone.
   const chevronRef = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
-    if (chevronRef.current !== null) {
-      chevronRef.current.dataset.direction = getComputedStyle(chevronRef.current).direction;
+    const chevronElement = chevronRef.current;
+    if (chevron !== 'end-down' || chevronElement === null) {
+      return;
     }
+    const readingDirection = getComputedStyle(chevronElement).direction;
+    if (chevronElement.dataset.direction === readingDirection) {
+      return;
+    }
+    chevronElement.style.transition = 'none';
+    chevronElement.dataset.direction = readingDirection;
+    // Reading the transform makes the browser apply the new turn while the transition is off.
+    void getComputedStyle(chevronElement).transform;
+    chevronElement.style.removeProperty('transition');
   });
   return (
     <BaseCollapsible.Root
