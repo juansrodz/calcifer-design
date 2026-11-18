@@ -25,15 +25,17 @@
     "test:dist": "vitest run --config vitest.dist.config.ts",
     "storybook": "bun run --filter @calcifer-design/tokens build && bun run --filter @calcifer-design/ui storybook",
     "storybook:build": "bun run --filter @calcifer-design/tokens build && bun run --filter @calcifer-design/ui storybook:build",
+    "storybook:test": "bun scripts/test-storybook.ts",
     "changeset": "changeset",
     "changeset:status": "changeset status --since=origin/main",
     "lock:sync": "bun run scripts/sync-lock-workspaces.ts",
     "release": "bun scripts/publish-packages.ts",
-    "check": "bun run lint && bun run typecheck && bun run test && bun run build && bun run test:dist && bun run storybook:build"
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build && bun run test:dist && bun run storybook:build && bun run storybook:test"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.2",
     "@eslint/js": "^10.0.1",
+    "@storybook/test-runner": "0.26.0",
     "@types/eslint-plugin-jsx-a11y": "^6.10.1",
     "@types/semver": "^7.8.0",
     "bun-types": "^1.4.2",
@@ -42,6 +44,8 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jiti": "^2.7.0",
+    "playwright": "1.64.1",
+    "playwright-core": "1.64.1",
     "prettier": "^3.9.6",
     "semver": "^7.8.5",
     "stylelint": "^17.15.0",

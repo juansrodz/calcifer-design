@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { expect, fn, screen, userEvent, within } from 'storybook/test';
+import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Select } from './Select';
 
 const meta = {
@@ -39,6 +39,8 @@ export const KeyboardOpen: Story = {
     const canvas = within(canvasElement);
     canvas.getByRole('combobox', { name: 'Category' }).focus();
     await userEvent.keyboard('{Enter}');
-    await expect(await screen.findByRole('option', { name: 'Mains' })).toHaveFocus();
+    const firstOption = await screen.findByRole('option', { name: 'Mains' });
+    // Base UI moves focus to the option after the popup mounts, a moment after it is in the DOM.
+    await waitFor(() => expect(firstOption).toHaveFocus());
   },
 };
