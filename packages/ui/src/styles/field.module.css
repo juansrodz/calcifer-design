@@ -181,6 +181,16 @@
   }
 }
 
+/* Forced colours replace the mixed border and fill with the system's own, so the dim would be gone
+   and the control would draw a full-strength edge. `GrayText`, the system's disabled colour, is the
+   cue there instead, as on a disabled `ChoiceCard`. */
+@media (forced-colors: active) {
+  .dimmedControl {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: GrayText;
+  }
+}
+
 /* The affix: a control that is a wrapper rather than the input itself, so a glyph or a button can
    sit beside the text. The wrapper wears `.control` (the border, the radius, the surface, the
    floor) together with `.affix`, and the input inside it wears `.affixInput`: borderless,
