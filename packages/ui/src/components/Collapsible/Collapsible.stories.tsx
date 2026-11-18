@@ -116,8 +116,10 @@ export const ChevronEndDownRightToLeft: Story = {
   ],
   // Runs in a browser only (jsdom has no transitions). A closed group mounting in this page must
   // land pointing left with no turn running: the direction is written with the transition off, so
-  // the glyph never spins through a half turn from its first, left-to-right guess.
-  play: async ({ canvasElement }) => {
+  // the glyph never spins through a half turn from its first, left-to-right guess. The story mounts
+  // itself so the check comes in the same task as the mount, well inside the turn's 120 ms.
+  play: async ({ mount, canvasElement }) => {
+    await mount();
     const trigger = within(canvasElement).getByRole('button', { name: 'Desserts 1' });
     const chevron = trigger.querySelector('svg')?.parentElement;
     if (!chevron) throw new Error('Desserts has no chevron');
