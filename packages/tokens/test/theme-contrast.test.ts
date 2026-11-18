@@ -357,22 +357,21 @@ describe('checkThemeContrast', () => {
       (violation) => violation.foreground === 'borderControl',
     );
 
-    expect(borderViolations).toHaveLength(1);
-    expect(borderViolations[0]).toMatchObject({
-      mode: 'dark',
-      background: 'surface3',
-      kind: 'ratio',
-      required: 3,
-    });
-    expect(borderViolations[0]?.ratio).toBeCloseTo(
-      contrastRatio(theme.dark.color.borderControl, theme.dark.color.surface3),
-      10,
-    );
+    expect(borderViolations).toEqual([
+      {
+        mode: 'dark',
+        foreground: 'borderControl',
+        background: 'surface3',
+        kind: 'ratio',
+        ratio: contrastRatio(theme.dark.color.borderControl, theme.dark.color.surface3),
+        required: 3,
+      },
+    ]);
   });
 
   it('holds danger to 3:1 on surfaceInput, the fill an invalid checkbox draws it around', () => {
     const theme = defineTheme({
-      className: 'theme-dark-input',
+      className: 'theme-red-input',
       light: { color: { surfaceInput: '#E06060' } },
     });
 
