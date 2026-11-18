@@ -1,10 +1,14 @@
+import { contrastRatio, themes } from '@calcifer-design/tokens';
 import { composeStories } from '@storybook/react';
 import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { useState, type ComponentType, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import { Form } from '../Form/Form';
+import { demoTheme } from '../ThemeScope/fixtures';
 import { Upload, type UploadProps } from './Upload';
 import * as stories from './Upload.stories';
 
@@ -47,6 +51,99 @@ describe('Upload', () => {
   it.each(Object.entries(allStories))('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
+  });
+
+  /**
+   * The hint says what the zone takes, and a disabled zone still has to say it, so it is held to
+   * 4.5:1 while only the frame and the button dim. jsdom paints nothing, so this reads the stylesheet
+   * as a browser that knows `color-mix()` applies it (the Storybook axe check is the browser's word)
+   * and works the hint's pixel out from the tokens, on every surface a form sits on, in each theme.
+   */
+  describe('the disabled drop zone', () => {
+    const stylesheet = readFileSync(
+      path.join(import.meta.dirname, 'Upload.module.css'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\//g, '');
+    const rules = Array.from(stylesheet.matchAll(/([^{}]+)\{([^{}]*)\}/g), (match) => ({
+      selectors: (match[1] ?? '').split(',').map((selector) => selector.trim()),
+      body: match[2] ?? '',
+    }));
+
+    /** The declarations of every rule with exactly this selector, later ones winning. */
+    function declarationsOf(selector: string): Map<string, string> {
+      const declarations = new Map<string, string>();
+      for (const rule of rules.filter((candidate) => candidate.selectors.includes(selector))) {
+        for (const declaration of rule.body.split(';')) {
+          const [property = '', ...value] = declaration.split(':');
+          if (property.trim() !== '') {
+            declarations.set(property.trim(), value.join(':').trim());
+          }
+        }
+      }
+      return declarations;
+    }
+
+    const face = declarationsOf('.zone[data-disabled] .face');
+    const faceOpacity = Number(face.get('opacity') ?? '1');
+    const faceBackground = face.get('background') ?? '';
+    const resolvedBackground =
+      face.get(/^var\((--[\w-]+)\)$/.exec(faceBackground)?.[1] ?? '') ?? faceBackground;
+    const fillShare =
+      Number(
+        /^color-mix\(in srgb, var\(--color-surface-input\) (\d+)%, transparent\)$/.exec(
+          resolvedBackground,
+        )?.[1] ?? '100',
+      ) / 100;
+
+    function channelsOf(hex: string): number[] {
+      return [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
+    }
+
+    /** `top` at `share` over an opaque `bottom`, as a browser composites in sRGB. */
+    function blend(top: string, bottom: string, share: number): string {
+      const bottomChannels = channelsOf(bottom);
+      return `#${channelsOf(top)
+        .map((channel, index) =>
+          Math.round(channel * share + (bottomChannels[index] ?? 0) * (1 - share))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`;
+    }
+
+    const palettes = [
+      ['house light', themes.light.color],
+      ['house dark', themes.dark.color],
+      ['demo light', demoTheme.light.color],
+      ['demo dark', demoTheme.dark.color],
+    ] as const;
+    const backdrops = ['surface1', 'surface2', 'surface3', 'surfaceRaised'] as const;
+
+    it('dims its frame, not the face that holds the hint', () => {
+      expect(faceOpacity).toBe(1);
+      expect(fillShare).toBeLessThan(1);
+    });
+
+    it('leaves the hint its own colour, with no disabled rule of its own', () => {
+      expect(declarationsOf('.hint').get('color')).toBe('var(--color-text-muted)');
+      const hintRules = rules.filter((rule) =>
+        rule.selectors.some((selector) => selector.includes('.hint')),
+      );
+      expect(hintRules.flatMap((rule) => rule.selectors)).toEqual(['.hint']);
+    });
+
+    it.each(palettes)(
+      'holds the hint at 4.5:1 on every surface in the %s theme',
+      (_name, color) => {
+        for (const backdrop of backdrops) {
+          // The face composites as a group: its fill at its share inside it, then the whole at its
+          // opacity over the page. The hint is opaque text inside the group.
+          const frame = blend(color.surfaceInput, color[backdrop], fillShare * faceOpacity);
+          const hint = blend(color.textMuted, color[backdrop], faceOpacity);
+          expect(contrastRatio(hint, frame), backdrop).toBeGreaterThanOrEqual(4.5);
+        }
+      },
+    );
   });
 
   describe('the real input', () => {
