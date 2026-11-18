@@ -2594,8 +2594,9 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   importantOnlyInForcedBlock('components/ChoiceCard/ChoiceCard.module.css'),
-  // Nothing follows the block, for the reasons given for `ToggleChip`: the guard above reads only
-  // what precedes it.
+  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back, and
+  // the `!important` guard above reads only what precedes it. Every rule inside the block is
+  // indented, so the first `}` at the start of a line closes it.
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
