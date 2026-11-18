@@ -66,15 +66,15 @@ function importantOnlyInForcedBlock(file: string): Expectation {
   };
 }
 
-// A consumer-content rule in a forced-colours block (a chosen or pressed control's content takes its
-// ink) sets colours only. A `Spinner` among that content draws its track dotted under a solid head,
-// and that style is its one cue when the rule paints both in one ink; a `border` shorthand or a
-// border style in the rule, on any side and in any spelling (`border-top-style`,
-// `border-block-style`, `border-top:`), would reset it.
-const borderSide = '(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?';
+// The consumer-content rules in a forced-colours block (a chosen or pressed control's content takes
+// its ink) set colours only. A `Spinner` among that content has its head and track painted in one
+// ink, so the track's dotted style is the only cue left; a border shorthand or border style in the
+// rule, on any side and in any spelling (`border-top-style`, `border-block-style`, `border-top:`),
+// would reset it.
+const optionalBorderSide = '(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?';
 const consumerContentKeepsStyles = [
-  new RegExp(`border${borderSide}-style`),
-  new RegExp(`(?:^|\\s)border${borderSide}\\s*:`),
+  new RegExp(`border${optionalBorderSide}-style`),
+  new RegExp(`(?:^|\\s)border${optionalBorderSide}\\s*:`),
 ] as const;
 
 const expectations: ReadonlyArray<Expectation> = [
@@ -751,9 +751,9 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   // Forced colours on `IconButton` and `LinkIconButton`. They erase the selected tint, so a pressed
-  // button is filled `Highlight` and drawn outside the browser's own recolouring. Its edge is named
-  // too: inside the opt-out a secondary button's token border was painted as it is, a faint ring on
-  // the fill, where the edge should be the fill's own `Highlight`, as on a chosen `Button`.
+  // button is filled `Highlight` and drawn outside the browser's own recolouring, with a `Highlight`
+  // edge as on a chosen `Button`: inside the opt-out a secondary button's token border was a faint
+  // ring on the fill.
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-pressed\],\n {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
@@ -3059,10 +3059,10 @@ const expectations: ReadonlyArray<Expectation> = [
   // `forced-color-adjust: none` (a pressed control) let the token colours through. The forced rule
   // names the colours: a head in the ink the spinner inherits (a local property holds `currentcolor`
   // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
-  // thinner `GrayText` track, so the head is told apart by weight, not by colour alone. The head
-  // keeps its width; the track is 1 px and dotted, under a solid head: where one ink paints both (a
-  // loading `IconButton`'s `GrayText`, the content rule of a chosen or pressed control) the style
-  // still tells them apart, and the consumer-content rules set colours only, never the style.
+  // thinner, dotted `GrayText` track under a solid head, so the head is told apart by weight and
+  // style, not by colour alone: where one ink paints both (a loading `IconButton`'s `GrayText`, the
+  // content rule of a chosen or pressed control) the style is the cue that survives, which
+  // `consumerContentKeepsStyles` guards. The head keeps its width; the track is 1 px.
   {
     file: 'components/Spinner/Spinner.module.css',
     rule: /^\.root \{([^}]*)\}/m,
