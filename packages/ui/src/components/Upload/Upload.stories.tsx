@@ -41,6 +41,10 @@ export const Restricted: Story = {
 };
 export const Required: Story = { args: { required: true } };
 export const Disabled: Story = { args: { disabled: true, defaultFiles: [report] } };
+/** Disabled and invalid: the danger colours dim with the frame, and the hint stays readable. */
+export const DisabledWithError: Story = {
+  args: { disabled: true, error: 'Attach the signed form.', defaultFiles: [report] },
+};
 export const WithError: Story = {
   args: { error: 'Attach the signed form.', defaultFiles: [photo] },
 };

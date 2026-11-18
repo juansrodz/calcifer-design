@@ -62,8 +62,19 @@
   background: var(--color-danger-surface);
 }
 
-.zone[data-disabled] .face {
-  opacity: 0.55;
+/* Disabled, the face also wears `field.module.css`'s `.dimmedControl`: the frame dims as a disabled
+   text field's does, the button dims itself (Button's own disabled rule), and the hint keeps
+   `--color-text-muted`, because it says what the zone takes. An invalid zone's danger colours
+   out-rank that class, so they are dimmed the same way here; a browser without `color-mix()` dims
+   them with the class's opacity instead. */
+@supports (color: color-mix(in srgb, red, blue)) {
+  .zone[data-disabled] .input[data-invalid] + .face {
+    --upload-dimmed-danger-border: color-mix(in srgb, var(--color-danger-border) 55%, transparent);
+    --upload-dimmed-danger-fill: color-mix(in srgb, var(--color-danger-surface) 55%, transparent);
+
+    border-color: var(--upload-dimmed-danger-border);
+    background: var(--upload-dimmed-danger-fill);
+  }
 }
 
 .list {

@@ -347,7 +347,12 @@ export function Upload({
             );
           }}
         />
-        <div className={[fieldStyles.control, styles.face].join(' ')} aria-hidden="true">
+        <div
+          className={[fieldStyles.control, styles.face, disabled ? fieldStyles.dimmedControl : null]
+            .filter(Boolean)
+            .join(' ')}
+          aria-hidden="true"
+        >
           <Button variant="secondary" size="sm" tabIndex={-1} disabled={disabled}>
             {words.choose}
           </Button>
