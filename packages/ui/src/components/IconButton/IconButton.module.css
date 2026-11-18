@@ -16,7 +16,8 @@
   color: var(--color-text-muted);
   cursor: pointer;
 
-  /* `LinkIconButton` wears this class on an anchor, whose badge count would otherwise underline. */
+  /* `LinkIconButton` wears this class on an anchor, where a text glyph in the icon slot (a letter, an
+     emoji) would otherwise underline. The badge is out of flow, so no decoration reaches it. */
   text-decoration: none;
   transition-property: background-color, color, border-color;
   transition-duration: var(--motion-duration-1);

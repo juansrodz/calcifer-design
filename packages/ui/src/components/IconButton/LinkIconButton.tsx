@@ -9,8 +9,12 @@ export interface LinkIconButtonProps extends Omit<
   'aria-label' | 'aria-labelledby'
 > {
   /**
-   * The link's accessible name. Required: there is no visible text to fall back on. As on
-   * `IconButton`, the type rejects `aria-label` and `aria-labelledby`, so nothing can replace it.
+   * The link's accessible name. Required: there is no visible text to fall back on.
+   *
+   * As on `IconButton`, the type rejects `aria-label` and `aria-labelledby`, but that is no
+   * guarantee: an object spread in as `{...props}` can still smuggle either through, and a `render`
+   * element's own `aria-label` or `aria-labelledby` wins over this one as well, since the element's
+   * props are merged over the ones this component supplies. There is no runtime guard.
    */
   label: string;
   variant?: IconButtonVariant;
@@ -22,7 +26,7 @@ export interface LinkIconButtonProps extends Omit<
   badge?: number;
   /**
    * Replaces the rendered `<a>` so a router link can wear the icon button styling; the element's
-   * own props are merged with the ones this component supplies.
+   * own props are merged over the ones this component supplies.
    */
   render?: useRender.RenderProp;
 }
@@ -32,7 +36,8 @@ export interface LinkIconButtonProps extends Omit<
  * none of its semantics: no `role`, no button keyboard handling, so assistive technology announces
  * a link, Enter follows it once and Space does not activate it. Use it for navigation; use
  * `IconButton` for anything that acts on the current page. A link is never pressed, busy or
- * disabled, so it has no `pressed`, `loading` or `disabled`.
+ * disabled, so it has no `pressed`, `loading` or `disabled`. Give it an `href`, or a `render`
+ * element that draws one: an `<a>` with no `href` is not a link, and is not focusable.
  */
 export function LinkIconButton({
   label,

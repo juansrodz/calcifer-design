@@ -25,7 +25,8 @@ export interface LinkButtonProps extends ComponentPropsWithRef<'a'> {
  * A link that looks like a `Button`. It shares `Button`'s styling but none of its
  * semantics: no `role`, no button behaviour, so assistive technology announces a
  * destination change rather than an action. Use it for navigation; use `Button` for
- * anything that acts on the current page.
+ * anything that acts on the current page. Give it an `href`, or a `render` element that draws
+ * one: an `<a>` with no `href` is not a link, and is not focusable.
  */
 export function LinkButton({
   variant = 'primary',
