@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { axe, axeDocument } from '../test/axe';
 
 // `test/axe.ts` asks axe for violations only, to skip serialising every passing node. These pin
-// that narrowing from the other side: a violation must still be reported, with every node that
-// breaks the rule. (Result types left out of `resultTypes` are not dropped, they are cut to one
-// node per rule, so a violation could never vanish, but a failure would name only its first node.)
+// that narrowing from both sides: a violation must still be reported, with every node that breaks
+// the rule, and a rule that passed must still be cut to one node. (Result types left out of
+// `resultTypes` are not dropped, they are cut to one node per rule, so a violation could never
+// vanish, but a failure would name only its first node. Without the option, nothing is cut.)
 describe('the axe helpers', () => {
   it('axe reports a violation, naming the rule and the node', async () => {
     const { container } = render(
@@ -51,5 +52,19 @@ describe('the axe helpers', () => {
     );
     expect(await axe(container)).toHaveNoViolations();
     expect(await axeDocument()).toHaveNoViolations();
+  });
+
+  it('both cut a rule that passed to one node, so the narrowing is still in place', async () => {
+    const { container } = render(
+      <main>
+        <h1>Fine</h1>
+        <div role="img" aria-label="one" />
+        <div role="img" aria-label="two" />
+      </main>,
+    );
+    for (const results of [await axe(container), await axeDocument()]) {
+      expect(results).toHaveNoViolations();
+      expect(results.passes.find((entry) => entry.id === 'role-img-alt')?.nodes).toHaveLength(1);
+    }
   });
 });
