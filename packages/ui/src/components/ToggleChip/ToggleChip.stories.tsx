@@ -204,8 +204,12 @@ export const DisabledOption: Story = {
   ),
 };
 
-/** The label's box and the check's, for the stories that check which side the check is on. */
-function labelAndCheckBoxes(chipElement: HTMLElement): { label: DOMRect; check: DOMRect } {
+/** The label's box and the check's, in the named chip, for the stories that check which side. */
+function labelAndCheckBoxes(
+  canvasElement: HTMLElement,
+  chipName: string,
+): { label: DOMRect; check: DOMRect } {
+  const chipElement = within(canvasElement).getByRole('button', { name: chipName });
   // By the check's own class: a chip's icon is an `svg` too.
   const checkElement = chipElement.querySelector(`.${styles.check ?? 'check'}`);
   const labelNode = Array.from(chipElement.childNodes).find(
@@ -268,9 +272,7 @@ export const CheckAtStart: Story = {
   ),
   // Runs in a browser only: the check is left of the label.
   play: async ({ canvasElement }) => {
-    const { label, check } = labelAndCheckBoxes(
-      within(canvasElement).getByRole('button', { name: 'Vegetarian' }),
-    );
+    const { label, check } = labelAndCheckBoxes(canvasElement, 'Vegetarian');
     await expect(check.right).toBeLessThanOrEqual(label.left);
   },
 };
@@ -290,9 +292,7 @@ export const CheckAtStartRightToLeft: Story = {
   ],
   // Runs in a browser only: the check is right of the label.
   play: async ({ canvasElement }) => {
-    const { label, check } = labelAndCheckBoxes(
-      within(canvasElement).getByRole('button', { name: 'Vegetarian' }),
-    );
+    const { label, check } = labelAndCheckBoxes(canvasElement, 'Vegetarian');
     await expect(check.left).toBeGreaterThanOrEqual(label.right);
   },
 };

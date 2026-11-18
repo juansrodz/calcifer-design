@@ -51,8 +51,9 @@ export const UncheckedTrack: Story = {
     canvasElement.append(probe);
     const controlColour = getComputedStyle(probe).color;
     probe.remove();
-    await expect(getComputedStyle(track).backgroundColor).toBe(controlColour);
-    await expect(getComputedStyle(track).borderTopColor).toBe('rgba(0, 0, 0, 0)');
+    const trackStyle = getComputedStyle(track);
+    await expect(trackStyle.backgroundColor).toBe(controlColour);
+    await expect(trackStyle.borderTopColor).toBe('rgba(0, 0, 0, 0)');
   },
 };
 
