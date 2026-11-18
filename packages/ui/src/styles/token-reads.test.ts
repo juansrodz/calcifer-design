@@ -66,6 +66,12 @@ function importantOnlyInForcedBlock(file: string): Expectation {
   };
 }
 
+// A consumer-content rule in a forced-colours block (a chosen or pressed control's content takes its
+// ink) sets colours only. A `Spinner` among that content draws its track dotted under a solid head,
+// and that style is its one cue when the rule paints both in one ink; a `border` shorthand or a
+// `border-style` in the rule would reset it.
+const consumerContentKeepsStyles = [/border-style/, noBorderShorthand] as const;
+
 const expectations: ReadonlyArray<Expectation> = [
   // Whole-file rows: every weight in these files is a token now.
   {
@@ -740,14 +746,17 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   // Forced colours on `IconButton` and `LinkIconButton`. They erase the selected tint, so a pressed
-  // button is filled `Highlight` and drawn outside the browser's own recolouring.
+  // button is filled `Highlight` and drawn outside the browser's own recolouring. Its edge is named
+  // too: inside the opt-out a secondary button's token border was painted as it is, a faint ring on
+  // the fill, where the edge should be the fill's own `Highlight`, as on a chosen `Button`.
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-pressed\],\n {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
     contains: [
       'forced-color-adjust: none;',
+      'border-color: Highlight;',
       'background: Highlight;',
-      'color: HighlightText;',
+      ' color: HighlightText;',
       'outline-color: CanvasText;',
     ],
     lacks: [],
@@ -784,7 +793,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'background-color: transparent !important;',
       ' color: inherit !important;',
     ],
-    lacks: [],
+    lacks: consumerContentKeepsStyles,
   },
   importantOnlyInForcedBlock('components/IconButton/IconButton.module.css'),
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
@@ -1241,7 +1250,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'background-color: transparent !important;',
       ' color: inherit !important;',
     ],
-    lacks: [],
+    lacks: consumerContentKeepsStyles,
   },
   importantOnlyInForcedBlock('components/Button/Button.module.css'),
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
@@ -2624,7 +2633,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'background-color: transparent !important;',
       ' color: inherit !important;',
     ],
-    lacks: [],
+    lacks: consumerContentKeepsStyles,
   },
   importantOnlyInForcedBlock('components/ChoiceCard/ChoiceCard.module.css'),
   // Nothing follows the block: a normal-mode rule appended after it would win the cascade back, and
@@ -2749,7 +2758,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'background-color: transparent !important;',
       ' color: inherit !important;',
     ],
-    lacks: [],
+    lacks: consumerContentKeepsStyles,
   },
   importantOnlyInForcedBlock('components/ToggleChip/ToggleChip.module.css'),
   {
@@ -2859,7 +2868,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'background-color: transparent !important;',
       ' color: inherit !important;',
     ],
-    lacks: [],
+    lacks: consumerContentKeepsStyles,
   },
   importantOnlyInForcedBlock('components/Segmented/Segmented.module.css'),
   // The block comes after the chosen option's badge rule (the last normal-mode rule), and nothing
@@ -3046,7 +3055,9 @@ const expectations: ReadonlyArray<Expectation> = [
   // names the colours: a head in the ink the spinner inherits (a local property holds `currentcolor`
   // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
   // thinner `GrayText` track, so the head is told apart by weight, not by colour alone. The head
-  // keeps its width; the track is 1 px.
+  // keeps its width; the track is 1 px and dotted, under a solid head: where one ink paints both (a
+  // disabled `IconButton`'s `GrayText`, the content rule of a chosen or pressed control) the style
+  // still tells them apart, and the consumer-content rules set colours only, never the style.
   {
     file: 'components/Spinner/Spinner.module.css',
     rule: /^\.root \{([^}]*)\}/m,
@@ -3054,7 +3065,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'border: var(--border-width-emphasis) solid var(--color-border-strong);',
       'border-top-color: var(--color-accent);',
     ],
-    lacks: ['GrayText', 'currentcolor'],
+    lacks: ['GrayText', 'currentcolor', 'dotted'],
   },
   {
     file: 'components/Spinner/Spinner.module.css',
@@ -3063,6 +3074,8 @@ const expectations: ReadonlyArray<Expectation> = [
       '--spinner-head: currentcolor;',
       'border-width: 1px;',
       'border-top-width: var(--border-width-emphasis);',
+      'border-style: dotted;',
+      'border-top-style: solid;',
       'border-color: GrayText;',
       'border-top-color: var(--spinner-head);',
     ],
