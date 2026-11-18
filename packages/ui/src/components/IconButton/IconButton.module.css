@@ -208,7 +208,7 @@
   }
 
   @media (hover: hover) {
-    .root:hover:not([data-disabled]) {
+    .root:hover:not([data-disabled], [data-pressed]) {
       /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
       border-color: Highlight;
     }
