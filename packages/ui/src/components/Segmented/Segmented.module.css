@@ -122,14 +122,25 @@
    `Highlight` (2.4:1), so it reads disabled while its fill still says chosen. Both tie with the
    disabled rule above at (0,2,0) or beat it, and it comes first, so the tie falls to these.
 
+   The browser paints a hovered button's border `Highlight`, but an option has none, so it had no
+   hover cue. Each option gets a 1 px `Canvas` border, unseen on the track (an option is 2 px wider
+   here), which hover turns `Highlight` as on `Button` and `ToggleChip`; the chosen and the
+   disabled chosen fills carry it in their own colour, so they stay flush.
+
    A badge or an icon inside the chosen option is inside the opt-out, so a `Tag` kept the token
    pill the default look re-points and a tinted icon fell to 1.4:1. They take the option's ink
    instead, drop their fill and draw any border in that ink, as in `Button`. */
 @media (forced-colors: active) {
+  .option {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border: 1px solid Canvas;
+  }
+
   .option[data-pressed] {
     forced-color-adjust: none;
 
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
     background: Highlight;
     color: HighlightText;
     outline-color: CanvasText;
@@ -143,8 +154,16 @@
     color: GrayText;
   }
 
+  @media (hover: hover) {
+    .option:hover:not([data-disabled], [data-pressed]) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: Highlight;
+    }
+  }
+
   .option[data-pressed][data-disabled] {
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
     background: GrayText;
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */

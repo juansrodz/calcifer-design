@@ -274,7 +274,10 @@
    1.3:1 on the fill. Every descendant takes the button's ink instead, drops its fill and draws any
    border in that ink (a local property, as the lint takes neither spelling of `currentcolor` bare);
    a disabled or loading button's content does the same, so it reads `GrayText` with the label. A
-   pending button is left out, as its spinner draws its own track. */
+   pending button is left out, as its spinner draws its own track.
+
+   The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
+   rule gives a `LinkButton` the cue a `Button` already has. */
 @media (forced-colors: active) {
   .root[data-tone='selected'][data-variant]:is(
       [data-variant='primary'],
@@ -289,6 +292,13 @@
     color: HighlightText;
     outline-color: CanvasText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  @media (hover: hover) {
+    .root:hover:not([data-disabled]) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: Highlight;
+    }
   }
 
   .root[data-variant][data-tone][data-disabled]:not([data-pending]) {
