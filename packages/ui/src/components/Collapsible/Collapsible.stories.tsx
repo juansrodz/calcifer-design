@@ -129,16 +129,17 @@ export const ChevronEndDownRightToLeft: Story = {
 /**
  * The trigger's inner padding, from the two hooks `--collapsible-trigger-padding-block` and
  * `--collapsible-trigger-padding-inline`, set from a class on the root (or on any wrapper, since
- * they inherit). Each takes what `padding-block` and `padding-inline` take. Here the row is inset
- * from a tinted group's edge, as a category group in a list draws it; the default is no padding.
+ * they inherit). Each takes what `padding-block` and `padding-inline` take: one value, or a start
+ * and an end. Here the row is inset from a tinted group's edge as a phone's category group draws
+ * it: no padding above, 2 px below (`0 2px`) and 6 px at each side. The default is no padding.
  */
 export const TriggerPadding: Story = {
   parameters: { controls: { disable: true } },
   render: () => (
     <>
       <style>{`.collapsible-trigger-padding {
-  --collapsible-trigger-padding-block: var(--space-1);
-  --collapsible-trigger-padding-inline: var(--space-2);
+  --collapsible-trigger-padding-block: 0 2px;
+  --collapsible-trigger-padding-inline: 6px;
   padding: var(--space-3) var(--space-2);
   border-radius: var(--radius-lg);
   background: var(--color-surface-2);
