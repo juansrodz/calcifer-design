@@ -26,6 +26,8 @@ export type { SpinnerProps } from './components/Spinner/Spinner';
 export { Skeleton } from './components/Skeleton/Skeleton';
 export type { SkeletonProps } from './components/Skeleton/Skeleton';
 export { IconButton } from './components/IconButton/IconButton';
+export { LinkIconButton } from './components/IconButton/LinkIconButton';
+export type { LinkIconButtonProps } from './components/IconButton/LinkIconButton';
 export type {
   IconButtonProps,
   IconButtonVariant,

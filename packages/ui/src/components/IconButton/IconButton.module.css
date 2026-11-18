@@ -1,6 +1,7 @@
 /* A square sibling of Button: the same variants and transitions, but sized to the touch target
    rather than to a text label, and with no room for one. `soft` is the quiet filled circle: a
-   surface fill with no border, and a consumer hook for the one shadow the mock draws on a photo. */
+   surface fill with no border, and a consumer hook for the one shadow the mock draws on a photo.
+   `LinkIconButton` wears the same rules on an anchor; a link is never pressed or disabled. */
 .root {
   position: relative;
   display: inline-flex;
@@ -14,6 +15,9 @@
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
+
+  /* `LinkIconButton` wears this class on an anchor, whose badge count would otherwise underline. */
+  text-decoration: none;
   transition-property: background-color, color, border-color;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);

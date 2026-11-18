@@ -92,6 +92,7 @@ describe('@calcifer-design/ui dist', () => {
       'Spinner',
       'Skeleton',
       'IconButton',
+      'LinkIconButton',
       'Alert',
       'Avatar',
       'avatarColorIndex',
