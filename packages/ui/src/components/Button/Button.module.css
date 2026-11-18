@@ -328,9 +328,10 @@
   .root[data-variant][data-tone][data-disabled]:not([data-pending]) * {
     --button-content-edge: currentcolor;
 
-    border-color: var(--button-content-edge);
-    background-color: transparent;
-    color: inherit;
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--button-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
   }
 
   .root[data-loading]:not([data-pending]) .label {

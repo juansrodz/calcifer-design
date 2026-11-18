@@ -205,9 +205,10 @@
   .card[data-disabled] :is(.disc, .description, .disc *, .description *) {
     --choice-card-content-edge: currentcolor;
 
-    border-color: var(--choice-card-content-edge);
-    background-color: transparent;
-    color: inherit;
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--choice-card-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
   }
 
   .ring[data-checked] {

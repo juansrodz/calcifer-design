@@ -124,7 +124,7 @@
 
    The icon of a pressed chip is inside the opt-out, so its own token colours were painted as they
    are (a tinted icon at 1.4:1 on the fill). It takes the chip's ink instead, drops its fill and
-   draws any border in that ink, as in `Button`; an inline `style` still wins over it. */
+   draws any border in that ink, as in `Button`, over an inline `style` too. */
 @media (forced-colors: active) {
   .chip {
     border: 1px solid transparent;
@@ -159,8 +159,9 @@
   .chip[data-pressed] .icon * {
     --toggle-chip-content-edge: currentcolor;
 
-    border-color: var(--toggle-chip-content-edge);
-    background-color: transparent;
-    color: inherit;
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--toggle-chip-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
   }
 }

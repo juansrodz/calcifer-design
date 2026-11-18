@@ -172,8 +172,9 @@
   .option[data-pressed] :is(.icon, .badge) * {
     --segmented-content-edge: currentcolor;
 
-    border-color: var(--segmented-content-edge);
-    background-color: transparent;
-    color: inherit;
+    /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
+    border-color: var(--segmented-content-edge) !important;
+    background-color: transparent !important;
+    color: inherit !important;
   }
 }
