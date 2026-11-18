@@ -1199,10 +1199,12 @@ const expectations: ReadonlyArray<Expectation> = [
   // inside the opt-out, where its token colours are painted as they are: a `Tag` kept its light pill
   // and a tinted icon fell to 1.3:1 on the fill. Every descendant takes the button's ink, drops its
   // fill and draws any border in that ink; a disabled or loading button's content follows its
-  // `GrayText`. A pending button is left out, so its spinner keeps its own track.
+  // `GrayText`. In a pending button only the spinner is left out, so it keeps its own track: with
+  // a start icon the spinner takes that slot and the label, badge and end icon stay in view, so the
+  // third selector covers them.
   {
     file: 'components/Button/Button.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\)\s*\*,\n {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \* \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\)\s*\*,\n {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \*,\n {2}\.root\[data-tone='selected'\]\[data-variant\]\[data-pending\]:is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\)\s*:is\(\.label, \.badge, \.endIcon\)\s*\* \{([^}]*)\}/m,
     contains: [
       '--button-content-edge: currentcolor;',
       'border-color: var(--button-content-edge) !important;',
