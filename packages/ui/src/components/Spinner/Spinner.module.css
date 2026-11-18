@@ -1,7 +1,8 @@
 /* A ring with one quarter in the accent colour, rotating. The open quarter is what reads as
-   motion, so the track and the head share a width and differ only in colour. The reduced-motion
-   rule in base.css collapses the animation to a single 0.01ms iteration, which leaves this as a
-   static ring — the intended behaviour, so there is no media query here. */
+   motion, so the track and the head share a width and differ only in colour (forced colours thin
+   the track, see the end of the file). The reduced-motion rule in base.css collapses the animation
+   to a single 0.01ms iteration, which leaves this as a static ring — the intended behaviour, so
+   there is no media query here. */
 .root {
   display: inline-block;
   flex: none;
