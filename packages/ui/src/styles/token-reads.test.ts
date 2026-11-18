@@ -1318,6 +1318,106 @@ const expectations: ReadonlyArray<Expectation> = [
       /\[data-tone='(?:inverse|selected)'\]:hover/,
     ],
   },
+
+  // `Button`'s fill hooks: `--button-fill`, `--button-fill-hover`, `--button-label-color` and
+  // `--button-label-color-hover`, set from a consumer's class. The variant, tone and state rules
+  // set only the library's defaults (`--button-default-background`, `--button-default-color`), and
+  // one rule paints them, under the hook for the state. The private names end in `background` and
+  // `color`, so the rows above still find each default's token, and these rows pin a painted
+  // property with a leading space. Nothing in the file declares a hook, so a consumer's class wins
+  // in every state at any weight, with no `[data-tone]` to match.
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [
+      'var(--button-fill)',
+      'var(--button-fill-hover, var(--button-fill))',
+      'var(--button-label-color)',
+      'var(--button-label-color-hover, var(--button-label-color))',
+    ],
+    lacks: [/--button-(?:fill|label-color)(?:-hover)?\s*:/],
+  },
+  {
+    // At rest the hook in force is the rest pair.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      ' --button-state-fill: var(--button-fill);',
+      ' --button-state-label-color: var(--button-label-color);',
+    ],
+    lacks: [],
+  },
+  {
+    // The one rule that paints the root's fill and ink, at (0,2,0), the weight of today's variant
+    // rules: under the state's hook, the state's default.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant\] \{([^}]*)\}/m,
+    contains: [
+      ' background: var(--button-state-fill, var(--button-default-background));',
+      ' color: var(--button-state-label-color, var(--button-default-color));',
+    ],
+    lacks: [],
+  },
+  {
+    // Hovered, the hook in force is the hover pair, each falling back to its rest hook, so a consumer
+    // who sets only the rest pair keeps it on hover instead of meeting the accent hover. Inside the
+    // `@media (hover: hover)` block (two-space indent), as every other hover rule.
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      ' --button-state-fill: var(--button-fill-hover, var(--button-fill));',
+      ' --button-state-label-color: var(--button-label-color-hover, var(--button-label-color));',
+    ],
+    lacks: [],
+  },
+  {
+    // The (0,5,0) accent hover sets the default only: it paints nothing, so it outranks no
+    // consumer's fill (WBW's danger button met it at #E0433B).
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root\[data-variant='primary'\]\[data-tone='accent'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [' --button-default-background: var(--color-accent-hover);'],
+    lacks: [/(?:^|[\s{;])background\s*:/, /(?:^|[\s{;])color\s*:/],
+  },
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^ {2}\.root\[data-variant='secondary'\]\[data-tone='accent'\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [' --button-default-background: var(--color-surface-2);'],
+    lacks: [/(?:^|[\s{;])background\s*:/],
+  },
+  {
+    // A row's press paints its hover surface, so it takes the hover hook too (on a touch screen,
+    // where no hover rule runs, as well).
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root\[data-variant='row'\]:active:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      ' --button-state-fill: var(--button-fill-hover, var(--button-fill));',
+      ' --button-default-background: var(--color-surface-2);',
+    ],
+    lacks: [/(?:^|[\s{;])background\s*:/],
+  },
+  {
+    // The disabled inverse primary dims a consumer's pair as it dims its own: 55% of the fill, 50%
+    // of the ink. With no hook set the mix is invalid and the dimmed default shows.
+    file: 'components/Button/Button.module.css',
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{\n {2}\.root\[data-variant='primary'\]\[data-tone='inverse'\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}\n\}/m,
+    contains: [
+      ' --button-state-fill: color-mix(in srgb, var(--button-fill) 55%, transparent);',
+      ' --button-state-label-color: color-mix(in srgb, var(--button-label-color) 50%, transparent);',
+    ],
+    lacks: [/(?:^|[\s{;])background\s*:/, /(?:^|[\s{;])color\s*:/],
+  },
+  {
+    // Outside the forced-colours block nothing else paints the root's fill or ink: every variant,
+    // tone and state goes through the hooks. The only other inks are on descendants, the pending
+    // label's transparent one and the row's muted end icon. (The forced block paints system colours
+    // over all of it, at (0,4,0) and above.)
+    file: 'components/Button/Button.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [
+      /(?:^|[\s{;])background\s*:(?!\s*var\(--button-state-fill, var\(--button-default-background\)\);)/m,
+      /(?:^|[\s{;])color\s*:(?!\s*(?:var\(--button-state-label-color, var\(--button-default-color\)\)|transparent|var\(--color-text-muted\));)/m,
+    ],
+  },
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-size='lg'\] \{([^}]*)\}/m,

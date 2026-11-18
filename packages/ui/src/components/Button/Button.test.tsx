@@ -36,6 +36,7 @@ const {
   Pending,
   PendingNoIcon,
   PendingInverse,
+  DangerViaHooks,
 } = composeStories(stories);
 
 describe('Button', () => {
@@ -60,9 +61,27 @@ describe('Button', () => {
     ['Pending', Pending],
     ['PendingNoIcon', PendingNoIcon],
     ['PendingInverse', PendingInverse],
+    ['DangerViaHooks', DangerViaHooks],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  // jsdom loads no CSS, so this pins the story's side of the hooks: a class on the button sets
+  // them, and nothing else. The library's side (every state reads them, nothing declares them) is
+  // pinned in `token-reads.test.ts`, and the story's play checks the painted pair in a browser.
+  it('has the DangerViaHooks story set the hooks from a class on the button, with no [data-tone] and no paint of its own', () => {
+    const { container } = render(<DangerViaHooks />);
+    const css = container.querySelector('style')?.textContent ?? '';
+    const button = screen.getByRole('button', { name: 'Delete event' });
+    expect(button).toHaveClass('root', 'button-danger');
+    expect(button).toHaveAttribute('data-tone', 'accent');
+    expect(css).toMatch(/^\.button-danger \{/m);
+    expect(css).toContain('--button-fill: var(--color-danger);');
+    expect(css).toContain('--button-fill-hover: ');
+    expect(css).toContain('--button-label-color: var(--color-inverse-text);');
+    expect(css).not.toContain('data-tone');
+    expect(css).not.toMatch(/(?:^|[\s{;])(?:background|color)\s*:/m);
   });
 
   it('calls onClick when pressed', async () => {

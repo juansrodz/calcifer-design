@@ -55,6 +55,10 @@ const UI_INLINE_PROPERTIES = [
 
 // Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
 const UI_CONSUMER_HOOK_PROPERTIES = [
+  '--button-fill',
+  '--button-fill-hover',
+  '--button-label-color',
+  '--button-label-color-hover',
   '--icon-button-shadow',
   '--segmented-pressed-shadow',
   '--dialog-heading-size',
