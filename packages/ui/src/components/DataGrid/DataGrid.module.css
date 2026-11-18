@@ -301,13 +301,13 @@
 }
 
 /*
- * The body's dividers: every row but the first draws the line above it, inside the top edge of each
- * of its cells, as the band's cells draw their hairlines; an open panel draws the one between it
- * and its row, and nothing draws one under the last row. Along the top, not the bottom: a pinned
- * cell is sticky, and the browser places a sticky box's top edge on the same pixel as its row's
- * but can round its bottom edge to the next one, where the next row's pinned cell then covers the
- * line or the line jogs. Inside the cell, so a pinned cell's surface paints under it rather than
- * over it. Forced colours drop box-shadow, so there the rows draw borders instead, below.
+ * The body's dividers. Every row but the first, an open panel's and the error row included, draws
+ * the line above it, inside the top edge of each of its cells; nothing draws one under the last
+ * row. Along the top, not the bottom: a pinned cell is sticky, and the browser places a sticky
+ * box's top edge on the same pixel as its row's but can round its bottom edge to the next one,
+ * where the next row's pinned cell then covers the line or the line jogs. Inside the cell, so a
+ * pinned cell's surface paints under the line, not over it. Forced colours drop box-shadow, so
+ * there the rows draw borders instead, below.
  */
 tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
   /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the 1px hairline every border here draws; no token is one */
@@ -385,8 +385,8 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 /*
  * The checkbox is a block centred in its cell, not an inline box on the cell's text baseline: there
  * it sat above the cell's middle, and by a different amount checked (on the tick's baseline) than
- * unchecked (on the box's bottom edge). Two classes, so the field skin's `display: inline-flex`
- * loses whichever stylesheet loads last.
+ * unchecked (on the box's bottom edge). Two classes outrank the field skin's `display: inline-flex`
+ * whichever stylesheet loads last.
  */
 .selectHeader > .checkbox,
 .selectCell > .checkbox {
@@ -467,8 +467,8 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 
 /*
  * The row actions column: 4.5rem (about 72px), at the end, with a hairline before it. The header's
- * hairline runs from the scroll area's top border to the band's bottom hairline, which is a
- * pseudo-element for the reason given above; it draws no top line of its own over that border.
+ * hairline joins the scroll area's top border to the band's bottom hairline, so its pseudo-element
+ * draws no top line of its own.
  */
 .headerCell.actionsHeader,
 .filterCell.actionsFilter,
@@ -501,8 +501,8 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 }
 
 /*
- * An expanded row's detail panel: one cell across the row on a slightly tinted surface, between the
- * dividers above. Its content wraps freely, compact density included.
+ * An expanded row's detail panel: one cell across the row on a slightly tinted surface, with a
+ * divider above it and the next row's below. Its content wraps freely, compact density included.
  */
 .detailCell {
   padding: var(--space-3) var(--space-4);
@@ -510,8 +510,9 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
   color: var(--color-text);
 }
 
-/* The error row closes the body: the message and its retry button, centred. The cell's padding is
-   on the in-view box inside it, which carries the focus ring, below. */
+/* The error row closes the body: the message and its retry button, centred. The cell has no
+   padding: the in-view box inside it pads the content, so the focus ring (below) keeps clear of
+   the button. */
 .errorCell {
   padding: 0;
   text-align: center;
@@ -519,12 +520,12 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 }
 
 .errorContent {
-  padding-block: var(--space-3);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
+  padding-block: var(--space-3);
 }
 
 /*
