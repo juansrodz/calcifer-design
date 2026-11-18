@@ -110,3 +110,26 @@ describe('the danger colour on a field', () => {
     expect(textContrastPairs).not.toContainEqual(['danger', 'surfaceInput']);
   });
 });
+
+/**
+ * `dangerSurface` and `dangerBorder` are washes of `danger`: its channels at an alpha, as every
+ * other wash is its base's. A change to `danger` that leaves them behind would give one family two
+ * reds.
+ */
+describe('the danger washes', () => {
+  const rgbaPattern = /^rgba\((\d+), (\d+), (\d+), [\d.]+\)$/;
+
+  function hexChannels(hex: string): string[] {
+    return [1, 3, 5].map((start) => String(Number.parseInt(hex.slice(start, start + 2), 16)));
+  }
+
+  for (const [themeName, theme] of Object.entries(themes)) {
+    for (const wash of ['dangerSurface', 'dangerBorder'] as const) {
+      it(`${themeName}: ${wash} carries danger's channels`, () => {
+        const match = rgbaPattern.exec(theme.color[wash]);
+        expect(match, theme.color[wash]).not.toBeNull();
+        expect(match?.slice(1, 4)).toEqual(hexChannels(theme.color.danger));
+      });
+    }
+  }
+});

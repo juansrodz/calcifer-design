@@ -45,12 +45,11 @@ const lightColor = {
   /**
    * Text as well as a fill: a field's error message reads it, so WCAG 1.4.3 asks 4.5:1 on the four
    * page surfaces. The earlier #D23B3B, a step lighter on the same hue, was 3.91:1 on surface3 and
-   * 4.24:1 on surface2; this is 4.50:1 on surface3 (the lowest), 4.88:1 on surface2. The two tints
-   * below keep #D23B3B's channels: they are washes, not text, and nothing measures them.
+   * 4.24:1 on surface2; this is 4.50:1 on surface3 (the lowest), 4.88:1 on surface2.
    */
   danger: '#C62F2F',
-  dangerSurface: 'rgba(210, 59, 59, 0.06)',
-  dangerBorder: 'rgba(210, 59, 59, 0.35)',
+  dangerSurface: 'rgba(198, 47, 47, 0.06)',
+  dangerBorder: 'rgba(198, 47, 47, 0.35)',
   neutral: '#8A8580',
   chartPhase1: '#C9D6F5',
   chartPhase2: '#3B6FE0',

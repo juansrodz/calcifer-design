@@ -166,6 +166,15 @@ describe('tokensToCss', () => {
     expect(css).toContain('--color-border-control: #8A909C;');
   });
 
+  it('emits the danger colour and its washes in both themes', () => {
+    expect(css).toContain('--color-danger: #C62F2F;');
+    expect(css).toContain('--color-danger-surface: rgba(198, 47, 47, 0.06);');
+    expect(css).toContain('--color-danger-border: rgba(198, 47, 47, 0.35);');
+    expect(css).toContain('--color-danger: #F07070;');
+    expect(css).toContain('--color-danger-surface: rgba(240, 112, 112, 0.10);');
+    expect(css).toContain('--color-danger-border: rgba(240, 112, 112, 0.35);');
+  });
+
   it('emits a transparent nav selection fill', () => {
     expect(css).toContain('--color-nav-selected: transparent;');
   });
