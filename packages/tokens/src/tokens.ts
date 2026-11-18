@@ -31,8 +31,8 @@ const lightColor = {
   borderStrong: 'rgba(28, 25, 23, 0.18)',
   /**
    * The boundary of a control known by its outline alone: the unchecked checkbox, the radio. Opaque
-   * so it can be measured: WCAG 1.4.11 asks 3:1, and on the four surfaces `uiContrastPairs` checks
-   * the lowest is 3.54:1 (light, surface2) and 5.35:1 (dark, surface2 and surfaceInput).
+   * so it can be measured: WCAG 1.4.11 asks 3:1, and on the five surfaces `uiContrastPairs` checks
+   * the lowest is 3.26:1 (light, surface3) and 4.82:1 (dark, surface3).
    */
   borderControl: '#857F79',
   borderAccent: 'rgba(59, 111, 224, 0.28)',
@@ -378,6 +378,8 @@ export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
   ['danger', 'surface2'],
   ['danger', 'surface3'],
   ['danger', 'surfaceRaised'],
+  // An invalid checkbox or radio draws its boundary in `danger` around the input fill.
+  ['danger', 'surfaceInput'],
   ['neutral', 'surface1'],
   ['neutral', 'surface2'],
   ['selected', 'surface1'],
@@ -385,6 +387,7 @@ export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
   ['tabBarText', 'tabBar'],
   ['borderControl', 'surface1'],
   ['borderControl', 'surface2'],
+  ['borderControl', 'surface3'],
   ['borderControl', 'surfaceRaised'],
   ['borderControl', 'surfaceInput'],
 ];
