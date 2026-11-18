@@ -1,32 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { installManualAnimationFrames } from '../../test/animationFrames';
 import { THEME_CHANGING_ATTRIBUTE, suppressTransitionsForAFrame } from './suppressTransitions';
 
 // jsdom runs no transitions, so this pins the mechanism: the mark goes on, a style read happens
 // while it is on, and it comes off only once the frame of the change has been drawn. The browser
 // check in the release report (and the `ModeSwitch` story's play) shows the effect itself.
 
-/** Frames queued by the code under test, run by hand so the test decides when a frame passes. */
-let queuedFrames: Map<number, FrameRequestCallback>;
-let nextFrameHandle: number;
-
-function runOneFrame(): void {
-  const callbacks = [...queuedFrames.values()];
-  queuedFrames.clear();
-  for (const callback of callbacks) callback(performance.now());
-}
-
-beforeEach(() => {
-  queuedFrames = new Map();
-  nextFrameHandle = 1;
-  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-    const handle = nextFrameHandle++;
-    queuedFrames.set(handle, callback);
-    return handle;
-  });
-  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((handle) => {
-    queuedFrames.delete(handle);
-  });
-});
+const { queuedFrames, runOneFrame } = installManualAnimationFrames();
 
 afterEach(() => {
   vi.restoreAllMocks();

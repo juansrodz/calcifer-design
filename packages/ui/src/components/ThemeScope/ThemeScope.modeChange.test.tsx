@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { useLayoutEffect, useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installManualAnimationFrames } from '../../../test/animationFrames';
 import { axeDocument } from '../../../test/axe';
 import { installMatchMedia } from '../../../test/matchMedia';
 import { THEME_CHANGING_ATTRIBUTE } from '../../utils/suppressTransitions';
@@ -19,22 +20,10 @@ const { ModeSwitch, FollowsThePage } = composeStories(stories);
 // that frame and that its sheet holds every transition beneath the mark still; the browser check
 // in the release report measures a NavMenu link's colour in the first frame.
 
-let queuedFrames: FrameRequestCallback[];
-
-function runOneFrame(): void {
-  const callbacks = queuedFrames;
-  queuedFrames = [];
-  for (const callback of callbacks) callback(performance.now());
-}
+const { runOneFrame } = installManualAnimationFrames();
 
 beforeEach(() => {
   document.documentElement.removeAttribute('data-theme');
-  queuedFrames = [];
-  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-    queuedFrames.push(callback);
-    return queuedFrames.length;
-  });
-  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
 });
 
 afterEach(() => {
