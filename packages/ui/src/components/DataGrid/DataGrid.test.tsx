@@ -553,12 +553,16 @@ describe('virtualisation', () => {
       expect(above + rows.length * rowHeight + below).toBe(totalHeight);
     });
 
-    it('brings a row the band covers into view below it', async () => {
+    // One pixel short of the band: the band sticks 1px above the scroll area's top edge, so a row
+    // padded by the band's full height would land 1px below it, its top line a pixel clear of the
+    // band's hairline (line, gap, line). One pixel short sets the two lines together, and the
+    // focused cell's whole focus ring stays below the band; two short would hide the ring's top.
+    it('brings a row the band covers into view right under it', async () => {
       const user = userEvent.setup();
       render(<Large />);
       const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
       // A browser scrolls the cell it focuses clear of the band.
-      expect(scrollElement.style.scrollPaddingBlockStart).toBe('40px');
+      expect(scrollElement.style.scrollPaddingBlockStart).toBe('39px');
       scrollElement.scrollTo = ((options: ScrollToOptions) => {
         scrollElement.scrollTop = options.top ?? 0;
         scrollElement.dispatchEvent(new Event('scroll'));
@@ -569,8 +573,9 @@ describe('virtualisation', () => {
       scrollGridTo(rowHeight + 50 * rowHeight);
       await user.click(within(rowWithIndex(53) as HTMLElement).getAllByRole('gridcell')[0]!);
 
+      // The virtualiser aligns the row the same way.
       await user.keyboard('{ArrowUp}');
-      await waitFor(() => expect(scrollElement.scrollTop).toBe(50 * rowHeight));
+      await waitFor(() => expect(scrollElement.scrollTop).toBe(50 * rowHeight + 1));
     });
   });
 });

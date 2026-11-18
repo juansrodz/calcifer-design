@@ -419,6 +419,11 @@ export function DataGrid<Row extends RowData>({
     [entries],
   );
 
+  // Where a row scrolled up to the band lands: one pixel short of the band's height. The band
+  // sticks 1px above the scroll area's top edge (DataGrid.module.css, `.head`), so the band's full
+  // height would leave a 1px gap between its hairline and the row's own top line; one pixel short
+  // sets the two together, and the focused cell's focus ring stays whole below the band.
+  const rowAlignmentPadding = Math.max(0, headerHeight - 1);
   // The virtualiser is read only in this render and never handed to a memoised child.
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
@@ -436,9 +441,9 @@ export function DataGrid<Row extends RowData>({
       height: scrollRef.current?.clientHeight ?? 0,
     },
     // The body starts below the sticky header band, which also covers the top of the view: the
-    // range starts where the body does, and a row scrolled into view lands below the band.
+    // range starts where the body does, and a row scrolled into view lands right under the band.
     scrollMargin: headerHeight,
-    scrollPaddingStart: headerHeight,
+    scrollPaddingStart: rowAlignmentPadding,
     // The focused entry stays mounted while it is scrolled out of view.
     rangeExtractor: (range) => extractRange(range, pinnedIndexes, entries),
   });
@@ -540,8 +545,8 @@ export function DataGrid<Row extends RowData>({
   const scrollStyle: CSSProperties = {
     // A card that fills its parent is sized by it, so a maximum height has no place there.
     maxHeight: maxHeight && !fill ? maxHeight : undefined,
-    // A cell the browser scrolls to on focus lands below the sticky header band too.
-    scrollPaddingBlockStart: headerHeight || undefined,
+    // A cell the browser scrolls to on focus lands right under the sticky header band too.
+    scrollPaddingBlockStart: rowAlignmentPadding || undefined,
   };
   // The error row's aria-rowindex: it comes after the last entry, which follows the head rows.
   const errorRowIndex = entries.length + headRowCount + 1;
