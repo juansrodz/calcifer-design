@@ -1,12 +1,13 @@
 import { composeStories } from '@storybook/react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ComponentPropsWithRef, MouseEvent } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { ChevronRightIcon } from '../../icons/ChevronRightIcon';
 import { IconButton } from './IconButton';
 import { LinkIconButton } from './LinkIconButton';
+import type { LinkIconButtonProps } from './LinkIconButton';
 import * as stories from './LinkIconButton.stories';
 
 const { Ghost, Secondary, Primary, Small, Soft, WithBadge, MatchesIconButton } =
@@ -24,7 +25,7 @@ function RouterLink({ to, onNavigate, onClick, ...rest }: RouterLinkProps) {
     <a
       {...rest}
       href={to}
-      onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+      onClick={(event) => {
         onClick?.(event);
         event.preventDefault();
         onNavigate(to);
@@ -33,7 +34,7 @@ function RouterLink({ to, onNavigate, onClick, ...rest }: RouterLinkProps) {
   );
 }
 
-function renderRouterLink() {
+function renderRouterLink(props: Partial<LinkIconButtonProps> = {}) {
   const onNavigate = vi.fn();
   render(
     <LinkIconButton
@@ -41,6 +42,7 @@ function renderRouterLink() {
       size="sm"
       label="Open events"
       render={<RouterLink to="/events" onNavigate={onNavigate} />}
+      {...props}
     >
       <ChevronRightIcon />
     </LinkIconButton>,
@@ -72,12 +74,14 @@ describe('LinkIconButton', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('carries none of the button attributes', () => {
+  it('is a plain focusable link with none of the button attributes', async () => {
     render(<WithBadge />);
     const link = screen.getByRole('link');
     for (const attribute of ['type', 'aria-pressed', 'aria-busy', 'aria-disabled', 'tabindex']) {
       expect(link).not.toHaveAttribute(attribute);
     }
+    await userEvent.tab();
+    expect(link).toHaveFocus();
   });
 
   it('is announced as a link when a router link is rendered in its place', () => {
@@ -107,25 +111,10 @@ describe('LinkIconButton', () => {
 
   it("navigates once on a click, and runs a caller's onClick", async () => {
     const onClick = vi.fn();
-    const onNavigate = vi.fn();
-    render(
-      <LinkIconButton
-        label="Open events"
-        onClick={onClick}
-        render={<RouterLink to="/events" onNavigate={onNavigate} />}
-      >
-        <ChevronRightIcon />
-      </LinkIconButton>,
-    );
+    const onNavigate = renderRouterLink({ onClick });
     await userEvent.click(screen.getByRole('link'));
     expect(onClick).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledTimes(1);
-  });
-
-  it('is in the tab order with no tabindex of its own', async () => {
-    render(<Ghost />);
-    await userEvent.tab();
-    expect(screen.getByRole('link')).toHaveFocus();
   });
 
   it('wears the same class, data attributes and content as the IconButton it matches', () => {

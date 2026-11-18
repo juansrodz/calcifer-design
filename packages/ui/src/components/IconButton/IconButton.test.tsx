@@ -144,11 +144,13 @@ describe('IconButton', () => {
     expect(screen.getByText('99+')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('leaves the toggle, the badge and the loading DOM unchanged', () => {
-    const { container, unmount } = render(<PressedAndBadge />);
+  it('leaves the toggle and the badge DOM unchanged', () => {
+    const { container } = render(<PressedAndBadge />);
     expect(container.innerHTML).toBe(PRESSED_AND_BADGE_HTML);
-    unmount();
-    const loading = render(<Loading />);
-    expect(loading.container.innerHTML).toBe(LOADING_HTML);
+  });
+
+  it('leaves the loading DOM unchanged', () => {
+    const { container } = render(<Loading />);
+    expect(container.innerHTML).toBe(LOADING_HTML);
   });
 });

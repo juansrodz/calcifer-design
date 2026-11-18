@@ -35,47 +35,42 @@ export const Soft: Story = {
 export const WithBadge: Story = { args: { label: 'Messages, 3 unread', badge: 3 } };
 
 const variants: ReadonlyArray<IconButtonVariant> = ['ghost', 'secondary', 'primary', 'soft'];
-const sizes: ReadonlyArray<IconButtonSize> = ['md', 'sm'];
+const rows: ReadonlyArray<{ name: string; size: IconButtonSize; badge?: number }> = [
+  { name: 'md', size: 'md' },
+  { name: 'sm', size: 'sm' },
+  { name: 'badged', size: 'md', badge: 3 },
+];
 
 /**
- * Each variant and size twice: an `IconButton`, then a `LinkIconButton`. The two must look the
- * same; only the role and the keyboard differ.
+ * Each variant, size and badge twice: an `IconButton`, then a `LinkIconButton`. The two must look
+ * the same; only the role and the keyboard differ.
  */
 export const MatchesIconButton: Story = {
   render: (args) => (
     <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
-      {sizes.map((size) => (
-        <div key={size} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+      {rows.map(({ name, size, badge }) => (
+        <div key={name} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           {variants.map((variant) => (
             <div key={variant} style={{ display: 'flex', gap: 'var(--space-1)' }}>
-              <IconButton label={`${variant} ${size} button`} variant={variant} size={size}>
+              <IconButton
+                label={`${variant} ${name} button`}
+                variant={variant}
+                size={size}
+                badge={badge}
+              >
                 <ChevronRightIcon />
               </IconButton>
               <LinkIconButton
                 {...args}
-                label={`${variant} ${size} link`}
+                label={`${variant} ${name} link`}
                 variant={variant}
                 size={size}
+                badge={badge}
               />
             </div>
           ))}
         </div>
       ))}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        {variants.map((variant) => (
-          <div key={variant} style={{ display: 'flex', gap: 'var(--space-1)' }}>
-            <IconButton label={`${variant} button, 3 new`} variant={variant} badge={3}>
-              <ChevronRightIcon />
-            </IconButton>
-            <LinkIconButton
-              {...args}
-              label={`${variant} link, 3 new`}
-              variant={variant}
-              badge={3}
-            />
-          </div>
-        ))}
-      </div>
     </div>
   ),
 };
