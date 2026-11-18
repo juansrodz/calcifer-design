@@ -2,7 +2,7 @@ import { composeStories } from '@storybook/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
@@ -501,7 +501,13 @@ describe('Dialog', () => {
 
       it('lets the named element win over it', async () => {
         render(<ItemPage returnMode="ref" movesFocusOnClose />);
+        const focusedElsewhere = vi.fn();
+        screen
+          .getByRole('button', { name: 'Somewhere else' })
+          .addEventListener('focusin', focusedElsewhere);
         await openFromOpenerAndClose();
+        // The page did move focus, so the named element beat a real move.
+        expect(focusedElsewhere).toHaveBeenCalledOnce();
         expect(getTarget()).toHaveFocus();
       });
     });
