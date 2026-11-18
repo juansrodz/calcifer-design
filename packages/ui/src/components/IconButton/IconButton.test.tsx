@@ -8,6 +8,20 @@ import * as stories from './IconButton.stories';
 const { Ghost, Secondary, Primary, Small, Disabled, Loading, Soft, PressedAndBadge } =
   composeStories(stories);
 
+// Today's DOM for the toggle pair and the loading button, captured before `LinkIconButton` shared
+// the icon and badge markup. Never edited: it guards "the link form leaves the button unchanged".
+const TRASH_ICON_HTML =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.75 4.25h10.5"></path><path d="M6.25 4.25V2.75h3.5v1.5"></path><path d="M4.25 4.25 4.9 13.25h6.2l.65-9"></path></svg>';
+const PRESSED_AND_BADGE_HTML =
+  '<div style="display: flex; gap: var(--space-3);">' +
+  '<button type="button" tabindex="0" data-variant="ghost" data-size="md" data-pressed="" aria-label="Filters, 2 active" aria-pressed="true" class="root">' +
+  `<span class="icon">${TRASH_ICON_HTML}</span><span class="badge" aria-hidden="true">2</span></button>` +
+  '<button type="button" tabindex="0" data-variant="ghost" data-size="md" aria-label="Filters" aria-pressed="false" class="root">' +
+  `<span class="icon">${TRASH_ICON_HTML}</span></button></div>`;
+const LOADING_HTML =
+  '<button type="button" data-disabled="" tabindex="0" aria-disabled="true" data-variant="ghost" data-size="md" data-loading="" aria-label="Delete remote" aria-busy="true" class="root">' +
+  '<span class="icon"><span class="root" data-size="sm" data-testid="spinner" aria-hidden="true"></span></span></button>';
+
 describe('IconButton', () => {
   it.each([
     ['Ghost', Ghost],
@@ -128,5 +142,13 @@ describe('IconButton', () => {
 
     rerender(<Ghost badge={120} />);
     expect(screen.getByText('99+')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('leaves the toggle, the badge and the loading DOM unchanged', () => {
+    const { container, unmount } = render(<PressedAndBadge />);
+    expect(container.innerHTML).toBe(PRESSED_AND_BADGE_HTML);
+    unmount();
+    const loading = render(<Loading />);
+    expect(loading.container.innerHTML).toBe(LOADING_HTML);
   });
 });
