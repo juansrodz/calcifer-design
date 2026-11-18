@@ -23,6 +23,28 @@ type Story = StoryObj<typeof meta>;
 /** Plain by default: a raised card, the heading and a body sentence, centred. */
 export const Default: Story = {};
 
+/**
+ * `bare` drops the card's surface and shadow, for a container that already frames the empty state:
+ * here a panel of the same surface, where a raised card would read as a card in a card.
+ */
+export const Bare: Story = {
+  args: { bare: true, actions: <Button variant="secondary">Clear filters</Button> },
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          background: 'var(--color-surface-raised)',
+          border: '1px solid var(--color-card-border)',
+          borderRadius: 'var(--radius-popup)',
+          padding: 'var(--space-3)',
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 /** `actions` sit under the body, in a row that wraps. */
 export const WithActions: Story = {
   args: { actions: <Button>Create an event</Button> },

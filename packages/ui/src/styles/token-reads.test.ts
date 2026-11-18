@@ -1948,6 +1948,20 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['align-items: flex-start;', 'text-align: start;'],
     lacks: [],
   },
+  // `bare` drops the card's shadow and, under the neutral tone, its surface, for a container that
+  // already frames it. The selected tone keeps its fill, which its text colour needs.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-bare\] \{([^}]*)\}/m,
+    contains: ['box-shadow: none;'],
+    lacks: ['background'],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-bare\]\[data-tone='neutral'\] \{([^}]*)\}/m,
+    contains: ['background: none;'],
+    lacks: [],
+  },
   {
     file: 'components/EmptyState/EmptyState.module.css',
     rule: /^\.root\[data-tone='selected'\] \{([^}]*)\}/m,

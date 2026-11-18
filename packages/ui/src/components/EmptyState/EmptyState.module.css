@@ -1,6 +1,6 @@
 /* A raised card that says a list is empty and what to do about it. `data-tone` and `data-align`
-   are always written. The root is positioned so an illustration may be placed against it and
-   spill over the edge. */
+   are always written; `data-bare` only when the card sits flat in a container that frames it. The
+   root is positioned so an illustration may be placed against it and spill over the edge. */
 .root {
   position: relative;
   display: flex;
@@ -21,6 +21,16 @@
 .root[data-align='start'] {
   align-items: flex-start;
   text-align: start;
+}
+
+/* Bare: no shadow, and under the neutral tone no surface of its own, so the container's shows. The
+   selected tone keeps its fill, which its text colour is chosen against. */
+.root[data-bare] {
+  box-shadow: none;
+}
+
+.root[data-bare][data-tone='neutral'] {
+  background: none;
 }
 
 .root[data-tone='selected'] {

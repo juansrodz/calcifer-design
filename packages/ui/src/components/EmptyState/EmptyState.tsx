@@ -30,6 +30,13 @@ export interface EmptyStateProps {
   /** Where the content sits: the centre of the card, or its start edge. */
   align?: 'center' | 'start';
   /**
+   * Drop the card's shadow and, under the neutral tone, its surface, for a container that already
+   * frames the empty state, such as a panel or `DataGrid`'s body: the content sits flat on the
+   * container's own surface instead of a card nested in it. The padding and the layout stay. Under
+   * `tone="selected"` the fill stays, because its text colour is chosen against it.
+   */
+  bare?: boolean;
+  /**
    * A class for the root, joined after the component's own. It is how a consumer sets the one size
    * hook, `--empty-state-heading-size`, which resizes the heading (default `--text-h3`). Like any
    * custom property the hook inherits, so a wrapper that sets it resizes every empty state inside
@@ -52,6 +59,7 @@ export function EmptyState({
   actions,
   tone = 'neutral',
   align = 'center',
+  bare = false,
   className,
 }: EmptyStateProps) {
   // The `?? 'h2'` is for JavaScript callers, who are not held to the union: an out-of-range level
@@ -62,6 +70,7 @@ export function EmptyState({
       className={[styles.root, className].filter(Boolean).join(' ')}
       data-tone={tone}
       data-align={align}
+      data-bare={bare ? '' : undefined}
     >
       {hasContent(illustration) ? (
         <div className={styles.illustration} aria-hidden="true">
