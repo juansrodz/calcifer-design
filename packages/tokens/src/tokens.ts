@@ -42,9 +42,14 @@ const lightColor = {
   focus: '#3B6FE0',
   success: '#1F8A5B',
   warning: '#B7791F',
-  danger: '#D23B3B',
-  dangerSurface: 'rgba(210, 59, 59, 0.06)',
-  dangerBorder: 'rgba(210, 59, 59, 0.35)',
+  /**
+   * Text as well as a fill: a field's error message reads it, so WCAG 1.4.3 asks 4.5:1 on the four
+   * page surfaces. The lowest is 4.50:1 (surface3), then 4.88:1 (surface2). `dangerSurface` and
+   * `dangerBorder` are this colour's channels at a fixed alpha.
+   */
+  danger: '#C62F2F',
+  dangerSurface: 'rgba(198, 47, 47, 0.06)',
+  dangerBorder: 'rgba(198, 47, 47, 0.35)',
   neutral: '#8A8580',
   chartPhase1: '#C9D6F5',
   chartPhase2: '#3B6FE0',
@@ -342,6 +347,12 @@ export const textContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> =
   ['link', 'surface2'],
   ['link', 'surface3'],
   ['link', 'surfaceRaised'],
+  // `danger` is text: a field's error message, a rejected upload's reason, a failed progress bar's
+  // helper and the required mark all read it on the page surfaces.
+  ['danger', 'surface1'],
+  ['danger', 'surface2'],
+  ['danger', 'surface3'],
+  ['danger', 'surfaceRaised'],
   ['accentText', 'accent'],
   ['accentText', 'accentHover'],
   ['textInverse', 'surfaceInverse'],
@@ -374,11 +385,8 @@ export const uiContrastPairs: ReadonlyArray<readonly [ColorName, ColorName]> = [
   ['warning', 'surface2'],
   ['warning', 'surface3'],
   ['warning', 'surfaceRaised'],
-  ['danger', 'surface1'],
-  ['danger', 'surface2'],
-  ['danger', 'surface3'],
-  ['danger', 'surfaceRaised'],
-  // An invalid checkbox or radio draws its boundary in `danger` around the input fill.
+  // An invalid checkbox or radio draws its boundary in `danger` around the input fill, and no text
+  // is drawn in `danger` there. On the page surfaces `danger` is text, held to 4.5:1 above.
   ['danger', 'surfaceInput'],
   ['neutral', 'surface1'],
   ['neutral', 'surface2'],

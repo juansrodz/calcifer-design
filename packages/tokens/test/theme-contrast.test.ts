@@ -391,6 +391,30 @@ describe('checkThemeContrast', () => {
     ]);
   });
 
+  it('holds danger to 4.5:1 as text on the page surfaces, and reports where it falls short', () => {
+    // The light danger before tokens 0.6.0: 4.24:1 on surface2 and 3.91:1 on surface3, but over
+    // 4.5:1 on surface1 and surfaceRaised, and over 3:1 on surfaceInput.
+    const theme = defineTheme({
+      className: 'theme-old-danger',
+      light: { color: { danger: '#D23B3B' } },
+    });
+
+    const dangerViolations = checkThemeContrast(theme).filter(
+      (violation) => violation.foreground === 'danger',
+    );
+
+    expect(dangerViolations).toEqual(
+      (['surface2', 'surface3'] as const).map((background) => ({
+        mode: 'light',
+        foreground: 'danger',
+        background,
+        kind: 'ratio',
+        ratio: contrastRatio(theme.light.color.danger, theme.light.color[background]),
+        required: 4.5,
+      })),
+    );
+  });
+
   it('throws for an object defineTheme did not make', () => {
     const house = defineTheme({ className: 'theme-house' });
     // Object.entries lists string keys only, so the brand symbol is left behind.
