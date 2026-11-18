@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { expect, screen, userEvent, within } from 'storybook/test';
+import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { IconButton } from '../IconButton/IconButton';
 import { Tooltip } from './Tooltip';
@@ -62,8 +62,14 @@ export const HoverOpens: Story = {
   args: { delay: 0 },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.hover(canvas.getByRole('button', { name: 'Reload the registry' }));
-    await expect(await screen.findByText('Reload the registry')).toBeInTheDocument();
+    const trigger = canvas.getByRole('button', { name: 'Reload the registry' });
+    // The trigger's hover listeners attach in an effect after the story's first render, so a
+    // hover sent the moment the story mounts can land before them and open nothing. A real
+    // pointer keeps moving; here the hover is sent again until the tip opens.
+    await waitFor(async () => {
+      await userEvent.hover(trigger);
+      await expect(screen.getByText('Reload the registry')).toBeInTheDocument();
+    });
   },
 };
 
