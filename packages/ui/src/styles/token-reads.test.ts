@@ -1245,7 +1245,8 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkButton` had no hover cue under forced colours. The rule gives it the one a `Button` has
-  // (for a `Button` it repeats what the browser does). A disabled button keeps its `GrayText` edge.
+  // (a ghost `Button`'s, painted in the text colour before, turns `Highlight` too). A disabled
+  // button keeps its `GrayText` edge.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
