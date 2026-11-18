@@ -146,8 +146,9 @@
 
 /* Forced colours replace the selected tint and so erase the pressed state; system colours survive,
    as in Segmented. `forced-color-adjust: none` because Chromium otherwise paints its Canvas
-   backplate behind the icon. Last in the file, so that the pressed hover and the primary badge
-   rules above do not win back their tokens.
+   backplate behind the icon; inside it a secondary button's token border would be painted as it
+   is, a faint ring on the fill, so the edge is `Highlight`, as on a chosen `Button`. Last in the
+   file, so that the pressed hover and the primary badge rules above do not win back their tokens.
 
    A disabled or loading button (Base UI sets `data-disabled` on both) is `GrayText` and not dimmed
    as well (`opacity: 1`), as on `ChoiceCard`: the 45% dim left the glyph and edge under 3:1 and
@@ -155,7 +156,8 @@
    `Highlight`, its rule (a class and two attributes) outweighing the pressed rule; its badge
    follows. The pressed rule's `forced-color-adjust: none` also reaches a loading button's spinner;
    Spinner's own forced-colours rule draws its head in the glyph colour, `Canvas`, and its track in
-   `GrayText`, which vanishes on the fill and leaves an open arc.
+   `GrayText`, which vanishes on the fill and leaves an open arc; off the fill both are `GrayText`,
+   and the track's dots tell them apart.
 
    The badge's fill is the page colour here, so it gets a 1 px border, declared in this block only:
    the badge grows 2 px, and the default look is untouched. The border is `transparent`, which the
@@ -176,6 +178,7 @@
     forced-color-adjust: none;
 
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
     background: Highlight;
     color: HighlightText;
     outline-color: CanvasText;

@@ -1,8 +1,8 @@
 /* A ring with one quarter in the accent colour, rotating. The open quarter is what reads as
    motion, so the track and the head share a width and differ only in colour (forced colours thin
-   the track, see the end of the file). The reduced-motion rule in base.css collapses the animation
-   to a single 0.01ms iteration, which leaves this as a static ring — the intended behaviour, so
-   there is no media query here. */
+   the track and dot it, see the end of the file). The reduced-motion rule in base.css collapses
+   the animation to a single 0.01ms iteration, which leaves this as a static ring — the intended
+   behaviour, so there is no media query here. */
 .root {
   display: inline-block;
   flex: none;
@@ -51,20 +51,24 @@
    The head is the ink the spinner inherits (`Canvas` on a `GrayText` fill, `HighlightText` on a
    `Highlight` one, the text colour on the page), held in a local property because the style lint
    takes `currentColor` from one rule and `currentcolor` from another. It keeps its width, so the
-   spinner's box does not move (the border is inside it).
+   spinner's box does not move (the border is inside it). It is the `border-top` shorthand, which
+   the lint requires once width, style and colour are all set. It stays physical, like the
+   normal-mode `border-top-color` above, so the head sits at the top in every direction and writing
+   mode: `border-block-start` would move it to a side in a vertical one.
 
-   The track is `GrayText` and thinner, 1 px, so the head is told apart by weight as well as by
-   colour: `GrayText` and the text colour are close in luminance in the high contrast themes (about
-   1.5:1), and on a `GrayText` fill (a disabled, pressed control) the track vanishes and the head
-   alone reads, an open arc. */
+   The track is `GrayText`, thinner (1 px) and dotted, so the head is told apart by weight, colour
+   and style: `GrayText` and the text colour are close in luminance in the high contrast themes
+   (about 1.5:1), and where one ink paints both (a loading button's `GrayText`, a chosen or pressed
+   control's content) the dotted track alone still shows where the solid head is. On a `GrayText`
+   fill (a disabled, pressed control) the track vanishes and the head alone reads, an open arc. */
 @media (forced-colors: active) {
   .root {
     --spinner-head: currentcolor;
 
     border-width: 1px;
-    border-top-width: var(--border-width-emphasis);
+    border-style: dotted;
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     border-color: GrayText;
-    border-top-color: var(--spinner-head);
+    border-top: var(--border-width-emphasis) solid var(--spinner-head);
   }
 }
