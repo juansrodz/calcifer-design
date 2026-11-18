@@ -7,7 +7,7 @@ import { useLatest } from './useLatest';
  * typing with pauses long enough to commit each part still ends in one announcement, and so the
  * announcement does not cut into a screen reader still echoing the keys.
  */
-export const resultAnnouncementDelayMs = 500;
+const resultAnnouncementDelayMs = 500;
 
 export interface UseResultAnnouncementOptions {
   /**
@@ -43,9 +43,9 @@ export function useResultAnnouncement({
   message,
 }: UseResultAnnouncementOptions): ResultAnnouncement {
   const [text, setText] = useState('');
-  // Which change is waiting to be announced, if any. Each change has a number of its own, so a
-  // new one starts the wait again.
-  const [pendingChange, setPendingChange] = useState<number | null>(null);
+  // The number of the change waiting to be announced, if any. Each change has a number of its own,
+  // so a new one starts the wait again.
+  const [changeToAnnounce, setChangeToAnnounce] = useState<number | null>(null);
   const changeCountRef = useRef(0);
   const messageRef = useLatest(message);
   const silencedRef = useLatest(silenced);
@@ -53,21 +53,21 @@ export function useResultAnnouncement({
   if (silenced && text !== '') setText('');
 
   useEffect(() => {
-    if (pendingChange === null || waiting) return;
+    if (changeToAnnounce === null || waiting) return;
     const timer = setTimeout(() => {
-      setPendingChange(null);
+      setChangeToAnnounce(null);
       // A guard only: the render-time clear above would empty a count set while silenced anyway.
       if (!silencedRef.current) setText(messageRef.current());
     }, resultAnnouncementDelayMs);
     return () => clearTimeout(timer);
-  }, [pendingChange, waiting, messageRef, silencedRef]);
+  }, [changeToAnnounce, waiting, messageRef, silencedRef]);
 
   const announceResults = () => {
     changeCountRef.current += 1;
     // Cleared at once: a live region speaks only when its text changes, so the same words for the
     // new rows must follow an empty region to be heard again.
     setText('');
-    setPendingChange(changeCountRef.current);
+    setChangeToAnnounce(changeCountRef.current);
   };
 
   return { text, announceResults };
