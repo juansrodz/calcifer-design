@@ -1,5 +1,41 @@
 # @calcifer-design/ui
 
+## 0.12.0
+
+### Minor Changes
+
+- f3cf47b: `Collapsible` gains a `chevron` option and two trigger padding hooks. Nothing changes for an existing collapsible.
+
+  - `chevron` (new type `CollapsibleChevron`) chooses which way the chevron points, closed then open. The default, `'down-up'`, is today's: down while closed, up while open. `'end-down'` points to the reading end while closed (right, or left in a right-to-left page) and down at the panel while open, as a disclosure triangle does. The component reads the computed direction, so a `dir` on any ancestor, or a stylesheet's `direction`, is enough. It reads it after each render, so a direction changed under a memoised subtree takes effect on that subtree's next render, and server-rendered HTML carries none until hydration: before then, a closed chevron in a right-to-left page points right. A new direction is applied without the turn's transition, so a closed group mounting in a right-to-left page does not spin.
+  - `--collapsible-trigger-padding-block` and `--collapsible-trigger-padding-inline` pad the trigger row inside its edges. Like `--collapsible-heading-size`, they are set from a class on the root or on any wrapper (they inherit), take what `padding-block` and `padding-inline` take, and default to no padding. The padding is inside the button, so it is pointer target too and the focus ring goes round it.
+  - New stories: `ChevronEndDown`, `ChevronEndDownRightToLeft` (its play checks that a closed chevron mounts pointing left with no turn running) and `TriggerPadding` (a start-and-end block value, `0 2px`).
+
+- ddded7c: `Dialog` takes a `finalFocus` prop: where focus goes when the dialog closes.
+
+  - Base UI returns focus to the dialog's `trigger`, or to the control that held it when the dialog opened. A dialog opened with no trigger and nothing focused (from a URL parameter, say), or whose opener unmounted while it was open, has neither. Focus then falls to `<body>`, or to a control an earlier popup remembered. `finalFocus` says where it goes instead.
+  - It takes what Base UI's `Dialog.Popup` takes. A ref moves focus to its element, and an empty ref keeps the default. A function is called with how the dialog was closed and returns the element to focus, `true` or `null` for the default, or `false` or nothing for no move at all, so write `ref.current ?? null`, not `ref.current ?? undefined`. Passing `false` instead of a function moves focus nowhere too, not even back to the trigger.
+  - The element has to be able to take focus. A heading needs `tabIndex={-1}`. An element that is not in the tab order hands focus to its first tabbable descendant, so a `tabIndex={-1}` heading that holds a link focuses the link. An element that cannot take focus moves nothing, and focus falls to `<body>`.
+  - A ref or function target also wins over focus your own `onOpenChange` moves as the dialog closes. On a nested dialog, leave `finalFocus` out: it would pull focus out of the outer dialog while that dialog is still open.
+  - It applies to every variant (`center` and both sheets). Left out, nothing changes. The opening focus stays as `Dialog` sets it, so there is no `initialFocus` prop.
+
+### Patch Changes
+
+- ee0ccd9: Under forced colours (Windows High Contrast), what you put inside a chosen or pressed control now follows that control's colours, and the link controls get a hover cue. The default look is unchanged.
+
+  A chosen `Button` or `LinkButton`, a chosen `Segmented` option, a pressed `IconButton` and a pressed `ToggleChip` keep their `Highlight` fill by opting out of the browser's recolouring. The content inside them was opted out too: a `Tag` in a badge kept its token pill, and an icon with its own colour fell to 1.3:1 on the fill. Now the content takes the control's ink: `HighlightText`, or `Canvas` on a disabled chosen control's `GrayText` fill. It has no fill of its own and draws any border in that ink, so a `Tag` reads as an outlined pill. This applies to everything inside a chosen `Button` (also while it is `pending`, except its spinner), to the badge and icon of a `Segmented` option, and to the icon of a pressed `IconButton` or `ToggleChip`.
+
+  The content of a loading `Button` and of a disabled `ChoiceCard` (its icon disc and description) now reads `GrayText` with the label. Before, it kept the system text colour.
+
+  Colours of your own give way to the control's ink there, whether they are inline or not, and so does a forced-colours system colour you chose. An SVG coloured by a `fill` attribute is not reached, so colour icons with `currentColor`.
+
+  A `Segmented` option now shows the hover cue a `Button` and a `ToggleChip` already have: its border turns `Highlight`. It has a 1 px border in forced colours only, so an option is 2 px wider there. A hovered `LinkButton` or `LinkIconButton` now gets the same `Highlight` border; a link showed no hover cue at all before. A hovered ghost `Button`'s border turns `Highlight` too, where it stayed in the text colour.
+
+- 0c43c18: `Tree` (and the tree inside `TreeSelect`): in a right-to-left page, the closed chevrons no longer spin through a half turn when the tree mounts. The tree reads the computed direction in an effect and writes it to its root as `data-direction`, and the chevrons' starting angle is fixed from the left-to-right rule before that write. Writing it then changed the transform, and the transform transitions, so every closed chevron turned from pointing right to pointing left over about 120 ms (reduced-motion users never saw it). In a left-to-right page nothing changes, and neither does what a chevron does when a branch opens or closes.
+
+  The direction is now written only when it is new or differs from what the root already holds, and with the chevrons' transitions held still for that one write (the root carries a `data-direction-changing` mark for the write, which the stylesheet reads, and it is gone again before the browser paints). A render that finds the direction unchanged writes nothing, so the hold never lands on a turn that is running. Keyboard handling is unchanged: Left and Right still swap by the computed direction, read when the key is pressed.
+
+  Two limits, now in `Tree`'s documentation. The direction is read after each render, so a `dir` changed under a memoised subtree takes effect on that subtree's next render. Server-rendered HTML carries no direction until hydration, so before then a closed chevron in a right-to-left page points right.
+
 ## 0.11.0
 
 ### Minor Changes
