@@ -364,7 +364,10 @@ describe('checkThemeContrast', () => {
       kind: 'ratio',
       required: 3,
     });
-    expect(borderViolations[0]?.ratio).toBeCloseTo(contrastRatio('#8A909C', '#4A4A51'), 10);
+    expect(borderViolations[0]?.ratio).toBeCloseTo(
+      contrastRatio(theme.dark.color.borderControl, theme.dark.color.surface3),
+      10,
+    );
   });
 
   it('holds danger to 3:1 on surfaceInput, the fill an invalid checkbox draws it around', () => {
@@ -383,7 +386,7 @@ describe('checkThemeContrast', () => {
         foreground: 'danger',
         background: 'surfaceInput',
         kind: 'ratio',
-        ratio: contrastRatio('#D23B3B', '#E06060'),
+        ratio: contrastRatio(theme.light.color.danger, theme.light.color.surfaceInput),
         required: 3,
       },
     ]);
