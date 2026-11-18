@@ -37,7 +37,6 @@ jobs:
       # browser; the version is the one the pinned `playwright` devDependency names. Not cached:
       # Playwright's CI guidance is that restoring the cache takes about as long as downloading.
       - name: Install headless Chromium for the Storybook tests
-        working-directory: packages/ui
         run: ./node_modules/.bin/playwright install --with-deps --only-shell chromium
       - run: bun run check
       - name: Build the Storybook image
