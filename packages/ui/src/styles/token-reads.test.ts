@@ -1202,6 +1202,15 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+  // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
+  // `LinkButton` had no hover cue under forced colours. The rule gives it the one a `Button` has
+  // (for a `Button` it repeats what the browser does). A disabled button keeps its `GrayText` edge.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
   // The loading label's own 70% dim would take the `GrayText` label under 7:1. A pending button is
   // left to the rule after this one.
   {
@@ -2695,11 +2704,36 @@ const expectations: ReadonlyArray<Expectation> = [
   // dim took the label to 3.0 and 3.3:1), and a chosen one that is disabled is a `GrayText` fill
   // with a `Canvas` ink, not a dimmed `Highlight` (2.4:1). Both follow the top-level disabled rule,
   // as the first ties it at (0,2,0) and wins by coming later.
+  //
+  // An option has no border, so the `Highlight` edge the browser paints on a hovered button had
+  // nothing to draw on and an option had no hover cue. In forced colours only, each option takes a
+  // 1 px `Canvas` border, unseen on the track, and hover turns it `Highlight`; the chosen and the
+  // disabled chosen fills carry it in their own colour, so they stay flush. The top-level option
+  // keeps no border.
   {
     file: 'components/Segmented/Segmented.module.css',
-    rule: /^@media \(forced-colors: active\) \{\n {2}\.option\[data-pressed\] \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.option \{([^}]*)\}/m,
+    contains: ['border: 1px solid Canvas;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option \{([^}]*)\}/m,
+    contains: ['border: 0;'],
+    lacks: ['Canvas', 'Highlight'],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.option:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\] \{([^}]*)\}/m,
     contains: [
       'forced-color-adjust: none;',
+      'border-color: Highlight;',
       'background: Highlight;',
       ' color: HighlightText;',
       'outline-color: CanvasText;',
@@ -2715,7 +2749,7 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Segmented/Segmented.module.css',
     rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
-    contains: ['background: GrayText;', ' color: Canvas;'],
+    contains: ['border-color: GrayText;', 'background: GrayText;', ' color: Canvas;'],
     lacks: ['Highlight'],
   },
   // A badge or an icon inside the chosen option sits inside the opt-out: a `Tag` kept the token
