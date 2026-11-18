@@ -65,8 +65,38 @@ describe('the control boundary', () => {
 });
 
 /**
+ * `danger` is text: a field's error message, a rejected upload's reason, a failed progress bar's
+ * helper and the required mark. WCAG 1.4.3 asks 4.5:1 of text, so `danger` is held to 4.5:1 on
+ * the four page surfaces those sit on, through the text pair list.
+ */
+describe('the danger colour as text', () => {
+  const textSurfaces = ['surface1', 'surface2', 'surface3', 'surfaceRaised'] as const;
+
+  for (const [themeName, theme] of Object.entries(themes)) {
+    for (const surface of textSurfaces) {
+      it(`${themeName}: danger reaches 4.5:1 on ${surface}`, () => {
+        expect(contrastRatio(theme.color.danger, theme.color[surface])).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+
+  it('is held to 4.5:1 for every theme, through the text pair list', () => {
+    for (const surface of textSurfaces) {
+      expect(textContrastPairs).toContainEqual(['danger', surface]);
+    }
+  });
+
+  it('is not also held to the lower 3:1 on those surfaces, through the ui pair list', () => {
+    for (const surface of textSurfaces) {
+      expect(uiContrastPairs).not.toContainEqual(['danger', surface]);
+    }
+  });
+});
+
+/**
  * An invalid checkbox or radio draws its boundary in `danger` around the input fill
- * (`surfaceInput`), so `danger` is held to 3:1 there as well as on the four page surfaces.
+ * (`surfaceInput`). No text is drawn in `danger` on that fill, so the pair stays a non-text one at
+ * 3:1 (WCAG 1.4.11).
  */
 describe('the danger colour on a field', () => {
   for (const [themeName, theme] of Object.entries(themes)) {
@@ -77,5 +107,6 @@ describe('the danger colour on a field', () => {
 
   it('is held to 3:1 for every theme, through the ui pair list', () => {
     expect(uiContrastPairs).toContainEqual(['danger', 'surfaceInput']);
+    expect(textContrastPairs).not.toContainEqual(['danger', 'surfaceInput']);
   });
 });
