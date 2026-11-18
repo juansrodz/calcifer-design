@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, within } from 'storybook/test';
 import { Collapsible } from './Collapsible';
 
 const meta = {
@@ -113,6 +114,16 @@ export const ChevronEndDownRightToLeft: Story = {
       </div>
     ),
   ],
+  // Runs in a browser only (jsdom has no transitions). A closed group mounting in this page must
+  // land pointing left with no turn running: the direction is written with the transition off, so
+  // the glyph never spins through a half turn from its first, left-to-right guess.
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: 'Desserts 1' });
+    const chevron = trigger.querySelector('svg')?.parentElement;
+    if (!chevron) throw new Error('Desserts has no chevron');
+    await expect(chevron.getAnimations()).toHaveLength(0);
+    await expect(getComputedStyle(chevron).transform).toBe('matrix(0, 1, -1, 0, 0, 0)');
+  },
 };
 
 /**

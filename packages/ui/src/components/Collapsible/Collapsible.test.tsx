@@ -209,5 +209,66 @@ describe('Collapsible', () => {
         document.documentElement.style.removeProperty('direction');
       }
     });
+
+    it('reads no direction for down-up, which turns the same either way', () => {
+      render(
+        <div dir="rtl">
+          <Collapsible heading="Mains">Lasagna for six</Collapsible>
+        </div>,
+      );
+      expect(chevronOf('Mains')).not.toHaveAttribute('data-direction');
+    });
+
+    const inDirection = (direction: 'ltr' | 'rtl') => (
+      <div dir={direction}>
+        <Collapsible heading="Mains" chevron="end-down">
+          Lasagna for six
+        </Collapsible>
+      </div>
+    );
+
+    it('follows a dir change on its next render, not only on mount', () => {
+      const { rerender } = render(inDirection('ltr'));
+      expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'ltr');
+      rerender(inDirection('rtl'));
+      expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
+    });
+
+    /**
+     * A changed `data-direction` changes the transform, and the transform transitions, so a write
+     * with the transition on would spin the glyph through a half turn (a closed group mounting in
+     * a right-to-left page did). The write is a correction, not a state change: it is made with the
+     * transition off, and only when the direction differs, so a re-render mid-toggle leaves the
+     * running transition alone. A real browser's `getAnimations()` is checked in the story's play.
+     */
+    it('writes the direction only when it changes, with the transition off for that write', () => {
+      const { rerender } = render(inDirection('ltr'));
+      const chevron = chevronOf('Mains');
+      if (!chevron) throw new Error('no chevron');
+      const observer = new MutationObserver(() => {});
+      observer.observe(chevron, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['style', 'data-direction'],
+      });
+      try {
+        rerender(inDirection('ltr'));
+        expect(observer.takeRecords()).toEqual([]);
+
+        rerender(inDirection('rtl'));
+        const records = observer.takeRecords();
+        const directionWrite = records.findIndex(
+          (record) => record.attributeName === 'data-direction',
+        );
+        expect(directionWrite).toBeGreaterThan(0);
+        expect(records[directionWrite]?.oldValue).toBe('ltr');
+        expect(records[directionWrite - 1]?.attributeName).toBe('style');
+        expect(records[directionWrite + 1]?.attributeName).toBe('style');
+        expect(records[directionWrite + 1]?.oldValue).toContain('transition: none');
+        expect(chevron.style.transition).toBe('');
+      } finally {
+        observer.disconnect();
+      }
+    });
   });
 });
