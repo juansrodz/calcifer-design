@@ -273,8 +273,9 @@
    the opt-out, so its token colours were painted as they are: a light `Tag` pill, a red icon at
    1.3:1 on the fill. Every descendant takes the button's ink instead, drops its fill and draws any
    border in that ink (a local property, as the lint takes neither spelling of `currentcolor` bare);
-   a disabled or loading button's content does the same, so it reads `GrayText` with the label. A
-   pending button is left out, as its spinner draws its own track.
+   a disabled or loading button's content does the same, so it reads `GrayText` with the label. In a
+   pending button only the spinner is left out, as it draws its own track: with a start icon the
+   spinner takes that slot and the label, badge and end icon stay in view, so they are covered.
 
    The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
    rule gives a `LinkButton` the cue a `Button` already has. */
@@ -325,7 +326,13 @@
       [data-variant='secondary']
     )
     *,
-  .root[data-variant][data-tone][data-disabled]:not([data-pending]) * {
+  .root[data-variant][data-tone][data-disabled]:not([data-pending]) *,
+  .root[data-tone='selected'][data-variant][data-pending]:is(
+      [data-variant='primary'],
+      [data-variant='secondary']
+    )
+    :is(.label, .badge, .endIcon)
+    * {
     --button-content-edge: currentcolor;
 
     /* `!important` so a consumer's inline colour cannot beat the system colours (as base.css's reduced motion). */
