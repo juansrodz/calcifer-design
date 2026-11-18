@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
@@ -8,7 +8,8 @@ import * as stories from './DataGrid.stories';
 import { makeInventoryRows } from './fixtures';
 
 const composedStories = composeStories(stories);
-const { FileList, ViewAllLink, FilteredEmpty, Search } = composedStories;
+const { FileList, ViewAllLink, FilteredEmpty, Search, FiltersOff, ResultAnnouncement } =
+  composedStories;
 
 /** The text of one column's cell in each rendered body row, top to bottom. */
 function textOfEachRow(columnName: string): string[] {
@@ -108,5 +109,34 @@ describe('DataGrid stories', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument();
     expect(textOfEachRow('Name').length).toBeGreaterThan(0);
+  });
+
+  it("the filters-off story filters from the app's tabs, with no filter controls of the grid's", async () => {
+    const user = userEvent.setup();
+    render(<FiltersOff />);
+    expect(screen.queryByRole('button', { name: /^Filters/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Match filters' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Low' }));
+
+    const lowCount = makeInventoryRows(240).filter((row) => row.status === 'low').length;
+    expect(screen.getByText(`${lowCount} of 240 rows`)).toBeInTheDocument();
+    expect(textOfEachRow('Status').every((status) => status === 'low')).toBe(true);
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument();
+  });
+
+  it('the result announcement story announces the rows a search found, and shows it', async () => {
+    const user = userEvent.setup();
+    render(<ResultAnnouncement />);
+    expect(screen.getByText('Last announced: nothing yet')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.keyboard('washer');
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('24 rows found'), {
+      timeout: 3000,
+    });
+    expect(screen.getByText('Last announced: 24 rows found')).toBeInTheDocument();
   });
 });

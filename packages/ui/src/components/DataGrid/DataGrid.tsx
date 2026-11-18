@@ -34,6 +34,7 @@ import { useGridQuery } from './useGridQuery';
 import { useGridMetrics } from './useGridMetrics';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 import { useLoadMore } from './useLoadMore';
+import { useResultAnnouncement, type ResultAnnouncement } from './useResultAnnouncement';
 import { useRowExpansion } from './useRowExpansion';
 import { useRowSelection, type RowSelection } from './useRowSelection';
 
@@ -93,6 +94,7 @@ export function DataGrid<Row extends RowData>({
   query,
   initialSorting,
   enableSearch = false,
+  enableFilters = true,
   enableSorting = true,
   multiSort = false,
   density = 'comfortable',
@@ -131,7 +133,9 @@ export function DataGrid<Row extends RowData>({
   // replace. Only the grid's own query in client mode needs no handler.
   const queryEnabled = (!serverMode && query === undefined) || onQueryChange !== undefined;
   const sortingEnabled = enableSorting && queryEnabled;
-  const filtering = queryEnabled && columns.some((column) => column.filter !== undefined);
+  // The grid's own filter controls. Without them a column's `filter` still applies, from the query.
+  const filtering =
+    enableFilters && queryEnabled && columns.some((column) => column.filter !== undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const showsFilterStrip = filtering && filtersOpen;
   // The header, then the filter strip while it shows; body entry `n` is keyboard row
@@ -152,9 +156,14 @@ export function DataGrid<Row extends RowData>({
     query,
     onQueryChange,
     // Called from event handlers and layout effects only, after everything below exists.
-    onChange: (_nextQuery, previousQuery) => {
+    onChange: (nextQuery, previousQuery) => {
       // Rows that move under the selection would make it hard to see what it covers.
       selection.clear();
+      // A sort reorders the rows but finds no others, so only the search and the filters say how
+      // many rows they found.
+      if (!isSameQuery({ ...nextQuery, sorting: [] }, { ...previousQuery, sorting: [] })) {
+        resultAnnouncement.announceResults();
+      }
       virtualizer.scrollToOffset(0);
       if (serverMode) {
         // The app starts again from the first page. Rows already waited on keep the query they
@@ -555,6 +564,16 @@ export function DataGrid<Row extends RowData>({
     serverMode && totalRowCount !== undefined
       ? Math.max(totalRowCount, rows.length)
       : shownRows.length;
+  // Annotated for the query handler above, which calls it before this line has run.
+  const resultAnnouncement: ResultAnnouncement = useResultAnnouncement({
+    waiting: loading || gridQuery.pendingChange || awaitingNewRows,
+    silenced: stateKind !== null || showsLoadError,
+    message: () =>
+      resolvedLabels.resultCount(
+        knownRowCount,
+        serverMode && totalRowCount === undefined && hasMore,
+      ),
+  });
   // The head rows, every known row and the open panels. The error row follows the last entry,
   // whatever the grid knows of rows it has not loaded.
   let ariaRowCount = Math.max(
@@ -566,7 +585,8 @@ export function DataGrid<Row extends RowData>({
   // The head rows and the state row.
   if (stateKind) ariaRowCount = headRowCount + 1;
   // One region that is always mounted: a live region announces reliably only when its text
-  // changes, not when it appears with its text. Each state kind is named after its label.
+  // changes, not when it appears with its text. Each state kind is named after its label. A state's
+  // message takes the place of the result count.
   const stateLabel = stateKind ? resolvedLabels[stateKind] : '';
   // The app's own content in place of an empty state's message, and the filtered one's button.
   let stateReplacement: ReactNode;
@@ -633,7 +653,7 @@ export function DataGrid<Row extends RowData>({
         matchAllLabel={resolvedLabels.matchAll}
         matchAnyLabel={resolvedLabels.matchAny}
       />
-      <LiveRegion message={stateLabel} politeness="polite" />
+      <LiveRegion message={stateLabel || resultAnnouncement.text} politeness="polite" />
       <div
         ref={scrollRef}
         className={fill ? `${styles.scroll} ${styles.scrollFill}` : styles.scroll}

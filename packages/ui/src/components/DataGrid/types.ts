@@ -29,6 +29,10 @@ export interface DataGridProps<Row extends RowData> {
    * waits for a new `rows` array before it asks for more, so a copy made on every render would
    * end that wait early. A query that comes back to the one the rows answer, before new rows
    * arrive, ends the wait too, so a cache may answer it with the same array.
+   *
+   * Drop a late answer to a query the grid no longer shows, as the ServerMode story's app does: the
+   * grid takes any new array as the answer to the query it shows, both for loading more and for the
+   * count it announces.
    */
   rows: Row[];
   /** Build with `createDataGridColumnHelper<Row>().columns([...])`, not a plain array literal. */
@@ -89,6 +93,21 @@ export interface DataGridProps<Row extends RowData> {
    * `onQueryChange` in server mode, and it is not offered for a read-only `query`.
    */
   enableSearch?: boolean;
+  /**
+   * Offers the grid's own filter controls for the columns that declare a `filter`: the filters
+   * button, the filter strip it opens and the All / Any switch. On by default. Turn it off when the
+   * app sets those columns' filters from controls of its own, such as tabs over the grid driving a
+   * controlled `query`: the filters still apply, from `query` or `initialQuery`, but the grid draws
+   * none of its filter controls. Like the search, the filters need `onQueryChange` in server mode,
+   * and they are not offered for a read-only `query`.
+   *
+   * The filtered-empty state's Clear filters button clears the filters the app set too, and reports
+   * that through `onQueryChange`, so the app's own controls should follow `query`. If it is turned
+   * off while the user has filters set in the strip, they keep applying with no control to show
+   * them, and a filter still waiting out its typing delay is committed as the strip goes; clear
+   * them through `query` if they should not apply.
+   */
+  enableFilters?: boolean;
   enableSorting?: boolean;
   multiSort?: boolean;
   loading?: boolean;

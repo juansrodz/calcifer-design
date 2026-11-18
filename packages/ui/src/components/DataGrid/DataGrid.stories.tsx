@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useRef, useState } from 'react';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
+import { Segmented } from '../Segmented/Segmented';
 import { createDataGridColumnHelper, type DataGridColumnDef } from './columns';
 import { DataGrid } from './DataGrid';
 import {
@@ -311,6 +313,115 @@ export const FilteredEmpty: Story = {
       initialQuery={{ filters: { name: 'Anvil' } }}
     />
   ),
+};
+
+const stockTabs = [
+  { value: 'all', label: 'All stock' },
+  { value: 'low', label: 'Low' },
+  { value: 'out', label: 'Out' },
+];
+
+/**
+ * An app with tabs of its own over the grid. The tabs set the Status column's filter through a
+ * controlled query, so the column declares its filter and the grid's own filter controls stay off.
+ */
+function TabsOverGrid() {
+  const [query, setQuery] = useState<DataGridQuery>(emptyDataGridQuery);
+  const status = query.filters.status;
+  return (
+    <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+      {/* Tabs take their own width, not the column's. */}
+      <div style={{ justifySelf: 'start' }}>
+        <Segmented
+          aria-label="Stock"
+          options={stockTabs}
+          value={typeof status === 'string' ? status : 'all'}
+          onValueChange={(value) =>
+            setQuery({ ...query, filters: value === 'all' ? {} : { status: value } })
+          }
+        />
+      </div>
+      <DataGrid<InventoryRow>
+        gridId="inventory-filters-off-story"
+        heading="Inventory by stock"
+        rows={filteringRows}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        maxHeight="25rem"
+        enableFilters={false}
+        enableSearch
+        query={query}
+        onQueryChange={setQuery}
+      />
+    </div>
+  );
+}
+
+export const FiltersOff: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "`enableFilters={false}`: the app's own tabs set the Status filter through a controlled query. The column still declares its filter, so the grid matches it, but the grid draws no filters button, filter strip or All / Any switch. The search stays.",
+      },
+    },
+  },
+  render: () => <TabsOverGrid />,
+};
+
+/**
+ * The grid with a line under it that shows what its live region last said, which is otherwise
+ * visible only to a screen reader.
+ */
+function AnnouncedResultsGrid() {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [lastAnnouncement, setLastAnnouncement] = useState('');
+  useEffect(() => {
+    const region = frameRef.current?.querySelector('[role="status"]');
+    if (!region) return;
+    const observer = new MutationObserver(() => {
+      if (region.textContent) setLastAnnouncement(region.textContent);
+    });
+    observer.observe(region, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={frameRef} style={{ display: 'grid', gap: 'var(--space-3)' }}>
+      <DataGrid<InventoryRow>
+        gridId="inventory-announcement-story"
+        heading="Inventory that announces its results"
+        rows={filteringRows}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        maxHeight="25rem"
+        enableSearch
+      />
+      {/* The region itself is what a screen reader hears; this copy is for the eye only. */}
+      <p aria-hidden="true" style={{ margin: 0, color: 'var(--color-text-muted)' }}>
+        Last announced: {lastAnnouncement || 'nothing yet'}
+      </p>
+    </div>
+  );
+}
+
+export const ResultAnnouncement: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Once a search or filter change settles (500ms after the last one, after the search's own 400ms), the grid announces how many rows it found, politely, through its live region (`labels.resultCount`). It says nothing on the first render, for a sort, or for rows that arrive under the same query. The line under the grid shows the last announcement.",
+      },
+    },
+  },
+  render: () => <AnnouncedResultsGrid />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Search' }));
+    await userEvent.keyboard('washer');
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('24 rows found'), {
+      timeout: 3000,
+    });
+  },
 };
 
 const serverPageSize = 50;
