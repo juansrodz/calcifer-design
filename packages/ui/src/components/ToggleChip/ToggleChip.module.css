@@ -67,6 +67,47 @@
   opacity: 0.45;
 }
 
+/* Whatever the icon is (a disc of its own, an avatar, an image) is made a 26 px circle. */
+.icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.icon > * {
+  flex: none;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.check {
+  display: inline-flex;
+  flex: none;
+}
+
+.check > svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* The group is a `fieldset` (the frame's `Field.Control`, which `Form` reads and focuses), so the
+   browser's own border, padding and `min-inline-size` are put back to nothing. */
+.group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The row wraps, so eleven chips fall onto more lines on a phone and the page never scrolls
+   sideways. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 /* Forced colours replace the selected fill and so erase the pressed state; system colours
    survive. `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate
    behind the text, and `HighlightText` on that can be unreadable.
@@ -110,45 +151,4 @@
     color: Canvas;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
-}
-
-/* Whatever the icon is (a disc of its own, an avatar, an image) is made a 26 px circle. */
-.icon {
-  display: inline-flex;
-  flex: none;
-}
-
-.icon > * {
-  flex: none;
-  width: 1.625rem;
-  height: 1.625rem;
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.check {
-  display: inline-flex;
-  flex: none;
-}
-
-.check > svg {
-  width: 0.75rem;
-  height: 0.75rem;
-}
-
-/* The group is a `fieldset` (the frame's `Field.Control`, which `Form` reads and focuses), so the
-   browser's own border, padding and `min-inline-size` are put back to nothing. */
-.group {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-/* The row wraps, so eleven chips fall onto more lines on a phone and the page never scrolls
-   sideways. */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
