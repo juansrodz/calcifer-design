@@ -837,6 +837,14 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['border: 1px solid var(--color-border-control, var(--color-border-strong));'],
     lacks: [/border: 1px solid var\(--color-border-strong\)/],
   },
+  {
+    // Forced colours replace the mixed border and fill, so a dimmed control's edge takes `GrayText`,
+    // the system's own disabled colour, as a disabled `ChoiceCard`'s does.
+    file: 'styles/field.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.dimmedControl \{([^}]*)\}/m,
+    contains: ['border-color: GrayText;'],
+    lacks: [],
+  },
 
   // Invalid, the box is still unchecked and its boundary still all that marks it, so the error
   // colour is the opaque danger the tokens hold to 3:1, not the translucent danger border.
