@@ -1162,7 +1162,8 @@ describe('search', () => {
 
     expect(searchField()).toHaveValue('');
     expect(screen.getByText(`${rowTotal} rows`)).toBeInTheDocument();
-    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    // The cleared query brought every row back, and once it settled the grid said so.
+    expect(screen.getByRole('status')).toHaveTextContent(`${rowTotal} rows found`);
   });
 
   // The committed search is already empty, so clearing the query leaves it unchanged and the

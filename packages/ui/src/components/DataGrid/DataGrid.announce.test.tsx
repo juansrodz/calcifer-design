@@ -139,7 +139,7 @@ describe('announcing results in client mode', () => {
     // Each pause is long enough for the search to commit, and too short for an announcement.
     for (const term of ['h', 'he', 'hex', 'hex b']) {
       fireEvent.change(searchField(), { target: { value: term } });
-      await region.advance(searchDelay + announceDelay / 2);
+      await region.advance(searchDelay + 50);
     }
     expect(region.heard).toEqual([]);
     await region.advance(announceDelay * 4);
@@ -176,7 +176,7 @@ describe('announcing results in client mode', () => {
   });
 
   it('announces a change of match mode', async () => {
-    const filters = { status: 'low', location: 'B-07' };
+    const filters = { status: 'in stock', location: 'A-01' };
     render(gridElement({ initialQuery: { filters } }));
     const region = listenToRegion();
 
@@ -184,7 +184,9 @@ describe('announcing results in client mode', () => {
     await region.advance(announceDelay);
 
     const anyCount = countMatching({ filters, matchMode: 'any' });
-    expect(anyCount).not.toBe(countMatching({ filters }));
+    const allCount = countMatching({ filters });
+    expect(allCount).toBeGreaterThan(0);
+    expect(anyCount).not.toBe(allCount);
     expect(region.heard).toEqual([`${anyCount} rows found`]);
   });
 
@@ -324,20 +326,23 @@ function ServerApp({
       delayMs: delayFor(query),
     }).fetchPage({ page: pageIndex, query });
 
-  const loadFirstPage = (query: DataGridQuery) => {
-    queryRef.current = query;
-    setFetching(true);
-    void fetchPage(0, query).then((result) => {
+  const fetchFirstPage = (query: DataGridQuery) =>
+    fetchPage(0, query).then((result) => {
       loadedPagesRef.current = 1;
       setPage(result);
       setFetching(false);
     });
-  };
 
   useEffect(() => {
-    loadFirstPage(emptyDataGridQuery);
+    void fetchFirstPage(emptyDataGridQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleQueryChange = (query: DataGridQuery) => {
+    queryRef.current = query;
+    setFetching(true);
+    void fetchFirstPage(query);
+  };
 
   const loadMore = () => {
     void fetchPage(loadedPagesRef.current, queryRef.current).then((result) => {
@@ -349,16 +354,21 @@ function ServerApp({
     });
   };
 
-  return gridElement({
-    mode: 'server',
-    enableSearch: false,
-    rows: page?.rows ?? [],
-    loading: page === null || (loadingWhileFetching && fetching),
-    totalRowCount: reportsTotal ? page?.total : undefined,
-    hasMore: page === null || page.rows.length < page.total,
-    onLoadMore: loadMore,
-    onQueryChange: loadFirstPage,
-  });
+  return (
+    <DataGrid<InventoryRow>
+      gridId="announcing-server-grid"
+      heading="Inventory"
+      rows={page?.rows ?? []}
+      columns={filterableInventoryColumns}
+      getRowId={(row) => row.id}
+      mode="server"
+      loading={page === null || (loadingWhileFetching && fetching)}
+      totalRowCount={reportsTotal ? page?.total : undefined}
+      hasMore={page === null || page.rows.length < page.total}
+      onLoadMore={loadMore}
+      onQueryChange={handleQueryChange}
+    />
+  );
 }
 
 /** Commits a text filter in the strip at once, with Enter. */

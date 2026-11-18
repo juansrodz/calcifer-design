@@ -25,6 +25,12 @@ export interface DataGridLabels {
   loadedRowCount: (loaded: number, total: number) => string;
   /** Client mode while filters or search are active: the rows shown of every row. */
   filteredRowCount: (shown: number, total: number) => string;
+  /**
+   * Announced, politely, once a change to the search or the filters has settled: how many rows it
+   * found. In server mode it is the total the app gives, or else the rows loaded, with
+   * `moreToLoad` set when the app says more are still to come.
+   */
+  resultCount: (count: number, moreToLoad: boolean) => string;
   selectedCount: (count: number) => string;
   loading: string;
   loadingMore: string;
@@ -61,6 +67,10 @@ export const defaultDataGridLabels: DataGridLabels = {
     `Showing ${numberFormat.format(loaded)} of ${numberFormat.format(total)} rows`,
   filteredRowCount: (shown, total) =>
     `${numberFormat.format(shown)} of ${numberFormat.format(total)} ${total === 1 ? 'row' : 'rows'}`,
+  resultCount: (count, moreToLoad) =>
+    moreToLoad
+      ? `More than ${numberFormat.format(count)} rows found`
+      : `${numberFormat.format(count)} ${count === 1 ? 'row' : 'rows'} found`,
   selectedCount: (count) => `${numberFormat.format(count)} selected`,
   loading: 'Loading rows…',
   loadingMore: 'Loading more rows…',
