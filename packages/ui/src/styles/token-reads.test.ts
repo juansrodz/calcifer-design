@@ -388,9 +388,10 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   // `Select`'s start icon: the slot and the value share `.lead`, a row at the affix gap that takes
-  // the room the chevron leaves. Neither it nor the trigger sizes the block axis, so the trigger keeps
-  // `.control`'s floor and padding, and neither names a physical side, so the row mirrors in a
-  // right-to-left page. The entries carry a leading space: `gap:` alone is also found in `row-gap:`.
+  // the room the chevron leaves. Neither it nor the trigger sizes the block axis, so the trigger
+  // keeps `.control`'s floor and padding, and neither names a physical side, so the row mirrors in
+  // a right-to-left page. The entries carry a leading space: `gap:` alone is also found in
+  // `row-gap:`.
   {
     file: 'components/Select/Select.module.css',
     rule: /^\.lead \{([^}]*)\}/m,
@@ -555,10 +556,16 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--radius-md'],
   },
   {
-    // A field keeps `--size-touch` as its floor; only its radius moves to the control purpose.
+    // A field keeps `--size-touch` as its floor; only its radius moves to the control purpose. The
+    // padding is pinned too: `Select`'s doc promises 26 px of room for a start icon inside the
+    // floor, which is 44 less this padding twice and the 1px border twice.
     file: 'styles/field.module.css',
     rule: /^\.control \{([^}]*)\}/m,
-    contains: ['min-height: var(--size-touch);', 'border-radius: var(--radius-control);'],
+    contains: [
+      'min-height: var(--size-touch);',
+      'padding: var(--space-2) var(--space-3);',
+      'border-radius: var(--radius-control);',
+    ],
     lacks: ['--radius-md'],
   },
   {

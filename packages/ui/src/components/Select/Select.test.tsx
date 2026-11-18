@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { axeDocument } from '../../../test/axe';
 import fieldStyles from '../../styles/field.module.css';
 import { Avatar } from '../Avatar/Avatar';
-import { Select } from './Select';
+import { Select, type SelectProps } from './Select';
 import styles from './Select.module.css';
 import * as stories from './Select.stories';
 
@@ -19,6 +19,7 @@ const {
   WithStartIcon,
   WithStartIconDark,
   WithStartIconLongValue,
+  WithStartIconRightToLeft,
 } = composeStories(stories);
 
 const options = [
@@ -38,6 +39,7 @@ describe('Select', () => {
     ['WithStartIcon', WithStartIcon],
     ['WithStartIconDark', WithStartIconDark],
     ['WithStartIconLongValue', WithStartIconLongValue],
+    ['WithStartIconRightToLeft', WithStartIconRightToLeft],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -200,6 +202,16 @@ describe('Select', () => {
   describe('startIcon', () => {
     const avatar = <Avatar name="Ada Lovelace" size="xs" />;
 
+    /** The "Category" select with the shared options, and its trigger. */
+    function renderCategory(props: Partial<SelectProps> = {}): HTMLElement {
+      render(<Select label="Category" name="category" options={options} {...props} />);
+      return screen.getByRole('combobox', { name: 'Category' });
+    }
+
+    function comesBefore(first: Node, second: Node): boolean {
+      return Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }
+
     function triggerParts(trigger: HTMLElement) {
       const value = trigger.querySelector(`.${styles.value}`);
       const chevron = trigger.querySelector(`.${styles.icon}`);
@@ -217,14 +229,9 @@ describe('Select', () => {
       if (slot === null) {
         throw new Error('no slot');
       }
-      const avatar = within(trigger).getByTestId('avatar');
-      expect(slot).toContainElement(avatar);
-      expect(slot.compareDocumentPosition(value) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      );
-      expect(value.compareDocumentPosition(chevron) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
-        Node.DOCUMENT_POSITION_FOLLOWING,
-      );
+      expect(slot).toContainElement(within(trigger).getByTestId('avatar'));
+      expect(comesBefore(slot, value)).toBe(true);
+      expect(comesBefore(value, chevron)).toBe(true);
       expect(value).toHaveTextContent('Sebastian');
     });
 
@@ -236,17 +243,11 @@ describe('Select', () => {
     });
 
     it('lets the label still name the trigger, with nothing from the slot in its tree', () => {
-      render(
-        <Select
-          label="Category"
-          name="category"
-          options={options}
-          defaultValue="sides"
-          description="Where the item shows up on the list."
-          startIcon={avatar}
-        />,
-      );
-      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const trigger = renderCategory({
+        defaultValue: 'sides',
+        description: 'Where the item shows up on the list.',
+        startIcon: avatar,
+      });
       expect(trigger).toHaveAccessibleName('Category');
       expect(trigger).toHaveAccessibleDescription('Where the item shows up on the list.');
       expect(screen.getByLabelText('Category')).toBe(trigger);
@@ -255,8 +256,7 @@ describe('Select', () => {
     });
 
     it('still shows the placeholder before the value is chosen', () => {
-      render(<Select label="Category" name="category" options={options} startIcon={avatar} />);
-      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const trigger = renderCategory({ startIcon: avatar });
       const { value, slot } = triggerParts(trigger);
       expect(slot).not.toBeNull();
       expect(value).toHaveAttribute('data-placeholder');
@@ -269,8 +269,7 @@ describe('Select', () => {
       ['false', false],
       ['an empty string', ''],
     ])('draws no slot when it is %s', (_name, startIcon) => {
-      render(<Select label="Category" name="category" options={options} startIcon={startIcon} />);
-      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const trigger = renderCategory({ startIcon });
       const { value, slot } = triggerParts(trigger);
       expect(slot).toBeNull();
       expect(trigger.querySelector(`.${styles.lead}`)).toBeNull();
@@ -279,26 +278,14 @@ describe('Select', () => {
     });
 
     it('keeps the disabled state on the trigger, with the slot still drawn', () => {
-      render(
-        <Select label="Category" name="category" options={options} startIcon={avatar} disabled />,
-      );
-      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const trigger = renderCategory({ startIcon: avatar, disabled: true });
       expect(trigger).toBeDisabled();
       expect(trigger).toHaveAttribute('data-disabled');
       expect(triggerParts(trigger).slot).not.toBeNull();
     });
 
     it('keeps the invalid state and the error on the trigger, with the slot still drawn', () => {
-      render(
-        <Select
-          label="Category"
-          name="category"
-          options={options}
-          startIcon={avatar}
-          error="Choose a category."
-        />,
-      );
-      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const trigger = renderCategory({ startIcon: avatar, error: 'Choose a category.' });
       expect(trigger).toHaveAttribute('aria-invalid', 'true');
       expect(trigger).toHaveAttribute('data-invalid');
       expect(trigger).toHaveAccessibleDescription('Choose a category.');
@@ -307,16 +294,7 @@ describe('Select', () => {
 
     it('picks an option with the keyboard as it does without one', async () => {
       const onValueChange = vi.fn();
-      render(
-        <Select
-          label="Category"
-          name="category"
-          options={options}
-          startIcon={avatar}
-          onValueChange={onValueChange}
-        />,
-      );
-      const trigger = screen.getByRole('combobox', { name: 'Category' });
+      const trigger = renderCategory({ startIcon: avatar, onValueChange });
       trigger.focus();
       await userEvent.keyboard('{Enter}');
       const mains = await screen.findByRole('option', { name: 'Mains' });

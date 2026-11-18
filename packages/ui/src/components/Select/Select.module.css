@@ -14,8 +14,8 @@
 /* The start icon's row: the slot (`field.module.css`'s `.affixIcon`, as on `TextInput`) and the
    value, at the affix gap. It takes the room the chevron leaves, and `min-width: 0` lets the value
    shrink into its ellipsis. It declares no height or block padding, so the trigger's floor and
-   padding stay `.control`'s; a test pins that. Logical throughout, so a right-to-left page puts
-   the slot on the right with nothing to override. */
+   padding stay `.control`'s; `token-reads.test.ts` pins that. Logical throughout, so a
+   right-to-left page puts the slot on the right with nothing to override. */
 .lead {
   display: flex;
   flex: 1;

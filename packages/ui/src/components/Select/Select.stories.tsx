@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import fieldStyles from '../../styles/field.module.css';
@@ -86,7 +86,7 @@ export const WithStartIcon: Story = {
   },
   render: function WithStartIconRender({ onValueChange, defaultValue, ...args }) {
     const [bringer, setBringer] = useState(defaultValue ?? null);
-    const bringerName = args.options.find((option) => option.value === bringer)?.label;
+    const bringerOption = args.options.find((option) => option.value === bringer);
     return (
       <Select
         {...args}
@@ -96,8 +96,8 @@ export const WithStartIcon: Story = {
           onValueChange?.(value);
         }}
         startIcon={
-          bringer === null || bringerName === undefined ? undefined : (
-            <Avatar name={bringerName} size="xs" colorSeed={bringer} />
+          bringerOption === undefined ? undefined : (
+            <Avatar name={bringerOption.label} size="xs" colorSeed={bringerOption.value} />
           )
         }
       />
@@ -113,8 +113,17 @@ export const WithStartIcon: Story = {
 export const WithStartIconDark: Story = {
   ...WithStartIcon,
   globals: { theme: 'dark' },
+  // Named, not left to the spread: Storybook's indexer does not follow the spread, so without this
+  // key the story is indexed as a smoke test and the play never runs.
   play: WithStartIcon.play,
 };
+
+/** A 200 px field, too narrow for the long name in the stories below. */
+const inNarrowField: Decorator = (Story) => (
+  <div style={{ inlineSize: 200 }}>
+    <Story />
+  </div>
+);
 
 /**
  * A name too long for a 200 px field. The value shrinks into its ellipsis, the avatar keeps its
@@ -129,13 +138,7 @@ export const WithStartIconLongValue: Story = {
       { value: 'christian', label: 'Christian' },
     ],
   },
-  decorators: [
-    (Story) => (
-      <div style={{ inlineSize: 200 }}>
-        <Story />
-      </div>
-    ),
-  ],
+  decorators: [inNarrowField],
   play: async ({ canvasElement, args }) => {
     const { trigger, slot, value, chevron } = triggerParts(canvasElement, args.label);
     await expect(value.scrollWidth).toBeGreaterThan(value.clientWidth);
@@ -149,6 +152,24 @@ export const WithStartIconLongValue: Story = {
     }
     await expectFloorHeight(trigger, slot);
   },
+};
+
+/**
+ * The same long name in a right-to-left page: the row mirrors, and the `play` of the story above
+ * takes its right-to-left branch, with the chevron inside the trigger's left edge.
+ */
+export const WithStartIconRightToLeft: Story = {
+  ...WithStartIconLongValue,
+  decorators: [
+    inNarrowField,
+    (Story) => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+  // Named, not left to the spread, for the reason `WithStartIconDark` gives.
+  play: WithStartIconLongValue.play,
 };
 
 /** Opens from the keyboard and checks the highlight lands on an option, so arrows work at once. */
