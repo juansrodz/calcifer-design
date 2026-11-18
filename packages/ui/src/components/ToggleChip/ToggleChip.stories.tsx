@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ReactNode } from 'react';
-import { fn } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { ToggleChip } from './ToggleChip';
 import { ToggleChipGroup, type ToggleChipOption } from './ToggleChipGroup';
 
@@ -201,6 +201,98 @@ export const DisabledOption: Story = {
       onValueChange={fn()}
     />
   ),
+};
+
+/** The label's box and the check's, for the stories that check which side the check is on. */
+function labelAndCheckBoxes(chipElement: HTMLElement): { label: DOMRect; check: DOMRect } {
+  const checkElement = chipElement.querySelector('svg')?.parentElement;
+  const labelNode = Array.from(chipElement.childNodes).find(
+    (node) => node.nodeType === Node.TEXT_NODE,
+  );
+  if (!checkElement || !labelNode) throw new Error('the chip has no check or no label');
+  const labelRange = document.createRange();
+  labelRange.selectNodeContents(labelNode);
+  return { label: labelRange.getBoundingClientRect(), check: checkElement.getBoundingClientRect() };
+}
+
+/**
+ * `size="sm"`, the WBW mock's chip: the 12 px type, 28 px tall with no icon and 36 px with the
+ * 26 px disc, against md's 32 and 42 px in the 14 px type. Both are past the 24 px target.
+ */
+export const Small: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+      <ToggleChipGroup
+        selectionMode="single"
+        label="Dish type"
+        options={dishOptions}
+        defaultValue="main"
+        size="sm"
+        onValueChange={fn()}
+      />
+      <ToggleChipGroup
+        selectionMode="multiple"
+        label="Dietary needs"
+        options={dietaryOptions}
+        defaultValue={['vegan', 'gluten-free']}
+        size="sm"
+        onValueChange={fn()}
+      />
+    </div>
+  ),
+  // Runs in a browser only (jsdom lays nothing out): the two heights are the mock's.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: 'Side' }).offsetHeight).toBe(36);
+    await expect(canvas.getByRole('button', { name: 'Spicy' }).offsetHeight).toBe(28);
+  },
+};
+
+/**
+ * `checkPosition="start"` draws a pressed chip's check before its label, as the WBW mock does
+ * (4e, 10g), here on the small chip the mock draws. The default, `end`, draws it after.
+ */
+export const CheckAtStart: Story = {
+  render: () => (
+    <ToggleChipGroup
+      selectionMode="multiple"
+      label="Dietary needs"
+      options={dietaryOptions}
+      defaultValue={['vegetarian', 'dairy-free']}
+      size="sm"
+      checkPosition="start"
+      onValueChange={fn()}
+    />
+  ),
+  // Runs in a browser only: the check is left of the label.
+  play: async ({ canvasElement }) => {
+    const { label, check } = labelAndCheckBoxes(
+      within(canvasElement).getByRole('button', { name: 'Vegetarian' }),
+    );
+    await expect(check.right).toBeLessThanOrEqual(label.left);
+  },
+};
+
+/**
+ * The start is the reading start, so in a right-to-left page the check is right of the label. The
+ * chip's padding and the icon's inset are logical, so nothing else turns round by hand.
+ */
+export const CheckAtStartRightToLeft: Story = {
+  ...CheckAtStart,
+  decorators: [
+    (Story) => (
+      <div dir="rtl">
+        <Story />
+      </div>
+    ),
+  ],
+  // Runs in a browser only: the check is right of the label.
+  play: async ({ canvasElement }) => {
+    const { label, check } = labelAndCheckBoxes(
+      within(canvasElement).getByRole('button', { name: 'Vegetarian' }),
+    );
+    await expect(check.left).toBeGreaterThanOrEqual(label.right);
+  },
 };
 
 export const Dark: Story = {
