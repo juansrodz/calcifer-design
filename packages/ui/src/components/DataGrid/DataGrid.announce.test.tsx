@@ -285,6 +285,27 @@ describe('announcing results in client mode', () => {
     expect(region.heard).toEqual([`${countMatching({ filters: { status: 'low' } })} rows found`]);
   });
 
+  it('clears a count already announced when a state appears, so it is not spoken again', async () => {
+    const { rerender } = render(gridElement());
+    const region = listenToRegion();
+    openSearch();
+    fireEvent.change(searchField(), { target: { value: 'bolt' } });
+    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    await region.advance(announceDelay);
+    const boltAnnouncement = `${countMatching({ search: 'bolt' })} rows found`;
+    expect(region.heard).toEqual([boltAnnouncement]);
+
+    // A refresh: the app shows the loading state, then the rows again under the same query.
+    rerender(gridElement({ loading: true }));
+    region.listen();
+    rerender(gridElement());
+    region.listen();
+    await region.advance(announceDelay * 2);
+
+    expect(region.heard).toEqual([boltAnnouncement, 'Loading rows…']);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
   it('says nothing when the app replaces the rows under the same query', async () => {
     const { rerender } = render(gridElement({ initialQuery: { search: 'bolt' } }));
     const region = listenToRegion();
