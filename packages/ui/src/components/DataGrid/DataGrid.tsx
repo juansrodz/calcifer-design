@@ -1,8 +1,9 @@
-import { useTable, type RowData, type SortingState } from '@tanstack/react-table';
+import { useTable, type RowData } from '@tanstack/react-table';
 import { useVirtualizer, type Range } from '@tanstack/react-virtual';
 import {
   useCallback,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -15,13 +16,21 @@ import { LiveRegion } from '../LiveRegion/LiveRegion';
 import { dataGridFeatures, textValueOf, type DataGridColumnDef } from './columns';
 import styles from './DataGrid.module.css';
 import { GridCardHeader } from './GridCardHeader';
+import { GridFilterRow } from './GridFilterRow';
 import { GridHeaderRow } from './GridHeaderRow';
 import { GridDetailRow, GridRow, GridSpacerRow } from './GridRow';
-import { GridErrorRow, GridStateRow, type GridStateKind } from './GridStateRows';
+import {
+  GridErrorRow,
+  GridStateRow,
+  type GridStateKind,
+  type GridStateRowProps,
+} from './GridStateRows';
 import { resolveDataGridLabels } from './labels';
+import { createQueryMatcher, isSameQuery } from './query';
 import type { DataGridProps, DataGridQuery, DataGridRowEvent } from './types';
 import { useGridEntries, type GridEntry } from './useGridEntries';
 import { useGridHighlight } from './useGridHighlight';
+import { useGridQuery } from './useGridQuery';
 import { useGridMetrics } from './useGridMetrics';
 import { cellControlSelector, useGridKeyboard } from './useGridKeyboard';
 import { useLoadMore } from './useLoadMore';
@@ -80,7 +89,10 @@ export function DataGrid<Row extends RowData>({
   loadError,
   onLoadMore,
   onQueryChange,
-  initialSorting = [],
+  initialQuery,
+  query,
+  initialSorting,
+  enableSearch = false,
   enableSorting = true,
   multiSort = false,
   density = 'comfortable',
@@ -89,6 +101,7 @@ export function DataGrid<Row extends RowData>({
   hideFooter = false,
   loading = false,
   emptyState,
+  filteredEmptyState,
   onRefresh,
   refreshing = false,
   highlightOnClick = false,
@@ -112,15 +125,73 @@ export function DataGrid<Row extends RowData>({
   labels,
 }: DataGridProps<Row>) {
   const serverMode = mode === 'server';
-  // In server mode only the app can sort, so without its query handler nothing sorts.
-  const sortingEnabled = enableSorting && (!serverMode || onQueryChange !== undefined);
-  const [sorting, setSorting] = useState<SortingState>(initialSorting);
-  // The rows the grid held when the query last changed. Until the app replaces them the loaded
-  // rows answer the old query, so nothing more is asked of them.
-  const [rowsOfOldQuery, setRowsOfOldQuery] = useState<readonly Row[] | null>(null);
-  const awaitingNewRows = rowsOfOldQuery === rows;
+  // Whether the user can change the query. Without the query handler the app hears of no change:
+  // in server mode only it can sort, filter and search, so the grid does none of them and starts
+  // with no filters or search whatever `initialQuery` says; a controlled query it would never
+  // replace. Only the grid's own query in client mode needs no handler.
+  const queryEnabled = (!serverMode && query === undefined) || onQueryChange !== undefined;
+  const sortingEnabled = enableSorting && queryEnabled;
+  const filtering = queryEnabled && columns.some((column) => column.filter !== undefined);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const showsFilterStrip = filtering && filtersOpen;
+  // The header, then the filter strip while it shows; body entry `n` is keyboard row
+  // `n + headRowCount`. The header stays keyboard row 0.
+  const headRowCount = showsFilterStrip ? 2 : 1;
+  // The rows the grid held when the query last changed, and the query they answer. Until the app
+  // replaces them they answer that query, not the shown one, so nothing more is asked of them. A
+  // query that comes back to theirs before new rows arrive (a filter typed and deleted, three
+  // header clicks) is theirs again, and an app that caches by query answers it with the same rows.
+  const [oldQueryRows, setOldQueryRows] = useState<{
+    rows: readonly Row[];
+    query: DataGridQuery;
+  } | null>(null);
+  const gridQuery = useGridQuery({
+    columns,
+    initialQuery: queryEnabled ? initialQuery : { ...initialQuery, filters: {}, search: '' },
+    initialSorting,
+    query,
+    onQueryChange,
+    // Called from event handlers and layout effects only, after everything below exists.
+    onChange: (_nextQuery, previousQuery) => {
+      // Rows that move under the selection would make it hard to see what it covers.
+      selection.clear();
+      virtualizer.scrollToOffset(0);
+      if (serverMode) {
+        // The app starts again from the first page. Rows already waited on keep the query they
+        // answer, which a second change before new rows arrive would otherwise lose.
+        const committedRows = committedRowsRef.current;
+        setOldQueryRows((current) =>
+          current?.rows === committedRows ? current : { rows: committedRows, query: previousQuery },
+        );
+        loadMore.reset();
+      }
+    },
+  });
+  const awaitingNewRows =
+    oldQueryRows !== null &&
+    oldQueryRows.rows === rows &&
+    !isSameQuery(oldQueryRows.query, gridQuery.query);
+  // Search, like the filters, only where the user can change the query.
+  const searching = enableSearch && queryEnabled;
+  // The field shows while the user has it open or a search is active, so an active search is never
+  // hidden. An initial search opens it.
+  const [searchOpen, setSearchOpen] = useState(gridQuery.query.search !== '');
+  const showsSearch = searching && (searchOpen || gridQuery.query.search !== '');
+  // The rows of the last commit. A query the app changes is acted on in a layout effect of the
+  // render that brings it, and that render may bring the new query's first page as well: the old
+  // query's rows are the ones before it. Declared after the query hook, so that its effect reads
+  // them before this one moves on.
+  const committedRowsRef = useRef(rows);
+  useLayoutEffect(() => {
+    committedRowsRef.current = rows;
+  });
+  // In server mode the app has already filtered and searched the rows.
+  const shownRows = useMemo(() => {
+    const matcher = serverMode ? null : createQueryMatcher(columns, gridQuery.query);
+    return matcher ? rows.filter(matcher) : rows;
+  }, [serverMode, rows, columns, gridQuery.query]);
   const { highlightedId, setHighlightedId } = useGridHighlight({
-    rows,
+    rows: shownRows,
     getRowId,
     loading,
     highlightedRowId,
@@ -141,10 +212,12 @@ export function DataGrid<Row extends RowData>({
   // Annotated: the table needs the selection, and the callback below needs the table's entries.
   const selection: RowSelection = useRowSelection({
     enabled: selecting,
-    rows,
+    rows: shownRows,
     getRowId,
     isRowSelectable,
-    loading,
+    // A query the app changed clears the selection in a layout effect. Rows it hid must not be
+    // dropped from the selection before then, or that report would land after the clear.
+    loading: loading || gridQuery.pendingChange,
     selectedRowIds,
     defaultSelectedRowIds,
     onSelectedRowIdsChange,
@@ -158,31 +231,18 @@ export function DataGrid<Row extends RowData>({
 
   const table = useTable({
     features: dataGridFeatures,
-    data: rows,
+    data: shownRows,
     columns,
     getRowId,
-    state: { sorting, rowSelection: selection.rowSelection },
+    state: { sorting: gridQuery.query.sorting, rowSelection: selection.rowSelection },
     manualSorting: serverMode,
-    onSortingChange: (updater) => {
-      const nextSorting = typeof updater === 'function' ? updater(sorting) : updater;
-      setSorting(nextSorting);
-      // Rows that move under the selection would make it hard to see what it covers.
-      selection.clear();
-      if (serverMode) {
-        // The app starts again from the first page; the view goes back to where that page lands.
-        setRowsOfOldQuery(rows);
-        loadMore.reset();
-        virtualizer.scrollToOffset(0);
-        onQueryChange?.({
-          sorting: nextSorting,
-          filters: {},
-          matchMode: 'all',
-          search: '',
-        } satisfies DataGridQuery);
-      }
-    },
+    onSortingChange: (updater) =>
+      gridQuery.setSorting(
+        typeof updater === 'function' ? updater(gridQuery.query.sorting) : updater,
+      ),
     enableRowSelection: (row) => isRowSelectable?.(row.original) ?? true,
-    enableSorting: sortingEnabled,
+    // In client mode a read-only query still sorts the rows; only its headers stop sorting them.
+    enableSorting: serverMode ? sortingEnabled : enableSorting,
     enableMultiSort: multiSort,
     defaultColumn: {
       // Cycle ascending, descending, off for every type; TanStack would start numbers descending.
@@ -206,13 +266,15 @@ export function DataGrid<Row extends RowData>({
   const leafHeaders = table.getHeaderGroups()[0]?.headers ?? [];
   const leafColumns = table.getAllLeafColumns();
   const columnCount = columnOffset + leafColumns.length + (renderRowActions ? 1 : 0);
-  // Stable across sorts: TanStack's row index is the row's place in `rows`.
+  // Stable across sorts: TanStack's row index is the row's place in the shown rows.
   const panelIdOf = (row: { index: number }) => `${panelIdPrefix}-detail-${row.index}`;
   // A failed first page is the error row alone, with no 'no rows' message beside it.
   const showsLoadError = serverMode && loadError !== undefined && !loading;
   let stateKind: GridStateKind | null = null;
   if (loading) stateKind = 'loading';
-  else if (entries.length === 0 && !showsLoadError) stateKind = 'empty';
+  else if (entries.length === 0 && !showsLoadError) {
+    stateKind = gridQuery.activeCount > 0 ? 'filteredEmpty' : 'empty';
+  }
   const rowHeight = estimatedRowHeight[density];
   const rowsPerViewport = Math.max(1, Math.floor((viewportHeight - headerHeight) / rowHeight));
   const rowsClickable = Boolean(onRowClick || highlightOnClick);
@@ -254,8 +316,8 @@ export function DataGrid<Row extends RowData>({
     event: KeyboardEvent<HTMLElement>,
   ) => {
     // In the expand column Enter or Space opens or closes the row.
-    if (rowIndex > 0 && expanding && columnIndex === expandColumn) {
-      const entry = entries[rowIndex - 1];
+    if (rowIndex >= headRowCount && expanding && columnIndex === expandColumn) {
+      const entry = entries[rowIndex - headRowCount];
       if (entry?.kind === 'row' && isExpandable(entry.row.original)) {
         event.preventDefault();
         expansion.toggleRow(entry.row.id);
@@ -272,7 +334,7 @@ export function DataGrid<Row extends RowData>({
         selection.toggleAll();
         return;
       }
-      const entry = entries[rowIndex - 1];
+      const entry = entries[rowIndex - headRowCount];
       if (entry?.kind !== 'row' || !selection.isSelectable(entry.row.id)) return;
       event.preventDefault();
       selection.toggleRow(entry.row.id, { range: event.shiftKey });
@@ -281,14 +343,15 @@ export function DataGrid<Row extends RowData>({
     if (event.key !== 'Enter') return;
     if (rowIndex === 0) {
       const column = leafHeaders[columnIndex - columnOffset]?.column;
-      if (column?.getCanSort()) {
+      if (sortingEnabled && column?.getCanSort()) {
         event.preventDefault();
         column.getToggleSortingHandler()?.(event);
       }
       return;
     }
-    const entry = entries[rowIndex - 1];
-    // A cell with controls is entered instead; that is the hook's part.
+    const entry = entries[rowIndex - headRowCount];
+    // A cell with controls is entered instead; that is the hook's part. A cell whose only control
+    // is a button by its role alone, with no tabindex, is neither entered nor a click on the row.
     if (entry?.kind !== 'row' || event.currentTarget.querySelector(cellControlSelector)) return;
     if (rowsClickable) {
       event.preventDefault();
@@ -309,7 +372,7 @@ export function DataGrid<Row extends RowData>({
     _columnIndex: number,
     event: KeyboardEvent<HTMLElement>,
   ) => {
-    const entry = entries[rowIndex - 1];
+    const entry = entries[rowIndex - headRowCount];
     if (entry?.kind !== 'row' || !onRowContextMenu) return;
     event.preventDefault();
     // Some browsers follow this key with a contextmenu event of their own on the same cell.
@@ -327,7 +390,8 @@ export function DataGrid<Row extends RowData>({
   };
 
   const keyboard = useGridKeyboard({
-    rowCount: stateKind ? 1 : entries.length + 1 + (showsLoadError ? 1 : 0),
+    rowCount: stateKind ? headRowCount : entries.length + headRowCount + (showsLoadError ? 1 : 0),
+    headRowCount,
     columnCount,
     onActivate: handleActivate,
     onContextMenu: handleContextMenuKey,
@@ -339,7 +403,7 @@ export function DataGrid<Row extends RowData>({
       return range ? Math.max(1, range.endIndex - range.startIndex + 1) : rowsPerViewport;
     },
   });
-  const focusedEntryIndex = keyboard.focusedCell.rowIndex - 1;
+  const focusedEntryIndex = keyboard.focusedCell.rowIndex - headRowCount;
   const pinnedIndexes = useMemo(
     () => new Set(focusedEntryIndex >= 0 ? [focusedEntryIndex] : []),
     [focusedEntryIndex],
@@ -379,7 +443,7 @@ export function DataGrid<Row extends RowData>({
     rangeExtractor: (range) => extractRange(range, pinnedIndexes, entries),
   });
   const virtualItems = stateKind ? [] : virtualizer.getVirtualItems();
-  // Annotated for the sort handler above, which resets the guard before this line has run.
+  // Annotated for the query handler above, which resets the guard before this line has run.
   const loadMore: ReturnType<typeof useLoadMore> = useLoadMore({
     enabled: serverMode && !awaitingNewRows,
     loading,
@@ -415,6 +479,7 @@ export function DataGrid<Row extends RowData>({
         <GridDetailRow
           key={`detail:${row.id}`}
           entryIndex={virtualItem.index}
+          firstEntryRow={headRowCount}
           measureRef={virtualizer.measureElement}
           columnCount={columnCount}
           panelId={panelIdOf(row)}
@@ -430,6 +495,7 @@ export function DataGrid<Row extends RowData>({
         key={row.id}
         row={row}
         entryIndex={virtualItem.index}
+        firstEntryRow={headRowCount}
         measureRef={virtualizer.measureElement}
         density={density}
         columnOffset={columnOffset}
@@ -477,26 +543,43 @@ export function DataGrid<Row extends RowData>({
     // A cell the browser scrolls to on focus lands below the sticky header band too.
     scrollPaddingBlockStart: headerHeight || undefined,
   };
-  // The error row comes after the last entry, as the header is row 1.
-  const errorRowIndex = entries.length + 2;
+  // The error row's aria-rowindex: it comes after the last entry, which follows the head rows.
+  const errorRowIndex = entries.length + headRowCount + 1;
   // Every row the app has, not only those loaded.
   const knownRowCount =
-    serverMode && totalRowCount !== undefined ? Math.max(totalRowCount, rows.length) : rows.length;
-  // The header, every known row and the open panels. The error row follows the last entry,
+    serverMode && totalRowCount !== undefined
+      ? Math.max(totalRowCount, rows.length)
+      : shownRows.length;
+  // The head rows, every known row and the open panels. The error row follows the last entry,
   // whatever the grid knows of rows it has not loaded.
   let ariaRowCount = Math.max(
-    knownRowCount + openPanelCount + 1,
+    knownRowCount + openPanelCount + headRowCount,
     showsLoadError ? errorRowIndex : 0,
   );
   // ARIA's "unknown total" is -1: more rows exist than the app has said how many.
   if (serverMode && totalRowCount === undefined && hasMore) ariaRowCount = -1;
-  // The header and the state row.
-  if (stateKind) ariaRowCount = 2;
+  // The head rows and the state row.
+  if (stateKind) ariaRowCount = headRowCount + 1;
   // One region that is always mounted: a live region announces reliably only when its text
-  // changes, not when it appears with its text.
-  let stateLabel = '';
-  if (stateKind === 'loading') stateLabel = resolvedLabels.loading;
-  if (stateKind === 'empty') stateLabel = resolvedLabels.empty;
+  // changes, not when it appears with its text. Each state kind is named after its label.
+  const stateLabel = stateKind ? resolvedLabels[stateKind] : '';
+  // The app's own content in place of an empty state's message, and the filtered one's button.
+  let stateReplacement: ReactNode;
+  let clearFiltersButton: GridStateRowProps['clearFilters'];
+  if (stateKind === 'empty') stateReplacement = emptyState;
+  if (stateKind === 'filteredEmpty') {
+    stateReplacement = filteredEmptyState?.(gridQuery.clearFilters);
+    // A query the user cannot change offers no button to clear it.
+    if (queryEnabled) {
+      clearFiltersButton = { label: resolvedLabels.clearFilters, onClick: gridQuery.clearFilters };
+    }
+  }
+  let rowCountText = resolvedLabels.rowCount(rows.length);
+  if (serverMode && totalRowCount !== undefined) {
+    rowCountText = resolvedLabels.loadedRowCount(rows.length, totalRowCount);
+  } else if (!serverMode && gridQuery.activeCount > 0) {
+    rowCountText = resolvedLabels.filteredRowCount(shownRows.length, rows.length);
+  }
 
   return (
     <section
@@ -512,6 +595,38 @@ export function DataGrid<Row extends RowData>({
         refreshing={refreshing}
         toolbarLabel={resolvedLabels.toolbar}
         refreshLabel={resolvedLabels.refresh}
+        search={
+          searching
+            ? {
+                open: showsSearch,
+                value: gridQuery.query.search,
+                buttonLabel: resolvedLabels.search,
+                fieldLabel: resolvedLabels.searchField,
+                clearLabel: resolvedLabels.clearSearch,
+                onToggle: () => {
+                  // Closing clears the search; the setter reports nothing when there is none.
+                  if (showsSearch) gridQuery.setSearch('');
+                  setSearchOpen(!showsSearch);
+                },
+                onClose: () => setSearchOpen(false),
+                onSearchChange: gridQuery.setSearch,
+                // A field the user is in stays open, even once its search is cleared.
+                onFieldFocus: () => setSearchOpen(true),
+              }
+            : undefined
+        }
+        onToggleFilters={filtering ? () => setFiltersOpen((open) => !open) : undefined}
+        filtersOpen={filtersOpen}
+        filtersLabel={resolvedLabels.filters(gridQuery.activeCount)}
+        filterCount={gridQuery.activeCount}
+        showMatchMode={
+          filtering && (filtersOpen || Object.keys(gridQuery.query.filters).length > 0)
+        }
+        matchMode={gridQuery.query.matchMode}
+        onMatchModeChange={gridQuery.setMatchMode}
+        matchModeLabel={resolvedLabels.matchMode}
+        matchAllLabel={resolvedLabels.matchAll}
+        matchAnyLabel={resolvedLabels.matchAny}
       />
       <LiveRegion message={stateLabel} politeness="polite" />
       <div
@@ -543,6 +658,7 @@ export function DataGrid<Row extends RowData>({
                 headers={headerGroup.headers}
                 columnCount={columnCount}
                 columnOffset={columnOffset}
+                sortable={sortingEnabled}
                 selectAll={
                   selecting
                     ? {
@@ -563,14 +679,29 @@ export function DataGrid<Row extends RowData>({
                 getCellProps={keyboard.getCellProps}
               />
             ))}
+            {showsFilterStrip ? (
+              <GridFilterRow
+                headers={leafHeaders}
+                columnCount={columnCount}
+                columnOffset={columnOffset}
+                hasRowActions={renderRowActions !== undefined}
+                query={gridQuery}
+                labels={resolvedLabels}
+                getCellProps={keyboard.getCellProps}
+              />
+            ) : null}
           </thead>
           <tbody>
             {stateKind ? (
               <GridStateRow
                 kind={stateKind}
                 label={stateLabel}
-                emptyState={emptyState}
+                replacement={stateReplacement}
+                clearFilters={clearFiltersButton}
+                // Under an h2 card heading; under a deeper one, the empty state's deepest level.
+                headingLevel={headingLevel === 2 ? 3 : 4}
                 columnCount={columnCount}
+                firstEntryRow={headRowCount}
               />
             ) : null}
             {bodyRows}
@@ -580,6 +711,7 @@ export function DataGrid<Row extends RowData>({
             {showsLoadError ? (
               <GridErrorRow
                 entryIndex={entries.length}
+                firstEntryRow={headRowCount}
                 columnCount={columnCount}
                 message={loadError}
                 retryLabel={resolvedLabels.retry}
@@ -596,11 +728,7 @@ export function DataGrid<Row extends RowData>({
             <span>{resolvedLabels.selectedCount(selection.selectedIds.size)}</span>
           ) : null}
           {serverMode && loadingMore ? <span>{resolvedLabels.loadingMore}</span> : null}
-          <span className={styles.rowCount}>
-            {serverMode && totalRowCount !== undefined
-              ? resolvedLabels.loadedRowCount(rows.length, totalRowCount)
-              : resolvedLabels.rowCount(rows.length)}
-          </span>
+          <span className={styles.rowCount}>{rowCountText}</span>
         </footer>
       )}
     </section>

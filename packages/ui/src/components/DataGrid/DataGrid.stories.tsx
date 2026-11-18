@@ -1,17 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { SortingState } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../Button/Button';
-import { createDataGridColumnHelper } from './columns';
+import { createDataGridColumnHelper, type DataGridColumnDef } from './columns';
 import { DataGrid } from './DataGrid';
 import {
   createMockInventoryServer,
+  filterableInventoryColumns,
   inventoryColumns,
   makeFileRows,
   makeInventoryRows,
   type FileRow,
   type InventoryRow,
 } from './fixtures';
+import { emptyDataGridQuery } from './query';
 import type { DataGridQuery } from './types';
 
 const meta = {
@@ -218,10 +219,116 @@ export const FillsItsParent: Story = {
   ],
 };
 
+const filteringRows = makeInventoryRows(240);
+
+export const Filtering: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The filters button opens a filter under each filterable column. The footer counts the rows that match, and select-all selects only them.',
+      },
+    },
+  },
+  render: () => (
+    <DataGrid<InventoryRow>
+      gridId="inventory-filtering-story"
+      heading="Inventory with filters"
+      rows={filteringRows}
+      columns={filterableInventoryColumns}
+      getRowId={(row) => row.id}
+      selectionMode="multiple"
+      maxHeight="25rem"
+    />
+  ),
+};
+
+export const Search: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The search button opens a search field; rows narrow 400ms after typing stops, or at once on Enter. `*` stands for any run of characters and `?` for one, so "hex*(2?)" finds the hex bolts of the twentieth to the twenty-fourth batch. Escape clears the field, and closes it once it is empty.',
+      },
+    },
+  },
+  render: () => (
+    <DataGrid<InventoryRow>
+      gridId="inventory-search-story"
+      heading="Inventory with search"
+      rows={filteringRows}
+      columns={filterableInventoryColumns}
+      getRowId={(row) => row.id}
+      selectionMode="multiple"
+      enableSearch
+      maxHeight="25rem"
+    />
+  ),
+};
+
+export const ViewAllLink: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Shows how a "view all" link opens a filtered grid: the link sets the initial query, here items named "box" in two categories, sorted by quantity.',
+      },
+    },
+  },
+  render: () => (
+    <DataGrid<InventoryRow>
+      gridId="inventory-view-all-story"
+      heading="Box items"
+      rows={filteringRows}
+      columns={filterableInventoryColumns}
+      getRowId={(row) => row.id}
+      maxHeight="25rem"
+      initialQuery={{
+        filters: { name: 'box', category: ['Packaging', 'Fasteners'] },
+        sorting: [{ id: 'quantity', desc: false }],
+      }}
+    />
+  ),
+};
+
+export const FilteredEmpty: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'When the filters match no row the grid says so, and its Clear filters button brings the rows back.',
+      },
+    },
+  },
+  render: () => (
+    <DataGrid<InventoryRow>
+      gridId="inventory-filtered-empty-story"
+      heading="Inventory filtered to nothing"
+      rows={filteringRows}
+      columns={filterableInventoryColumns}
+      getRowId={(row) => row.id}
+      maxHeight="25rem"
+      initialQuery={{ filters: { name: 'Anvil' } }}
+    />
+  ),
+};
+
 const serverPageSize = 50;
 
+interface ServerModeGridProps {
+  gridId: string;
+  heading: string;
+  columns?: DataGridColumnDef<InventoryRow, unknown>[];
+  enableSearch?: boolean;
+}
+
 /** An app's side of server mode: it holds the loaded rows and answers the grid's two callbacks. */
-function ServerModeGrid() {
+function ServerModeGrid({
+  gridId,
+  heading,
+  columns = inventoryColumns,
+  enableSearch,
+}: ServerModeGridProps) {
   const [server] = useState(() =>
     createMockInventoryServer({
       total: 240,
@@ -234,7 +341,7 @@ function ServerModeGrid() {
   const [total, setTotal] = useState<number | undefined>(undefined);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | undefined>(undefined);
-  const sortingRef = useRef<SortingState>([]);
+  const queryRef = useRef<DataGridQuery>(emptyDataGridQuery);
   // Pages the app has loaded for the current query, and which query that is: a response to an
   // earlier query is dropped.
   const nextPageRef = useRef(0);
@@ -245,7 +352,7 @@ function ServerModeGrid() {
     setLoadError(undefined);
     setLoadingMore(true);
     try {
-      const result = await server.fetchPage({ page, sorting: sortingRef.current });
+      const result = await server.fetchPage({ page, query: queryRef.current });
       if (queryNumber !== queryNumberRef.current) return;
       setRows((loaded) => (page === 0 ? result.rows : [...loaded, ...result.rows]));
       setTotal(result.total);
@@ -266,19 +373,20 @@ function ServerModeGrid() {
   }, []);
 
   const handleQueryChange = (query: DataGridQuery) => {
-    sortingRef.current = query.sorting;
+    queryRef.current = query;
     queryNumberRef.current += 1;
     void loadPage(0);
   };
 
   return (
     <DataGrid<InventoryRow>
-      gridId="inventory-server-story"
-      heading="Server inventory"
+      gridId={gridId}
+      heading={heading}
       rows={rows}
-      columns={inventoryColumns}
+      columns={columns}
       getRowId={(row) => row.id}
       mode="server"
+      enableSearch={enableSearch}
       maxHeight="25rem"
       loading={total === undefined && loadError === undefined}
       totalRowCount={total}
@@ -296,11 +404,30 @@ export const ServerMode: Story = {
     docs: {
       description: {
         story:
-          'Rows come from a mock back end, fifty at a time, as the user scrolls. Sorting asks the server again, and the second page fails once to show the retry.',
+          'Rows come from a mock back end, fifty at a time, as the user scrolls. Sorting asks the server again, and the third page fails once to show the retry.',
       },
     },
   },
-  render: () => <ServerModeGrid />,
+  render: () => <ServerModeGrid gridId="inventory-server-story" heading="Server inventory" />,
+};
+
+export const ServerFindingRows: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Server mode with filters: each change asks the mock back end for the first page of matching rows, and the footer counts every match.',
+      },
+    },
+  },
+  render: () => (
+    <ServerModeGrid
+      gridId="inventory-server-filters-story"
+      heading="Server inventory with filters"
+      columns={filterableInventoryColumns}
+      enableSearch
+    />
+  ),
 };
 
 const fileColumnHelper = createDataGridColumnHelper<FileRow>();

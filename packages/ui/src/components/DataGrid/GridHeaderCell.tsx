@@ -7,6 +7,8 @@ const ariaSortByDirection = { asc: 'ascending', desc: 'descending' } as const;
 
 export interface GridHeaderCellProps<Row extends RowData> {
   header: Header<DataGridFeatures, Row, unknown>;
+  /** Whether a press sorts; without it the cell still reports the column's sort. */
+  sortable: boolean;
   /** Counted from 1 across every rendered column. */
   ariaColIndex: number;
   cellProps: GridCellProps;
@@ -14,15 +16,18 @@ export interface GridHeaderCellProps<Row extends RowData> {
 
 /**
  * A column's header cell. The cell is the sort control: a click sorts, and so does Enter. A column
- * that cannot sort claims no sort order, whatever the sorting state says.
+ * that cannot sort claims no sort order, whatever the sorting state says. A column the query sorts
+ * but the user may not (a read-only query) reports its order and offers no control.
  */
 export function GridHeaderCell<Row extends RowData>({
   header,
+  sortable,
   ariaColIndex,
   cellProps,
 }: GridHeaderCellProps<Row>) {
-  const canSort = header.column.getCanSort();
-  const sortDirection = canSort && header.column.getIsSorted();
+  const sortApplies = header.column.getCanSort();
+  const sortDirection = sortApplies && header.column.getIsSorted();
+  const canSort = sortable && sortApplies;
   return (
     <th
       scope="col"

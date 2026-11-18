@@ -2,6 +2,7 @@
    rather than to a text label, and with no room for one. `soft` is the quiet filled circle: a
    surface fill with no border, and a consumer hook for the one shadow the mock draws on a photo. */
 .root {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -44,6 +45,14 @@
   box-shadow: var(--icon-button-shadow, none);
 }
 
+/* A toggle that is on, in every variant: the selected family's soft pair, as a selected secondary
+   `Button` wears it. It sits after the variants so it wins over them, and its hover rule below
+   keeps it from falling back to the variant's own hover colours. */
+.root[data-pressed] {
+  background: var(--color-selected-soft);
+  color: var(--color-selected-soft-text);
+}
+
 @media (hover: hover) {
   .root[data-variant='ghost']:hover:not([data-disabled]) {
     background: var(--color-surface-2);
@@ -60,6 +69,11 @@
 
   .root[data-variant='soft']:hover:not([data-disabled]) {
     background: var(--color-surface-3);
+  }
+
+  .root[data-pressed]:hover:not([data-disabled]) {
+    background: var(--color-selected-soft);
+    color: var(--color-selected-soft-text);
   }
 }
 
@@ -90,4 +104,61 @@
 .root[data-variant='soft'] .icon > svg {
   width: 1rem;
   height: 1rem;
+}
+
+/* Out of flow, so a count never changes the button's size. */
+.badge {
+  --badge-size: calc(var(--text-2xs) * 1.5);
+
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--badge-size);
+  min-block-size: var(--badge-size);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The primary button is already accent-coloured, so the badge swaps its pair to stay visible; a
+   pressed one wears the selected tint, so its badge is the accent again. */
+.root[data-variant='primary'] .badge {
+  background: var(--color-accent-text);
+  color: var(--color-accent);
+}
+
+.root[data-variant='primary'][data-pressed] .badge {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+/* Forced colours replace the selected tint and so erase the pressed state; system colours survive,
+   as in Segmented. `forced-color-adjust: none` because Chromium otherwise paints its Canvas
+   backplate behind the icon. Last in the file, so that the pressed hover and the primary badge
+   rules above do not win back their tokens; the badge takes the same pair the other way round. */
+@media (forced-colors: active) {
+  .root[data-pressed],
+  .root[data-pressed]:hover:not([data-disabled]) {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Highlight;
+    color: HighlightText;
+    outline-color: CanvasText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-variant][data-pressed] .badge {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: HighlightText;
+    color: Highlight;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
 }

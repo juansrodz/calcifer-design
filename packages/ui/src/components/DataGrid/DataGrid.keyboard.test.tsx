@@ -1,15 +1,20 @@
 import { composeStories } from '@storybook/react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installElementSize } from '../../../test/elementSize';
+import { scrollGridTo } from '../../../test/gridScroll';
 import { Button } from '../Button/Button';
 import { Popover } from '../Popover/Popover';
 import { createDataGridColumnHelper } from './columns';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
-import { inventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
+import {
+  filterableInventoryColumns,
+  inventoryColumns,
+  makeInventoryRows,
+  type InventoryRow,
+} from './fixtures';
 
 const { Large } = composeStories(stories);
 
@@ -65,14 +70,6 @@ function cellAt(ariaRowIndex: number, ariaColIndex: number): HTMLElement {
 
 function expectFocusAt(ariaRowIndex: number, ariaColIndex: number) {
   expect(document.activeElement).toBe(cellAt(ariaRowIndex, ariaColIndex));
-}
-
-function scrollGridTo(scrollTop: number) {
-  const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
-  act(() => {
-    scrollElement.scrollTop = scrollTop;
-    scrollElement.dispatchEvent(new Event('scroll'));
-  });
 }
 
 /** Tabs from the button before the grid onto its one tab stop. */
@@ -610,5 +607,141 @@ describe('keyboard navigation', () => {
       </>,
     );
     expectFocusAt(3, 2);
+  });
+});
+
+describe('the filter strip', () => {
+  const filterableGrid = { columns: filterableInventoryColumns };
+
+  it('reaches the filter strip with arrow keys and enters a filter', async () => {
+    const user = userEvent.setup();
+    renderGrid(filterableGrid);
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    // The toolbar comes before the grid, so the next tab stop is the grid's.
+    await user.tab();
+    expectFocusAt(1, 1);
+
+    await user.keyboard('{ArrowRight}{ArrowDown}');
+    expectFocusAt(2, 2);
+    const nameFilter = screen.getByRole('searchbox', { name: 'Filter by Name' });
+    expect(cellAt(2, 2)).toContainElement(nameFilter);
+    expect(nameFilter).toHaveAttribute('tabindex', '-1');
+
+    await user.keyboard('{Enter}');
+    expect(nameFilter).toHaveFocus();
+    expect(nameFilter).toHaveAttribute('tabindex', '0');
+
+    // Inside the filter, keys are its own: typing and the arrows leave grid focus where it is.
+    await user.keyboard('Hex{ArrowDown}{ArrowLeft}{Home}');
+    expect(nameFilter).toHaveFocus();
+    expect(nameFilter).toHaveValue('Hex');
+    expect(cellAt(2, 2)).toHaveAttribute('data-focused');
+
+    await user.keyboard('{Escape}');
+    expectFocusAt(2, 2);
+    expect(nameFilter).toHaveValue('Hex');
+    expect(nameFilter).toHaveAttribute('tabindex', '-1');
+
+    await user.keyboard('{ArrowDown}');
+    expectFocusAt(3, 2);
+    expect(document.activeElement).toHaveTextContent('Hex bolt M6');
+  });
+
+  it('keeps the tab stop on the same body cell when the strip opens and closes', async () => {
+    const user = userEvent.setup();
+    renderGrid(filterableGrid);
+    await user.click(cellAt(5, 2));
+    expectFocusAt(5, 2);
+    const focusedText = document.activeElement?.textContent ?? '';
+    const filtersButton = screen.getByRole('button', { name: 'Filters' });
+
+    // The toolbar comes before the grid, so Shift+Tab leaves the grid for the filters button.
+    await user.tab({ shift: true });
+    expect(filtersButton).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(filtersButton).toHaveAttribute('aria-pressed', 'true');
+    await user.tab();
+
+    expectFocusAt(6, 2);
+    expect(document.activeElement).toHaveTextContent(focusedText);
+
+    await user.tab({ shift: true });
+    expect(filtersButton).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(filtersButton).toHaveAttribute('aria-pressed', 'false');
+    await user.tab();
+
+    expectFocusAt(5, 2);
+    expect(document.activeElement).toHaveTextContent(focusedText);
+  });
+
+  it('moves a tab stop on the strip to the first body row when the strip closes', async () => {
+    const user = userEvent.setup();
+    renderGrid(filterableGrid);
+    const filtersButton = screen.getByRole('button', { name: 'Filters' });
+    await user.click(filtersButton);
+    await user.tab();
+    await user.keyboard('{ArrowDown}{ArrowRight}');
+    expectFocusAt(2, 2);
+
+    await user.tab({ shift: true });
+    await user.click(filtersButton);
+    await user.tab();
+
+    expectFocusAt(2, 2);
+    expect(document.activeElement).toHaveTextContent('Hex bolt M6');
+  });
+
+  it('moves Ctrl+Home to the header and Ctrl+End to the last row with the strip open', async () => {
+    const user = userEvent.setup();
+    renderGrid(filterableGrid);
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.tab();
+    await user.keyboard('{ArrowDown}');
+    expectFocusAt(2, 1);
+
+    await user.keyboard('{Control>}{End}{/Control}');
+    expectFocusAt(12, filterableInventoryColumns.length);
+    expect(document.activeElement).toHaveTextContent(makeInventoryRows(10)[9]?.updated ?? '');
+
+    await user.keyboard('{Control>}{Home}{/Control}');
+    expect(document.activeElement).toBe(screen.getByRole('columnheader', { name: 'SKU' }));
+  });
+
+  it('scrolls the first rows back into view on reaching the strip from the body, not along the head rows', async () => {
+    const user = userEvent.setup();
+    render(
+      <DataGrid<InventoryRow>
+        gridId="keyboard-grid"
+        heading="Large inventory"
+        rows={makeInventoryRows(5000)}
+        columns={filterableInventoryColumns}
+        getRowId={(row) => row.id}
+        maxHeight="25rem"
+      />,
+    );
+    const scrollElement = document.querySelector('[data-grid-scroll]') as HTMLElement;
+    const scrollTo = vi.fn((options: ScrollToOptions) => {
+      scrollElement.scrollTop = options.top ?? 0;
+      scrollElement.dispatchEvent(new Event('scroll'));
+    });
+    scrollElement.scrollTo = scrollTo as typeof scrollElement.scrollTo;
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.tab();
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expectFocusAt(3, 1);
+    scrollGridTo(40 * 3000);
+
+    await user.keyboard('{ArrowUp}');
+    expectFocusAt(2, 1);
+    await waitFor(() => expect(scrollElement.scrollTop).toBe(0));
+    expect(rowWithIndex(3)).toBeDefined();
+
+    scrollGridTo(40 * 3000);
+    scrollTo.mockClear();
+    await user.keyboard('{ArrowUp}{ArrowRight}{ArrowDown}');
+    expectFocusAt(2, 2);
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(scrollElement.scrollTop).toBe(40 * 3000);
   });
 });

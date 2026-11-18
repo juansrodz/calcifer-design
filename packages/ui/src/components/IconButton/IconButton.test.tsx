@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import * as stories from './IconButton.stories';
 
-const { Ghost, Secondary, Primary, Small, Disabled, Loading, Soft } = composeStories(stories);
+const { Ghost, Secondary, Primary, Small, Disabled, Loading, Soft, PressedAndBadge } =
+  composeStories(stories);
 
 describe('IconButton', () => {
   it.each([
@@ -16,6 +17,7 @@ describe('IconButton', () => {
     ['Disabled', Disabled],
     ['Loading', Loading],
     ['Soft', Soft],
+    ['PressedAndBadge', PressedAndBadge],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -77,5 +79,54 @@ describe('IconButton', () => {
     const button = screen.getByRole('button', { name: 'Delete remote' });
     expect(button).toHaveAttribute('data-variant', 'soft');
     expect(button).toHaveAttribute('data-size', 'md');
+  });
+
+  it('is a toggle only when pressed is given', () => {
+    const { rerender } = render(<Ghost />);
+    const button = screen.getByRole('button');
+    expect(button).not.toHaveAttribute('aria-pressed');
+    expect(button).not.toHaveAttribute('data-pressed');
+
+    rerender(<Ghost pressed={false} />);
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button).not.toHaveAttribute('data-pressed');
+
+    rerender(<Ghost pressed />);
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button).toHaveAttribute('data-pressed');
+  });
+
+  it("keeps a caller's own aria-pressed, unless pressed is given", () => {
+    const { rerender } = render(<Ghost aria-pressed="true" />);
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    // The selected state follows `pressed` alone.
+    expect(button).not.toHaveAttribute('data-pressed');
+
+    rerender(<Ghost aria-pressed="true" pressed={false} />);
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button).not.toHaveAttribute('data-pressed');
+  });
+
+  it('shows a badge hidden from assistive technology', () => {
+    render(<Ghost badge={3} />);
+    const badge = screen.getByText('3');
+    expect(badge).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('button', { name: 'Delete remote' })).toBeInTheDocument();
+  });
+
+  it('shows no badge for zero or undefined, 99 as itself, and caps it at 99+', () => {
+    const { container, rerender } = render(<Ghost badge={0} />);
+    expect(container.querySelector('span[aria-hidden="true"]')).toBeNull();
+
+    rerender(<Ghost badge={undefined} />);
+    expect(container.querySelector('span[aria-hidden="true"]')).toBeNull();
+
+    rerender(<Ghost badge={99} />);
+    expect(screen.getByText('99')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByText('99+')).not.toBeInTheDocument();
+
+    rerender(<Ghost badge={120} />);
+    expect(screen.getByText('99+')).toHaveAttribute('aria-hidden', 'true');
   });
 });

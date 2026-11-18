@@ -124,7 +124,12 @@ export { Timeline } from './components/Timeline/Timeline';
 export type { TimelineProps, TimelineItem, TimelineTone } from './components/Timeline/Timeline';
 export { DataGrid } from './components/DataGrid/DataGrid';
 export { createDataGridColumnHelper } from './components/DataGrid/columns';
-export type { DataGridColumnDef } from './components/DataGrid/columns';
+export type {
+  DataGridColumnDef,
+  DataGridColumnFilter,
+  DataGridFilterOption,
+} from './components/DataGrid/columns';
+export { dataGridSearchPattern } from './components/DataGrid/query';
 export type {
   DataGridProps,
   DataGridQuery,

@@ -50,6 +50,12 @@
   gap: var(--space-2);
 }
 
+/* The search field, before the toolbar: 16rem, narrower when the cluster has less. */
+.search {
+  inline-size: calc(var(--space-10) * 2);
+  max-inline-size: 100%;
+}
+
 /* The default leaves 16rem for a page header; the maxHeight prop overrides it inline. */
 .scroll {
   max-height: calc(100dvh - var(--space-10) * 2);
@@ -137,15 +143,110 @@
   color: var(--color-link);
 }
 
-.row {
-  border-bottom: 1px solid var(--color-border);
-  transition-property: background-color;
+/*
+ * The filter strip: the band's second row while the filters show, with a hairline under it. Its
+ * cells paint nothing of their own but the pinned ones, below, over the band's surface.
+ */
+.filterCell {
+  position: relative;
+  padding: var(--space-2) var(--space-3);
+}
+
+.filterCell::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  border-block-end: 1px solid var(--color-border);
+  pointer-events: none;
+}
+
+/*
+ * A choice filter: the field skin's input, as a text filter wears it, with the chevron laid over
+ * its end. The doubled selector outranks `.control`'s padding, which another stylesheet sets.
+ */
+.choiceFilter {
+  position: relative;
+
+  /* No width of its own for the table to size the column by: the room for the chevron would
+     widen a narrow column when the strip opens. It fills the cell the column's other cells size. */
+  inline-size: 0;
+  min-inline-size: 100%;
+}
+
+.choiceFilter > .choiceInput {
+  padding-inline-end: var(--space-6);
+}
+
+.choiceTrigger {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition-property: transform;
   transition-duration: var(--motion-duration-1);
   transition-timing-function: var(--motion-ease);
 }
 
-.row:last-child {
-  border-bottom: 0;
+/* The chevron sits at the trigger's centre, so turning the trigger turns the chevron in place. */
+.choiceTrigger[data-popup-open] {
+  transform: rotate(180deg);
+}
+
+.choiceTrigger > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* The list's rows, as a select's: Base UI's highlight follows the keyboard and the pointer. */
+.choiceOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--size-touch);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  cursor: pointer;
+  user-select: none;
+}
+
+.choiceOption[data-highlighted] {
+  background: var(--color-surface-2);
+}
+
+.choiceIndicator {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-accent);
+}
+
+.choiceIndicator > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Always rendered, so that it can announce; it takes room only while it says something. */
+.choiceEmpty:not(:empty) {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.row {
+  transition-property: background-color;
+  transition-duration: var(--motion-duration-1);
+  transition-timing-function: var(--motion-ease);
 }
 
 @media (hover: hover) {
@@ -159,23 +260,27 @@
   cursor: pointer;
 }
 
-/* Highlighted and selected rows share one tint, which deepens on hover. */
+/* Highlighted and selected rows share the selected family's tint, which deepens on hover: the
+   tint over the hover surface. Their text takes the tint's own colour, below the cell rules. */
 .row[data-highlighted],
 .row[aria-selected='true'] {
-  background: var(--color-accent-wash);
+  background: var(--color-selected-soft);
 }
 
 @media (hover: hover) {
   .row[data-highlighted]:hover,
   .row[aria-selected='true']:hover {
-    background: var(--color-accent-soft);
+    background-color: var(--color-surface-2);
+    background-image: linear-gradient(var(--color-selected-soft), var(--color-selected-soft));
   }
 }
 
-/* Forced colours erase the tint, so an outline in the text colour marks the row instead. */
+/* Forced colours erase the tint, so an outline in the text colour marks the row instead, and the
+   option a choice filter's list has highlighted for the keyboard. */
 @media (forced-colors: active) {
   .row[data-highlighted],
-  .row[aria-selected='true'] {
+  .row[aria-selected='true'],
+  .choiceOption[data-highlighted] {
     outline-style: solid;
     outline-width: var(--focus-ring-width);
     outline-offset: calc(var(--focus-ring-width) * -1);
@@ -194,15 +299,24 @@
   font-family: var(--font-body);
   font-weight: var(--font-weight-body);
   overflow-wrap: anywhere;
+
+  /* The row's divider. Each cell draws its share inside its own edge, as the band's cells draw
+     their hairlines, so the line falls on the same pixel in every column at any subpixel offset of
+     the row, and a pinned cell's surface paints under it rather than over it. The last row's
+     cells draw none, below. Forced colours drop box-shadow, so there the row draws it instead. */
+  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- the 1px hairline every border here draws; no token is one */
+  box-shadow: inset 0 -1px 0 var(--color-border);
 }
 
 /* The outer columns line up with the card's own inset. */
 .headerCell:first-child,
+.filterCell:first-child,
 .cell:first-child {
   padding-inline-start: var(--space-5);
 }
 
 .headerCell:last-child,
+.filterCell:last-child,
 .cell:last-child {
   padding-inline-end: var(--space-5);
 }
@@ -214,15 +328,17 @@
  * the outer-column padding above.
  */
 .headerCell.pinnedHeader,
+.filterCell.pinnedFilter,
 .cell.pinnedCell {
   position: sticky;
   padding-inline: 0;
   text-align: center;
 }
 
-/* Header cells are positioned for their hairlines, so without a z-index the later ones would
-   paint over a pinned one as the columns pass under it. */
-.headerCell.pinnedHeader {
+/* Header and strip cells are positioned for their hairlines, so without a z-index the later ones
+   would paint over a pinned one as the columns pass under it. */
+.headerCell.pinnedHeader,
+.filterCell.pinnedFilter {
   z-index: 1;
   background: var(--color-surface-1);
 }
@@ -239,13 +355,15 @@
 
 .row[data-highlighted] .cell.pinnedCell,
 .row[aria-selected='true'] .cell.pinnedCell {
-  background-image: linear-gradient(var(--color-accent-wash), var(--color-accent-wash));
+  background-image: linear-gradient(var(--color-selected-soft), var(--color-selected-soft));
 }
 
 @media (hover: hover) {
   .row[data-highlighted]:hover .cell.pinnedCell,
   .row[aria-selected='true']:hover .cell.pinnedCell {
-    background-image: linear-gradient(var(--color-accent-soft), var(--color-accent-soft));
+    background-image:
+      linear-gradient(var(--color-selected-soft), var(--color-selected-soft)),
+      linear-gradient(var(--color-surface-2), var(--color-surface-2));
   }
 }
 
@@ -269,6 +387,16 @@
 
 .selectHeader + .expandHeader,
 .selectCell + .expandCell {
+  inset-inline-start: calc(var(--space-2) * 5);
+}
+
+/* The strip's cells under the checkbox and expand columns, which take their width from the header
+   cells above them. Two of them are the checkbox column, then the expand column after it. */
+.filterCell.leadingFilter {
+  inset-inline-start: 0;
+}
+
+.leadingFilter + .leadingFilter {
   inset-inline-start: calc(var(--space-2) * 5);
 }
 
@@ -324,6 +452,7 @@
  * joins its top and bottom ones, which are pseudo-elements for the reason given above.
  */
 .headerCell.actionsHeader,
+.filterCell.actionsFilter,
 .cell.actionsCell {
   inset-inline-end: 0;
   width: calc(var(--space-5) * 3);
@@ -346,12 +475,17 @@
   border-block-end: 1px solid var(--color-border);
 }
 
+.filterCell.actionsFilter::after {
+  inset-block-start: 0;
+  border-inline-start: 1px solid var(--color-border);
+}
+
 /*
- * An expanded row's detail panel: one cell across the row on a slightly tinted surface, with a
- * divider above it. Its content wraps freely, compact density included.
+ * An expanded row's detail panel: one cell across the row on a slightly tinted surface, under the
+ * row's own divider and with one below it. Its content wraps freely, compact density included.
  */
 .detailRow {
-  border-block: 1px solid var(--color-border);
+  border-block-end: 1px solid var(--color-border);
 }
 
 .detailCell {
@@ -362,7 +496,7 @@
 
 /* The error row closes the body: the message and its retry button, centred. */
 .errorCell {
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) 0;
   text-align: center;
   color: var(--color-text);
 }
@@ -380,11 +514,35 @@
  * scroll area's clipping cannot cover the ring. An outline stays visible in forced colours.
  */
 .headerCell:focus-visible,
+.filterCell:focus-visible,
 .cell:focus-visible,
 .detailCell:focus-visible,
 .errorCell:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+/* The last row closes the body, with no divider under it. */
+.row:last-child .cell {
+  box-shadow: none;
+}
+
+/* Forced colours drop the cells' box-shadow, so the row draws the divider as a border, which they
+   recolour. Rows have no tint there, so a pinned cell covering it at some offsets costs little. */
+@media (forced-colors: active) {
+  .row {
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .row:last-child {
+    border-block-end: 0;
+  }
+}
+
+/* The text of a highlighted or selected row: the selected tint's own text colour. */
+.row[data-highlighted] .cell,
+.row[aria-selected='true'] .cell {
+  color: var(--color-selected-soft-text);
 }
 
 /*
@@ -405,9 +563,23 @@
 
 /* The message fills the body's width, centred, under the header band. */
 .stateCell {
-  padding: var(--space-8) var(--space-5);
+  padding: var(--space-8) 0;
   text-align: center;
   color: var(--color-text-muted);
+}
+
+/*
+ * A cell across a table wider than the scroll area: its content keeps to the scroll area's width (a
+ * maximum, which the grid sets on the scroll area once measured and which, unlike a width, adds
+ * nothing to the table's minimum, so the grid can still shrink) and sticks to its inline start, so
+ * it stays in view as the body scrolls sideways. Unmeasured, there is no maximum. The cell's inline
+ * padding moves here so that it holds at both edges of the view.
+ */
+.inView {
+  position: sticky;
+  inset-inline-start: 0;
+  max-inline-size: var(--data-grid-view-inline-size, none);
+  padding-inline: var(--space-5);
 }
 
 .state {
@@ -415,6 +587,12 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
+}
+
+/* Filtered to nothing: the library's empty state, its heading at the size of a card heading's
+   step up rather than a page section's (the one size hook the empty state reads). */
+.filteredEmpty {
+  --empty-state-heading-size: var(--text-lg);
 }
 
 .spacerCell {

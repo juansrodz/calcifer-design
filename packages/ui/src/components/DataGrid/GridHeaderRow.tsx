@@ -31,6 +31,8 @@ export interface GridHeaderRowProps<Row extends RowData> {
   columnCount: number;
   /** The columns the grid renders before the row's own cells. */
   columnOffset: number;
+  /** Whether the headers sort when pressed; a read-only query still shows its sort. */
+  sortable: boolean;
   /** The checkbox column's select-all cell; absent without checkbox selection. */
   selectAll?: GridHeaderSelectAll;
   /** The expand column's unseen name; absent without expandable rows. */
@@ -48,6 +50,7 @@ export function GridHeaderRow<Row extends RowData>({
   headers,
   columnCount,
   columnOffset,
+  sortable,
   selectAll,
   expandLabel,
   rowActions,
@@ -87,6 +90,7 @@ export function GridHeaderRow<Row extends RowData>({
         <GridHeaderCell
           key={header.id}
           header={header}
+          sortable={sortable}
           ariaColIndex={columnIndex + 1 + columnOffset}
           cellProps={getCellProps(0, columnIndex + columnOffset)}
         />

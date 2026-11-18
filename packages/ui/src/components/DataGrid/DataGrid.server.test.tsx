@@ -1,15 +1,47 @@
 import { composeStories } from '@storybook/react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react';
+import { act, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from '../../../test/axe';
 import { installElementSize } from '../../../test/elementSize';
+import { emulateScrollTo, scrollArea, scrollGridTo } from '../../../test/gridScroll';
 import { DataGrid } from './DataGrid';
 import * as stories from './DataGrid.stories';
-import { inventoryColumns, makeInventoryRows, type InventoryRow } from './fixtures';
+import type * as FixturesModule from './fixtures';
+import {
+  createMockInventoryServer,
+  filterableInventoryColumns,
+  inventoryColumns,
+  makeInventoryRows,
+  type InventoryPage,
+  type InventoryRow,
+} from './fixtures';
+import { createQueryMatcher, emptyDataGridQuery } from './query';
+import type { DataGridQuery } from './types';
 
-const { ServerMode } = composeStories(stories);
+// Every request made of a mock inventory server, the stories' included, so a test can see what
+// the story app asked for.
+const fetchPageRequests = vi.hoisted(() => vi.fn());
+
+vi.mock('./fixtures', async (importOriginal) => {
+  const fixtures = await importOriginal<typeof FixturesModule>();
+  return {
+    ...fixtures,
+    createMockInventoryServer: (options: FixturesModule.MockInventoryServerOptions) => {
+      const server = fixtures.createMockInventoryServer(options);
+      return {
+        ...server,
+        fetchPage: (request: Parameters<typeof server.fetchPage>[0]) => {
+          fetchPageRequests(request);
+          return server.fetchPage(request);
+        },
+      };
+    },
+  };
+});
+
+const { ServerMode, ServerFindingRows } = composeStories(stories);
 
 type GridProps = React.ComponentProps<typeof DataGrid<InventoryRow>>;
 
@@ -32,26 +64,6 @@ function renderGrid(overrides: Partial<GridProps> = {}) {
   return render(gridElement(overrides));
 }
 
-function scrollArea(): HTMLElement {
-  return document.querySelector('[data-grid-scroll]') as HTMLElement;
-}
-
-function scrollGridTo(scrollTop: number) {
-  act(() => {
-    scrollArea().scrollTop = scrollTop;
-    scrollArea().dispatchEvent(new Event('scroll'));
-  });
-}
-
-/** jsdom has no `scrollTo`; a browser scrolls and then fires a scroll event, and so does this. */
-function emulateScrollTo() {
-  const scrollElement = scrollArea();
-  scrollElement.scrollTo = ((options: ScrollToOptions) => {
-    scrollElement.scrollTop = options.top ?? 0;
-    scrollElement.dispatchEvent(new Event('scroll'));
-  }) as typeof scrollElement.scrollTo;
-}
-
 function ariaRowIndexes(): string[] {
   return screen
     .getAllByRole('row')
@@ -59,17 +71,36 @@ function ariaRowIndexes(): string[] {
     .filter((rowIndex): rowIndex is string => rowIndex !== null);
 }
 
-function nameOfEachRow(): (string | null)[] {
+/** The text of one column's cell in each rendered body row, top to bottom. */
+function textOfEachRow(columnName: string): (string | null)[] {
+  const columnIndex = screen
+    .getAllByRole('columnheader')
+    .findIndex((header) => header.textContent === columnName);
   return screen
     .getAllByRole('row')
-    .slice(1)
-    .map((row) => within(row).queryAllByRole('gridcell')[1]?.textContent ?? null);
+    .filter((row) => row.closest('tbody') !== null)
+    .map((row) => within(row).queryAllByRole('gridcell')[columnIndex]?.textContent ?? null);
 }
+
+function nameOfEachRow(): (string | null)[] {
+  return textOfEachRow('Name');
+}
+
+/** How many of the server's 240 inventory rows the test accepts. */
+function countOfServerRowsWhere(test: (row: InventoryRow) => boolean): number {
+  return makeInventoryRows(240).filter(test).length;
+}
+
+// The ServerMode story's walk, with its axe check, takes about a second alone, the slowest of the
+// grid's axe tests, and this file has timed out on a loaded machine; it gets more room. Nothing
+// else changes.
+const axeUnderLoad = { timeout: 15_000 };
 
 let restoreElementSize: () => void;
 
 beforeEach(() => {
   restoreElementSize = installElementSize({ viewportHeight: 400, rowHeight: 40 });
+  fetchPageRequests.mockClear();
 });
 
 afterEach(() => {
@@ -187,6 +218,24 @@ describe('server mode', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(onLoadMore).toHaveBeenCalledTimes(1);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  // The error cell spans the table, which can be wider than the scroll area (a phone), so the
+  // message and its retry button keep to the scroll area's width, where they can be seen.
+  it('keeps the error row to the width of the scroll area', () => {
+    renderGrid({ rows: [], hasMore: true, loadError: 'Could not load rows' });
+
+    const errorBox = screen.getByText('Could not load rows').closest('td')
+      ?.firstElementChild as HTMLElement;
+    // The scroll area is 800px wide in the stubbed layout. The grid sets the width on the scroll
+    // area, and the stylesheet makes it the content's maximum (pinned in token-reads). A maximum,
+    // not a width: a width would count toward the table's minimum and keep the grid from shrinking
+    // in a flex item or a grid track once it had been measured wide.
+    expect(scrollArea()).toContainElement(errorBox);
+    expect(errorBox).toHaveClass('inView');
+    expect(scrollArea().style.getPropertyValue('--data-grid-view-inline-size')).toBe('800px');
+    expect(errorBox.style.inlineSize).toBe('');
+    expect(errorBox).toContainElement(screen.getByRole('button', { name: 'Try again' }));
   });
 
   it('numbers the error row within the rows of the grid', () => {
@@ -391,10 +440,183 @@ describe('server mode', () => {
     renderGrid({ rows: [], hasMore: false });
     expect(screen.getByRole('status')).toHaveTextContent('No rows to show.');
   });
+
+  it('ignores initialQuery filters and search without onQueryChange', () => {
+    const initialQuery: Partial<DataGridQuery> = { filters: { status: 'out' }, search: 'bolt' };
+    const { unmount } = renderGrid({
+      columns: filterableInventoryColumns,
+      rows: [],
+      hasMore: false,
+      initialQuery,
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows to show.');
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+    unmount();
+
+    // With the handler the app filters by the same query, and its answer is empty.
+    renderGrid({
+      columns: filterableInventoryColumns,
+      rows: [],
+      hasMore: false,
+      initialQuery,
+      onQueryChange: vi.fn(),
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.');
+    expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument();
+  });
+});
+
+describe('a controlled query in server mode', () => {
+  const searchedQuery: DataGridQuery = { ...emptyDataGridQuery, search: 'bolt' };
+
+  it('loads more when the app brings a new query and its rows together', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const { rerender } = renderGrid({ query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    // A cache keyed by the query already holds the new query's first page.
+    rerender(
+      gridElement({
+        query: searchedQuery,
+        rows: makeInventoryRows(50).reverse(),
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for new rows when the app changes only the query', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const rows = makeInventoryRows(50);
+    const { rerender } = renderGrid({ rows, query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    rerender(gridElement({ rows, query: searchedQuery, onQueryChange, onLoadMore }));
+    scrollGridTo(40 * 50);
+    // The loaded rows still answer the old query, so nothing more is asked of them.
+    expect(onLoadMore).not.toHaveBeenCalled();
+
+    rerender(
+      gridElement({
+        rows: makeInventoryRows(50).reverse(),
+        query: searchedQuery,
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+});
+
+// A cache keyed by the query answers a query it has seen with the very array it gave before, so
+// when the user goes from A to B and back to A before B's page arrives, the rows on screen are
+// A's again and loading must go on.
+describe('a query that comes back before its new rows', () => {
+  const rows = makeInventoryRows(50);
+
+  it('loads more after the app brings back the first query with the same rows', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const searchedQuery: DataGridQuery = { ...emptyDataGridQuery, search: 'bolt' };
+    const { rerender } = renderGrid({ rows, query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    rerender(gridElement({ rows, query: searchedQuery, onQueryChange, onLoadMore }));
+    rerender(gridElement({ rows, query: { ...emptyDataGridQuery }, onQueryChange, onLoadMore }));
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads more after three header clicks bring the sort back to none', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    renderGrid({ rows, onQueryChange, onLoadMore });
+    emulateScrollTo();
+
+    const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+    await user.click(nameHeader);
+    await user.click(nameHeader);
+    await user.click(nameHeader);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads more after a text filter is typed and then deleted', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    renderGrid({ rows, columns: filterableInventoryColumns, onQueryChange, onLoadMore });
+    emulateScrollTo();
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    const nameFilter = screen.getByRole('searchbox', { name: 'Filter by Name' });
+
+    fireEvent.change(nameFilter, { target: { value: 'hex' } });
+    fireEvent.keyDown(nameFilter, { key: 'Enter' });
+    fireEvent.change(nameFilter, { target: { value: '' } });
+    fireEvent.keyDown(nameFilter, { key: 'Enter' });
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads more after a select filter goes back to All', async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    renderGrid({ rows, columns: filterableInventoryColumns, onQueryChange, onLoadMore });
+    emulateScrollTo();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    const statusFilter = screen.getByRole('combobox', { name: 'Filter by Status' });
+
+    await user.click(statusFilter);
+    await user.click(await screen.findByRole('option', { name: 'Low' }));
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    await user.click(statusFilter);
+    await user.click(await screen.findByRole('option', { name: 'All' }));
+    expect(onQueryChange).toHaveBeenCalledTimes(2);
+    expect(onQueryChange).toHaveBeenLastCalledWith(emptyDataGridQuery);
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('still waits while the query differs from the one the rows answer', () => {
+    const onLoadMore = vi.fn();
+    const onQueryChange = vi.fn();
+    const { rerender } = renderGrid({ rows, query: emptyDataGridQuery, onQueryChange, onLoadMore });
+
+    rerender(
+      gridElement({
+        rows,
+        query: { ...emptyDataGridQuery, search: 'bolt' },
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    rerender(
+      gridElement({
+        rows,
+        query: { ...emptyDataGridQuery, search: 'nut' },
+        onQueryChange,
+        onLoadMore,
+      }),
+    );
+    scrollGridTo(40 * 50);
+
+    expect(onLoadMore).not.toHaveBeenCalled();
+  });
 });
 
 describe('ServerMode story', () => {
-  it('loads, recovers from a failed page and sorts on the server', async () => {
+  it('loads, recovers from a failed page and sorts on the server', axeUnderLoad, async () => {
     const user = userEvent.setup();
     const { container } = render(<ServerMode />);
     expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
@@ -418,5 +640,134 @@ describe('ServerMode story', () => {
     expect(nameOfEachRow()[0]).toBe('Box cutter');
     expect(scrollArea().scrollTop).toBe(0);
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('finding rows in server mode', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('asks the server again when a filter changes', async () => {
+    const user = userEvent.setup();
+    render(<ServerFindingRows />);
+    expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
+    fetchPageRequests.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    await user.click(screen.getByRole('combobox', { name: 'Filter by Status' }));
+    await user.click(await screen.findByRole('option', { name: 'Low' }));
+
+    expect(fetchPageRequests).toHaveBeenCalledTimes(1);
+    expect(fetchPageRequests).toHaveBeenCalledWith({
+      page: 0,
+      query: { ...emptyDataGridQuery, filters: { status: 'low' } },
+    });
+    // The server counts every row that matches, not only the page it sends.
+    const lowCount = countOfServerRowsWhere((row) => row.status === 'low');
+    expect(lowCount).toBeGreaterThan(50);
+    expect(await screen.findByText(`Showing 50 of ${lowCount} rows`)).toBeInTheDocument();
+    expect(textOfEachRow('Status').every((status) => status === 'low')).toBe(true);
+  });
+
+  it('keeps the old rows and does not load more until the new rows arrive', async () => {
+    vi.useFakeTimers();
+    const delayMs = 300;
+    const server = createMockInventoryServer({ total: 240, pageSize: 50, delayMs });
+    const onLoadMore = vi.fn();
+    // An app that says nothing of the wait while the next query's first page is on its way, so
+    // only the grid's own rule keeps it from asking more of the rows on screen meanwhile.
+    function SlowServerApp() {
+      const [page, setPage] = useState<InventoryPage>(() => ({
+        rows: makeInventoryRows(50),
+        total: 240,
+      }));
+      return gridElement({
+        columns: filterableInventoryColumns,
+        rows: page.rows,
+        totalRowCount: page.total,
+        hasMore: page.rows.length < page.total,
+        onLoadMore,
+        onQueryChange: (query) => void server.fetchPage({ page: 0, query }).then(setPage),
+      });
+    }
+    render(<SlowServerApp />);
+    emulateScrollTo();
+
+    // Fake timers hold the server's answer back: the grid is driven with `fireEvent`.
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    const locationFilter = screen.getByRole('searchbox', { name: 'Filter by Location' });
+    act(() => locationFilter.focus());
+    fireEvent.change(locationFilter, { target: { value: 'B-07' } });
+    fireEvent.keyDown(locationFilter, { key: 'Enter' });
+    expect(fetchPageRequests).toHaveBeenLastCalledWith({
+      page: 0,
+      query: { ...emptyDataGridQuery, filters: { location: 'B-07' } },
+    });
+
+    // The rows on screen still answer the old query, at the top and at the end.
+    expect(nameOfEachRow()[0]).toBe('Hex bolt M6');
+    scrollGridTo(40 * 50);
+    expect(onLoadMore).not.toHaveBeenCalled();
+    expect(textOfEachRow('Location')).toContain('A-01');
+    expect(screen.getByText('Showing 50 of 240 rows')).toBeInTheDocument();
+
+    // The first page of the new query lands at the end of the view, so the grid asks for more.
+    await act(() => vi.advanceTimersByTimeAsync(delayMs));
+    const matchCount = countOfServerRowsWhere((row) => row.location === 'B-07');
+    expect(screen.getByText(`Showing 50 of ${matchCount} rows`)).toBeInTheDocument();
+    expect(textOfEachRow('Location').every((location) => location === 'B-07')).toBe(true);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the server again when the search changes', async () => {
+    const user = userEvent.setup();
+    render(<ServerFindingRows />);
+    expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
+    fetchPageRequests.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    await user.keyboard('washer{Enter}');
+
+    expect(fetchPageRequests).toHaveBeenCalledTimes(1);
+    expect(fetchPageRequests).toHaveBeenCalledWith({
+      page: 0,
+      query: { ...emptyDataGridQuery, search: 'washer' },
+    });
+    const washerMatcher = createQueryMatcher(filterableInventoryColumns, {
+      ...emptyDataGridQuery,
+      search: 'washer',
+    });
+    const washerCount = countOfServerRowsWhere((row) => washerMatcher?.(row) ?? true);
+    expect(washerCount).toBeGreaterThan(0);
+    expect(
+      await screen.findByText(`Showing ${Math.min(washerCount, 50)} of ${washerCount} rows`),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the filtered-empty state in server mode', async () => {
+    const user = userEvent.setup();
+    render(<ServerFindingRows />);
+    expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
+    const nameFilter = screen.getByRole('searchbox', { name: 'Filter by Name' });
+    // No item is called that, so the server answers with no rows.
+    await user.type(nameFilter, 'Anvil{Enter}');
+    expect(fetchPageRequests).toHaveBeenLastCalledWith({
+      page: 0,
+      query: { ...emptyDataGridQuery, filters: { name: 'Anvil' } },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('No rows match the search or filters.'),
+    );
+
+    fetchPageRequests.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(fetchPageRequests).toHaveBeenCalledTimes(1);
+    expect(fetchPageRequests).toHaveBeenCalledWith({ page: 0, query: emptyDataGridQuery });
+    expect(await screen.findByText('Showing 50 of 240 rows')).toBeInTheDocument();
+    expect(nameFilter).toHaveValue('');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 });

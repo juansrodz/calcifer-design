@@ -33,7 +33,8 @@ async function collectCssFiles(directory: string): Promise<string[]> {
 // Custom properties the package reads but never declares, on purpose. Base UI sets the first set
 // on the elements it positions or animates (the positioner's anchor and available box, the toast
 // stack's index and offset, the tab list's active-tab box); the second set are the ones a
-// component's own TSX writes into an inline `style`, so no stylesheet declares them.
+// component's own code writes into an inline `style` (the DataGrid's from its resize observer), so
+// no stylesheet declares them.
 const BASE_UI_RUNTIME_PROPERTIES = [
   '--anchor-width',
   '--available-width',
@@ -49,6 +50,7 @@ const UI_INLINE_PROPERTIES = [
   '--tree-level',
   '--text-area-rows',
   '--card-list-min-column',
+  '--data-grid-view-inline-size',
 ] as const;
 
 // Set by a consumer on the component's root or an ancestor, never declared by the library (L2-5, L2-17, L2-20).
@@ -129,6 +131,7 @@ describe('@calcifer-design/ui dist', () => {
       'Timeline',
       'DataGrid',
       'createDataGridColumnHelper',
+      'dataGridSearchPattern',
       'ThemeScope',
       'usePortalContainer',
       'SearchField',
@@ -143,6 +146,15 @@ describe('@calcifer-design/ui dist', () => {
     ]) {
       expect(typeof uiModule[exportName], exportName).toBe('function');
     }
+  });
+
+  // The built helper is the grid's own matcher: `?` stands for one character and the term
+  // matches anywhere in the text, so a server can match exactly as client mode does.
+  it('exports the DataGrid search pattern from dist/index.js', async () => {
+    const uiModule = (await import(path.join(distRoot, 'index.js'))) as {
+      dataGridSearchPattern?: (term: string) => RegExp | null;
+    };
+    expect(uiModule.dataGridSearchPattern?.('ab?d')?.test('xabcdx')).toBe(true);
   });
 
   // `AVATAR_COLOR_COUNT` is a number, so the function list above cannot hold it. Six is the count

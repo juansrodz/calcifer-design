@@ -707,6 +707,99 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
+    // A pressed toggle wears the soft selected pair, as a selected secondary `Button` does.
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^ {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      'background: var(--color-selected-soft);',
+      'color: var(--color-selected-soft-text);',
+    ],
+    lacks: ['--color-accent'],
+  },
+  {
+    // The grid's selected and highlighted rows take the soft selected tint and its text colour.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row\[data-highlighted\],\n\.row\[aria-selected='true'\] \{([^}]*)\}/m,
+    contains: ['background: var(--color-selected-soft);'],
+    lacks: ['--color-accent'],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row\[data-highlighted\] \.cell,\n\.row\[aria-selected='true'\] \.cell \{([^}]*)\}/m,
+    contains: ['color: var(--color-selected-soft-text);'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row\[data-highlighted\] \.cell\.pinnedCell,\n\.row\[aria-selected='true'\] \.cell\.pinnedCell \{([^}]*)\}/m,
+    contains: ['var(--color-selected-soft)'],
+    lacks: ['--color-accent'],
+  },
+  {
+    // The row's divider is each cell's own inset line, so a pinned cell's surface never covers it
+    // and the row itself draws no border to be covered.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.cell \{([^}]*)\}/m,
+    contains: ['box-shadow: inset 0 -1px 0 var(--color-border);'],
+    lacks: [],
+  },
+  {
+    // The last row closes the body with no divider under it.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row:last-child \.cell \{([^}]*)\}/m,
+    contains: ['box-shadow: none;'],
+    lacks: [],
+  },
+  {
+    // The expanded row's own divider is the line above its panel; the panel adds only the one
+    // below, so the two never double.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.detailRow \{([^}]*)\}/m,
+    contains: ['border-block-end: 1px solid var(--color-border);'],
+    lacks: ['border-block:', 'border-block-start'],
+  },
+  {
+    // The state and error rows' content sticks to the scroll area's inline start, so it stays in
+    // view while the body scrolls sideways, and keeps to the width the grid measures and sets on
+    // the scroll area; jsdom lays nothing out, so the stylesheet is the pin.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.inView \{([^}]*)\}/m,
+    contains: [
+      'position: sticky;',
+      'inset-inline-start: 0;',
+      'max-inline-size: var(--data-grid-view-inline-size, none);',
+    ],
+    lacks: [],
+  },
+  {
+    // Forced colours drop box-shadow, so there the row draws its divider as a border again.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.row \{([^}]*)\}/m,
+    contains: ['border-block-end: 1px solid var(--color-border);'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^ {2}\.row:last-child \{([^}]*)\}/m,
+    contains: ['border-block-end: 0;'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.row \{([^}]*)\}/m,
+    contains: ['transition-property: background-color;'],
+    lacks: ['border'],
+  },
+  {
     file: 'components/DatePicker/DatePicker.module.css',
     rule: /^\.day\[aria-selected='true'\] \{([^}]*)\}/m,
     contains: ['background: var(--color-selected);', 'color: var(--color-selected-text);'],
