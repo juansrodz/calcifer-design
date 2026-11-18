@@ -49,6 +49,17 @@ const sansFamily = 'font-family: var(--font-sans);';
 // and `border-radius` do not match.
 const noBorderShorthand = /(?:^|\s)border\s*:/;
 
+// Any declaration that sizes a rule on the block axis or pads it there: a height, a block size, a
+// block padding or margin in any longhand, a line height. `Select`'s trigger keeps `.control`'s
+// floor and padding with a start icon only while the trigger and the icon's row declare none.
+const blockSizing =
+  /(?:^|\s)(?:(?:min-|max-)?height|(?:min-|max-)?block-size|padding(?:-block(?:-start|-end)?|-top|-bottom)?|margin(?:-block(?:-start|-end)?|-top|-bottom)?|line-height)\s*:/;
+
+// A physical side, which would not mirror in a right-to-left page: `left`, `right`, a left or right
+// margin or padding, or a left or right `text-align`.
+const physicalSide =
+  /(?:^|\s)(?:left|right|margin-left|margin-right|padding-left|padding-right)\s*:|text-align:\s*(?:left|right)/;
+
 // The band `AvatarGroup` draws around each avatar and around its overflow chip: the one value both
 // rules are pinned to, so a ring on one and not the other cannot pass.
 const avatarGroupRing = '0 0 0 var(--border-width-emphasis) var(--color-avatar-ring)';
@@ -375,6 +386,28 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.option \{([^}]*)\}/m,
     contains: [sansFamily],
     lacks: [],
+  },
+  // `Select`'s start icon: the slot and the value share `.lead`, a row at the affix gap that takes
+  // the room the chevron leaves. Neither it nor the trigger sizes the block axis, so the trigger keeps
+  // `.control`'s floor and padding, and neither names a physical side, so the row mirrors in a
+  // right-to-left page. The entries carry a leading space: `gap:` alone is also found in `row-gap:`.
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^\.lead \{([^}]*)\}/m,
+    contains: [
+      ' display: flex;',
+      ' flex: 1;',
+      ' align-items: center;',
+      ' gap: var(--space-2);',
+      ' min-width: 0;',
+    ],
+    lacks: [blockSizing, physicalSide],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^\.trigger \{([^}]*)\}/m,
+    contains: [' text-align: start;'],
+    lacks: [blockSizing, physicalSide],
   },
 
   // The purpose radii (R4) and the control floors (R17). A control reads `--radius-control` and
@@ -1792,7 +1825,8 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'styles/field.module.css',
     rule: /^\.affixIcon \{([^}]*)\}/m,
     contains: ['display: inline-flex;', 'flex: none;', 'color: var(--color-text-muted);'],
-    lacks: [],
+    // `Select`'s start icon wears this rule too, so its content alone sets its height.
+    lacks: [blockSizing],
   },
   {
     file: 'styles/field.module.css',

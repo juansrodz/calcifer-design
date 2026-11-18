@@ -35,13 +35,16 @@ export interface SelectProps extends FieldFrameProps {
    * the prop.
    *
    * It is decorative: the slot is `aria-hidden`, so nothing in it (an avatar's hidden name
-   * included) joins the trigger's accessible name, which stays the `label`, or the value announced
-   * with it. A press on it opens the select like any other press on the trigger. Keep it phrasing content with nothing focusable inside, since it
-   * sits in a `<button>`. When it carries meaning the value text does not, say it in words the
-   * trigger already reads: the option's `label` (`'Sebastian (host)'`) or the `description`.
+   * included) is announced with the trigger, whose name stays the `label`. A press on it opens the
+   * select like any other press on the trigger. Keep it phrasing content with nothing focusable
+   * inside, since it sits in a `<button>`. When it carries meaning the value text does not, say it
+   * in words the trigger already reads: the option's `label` (`'Sebastian (host)'`) or the
+   * `description`.
    *
-   * The trigger keeps its 44 px floor; content up to 26 px tall fits inside it unchanged, and
-   * taller content grows the trigger.
+   * The trigger keeps its 44 px floor. At the default root font size, content up to 26 px tall
+   * fits inside it unchanged (a 24 px `Avatar size="xs"` does); taller content grows the trigger.
+   * The padding, the avatar and the value text are in rem and the floor is in px, so at a larger
+   * root font size the trigger grows with them.
    */
   startIcon?: ReactNode;
   /**
@@ -87,7 +90,7 @@ export function Select({
   sideOffset = 8,
 }: SelectProps) {
   const container = usePortalContainer();
-  const valueText = <BaseSelect.Value className={styles.value} placeholder={placeholder} />;
+  const valueDisplay = <BaseSelect.Value className={styles.value} placeholder={placeholder} />;
   return (
     <BaseField.Root
       className={fieldStyles.frame}
@@ -127,10 +130,10 @@ export function Select({
               <span className={fieldStyles.affixIcon} aria-hidden="true">
                 {startIcon}
               </span>
-              {valueText}
+              {valueDisplay}
             </span>
           ) : (
-            valueText
+            valueDisplay
           )}
           <BaseSelect.Icon className={styles.icon}>
             <ChevronDownIcon />
