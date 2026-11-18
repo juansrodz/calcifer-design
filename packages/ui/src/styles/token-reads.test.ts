@@ -1117,6 +1117,15 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 0;'],
     lacks: [],
   },
+  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back from
+  // the block (its rules tie with the `@supports` rule and the base rules, and win by coming later).
+  // Every rule inside the block is indented, so the first `}` at the start of a line closes it.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
   {
     // The dimmed fill and ink sit inside the `@supports` block, and nothing else in the file mixes a
     // colour: a browser without `color-mix()` keeps the house 0.45 opacity of `.root[data-disabled]`
@@ -2760,6 +2769,14 @@ const expectations: ReadonlyArray<Expectation> = [
       'border-top-color: var(--spinner-head);',
     ],
     lacks: ['--color-accent', '--color-border-strong'],
+  },
+  // Nothing follows the block either: the forced rule ties the base `.root` at (0,1,0) and wins by
+  // coming later, so a rule appended after it would win the borders back.
+  {
+    file: 'components/Spinner/Spinner.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
 ];
 
