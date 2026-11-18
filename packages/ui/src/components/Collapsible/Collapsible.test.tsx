@@ -169,7 +169,7 @@ describe('Collapsible', () => {
       expect(chevronOf('Mains')).toHaveAttribute('data-chevron', 'down-up');
     });
 
-    it('is marked end-down when asked: toward the reading end while closed, down while open', () => {
+    it('is marked end-down when asked, with the reading direction it turns by', () => {
       render(<Default chevron="end-down" />);
       const chevron = chevronOf('Mains');
       expect(chevron).toHaveAttribute('data-chevron', 'end-down');
