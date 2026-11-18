@@ -44,19 +44,21 @@ function idsOfRowsWhere(test: (row: InventoryRow) => boolean): string[] {
     .map((row) => row.id);
 }
 
+/** Every rendered row of the body, top to bottom. */
+function bodyRows(): HTMLElement[] {
+  return screen.getAllByRole('row').filter((row) => row.closest('tbody') !== null);
+}
+
 /** The text of one column's cell in every rendered body row, top to bottom. */
 function cellTextsOf(columnName: string): string[] {
   const columnIndex = screen
     .getAllByRole('columnheader')
     .findIndex((header) => header.textContent === columnName);
-  return screen
-    .getAllByRole('row')
-    .filter((row) => row.closest('tbody') !== null)
-    .flatMap((row) => {
-      const cells = within(row).queryAllByRole('gridcell');
-      // The state row is one cell across every column.
-      return cells.length > 1 ? [cells[columnIndex]?.textContent ?? ''] : [];
-    });
+  return bodyRows().flatMap((row) => {
+    const cells = within(row).queryAllByRole('gridcell');
+    // The state row is one cell across every column.
+    return cells.length > 1 ? [cells[columnIndex]?.textContent ?? ''] : [];
+  });
 }
 
 /** The custom property the grid sets on the scroll area: its measured inner width. */
@@ -1269,10 +1271,6 @@ describe('the filter strip', () => {
     return screen.getByRole('searchbox', { name: `Filter by ${columnName}` });
   }
 
-  function bodyRows(): HTMLElement[] {
-    return screen.getAllByRole('row').filter((row) => row.closest('tbody') !== null);
-  }
-
   /** An app holding the query itself, as the grid reports it. */
   function ControlledGrid({ onQueryChange }: { onQueryChange: (query: DataGridQuery) => void }) {
     const [query, setQuery] = useState<DataGridQuery>(emptyDataGridQuery);
@@ -2007,12 +2005,9 @@ describe('the choice filters', () => {
 // declares the column's `filter` so that the grid matches it. `enableFilters={false}` keeps that
 // matching and leaves out the grid's own filter controls.
 describe('enableFilters', () => {
-  function stripRow(): HTMLElement | null {
+  /** The filter strip's row, or null while there is none. */
+  function queryStripRow(): HTMLElement | null {
     return document.querySelector<HTMLElement>('thead tr[aria-rowindex="2"]');
-  }
-
-  function bodyRows(): HTMLElement[] {
-    return screen.getAllByRole('row').filter((row) => row.closest('tbody') !== null);
   }
 
   it('offers the filters by default', () => {
@@ -2030,7 +2025,7 @@ describe('enableFilters', () => {
     expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-    expect(stripRow()).toBeNull();
+    expect(queryStripRow()).toBeNull();
     expect(screen.getAllByRole('rowgroup')[0]?.querySelectorAll('tr')).toHaveLength(1);
   });
 
@@ -2107,12 +2102,12 @@ describe('enableFilters', () => {
     };
     const { rerender } = render(<DataGrid<InventoryRow> {...props} />);
     await user.click(screen.getByRole('button', { name: 'Filters' }));
-    expect(stripRow()).not.toBeNull();
+    expect(queryStripRow()).not.toBeNull();
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', String(rowTotal + 2));
 
     rerender(<DataGrid<InventoryRow> {...props} enableFilters={false} />);
 
-    expect(stripRow()).toBeNull();
+    expect(queryStripRow()).toBeNull();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.getByRole('grid')).toHaveAttribute('aria-rowcount', String(rowTotal + 1));
     expect(bodyRows()[0]).toHaveAttribute('aria-rowindex', '2');
