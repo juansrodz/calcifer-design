@@ -2722,6 +2722,35 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['forced-color-adjust: none;', 'background: Highlight;'],
     lacks: [],
   },
+
+  // `Spinner`: a ring with one quarter in the accent colour. Forced colours collapse every border to
+  // the text colour, so the ring was uniform and its rotation invisible, and an ancestor with
+  // `forced-color-adjust: none` (a pressed control) let the token colours through. The forced rule
+  // names the colours: a head in the ink the spinner inherits (a local property holds `currentcolor`
+  // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
+  // thinner `GrayText` track, so the head is told apart by its weight and not by colour alone (`GrayText`
+  // and the text colour are close in luminance). The head keeps its width; the track is 1 px.
+  {
+    file: 'components/Spinner/Spinner.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'border: var(--border-width-emphasis) solid var(--color-border-strong);',
+      'border-top-color: var(--color-accent);',
+    ],
+    lacks: ['GrayText', 'currentcolor'],
+  },
+  {
+    file: 'components/Spinner/Spinner.module.css',
+    rule: /^\.root \{[\s\S]*?^@media \(forced-colors: active\) \{\n {2}\.root \{([^}]*)\}/m,
+    contains: [
+      '--spinner-head: currentcolor;',
+      'border-width: 1px;',
+      'border-top-width: var(--border-width-emphasis);',
+      'border-color: GrayText;',
+      'border-top-color: var(--spinner-head);',
+    ],
+    lacks: ['--color-accent', '--color-border-strong'],
+  },
 ];
 
 // The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each
@@ -2783,32 +2812,3 @@ describe('AvatarGroup’s chip box', () => {
     expect(groupSizes).toEqual(avatarPresets);
   });
 });
-
-  // `Spinner`: a ring with one quarter in the accent colour. Forced colours collapse every border to
-  // the text colour, so the ring was uniform and its rotation invisible, and an ancestor with
-  // `forced-color-adjust: none` (a pressed control) let the token colours through. The forced rule
-  // names the colours: a head in the ink the spinner inherits (a local property holds `currentcolor`
-  // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
-  // thinner `GrayText` track, so the head is told apart by its weight and not by colour alone (`GrayText`
-  // and the text colour are close in luminance). The head keeps its width; the track is 1 px.
-  {
-    file: 'components/Spinner/Spinner.module.css',
-    rule: /^\.root \{([^}]*)\}/m,
-    contains: [
-      'border: var(--border-width-emphasis) solid var(--color-border-strong);',
-      'border-top-color: var(--color-accent);',
-    ],
-    lacks: ['GrayText', 'currentcolor'],
-  },
-  {
-    file: 'components/Spinner/Spinner.module.css',
-    rule: /^\.root \{[\s\S]*?^@media \(forced-colors: active\) \{\n {2}\.root \{([^}]*)\}/m,
-    contains: [
-      '--spinner-head: currentcolor;',
-      'border-width: 1px;',
-      'border-top-width: var(--border-width-emphasis);',
-      'border-color: GrayText;',
-      'border-top-color: var(--spinner-head);',
-    ],
-    lacks: ['--color-accent', '--color-border-strong'],
-  },
