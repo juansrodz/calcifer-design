@@ -1137,6 +1137,17 @@ describe('Tree', () => {
      * differs, so a render in the middle of a branch opening leaves the running turn alone. jsdom
      * computes no transform; a real browser's `getAnimations()` is checked in the story's play.
      */
+    const watchDirectionWrites = (target: Node, options: MutationObserverInit = {}) => {
+      const observer = new MutationObserver(() => {});
+      observer.observe(target, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['data-direction', 'data-direction-changing'],
+        ...options,
+      });
+      return observer;
+    };
+
     const directionWrites = (observer: MutationObserver) =>
       observer.takeRecords().map((record) => [record.attributeName, record.oldValue]);
 
@@ -1148,13 +1159,7 @@ describe('Tree', () => {
 
     it('is written on mount with the turns held still, and the hold comes off again', () => {
       const container = document.body.appendChild(document.createElement('div'));
-      const observer = new MutationObserver(() => {});
-      observer.observe(container, {
-        attributes: true,
-        attributeOldValue: true,
-        attributeFilter: ['data-direction', 'data-direction-changing'],
-        subtree: true,
-      });
+      const observer = watchDirectionWrites(container, { subtree: true });
       try {
         render(inDirection('rtl'), { container });
         expect(directionWrites(observer)).toEqual([
@@ -1173,12 +1178,7 @@ describe('Tree', () => {
     it('is left alone by a render that finds it unchanged, and held still when it changes', () => {
       const { rerender } = render(inDirection('ltr'));
       const tree = screen.getByRole('tree');
-      const observer = new MutationObserver(() => {});
-      observer.observe(tree, {
-        attributes: true,
-        attributeOldValue: true,
-        attributeFilter: ['data-direction', 'data-direction-changing'],
-      });
+      const observer = watchDirectionWrites(tree);
       try {
         rerender(inDirection('ltr'));
         expect(directionWrites(observer)).toEqual([]);
