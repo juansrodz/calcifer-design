@@ -553,10 +553,8 @@ describe('virtualisation', () => {
       expect(above + rows.length * rowHeight + below).toBe(totalHeight);
     });
 
-    // One pixel short of the band: the band sticks 1px above the scroll area's top edge, so a row
-    // padded by the band's full height would land 1px below it, its top line a pixel clear of the
-    // band's hairline (line, gap, line). One pixel short sets the two lines together, and the
-    // focused cell's whole focus ring stays below the band; two short would hide the ring's top.
+    // The padding is one pixel short of the band's height (`rowAlignmentPadding` in DataGrid.tsx):
+    // the band sticks 1px above the scroll area's top edge. Two short would hide the ring's top.
     it('brings a row the band covers into view right under it', async () => {
       const user = userEvent.setup();
       render(<Large />);

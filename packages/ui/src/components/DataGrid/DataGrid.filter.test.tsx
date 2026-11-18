@@ -276,8 +276,9 @@ describe('the filtered-empty state', () => {
     const heading = within(screen.getByRole('grid')).getByRole('heading', {
       name: 'No rows match the search or filters.',
     });
-    expect(heading.parentElement).toHaveAttribute('data-bare', '');
-    expect(heading.parentElement).toHaveClass('filteredEmpty');
+    const emptyState = heading.parentElement;
+    expect(emptyState).toHaveAttribute('data-bare', '');
+    expect(emptyState).toHaveClass('filteredEmpty');
   });
 
   // The state cell spans the table, which can be wider than the scroll area (a phone), so the

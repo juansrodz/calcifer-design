@@ -746,9 +746,8 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     // A body row's divider is the line along the top of each of its cells, drawn by every row but
-    // the first. A pinned cell is sticky, and a sticky box's top edge lands on the same device pixel
-    // as its neighbours' while its bottom edge can land one off, so a line along the bottom went
-    // missing or jogged in the pinned columns at fractional row offsets.
+    // the first. Along the bottom, a pinned (sticky) cell's line went missing or jogged at
+    // fractional row offsets; the stylesheet says why.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^tr:not\(:first-child\) > :is\(\.cell, \.detailCell, \.errorCell\) \{([^}]*)\}/m,
     contains: ['box-shadow: inset 0 1px 0 var(--color-border);'],
@@ -762,6 +761,7 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['inset 0 -1px 0', /^\.row:last-child \.cell/m, /^\.detailRow \{/m],
   },
   {
+    // The divider rule above is the only place a cell gets a shadow.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.cell \{([^}]*)\}/m,
     contains: [],
@@ -769,9 +769,8 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     // The grid's checkboxes are blocks centred in their cells, not inline boxes on the cell's text
-    // baseline: there a box sat above the cell's middle, by 3.2px unchecked and 1.7px checked (an
-    // empty box's baseline is its bottom edge, a ticked one's the tick's). Two classes, so the
-    // field skin's `display: inline-flex` loses whatever order the two stylesheets load in.
+    // baseline, where a box sat above the middle by 3.2px unchecked and 1.7px checked. Two classes,
+    // so the field skin's `display: inline-flex` loses in whatever order the stylesheets load.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.selectHeader > \.checkbox,\n\.selectCell > \.checkbox \{([^}]*)\}/m,
     contains: ['display: flex;', 'margin-inline: auto;'],
@@ -832,7 +831,7 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // So the header cells draw only their bottom hairline, and the row actions header no top one.
+    // The header cells draw only their bottom hairline: the top one is the scroll area's border.
     file: 'components/DataGrid/DataGrid.module.css',
     contains: [],
     lacks: [/\.headerCell::before/],
@@ -844,6 +843,8 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['inset-block-start'],
   },
   {
+    // The row actions header's hairline joins that border to the bottom one, so it draws no top
+    // line of its own.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.headerCell\.actionsHeader::after \{([^}]*)\}/m,
     contains: ['border-block-start: 0;', 'border-block-end: 1px solid var(--color-border);'],

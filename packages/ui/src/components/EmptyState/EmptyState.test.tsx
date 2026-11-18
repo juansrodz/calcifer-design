@@ -61,11 +61,13 @@ describe('EmptyState', () => {
   it('is a card unless bare: bare writes data-bare, which drops its surface and shadow', () => {
     const { container, rerender } = render(<Default />);
     expect(rootOf(container)).not.toHaveAttribute('data-bare');
+
     rerender(<Default bare />);
-    expect(rootOf(container)).toHaveAttribute('data-bare', '');
+    const root = rootOf(container);
+    expect(root).toHaveAttribute('data-bare', '');
     // The tone and the alignment are still written, so the bare box keeps their rules.
-    expect(rootOf(container)).toHaveAttribute('data-tone', 'neutral');
-    expect(rootOf(container)).toHaveAttribute('data-align', 'center');
+    expect(root).toHaveAttribute('data-tone', 'neutral');
+    expect(root).toHaveAttribute('data-align', 'center');
   });
 
   it('makes the actions reachable by Tab', async () => {

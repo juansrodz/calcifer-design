@@ -382,13 +382,13 @@ describe('checkbox selection', () => {
   // cell's text baseline sat above the cell's middle, by more unchecked than checked.
   it('gives the header and row checkboxes the class that centres them in their cells', () => {
     renderGrid({ selectionMode: 'multiple', defaultSelectedRowIds: ['item-2'] });
+    const selectAll = selectAllCheckbox();
     const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes).toHaveLength(11);
     for (const checkbox of checkboxes) {
+      const cellClass = checkbox === selectAll ? 'selectHeader' : 'selectCell';
       expect(checkbox).toHaveClass('checkbox');
-      expect(checkbox.parentElement).toHaveClass(
-        checkbox === selectAllCheckbox() ? 'selectHeader' : 'selectCell',
-      );
+      expect(checkbox.parentElement).toHaveClass(cellClass);
     }
   });
 
