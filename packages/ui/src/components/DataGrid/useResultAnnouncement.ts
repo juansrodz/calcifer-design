@@ -56,6 +56,7 @@ export function useResultAnnouncement({
     if (pendingChange === null || waiting) return;
     const timer = setTimeout(() => {
       setPendingChange(null);
+      // A guard only: the render-time clear above would empty a count set while silenced anyway.
       if (!silencedRef.current) setText(messageRef.current());
     }, resultAnnouncementDelayMs);
     return () => clearTimeout(timer);
