@@ -1325,9 +1325,9 @@ const expectations: ReadonlyArray<Expectation> = [
   // `Button`'s fill hooks: `--button-fill`, `--button-fill-hover`, `--button-label-color` and
   // `--button-label-color-hover`, set from a consumer's class. The variant, tone and state rules
   // set only the library's defaults (`--button-default-background`, `--button-default-color`), and
-  // one rule paints them, under the hook for the state. The private names end in `background` and
-  // `color`, so the rows above still find each default's token, and these rows pin a painted
-  // property with a leading space. Nothing in the file declares a hook, so a consumer's class wins
+  // one rule paints them, under the hook for the state. The rows above pin each default by its full
+  // private name; these pin the hooks and the paint, a declaration with a leading space so a longer
+  // property name cannot match it. Nothing in the file declares a hook, so a consumer's class wins
   // in every state at any weight, with no `[data-tone]` to match.
   {
     file: 'components/Button/Button.module.css',
