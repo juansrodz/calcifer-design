@@ -62,9 +62,17 @@ assets. It needs Docker and a prior `bun run build:docs`, which is why it is not
 | `bun run typecheck`       | Builds tokens, then root `tsc`, then each workspace's own typecheck (ui builds itself first so its CSS Module types exist) |
 | `bun run storybook`       | Storybook on port 6006                                                                                                     |
 | `bun run storybook:build` | Static Storybook into `packages/ui/storybook-static`                                                                       |
+| `bun run storybook:test`  | Every story, its play function and its axe check in headless Chromium, against the build in `packages/ui/storybook-static` |
 | `bun run changeset`       | Add a changeset (CI requires one for any package change)                                                                   |
 | `bun run release`         | Stage unpublished versions on npmjs from CI (`main`); publishes directly when run by hand with 2FA                         |
-| `bun run check`           | lint, typecheck, test, build, dist test, Storybook build                                                                   |
+| `bun run check`           | lint, typecheck, test, build, dist test, Storybook build, Storybook test                                                   |
+
+`storybook:test` runs whatever build is in `packages/ui/storybook-static` (it only checks that
+one exists), so run `storybook:build` first; `check` does both, in order. The first run on a
+machine needs Playwright's headless Chromium, once:
+`./node_modules/.bin/playwright install --only-shell chromium` from the repo root (CI runs the
+same with `--with-deps`). Playwright's own hint, `npx playwright install`, downloads every
+browser instead of the one these tests use.
 
 Releases: every merge to `main` with a pending changeset stages a release on npmjs, which a
 maintainer then approves with 2FA; `main` is always what is staged. See
