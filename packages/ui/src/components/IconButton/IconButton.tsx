@@ -2,6 +2,7 @@ import { Button as BaseButton } from '@base-ui/react/button';
 import type { ComponentPropsWithoutRef } from 'react';
 import { Spinner } from '../Spinner/Spinner';
 import styles from './IconButton.module.css';
+import { IconButtonContent } from './IconButtonContent';
 
 export type IconButtonVariant = 'primary' | 'secondary' | 'ghost' | 'soft';
 export type IconButtonSize = 'md' | 'sm';
@@ -39,8 +40,11 @@ export interface IconButtonProps extends Omit<
   className?: string;
 }
 
-const BADGE_CAP = 99;
-
+/**
+ * A square button that holds a glyph and no text. It acts on the current page; for navigation,
+ * use `LinkIconButton`, which looks the same and is announced as a link. A router link passed to
+ * `render` here is still announced as a button and activates on Space.
+ */
 export function IconButton({
   label,
   variant = 'ghost',
@@ -74,12 +78,7 @@ export function IconButton({
       // A caller's own `aria-pressed`, written before `pressed` existed, stands until it is given.
       aria-pressed={pressed ?? rest['aria-pressed']}
     >
-      <span className={styles.icon}>{loading ? <Spinner size="sm" /> : children}</span>
-      {badge !== undefined && badge > 0 ? (
-        <span className={styles.badge} aria-hidden="true">
-          {badge > BADGE_CAP ? `${BADGE_CAP}+` : badge}
-        </span>
-      ) : null}
+      <IconButtonContent icon={loading ? <Spinner size="sm" /> : children} badge={badge} />
     </BaseButton>
   );
 }

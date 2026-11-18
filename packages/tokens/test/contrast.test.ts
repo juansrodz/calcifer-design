@@ -36,9 +36,16 @@ describe('contrast pair lists only name opaque hex colours', () => {
  * WCAG 1.4.11: the unchecked checkbox and the radio are known by their boundary alone, so it must
  * reach 3:1 against whatever it sits on. `borderStrong` is a translucent hairline (about 1.4:1 on
  * the raised surface); `borderControl` is the opaque colour a control's boundary reads instead.
+ * `surface3` is the deepest surface a control sits on (a pressed row, a nested panel).
  */
 describe('the control boundary', () => {
-  const controlSurfaces = ['surface1', 'surface2', 'surfaceRaised', 'surfaceInput'] as const;
+  const controlSurfaces = [
+    'surface1',
+    'surface2',
+    'surface3',
+    'surfaceRaised',
+    'surfaceInput',
+  ] as const;
 
   for (const [themeName, theme] of Object.entries(themes)) {
     for (const surface of controlSurfaces) {
@@ -54,5 +61,21 @@ describe('the control boundary', () => {
     for (const surface of controlSurfaces) {
       expect(uiContrastPairs).toContainEqual(['borderControl', surface]);
     }
+  });
+});
+
+/**
+ * An invalid checkbox or radio draws its boundary in `danger` around the input fill
+ * (`surfaceInput`), so `danger` is held to 3:1 there as well as on the four page surfaces.
+ */
+describe('the danger colour on a field', () => {
+  for (const [themeName, theme] of Object.entries(themes)) {
+    it(`${themeName}: danger reaches 3:1 on surfaceInput`, () => {
+      expect(contrastRatio(theme.color.danger, theme.color.surfaceInput)).toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  it('is held to 3:1 for every theme, through the ui pair list', () => {
+    expect(uiContrastPairs).toContainEqual(['danger', 'surfaceInput']);
   });
 });

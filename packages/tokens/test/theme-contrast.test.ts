@@ -346,6 +346,51 @@ describe('checkThemeContrast', () => {
     }
   });
 
+  it('holds borderControl to 3:1 on surface3, the deepest surface a control sits on', () => {
+    // A dark surface3 one step too light for the house control border: 2.74:1.
+    const theme = defineTheme({
+      className: 'theme-deep-surface3',
+      dark: { color: { surface3: '#4A4A51' } },
+    });
+
+    const borderViolations = checkThemeContrast(theme).filter(
+      (violation) => violation.foreground === 'borderControl',
+    );
+
+    expect(borderViolations).toEqual([
+      {
+        mode: 'dark',
+        foreground: 'borderControl',
+        background: 'surface3',
+        kind: 'ratio',
+        ratio: contrastRatio(theme.dark.color.borderControl, theme.dark.color.surface3),
+        required: 3,
+      },
+    ]);
+  });
+
+  it('holds danger to 3:1 on surfaceInput, the fill an invalid checkbox draws it around', () => {
+    const theme = defineTheme({
+      className: 'theme-red-input',
+      light: { color: { surfaceInput: '#E06060' } },
+    });
+
+    const dangerViolations = checkThemeContrast(theme).filter(
+      (violation) => violation.foreground === 'danger',
+    );
+
+    expect(dangerViolations).toEqual([
+      {
+        mode: 'light',
+        foreground: 'danger',
+        background: 'surfaceInput',
+        kind: 'ratio',
+        ratio: contrastRatio(theme.light.color.danger, theme.light.color.surfaceInput),
+        required: 3,
+      },
+    ]);
+  });
+
   it('throws for an object defineTheme did not make', () => {
     const house = defineTheme({ className: 'theme-house' });
     // Object.entries lists string keys only, so the brand symbol is left behind.
