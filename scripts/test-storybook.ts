@@ -37,7 +37,7 @@ const server = Bun.serve({
 
 const runner = Bun.spawn(
   [
-    resolve(uiDirectory, 'node_modules/.bin/test-storybook'),
+    resolve(repoRoot, 'node_modules/.bin/test-storybook'),
     '--url',
     `http://127.0.0.1:${server.port}`,
     ...process.argv.slice(2),
