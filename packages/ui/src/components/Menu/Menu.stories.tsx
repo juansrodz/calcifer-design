@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { expect, fn, screen, userEvent, within } from 'storybook/test';
+import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Menu } from './Menu';
 
@@ -34,6 +34,8 @@ export const KeyboardOpen: Story = {
     const canvas = within(canvasElement);
     canvas.getByRole('button', { name: 'Remote actions' }).focus();
     await userEvent.keyboard('{ArrowDown}');
-    await expect(await screen.findByRole('menuitem', { name: 'Reload manifest' })).toHaveFocus();
+    const firstItem = await screen.findByRole('menuitem', { name: 'Reload manifest' });
+    // Base UI moves focus to the item after the popup mounts, a moment after it is in the DOM.
+    await waitFor(() => expect(firstItem).toHaveFocus());
   },
 };
