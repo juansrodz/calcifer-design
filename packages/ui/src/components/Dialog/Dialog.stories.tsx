@@ -67,24 +67,24 @@ export const KeyboardOpen: Story = {
 /**
  * A sheet that opens from a card's title and takes the title away while it is open, as an item
  * sheet does when the list behind it re-renders. Base UI has no trigger or focused control left
- * to return to, so `finalFocus` names where focus goes on close: the "Back to the list" button.
- * Without it, focus would fall to the page body.
+ * to return to, so `finalFocus` names where focus goes on close: the "Potluck dinners" heading,
+ * which needs `tabIndex={-1}` to take focus. Without it, focus would fall to the page body.
  */
 export const FinalFocus: Story = {
   args: { variant: 'sheet', trigger: undefined, heading: 'Potluck salad' },
   render: function FinalFocusRender(args) {
     const [open, setOpen] = useState(false);
-    const returnRef = useRef<HTMLButtonElement>(null);
+    const returnRef = useRef<HTMLHeadingElement>(null);
     return (
       <>
+        <h3 ref={returnRef} tabIndex={-1}>
+          Potluck dinners
+        </h3>
         {open ? null : (
           <Button variant="secondary" onClick={() => setOpen(true)}>
             Open item
           </Button>
         )}
-        <Button variant="secondary" nativeButton render={<button ref={returnRef} type="button" />}>
-          Back to the list
-        </Button>
         <Dialog
           {...args}
           open={open}
@@ -102,7 +102,7 @@ export const FinalFocus: Story = {
     await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
     await userEvent.keyboard('{Escape}');
     await waitFor(() =>
-      expect(canvas.getByRole('button', { name: 'Back to the list' })).toHaveFocus(),
+      expect(canvas.getByRole('heading', { name: 'Potluck dinners' })).toHaveFocus(),
     );
   },
 };

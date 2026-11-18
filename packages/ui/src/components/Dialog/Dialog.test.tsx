@@ -10,7 +10,7 @@ import { Field } from '../Field/Field';
 import { TextInput } from '../TextInput/TextInput';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { demoTheme } from '../ThemeScope/fixtures';
-import { Dialog } from './Dialog';
+import { Dialog, type DialogVariant, type SheetSide } from './Dialog';
 import * as stories from './Dialog.stories';
 
 const {
@@ -288,25 +288,72 @@ describe('Dialog', () => {
   // when there is one. A dialog opened from a URL, or whose opener unmounts while it is open,
   // leaves it nowhere to go, so the page says where with `finalFocus`.
   describe('the focus returned on close', () => {
-    type ReturnMode = 'none' | 'ref' | 'function' | 'off';
+    type ReturnMode =
+      'none' | 'ref' | 'function' | 'recording' | 'null' | 'nothing' | 'true' | 'off';
+    /** What the return ref points at: Base UI focuses it only if it can take focus. */
+    type Target = 'button' | 'heading' | 'plainHeading' | 'headingWithLink';
 
     function ItemPage({
       returnMode,
+      target = 'button',
       keepOpener = true,
       startOpen = false,
+      movesFocusOnClose = false,
+      closeTypes,
+      variant,
+      side,
     }: {
       returnMode: ReturnMode;
+      target?: Target;
       keepOpener?: boolean;
       startOpen?: boolean;
+      /** The page's own close handler focuses "Somewhere else" as the dialog closes. */
+      movesFocusOnClose?: boolean;
+      closeTypes?: string[];
+      variant?: DialogVariant;
+      side?: SheetSide;
     }) {
       const [open, setOpen] = useState(startOpen);
-      const returnRef = useRef<HTMLButtonElement>(null);
+      const returnRef = useRef<HTMLElement | null>(null);
+      const elsewhereRef = useRef<HTMLButtonElement>(null);
       const finalFocus = {
         none: undefined,
         ref: returnRef,
         function: () => returnRef.current,
+        recording: (closeType: string) => {
+          closeTypes?.push(closeType);
+          return returnRef.current;
+        },
+        null: () => null,
+        nothing: () => undefined,
+        true: true,
         off: false,
       }[returnMode];
+      const attachReturnRef = (element: HTMLElement | null) => {
+        returnRef.current = element;
+      };
+      const targets = {
+        button: (
+          <button ref={attachReturnRef} data-testid="return-target" type="button">
+            Back to the list
+          </button>
+        ),
+        heading: (
+          <h3 ref={attachReturnRef} data-testid="return-target" tabIndex={-1}>
+            Back to the list
+          </h3>
+        ),
+        plainHeading: (
+          <h3 ref={attachReturnRef} data-testid="return-target">
+            Back to the list
+          </h3>
+        ),
+        headingWithLink: (
+          <h3 ref={attachReturnRef} data-testid="return-target" tabIndex={-1}>
+            <a href="#list">Back to the list</a>
+          </h3>
+        ),
+      };
       return (
         <>
           {open && !keepOpener ? null : (
@@ -314,15 +361,29 @@ describe('Dialog', () => {
               Open item
             </button>
           )}
-          <button ref={returnRef} type="button">
-            Back to the list
+          {targets[target]}
+          <button ref={elsewhereRef} type="button">
+            Somewhere else
           </button>
-          <Dialog heading="The item" open={open} onOpenChange={setOpen} finalFocus={finalFocus}>
+          <Dialog
+            heading="The item"
+            variant={variant}
+            side={side}
+            open={open}
+            onOpenChange={(nextOpen) => {
+              setOpen(nextOpen);
+              if (movesFocusOnClose && !nextOpen) elsewhereRef.current?.focus();
+            }}
+            finalFocus={finalFocus}
+          >
             <p>Body.</p>
           </Dialog>
         </>
       );
     }
+
+    const getTarget = () => screen.getByTestId('return-target');
+    const getOpener = () => screen.getByRole('button', { name: 'Open item' });
 
     async function closeWithEscape() {
       const popup = await screen.findByRole('dialog');
@@ -333,6 +394,11 @@ describe('Dialog', () => {
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     }
 
+    async function openFromOpenerAndClose() {
+      await userEvent.click(getOpener());
+      await closeWithEscape();
+    }
+
     it.each([
       ['a ref', 'ref'],
       ['a function', 'function'],
@@ -341,46 +407,157 @@ describe('Dialog', () => {
       async (_form, returnMode) => {
         render(<ItemPage returnMode={returnMode} startOpen />);
         await closeWithEscape();
-        expect(screen.getByRole('button', { name: 'Back to the list' })).toHaveFocus();
+        expect(getTarget()).toHaveFocus();
       },
     );
 
+    it.each([
+      ['a centred dialog', 'center', undefined],
+      ['a bottom sheet', 'sheet', 'bottom'],
+      ['an end sheet', 'sheet', 'end'],
+    ] as const)('does so for %s', async (_name, variant, side) => {
+      render(<ItemPage returnMode="ref" variant={variant} side={side} startOpen />);
+      await closeWithEscape();
+      expect(getTarget()).toHaveFocus();
+    });
+
     it('sends focus there when the control that opened the dialog has unmounted', async () => {
       render(<ItemPage returnMode="ref" keepOpener={false} />);
-      await userEvent.click(screen.getByRole('button', { name: 'Open item' }));
-      await closeWithEscape();
-      expect(screen.getByRole('button', { name: 'Back to the list' })).toHaveFocus();
+      await openFromOpenerAndClose();
+      expect(getTarget()).toHaveFocus();
     });
 
     it('prefers the named element to the control that opened the dialog', async () => {
       render(<ItemPage returnMode="ref" />);
-      await userEvent.click(screen.getByRole('button', { name: 'Open item' }));
+      await openFromOpenerAndClose();
+      expect(getTarget()).toHaveFocus();
+      expect(getOpener()).not.toHaveFocus();
+    });
+
+    it('hands a function how the dialog was closed', async () => {
+      const closeTypes: string[] = [];
+      render(<ItemPage returnMode="recording" closeTypes={closeTypes} startOpen />);
       await closeWithEscape();
-      expect(screen.getByRole('button', { name: 'Back to the list' })).toHaveFocus();
-      expect(screen.getByRole('button', { name: 'Open item' })).not.toHaveFocus();
+      expect(closeTypes).toEqual(['keyboard']);
+      expect(getTarget()).toHaveFocus();
     });
 
     it('moves focus nowhere with false, not even back to the opener', async () => {
       render(<ItemPage returnMode="off" />);
-      await userEvent.click(screen.getByRole('button', { name: 'Open item' }));
-      await closeWithEscape();
-      expect(screen.getByRole('button', { name: 'Open item' })).not.toHaveFocus();
-      expect(screen.getByRole('button', { name: 'Back to the list' })).not.toHaveFocus();
+      await openFromOpenerAndClose();
+      expect(getOpener()).not.toHaveFocus();
+      expect(getTarget()).not.toHaveFocus();
     });
 
-    it('is unchanged without the prop: focus goes back to the opener, not to a bystander', async () => {
-      render(<ItemPage returnMode="none" />);
-      await userEvent.click(screen.getByRole('button', { name: 'Open item' }));
-      await closeWithEscape();
-      expect(screen.getByRole('button', { name: 'Open item' })).toHaveFocus();
-      expect(screen.getByRole('button', { name: 'Back to the list' })).not.toHaveFocus();
+    it('moves focus nowhere from a function that returns nothing', async () => {
+      render(<ItemPage returnMode="nothing" />);
+      await openFromOpenerAndClose();
+      expect(getOpener()).not.toHaveFocus();
+      expect(getTarget()).not.toHaveFocus();
     });
 
-    it('is unchanged without the prop: an opener that has gone leaves focus on the body', async () => {
-      render(<ItemPage returnMode="none" keepOpener={false} />);
-      await userEvent.click(screen.getByRole('button', { name: 'Open item' }));
-      await closeWithEscape();
-      expect(document.body).toHaveFocus();
+    it.each([
+      ['true', 'true'],
+      ['a function that returns null', 'null'],
+    ] as const)(
+      'keeps the default with %s: focus goes back to the opener',
+      async (_form, returnMode) => {
+        render(<ItemPage returnMode={returnMode} />);
+        await openFromOpenerAndClose();
+        expect(getOpener()).toHaveFocus();
+        expect(getTarget()).not.toHaveFocus();
+      },
+    );
+
+    describe('the element named has to be able to take focus', () => {
+      it('takes focus when it is a heading with tabIndex -1', async () => {
+        render(<ItemPage returnMode="ref" target="heading" startOpen />);
+        await closeWithEscape();
+        expect(getTarget()).toHaveFocus();
+      });
+
+      it('does not take focus when it is a plain heading, and no default takes over', async () => {
+        render(<ItemPage returnMode="ref" target="plainHeading" keepOpener={false} />);
+        await openFromOpenerAndClose();
+        expect(getTarget()).not.toHaveFocus();
+        expect(document.body).toHaveFocus();
+      });
+
+      it('hands focus to its first tabbable descendant when it is not tabbable itself', async () => {
+        render(<ItemPage returnMode="ref" target="headingWithLink" startOpen />);
+        await closeWithEscape();
+        expect(screen.getByRole('link', { name: 'Back to the list' })).toHaveFocus();
+        expect(getTarget()).not.toHaveFocus();
+      });
+    });
+
+    describe('against focus the page moves itself as the dialog closes', () => {
+      it('is unchanged without the prop: focus stays where the page put it', async () => {
+        render(<ItemPage returnMode="none" movesFocusOnClose />);
+        await openFromOpenerAndClose();
+        expect(screen.getByRole('button', { name: 'Somewhere else' })).toHaveFocus();
+      });
+
+      it('lets the named element win over it', async () => {
+        render(<ItemPage returnMode="ref" movesFocusOnClose />);
+        await openFromOpenerAndClose();
+        expect(getTarget()).toHaveFocus();
+      });
+    });
+
+    describe('on a dialog nested in another', () => {
+      function NestedPage() {
+        const [open, setOpen] = useState(true);
+        const returnRef = useRef<HTMLButtonElement>(null);
+        return (
+          <>
+            <button ref={returnRef} type="button">
+              Back to the list
+            </button>
+            <Dialog heading="The item" open={open} onOpenChange={setOpen} finalFocus={returnRef}>
+              <Dialog heading="Remove the item?" trigger={<button type="button">Remove</button>}>
+                <p>This cannot be undone.</p>
+              </Dialog>
+            </Dialog>
+          </>
+        );
+      }
+
+      it('keeps the outer dialog’s target for the outer dialog, not its confirm', async () => {
+        render(<NestedPage />);
+        const outer = await screen.findByRole('dialog', { name: 'The item' });
+        await waitFor(() => expect(outer.contains(document.activeElement)).toBe(true));
+        await userEvent.click(within(outer).getByRole('button', { name: 'Remove' }));
+        const confirm = await screen.findByRole('dialog', { name: 'Remove the item?' });
+        await waitFor(() => expect(confirm.contains(document.activeElement)).toBe(true));
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('dialog', { name: 'Remove the item?' }),
+          ).not.toBeInTheDocument(),
+        );
+        // The confirm closed alone: the outer is open and focus is back on the confirm's trigger.
+        expect(screen.getByRole('dialog', { name: 'The item' })).toBeInTheDocument();
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Remove' })).toHaveFocus());
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(screen.getByRole('button', { name: 'Back to the list' })).toHaveFocus();
+      });
+    });
+
+    describe('without the prop', () => {
+      it('is unchanged: focus goes back to the opener, not to a bystander', async () => {
+        render(<ItemPage returnMode="none" />);
+        await openFromOpenerAndClose();
+        expect(getOpener()).toHaveFocus();
+        expect(getTarget()).not.toHaveFocus();
+      });
+
+      it('is unchanged: an opener that has gone is not replaced by a bystander', async () => {
+        render(<ItemPage returnMode="none" keepOpener={false} />);
+        await openFromOpenerAndClose();
+        expect(getTarget()).not.toHaveFocus();
+      });
     });
   });
 

@@ -79,17 +79,34 @@ export interface DialogProps {
   dismissOnOutsidePress?: boolean;
   /**
    * Where focus goes when the dialog closes. Left out, Base UI returns it to the `trigger`, or to
-   * whatever held focus when the dialog opened. That target is gone for a dialog opened with no
-   * trigger and no focused control (from a URL parameter, say) or whose opener unmounted while it
-   * was open, and focus then falls to `<body>`; pass `finalFocus` to say where it goes instead.
+   * whatever held focus when the dialog opened. A dialog opened with no trigger and no focused
+   * control (from a URL parameter, say), or whose opener unmounted while it was open, has neither,
+   * and focus then falls to `<body>`, or to a control an earlier popup remembered. Pass
+   * `finalFocus` to say where it goes instead.
    *
    * - a ref: focus moves to that ref's element, in preference to the trigger. A ref with nothing
    *   in it falls back to the default.
-   * - a function: called with how the dialog was closed (`'mouse'`, `'touch'`, `'pen'`,
-   *   `'keyboard'`, or `''` when that is unknown). Return an element to focus it; `true` or `null`
-   *   for the default above; `false` or nothing to move focus nowhere.
+   * - a function: called as the dialog closes with how it was closed (`'mouse'`, `'touch'`,
+   *   `'pen'`, `'keyboard'`, or `''` when that is unknown). Return an element to focus it, or
+   *   `true` or `null` for the default. Return `false` or nothing (`undefined`) to move focus
+   *   nowhere, so write `ref.current ?? null`, not `ref.current ?? undefined`, to keep the default
+   *   while a ref is empty.
    * - `false`: move focus nowhere, not even back to the trigger.
-   * - `true` (or left out): the default above.
+   * - `true`, or left out: the default above.
+   *
+   * The element has to be able to take focus: a button, a link, a field, or an element with a
+   * `tabIndex`. A heading needs `tabIndex={-1}`. An element that is not in the tab order but holds
+   * a tabbable one hands focus to the first such descendant, so a `tabIndex={-1}` heading that
+   * holds a link focuses the link. An element that cannot take focus (a plain heading) moves
+   * nothing, so focus falls to `<body>`; it does not fall back to the default.
+   *
+   * An element named by a ref or a function also wins over focus that your own `onOpenChange`
+   * moves as the dialog closes. `true`, or leaving it out, keeps Base UI's rule of leaving focus
+   * where the app put it.
+   *
+   * Set it on the outermost dialog. Leave it out on a dialog nested in another: closing the
+   * nested one would send focus to the target while the outer modal is still open, out of the
+   * focus trap.
    *
    * It takes the same values as Base UI's `Dialog.Popup` `finalFocus`.
    */
