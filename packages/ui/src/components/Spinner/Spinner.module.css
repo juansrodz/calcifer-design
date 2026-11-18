@@ -51,13 +51,16 @@
    The head is the ink the spinner inherits (`Canvas` on a `GrayText` fill, `HighlightText` on a
    `Highlight` one, the text colour on the page), held in a local property because the style lint
    takes `currentColor` from one rule and `currentcolor` from another. It keeps its width, so the
-   spinner's box does not move (the border is inside it).
+   spinner's box does not move (the border is inside it). It is the `border-top` shorthand, which
+   the lint requires once width, style and colour are all set, and physical like the normal-mode
+   `border-top-color` above, so the head sits at the top in every direction and writing mode
+   (`border-block-start` would move it to a side in a vertical one).
 
    The track is `GrayText`, thinner (1 px) and dotted, so the head is told apart by weight, colour
    and style: `GrayText` and the text colour are close in luminance in the high contrast themes
    (about 1.5:1), and where one ink paints both (a loading button's `GrayText`, the content of a
-   chosen or pressed control taking its ink) the dotted track alone still shows which way the solid
-   head runs. On a `GrayText` fill (a disabled, pressed control) the track vanishes and the head
+   chosen or pressed control taking its ink) the dotted track alone still shows where the solid
+   head is. On a `GrayText` fill (a disabled, pressed control) the track vanishes and the head
    alone reads, an open arc. */
 @media (forced-colors: active) {
   .root {
