@@ -147,7 +147,19 @@
 /* Forced colours replace the selected tint and so erase the pressed state; system colours survive,
    as in Segmented. `forced-color-adjust: none` because Chromium otherwise paints its Canvas
    backplate behind the icon. Last in the file, so that the pressed hover and the primary badge
-   rules above do not win back their tokens; the badge takes the same pair the other way round. */
+   rules above do not win back their tokens.
+
+   A disabled or loading button (Base UI sets `data-disabled` on both) is `GrayText` and not dimmed
+   as well (`opacity: 1`), as on `ChoiceCard`: the 45% dim left the glyph and edge under 3:1 and
+   dimmed a focused loading button's ring. A pressed one is filled `GrayText` instead of
+   `Highlight`, its rule (a class and two attributes) outweighing the pressed rule; its badge
+   follows. The pressed rule's `forced-color-adjust: none` also reaches a loading button's spinner,
+   so the spinner's ring takes the glyph colour, `Canvas`.
+
+   The badge's fill is the page colour here, so it gets a 1 px border, declared in this block only:
+   the badge grows 2 px, and the default look is untouched. The border is `transparent`, which the
+   browser paints in the system text colour. A pressed badge is outside the recolouring and names
+   its border, `Highlight`. */
 @media (forced-colors: active) {
   .root[data-pressed],
   .root[data-pressed]:hover:not([data-disabled]) {
@@ -160,10 +172,51 @@
     /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
 
+  .root[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    color: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-pressed][data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: GrayText;
+    color: Canvas;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-pressed][data-loading] .icon > * {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: Canvas;
+  }
+
+  .badge {
+    border: 1px solid transparent;
+  }
+
+  .root[data-disabled] .badge {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    color: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
   .root[data-variant][data-pressed] .badge {
     /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
     background: HighlightText;
     color: Highlight;
+    border-color: Highlight;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .root[data-variant][data-pressed][data-disabled] .badge {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: Canvas;
+    color: GrayText;
+    border-color: GrayText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
 }
