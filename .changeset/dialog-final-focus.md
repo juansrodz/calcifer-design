@@ -9,4 +9,3 @@
 - The element has to be able to take focus. A heading needs `tabIndex={-1}`. An element that is not in the tab order hands focus to its first tabbable descendant, so a `tabIndex={-1}` heading that holds a link focuses the link. An element that cannot take focus moves nothing, and focus falls to `<body>`.
 - A ref or function target also wins over focus your own `onOpenChange` moves as the dialog closes. On a nested dialog, leave `finalFocus` out: it would pull focus out of the outer dialog while that dialog is still open.
 - It applies to every variant (`center` and both sheets). Left out, nothing changes. The opening focus stays as `Dialog` sets it, so there is no `initialFocus` prop.
-- New story: `FinalFocus`, an item sheet whose opener unmounts while it is open, returning focus to a `tabIndex={-1}` heading.
