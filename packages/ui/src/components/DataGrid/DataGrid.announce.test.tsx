@@ -23,6 +23,8 @@ const textFilterDelay = 300;
 const rowTotal = 40;
 const serverTotal = 240;
 const serverPageSize = 50;
+// How long the mock server takes to answer a query, unless a test says otherwise.
+const answerDelay = 100;
 
 type GridProps = React.ComponentProps<typeof DataGrid<InventoryRow>>;
 
@@ -84,8 +86,26 @@ function openSearch() {
   clickButton(screen.getByRole('button', { name: 'Search' }));
 }
 
+function openFilters() {
+  clickButton(screen.getByRole('button', { name: 'Filters' }));
+}
+
 function searchField(): HTMLElement {
   return screen.getByRole('searchbox', { name: 'Search rows' });
+}
+
+/** Commits a search at once, with Enter. */
+function commitSearch(value: string) {
+  fireEvent.change(searchField(), { target: { value } });
+  fireEvent.keyDown(searchField(), { key: 'Enter' });
+}
+
+/** Commits a text filter in the strip at once, with Enter. */
+function commitTextFilter(columnName: string, value: string) {
+  const field = screen.getByRole('searchbox', { name: `Filter by ${columnName}` });
+  act(() => field.focus());
+  fireEvent.change(field, { target: { value } });
+  fireEvent.keyDown(field, { key: 'Enter' });
 }
 
 let restoreElementSize: () => void;
@@ -152,8 +172,7 @@ describe('announcing results in client mode', () => {
     const region = listenToRegion();
     openSearch();
 
-    fireEvent.change(searchField(), { target: { value: 'bolt' } });
-    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    commitSearch('bolt');
     region.listen();
     await region.advance(announceDelay);
 
@@ -163,7 +182,7 @@ describe('announcing results in client mode', () => {
   it('announces a column filter from the strip', async () => {
     render(gridElement());
     const region = listenToRegion();
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    openFilters();
     const locationFilter = screen.getByRole('searchbox', { name: 'Filter by Location' });
     act(() => locationFilter.focus());
 
@@ -199,8 +218,7 @@ describe('announcing results in client mode', () => {
     expect(region.heard).toEqual([]);
 
     openSearch();
-    fireEvent.change(searchField(), { target: { value: 'bolt' } });
-    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    commitSearch('bolt');
     await region.advance(announceDelay);
     const boltAnnouncement = `${countMatching({ search: 'bolt' })} rows found`;
     expect(region.heard).toEqual([boltAnnouncement]);
@@ -220,8 +238,7 @@ describe('announcing results in client mode', () => {
     expect(countMatching({ search: 'wash' })).toBe(washerCount);
 
     for (const term of ['washer', 'wash']) {
-      fireEvent.change(searchField(), { target: { value: term } });
-      fireEvent.keyDown(searchField(), { key: 'Enter' });
+      commitSearch(term);
       await region.advance(announceDelay);
     }
 
@@ -233,8 +250,7 @@ describe('announcing results in client mode', () => {
     const region = listenToRegion();
     openSearch();
 
-    fireEvent.change(searchField(), { target: { value: 'Anvil' } });
-    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    commitSearch('Anvil');
     region.listen();
     await region.advance(announceDelay * 2);
     expect(region.heard).toEqual(['No rows match the search or filters.']);
@@ -257,8 +273,7 @@ describe('announcing results in client mode', () => {
     const region = listenToRegion();
     openSearch();
 
-    fireEvent.change(searchField(), { target: { value: 'bolt' } });
-    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    commitSearch('bolt');
     await region.advance(announceDelay);
 
     expect(region.heard).toEqual([`${countMatching({ search: 'bolt' })} filas`]);
@@ -289,8 +304,7 @@ describe('announcing results in client mode', () => {
     const { rerender } = render(gridElement());
     const region = listenToRegion();
     openSearch();
-    fireEvent.change(searchField(), { target: { value: 'bolt' } });
-    fireEvent.keyDown(searchField(), { key: 'Enter' });
+    commitSearch('bolt');
     await region.advance(announceDelay);
     const boltAnnouncement = `${countMatching({ search: 'bolt' })} rows found`;
     expect(region.heard).toEqual([boltAnnouncement]);
@@ -331,7 +345,7 @@ interface ServerAppProps {
  * an app that does not drop late answers, so a test can see what the grid makes of a stale one.
  */
 function ServerApp({
-  delayFor = () => 100,
+  delayFor = () => answerDelay,
   reportsTotal = true,
   loadingWhileFetching = false,
 }: ServerAppProps) {
@@ -392,14 +406,6 @@ function ServerApp({
   );
 }
 
-/** Commits a text filter in the strip at once, with Enter. */
-function commitTextFilter(columnName: string, value: string) {
-  const field = screen.getByRole('searchbox', { name: `Filter by ${columnName}` });
-  act(() => field.focus());
-  fireEvent.change(field, { target: { value } });
-  fireEvent.keyDown(field, { key: 'Enter' });
-}
-
 describe('announcing results in server mode', () => {
   it('says nothing as the first page loads', async () => {
     render(<ServerApp />);
@@ -410,12 +416,12 @@ describe('announcing results in server mode', () => {
     expect(region.heard).toEqual(['Loading rows…']);
   });
 
-  it('announces the total once the new query’s rows arrive, not while it waits', async () => {
+  it("announces the total once the new query's rows arrive, not while it waits", async () => {
     const serverDelay = announceDelay * 2;
     render(<ServerApp delayFor={() => serverDelay} />);
     const region = listenToRegion();
     await region.advance(serverDelay);
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    openFilters();
 
     commitTextFilter('Location', 'B-07');
     // The old rows stay on screen meanwhile, and they are not the answer.
@@ -430,12 +436,12 @@ describe('announcing results in server mode', () => {
   it('announces after the loading state the app shows for the new query', async () => {
     render(<ServerApp loadingWhileFetching />);
     const region = listenToRegion();
-    await region.advance(100);
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    await region.advance(answerDelay);
+    openFilters();
 
     commitTextFilter('Location', 'B-07');
     region.listen();
-    await region.advance(100 + announceDelay);
+    await region.advance(answerDelay + announceDelay);
 
     const locationCount = countMatching({ filters: { location: 'B-07' } }, serverTotal);
     expect(region.heard).toEqual(['Loading rows…', 'Loading rows…', `${locationCount} rows found`]);
@@ -444,11 +450,11 @@ describe('announcing results in server mode', () => {
   it('says when more rows are still to load and the total is not known', async () => {
     render(<ServerApp reportsTotal={false} />);
     const region = listenToRegion();
-    await region.advance(100);
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    await region.advance(answerDelay);
+    openFilters();
 
     commitTextFilter('Location', 'B-07');
-    await region.advance(100 + announceDelay);
+    await region.advance(answerDelay + announceDelay);
 
     expect(countMatching({ filters: { location: 'B-07' } }, serverTotal)).toBeGreaterThan(
       serverPageSize,
@@ -459,16 +465,16 @@ describe('announcing results in server mode', () => {
   it('says nothing for the pages that infinite scroll loads', async () => {
     render(<ServerApp />);
     const region = listenToRegion();
-    await region.advance(100);
+    await region.advance(answerDelay);
     emulateScrollTo();
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    openFilters();
     commitTextFilter('Location', 'B-07');
-    await region.advance(100 + announceDelay);
+    await region.advance(answerDelay + announceDelay);
     const locationAnnouncement = `${countMatching({ filters: { location: 'B-07' } }, serverTotal)} rows found`;
     expect(region.heard).toEqual(['Loading rows…', locationAnnouncement]);
 
     scrollGridTo(40 * serverPageSize);
-    await region.advance(100 + announceDelay * 2);
+    await region.advance(answerDelay + announceDelay * 2);
 
     expect(screen.getByText(/^Showing 100 of/)).toBeInTheDocument();
     expect(region.heard).toEqual(['Loading rows…', locationAnnouncement]);
@@ -477,10 +483,10 @@ describe('announcing results in server mode', () => {
   it('says nothing for a sort, when the sorted rows arrive', async () => {
     render(<ServerApp />);
     const region = listenToRegion();
-    await region.advance(100);
+    await region.advance(answerDelay);
 
     clickButton(screen.getByRole('columnheader', { name: 'Name' }));
-    await region.advance(100 + announceDelay * 2);
+    await region.advance(answerDelay + announceDelay * 2);
 
     expect(region.heard).toEqual(['Loading rows…']);
   });
@@ -488,13 +494,13 @@ describe('announcing results in server mode', () => {
   it('announces the latest query once, and not the late answer to an earlier one', async () => {
     // B's answer is slow and C's fast, so B's lands after C's has been announced.
     const slowDelay = announceDelay * 4;
-    const fastDelay = 100;
+    const fastDelay = answerDelay;
     render(
       <ServerApp delayFor={(query) => (query.filters.name === 'bolt' ? slowDelay : fastDelay)} />,
     );
     const region = listenToRegion();
     await region.advance(fastDelay);
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    openFilters();
 
     commitTextFilter('Name', 'bolt');
     await region.advance(50);
@@ -513,7 +519,7 @@ describe('announcing results in server mode', () => {
 
   it('announces the latest count when an earlier answer lands just before it', async () => {
     // B's answer lands first and C's within the announcement delay after it.
-    const earlierDelay = 100;
+    const earlierDelay = answerDelay;
     const latestDelay = earlierDelay + announceDelay / 2;
     render(
       <ServerApp
@@ -522,7 +528,7 @@ describe('announcing results in server mode', () => {
     );
     const region = listenToRegion();
     await region.advance(earlierDelay);
-    clickButton(screen.getByRole('button', { name: 'Filters' }));
+    openFilters();
 
     commitTextFilter('Name', 'bolt');
     commitTextFilter('Name', 'box');
