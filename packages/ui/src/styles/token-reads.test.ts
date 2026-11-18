@@ -804,10 +804,8 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\[data-disabled\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
     contains: [
-      ' outline-style: solid;',
-      ' outline-width: var(--border-width-emphasis);',
+      ' outline: var(--border-width-emphasis) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
-      ' outline-color: Highlight;',
     ],
     lacks: [],
   },
@@ -1276,10 +1274,8 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\s*\[data-disabled\],\s*:focus-visible,\s*\[data-tone='selected'\]:is\(\[data-variant='primary'\], \[data-variant='secondary'\]\)\s*\) \{([^}]*)\}/m,
     contains: [
-      ' outline-style: solid;',
-      ' outline-width: var(--border-width-emphasis);',
+      ' outline: var(--border-width-emphasis) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
-      ' outline-color: Highlight;',
     ],
     lacks: [],
   },
