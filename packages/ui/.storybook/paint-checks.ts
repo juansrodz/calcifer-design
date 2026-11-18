@@ -2,7 +2,10 @@
 // file. A `.storybook/test-runner.ts` would be the documented place, but Storybook 10 loads that
 // file through `module.register()`, which Jest 30 refuses, so every suite would fail to run.
 import { getStoryContext, setPostVisit } from '@storybook/test-runner';
-import type { Page } from 'playwright';
+import type { CDPSession, Page } from 'playwright';
+
+type PaintProperty = 'backgroundColor' | 'color';
+const paintProperties: readonly PaintProperty[] = ['backgroundColor', 'color'];
 
 /**
  * A paint check a story asks for in `parameters.paintChecks`. A play function cannot test these:
@@ -25,10 +28,19 @@ export interface PaintCheck {
    * resolved on a probe in the story, with `forced-color-adjust: none`, so a system colour stays
    * itself under forced colours.
    */
-  expected: { backgroundColor?: string; color?: string };
+  expected: Partial<Record<PaintProperty, string>>;
 }
 
-async function readPaint(page: Page, selector: string, expected: PaintCheck['expected']) {
+interface PaintReading {
+  painted: Record<PaintProperty, string>;
+  probed: Record<PaintProperty, string>;
+}
+
+async function readPaint(
+  page: Page,
+  selector: string,
+  expected: PaintCheck['expected'],
+): Promise<PaintReading> {
   return page.evaluate(
     async ({ selector: elementSelector, expected: expectedValues }) => {
       const element = document.querySelector(elementSelector);
@@ -57,7 +69,32 @@ async function readPaint(page: Page, selector: string, expected: PaintCheck['exp
   );
 }
 
-async function runPaintCheck(page: Page, check: PaintCheck) {
+async function findNodeId(session: CDPSession, selector: string): Promise<number> {
+  await session.send('DOM.enable');
+  await session.send('CSS.enable');
+  const { root } = await session.send('DOM.getDocument', { depth: -1 });
+  const { nodeId } = await session.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+  return nodeId;
+}
+
+async function forceActive(session: CDPSession, nodeId: number, forced: boolean): Promise<void> {
+  await session.send('CSS.forcePseudoState', {
+    nodeId,
+    forcedPseudoClasses: forced ? ['active'] : [],
+  });
+}
+
+function findMismatches(check: PaintCheck, { painted, probed }: PaintReading): string[] {
+  return paintProperties
+    .filter((property) => check.expected[property] !== undefined)
+    .filter((property) => painted[property] !== probed[property])
+    .map(
+      (property) =>
+        `${property} is ${painted[property]}, expected ${probed[property]} (${check.expected[property]})`,
+    );
+}
+
+async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
   const selector = `#storybook-root ${check.target}`;
   const session = await page.context().newCDPSession(page);
   let forcedNode: number | undefined;
@@ -69,31 +106,17 @@ async function runPaintCheck(page: Page, check: PaintCheck) {
       await page.hover(selector);
     } else {
       await page.mouse.move(0, 0);
-      await session.send('DOM.enable');
-      await session.send('CSS.enable');
-      const { root } = await session.send('DOM.getDocument', { depth: -1 });
-      const { nodeId } = await session.send('DOM.querySelector', {
-        nodeId: root.nodeId,
-        selector,
-      });
-      forcedNode = nodeId;
-      await session.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['active'] });
+      forcedNode = await findNodeId(session, selector);
+      await forceActive(session, forcedNode, true);
     }
-    const { painted, probed } = await readPaint(page, selector, check.expected);
-    const mismatches = (['backgroundColor', 'color'] as const)
-      .filter((property) => check.expected[property] !== undefined)
-      .filter((property) => painted[property] !== probed[property])
-      .map(
-        (property) =>
-          `${property} is ${painted[property]}, expected ${probed[property]} (${check.expected[property]})`,
-      );
+    const mismatches = findMismatches(check, await readPaint(page, selector, check.expected));
     if (mismatches.length > 0) {
       const state = `${check.interaction}${check.forcedColors ? ', forced colours' : ''}`;
       throw new Error(`paint check on ${check.target} (${state}): ${mismatches.join('; ')}`);
     }
   } finally {
     if (forcedNode !== undefined) {
-      await session.send('CSS.forcePseudoState', { nodeId: forcedNode, forcedPseudoClasses: [] });
+      await forceActive(session, forcedNode, false);
     }
     await session.detach();
     await page.mouse.move(0, 0);
