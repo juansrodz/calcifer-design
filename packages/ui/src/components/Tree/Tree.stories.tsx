@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
-import { fn } from 'storybook/test';
+import { expect, fn, within } from 'storybook/test';
 import { Tree, type TreeItem, type TreeProps } from './Tree';
 
 const items: TreeItem[] = [
@@ -99,6 +99,37 @@ export const RightToLeft: Story = {
       </div>
     ),
   ],
+  // Runs in a browser only (jsdom has no transitions). A closed branch mounting in this page must
+  // land pointing left with no turn running: the direction is written with the turns held still,
+  // so the glyph never spins through a half turn from its first, left-to-right guess. An ordinary
+  // open and close must still turn, which a direction written (and held) on every render would
+  // stop. The story mounts itself and clicks the toggle itself, so each check comes in the same
+  // task as what it checks, well inside a turn's 120 ms.
+  //
+  // The first story a page renders cannot show a spin: the preview holds every transition while the
+  // page first sets its theme. CI catches it because the runner reuses one page for a file's
+  // stories and this one is not the file's first, so it stays after `Default`.
+  play: async ({ mount, canvasElement }) => {
+    await mount();
+    const reference = within(canvasElement).getByRole('treeitem', { name: 'Reference' });
+    const toggle = reference.querySelector<HTMLElement>('[data-toggle]');
+    const chevron = toggle?.querySelector('svg');
+    if (!toggle || !chevron) throw new Error('Reference has no chevron');
+    await expect(chevron.getAnimations()).toHaveLength(0);
+    await expect(getComputedStyle(chevron).transform).toBe('matrix(0, 1, -1, 0, 0, 0)');
+
+    // React commits a click's render in a microtask. The close waits for the open's turn to finish:
+    // a turn reversed before it has run a frame is cancelled, not turned back.
+    const clickAndGetTurns = async () => {
+      toggle.click();
+      await Promise.resolve();
+      return chevron.getAnimations();
+    };
+    const opening = await clickAndGetTurns();
+    await expect(opening).toHaveLength(1);
+    await Promise.all(opening.map((turn) => turn.finished));
+    await expect(await clickAndGetTurns()).toHaveLength(1);
+  },
 };
 
 function ControlledTree(props: TreeProps) {

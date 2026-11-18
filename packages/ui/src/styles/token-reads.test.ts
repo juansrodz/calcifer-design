@@ -1971,6 +1971,16 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
 
+  // `Tree` writes its direction under this mark, and this rule is what holds the closed chevrons'
+  // turns still for that write, so a closed branch mounting in a right-to-left page does not spin
+  // to its angle. A jsdom test sees the mark come and go, not what the rule does with it.
+  {
+    file: 'components/Tree/Tree.module.css',
+    rule: /^\.root\[data-direction-changing\] \.toggle > svg \{([^}]*)\}/m,
+    contains: ['transition: none;'],
+    lacks: [],
+  },
+
   // `NavMenu`'s sidebar form. `flex: 1 1 auto` is what makes the list span the sidebar: `.root` is
   // a row flex container, so without it the list shrinks to its widest label. The link rule makes
   // each link as wide as the list, and the nav's own rule keeps the list at the top of a grown nav.

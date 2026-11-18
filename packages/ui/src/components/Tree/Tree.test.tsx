@@ -1126,4 +1126,80 @@ describe('Tree', () => {
     renderTree();
     expect(screen.getByRole('tree')).toHaveAttribute('data-direction', 'rtl');
   });
+
+  describe('the direction the chevrons turn by', () => {
+    /**
+     * A changed `data-direction` changes the closed chevrons' transform, and the transform
+     * transitions, so a write with the transitions on spins every closed chevron through a half
+     * turn (a closed branch mounting in a right-to-left page did, from its first, left-to-right
+     * guess). The write corrects the glyphs rather than changing their state, so it is made with the
+     * turns held still, by a mark the stylesheet reads, and only when the direction is new or
+     * differs, so a render in the middle of a branch opening leaves the running turn alone. jsdom
+     * computes no transform; a real browser's `getAnimations()` is checked in the story's play.
+     */
+    const watchDirectionWrites = (target: Node, options: MutationObserverInit = {}) => {
+      const observer = new MutationObserver(() => {});
+      observer.observe(target, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['data-direction', 'data-direction-changing'],
+        ...options,
+      });
+      return observer;
+    };
+
+    const directionWrites = (observer: MutationObserver) =>
+      observer.takeRecords().map((record) => [record.attributeName, record.oldValue]);
+
+    const inDirection = (direction: 'ltr' | 'rtl') => (
+      <div dir={direction}>
+        <Tree items={items} aria-label="Documentation" />
+      </div>
+    );
+
+    it('is written on mount with the turns held still, and the hold comes off again', () => {
+      const container = document.body.appendChild(document.createElement('div'));
+      const observer = watchDirectionWrites(container, { subtree: true });
+      try {
+        render(inDirection('rtl'), { container });
+        expect(directionWrites(observer)).toEqual([
+          ['data-direction-changing', null],
+          ['data-direction', null],
+          ['data-direction-changing', ''],
+        ]);
+        expect(screen.getByRole('tree')).toHaveAttribute('data-direction', 'rtl');
+        expect(screen.getByRole('tree')).not.toHaveAttribute('data-direction-changing');
+      } finally {
+        observer.disconnect();
+        container.remove();
+      }
+    });
+
+    it('is left alone by a render that finds it unchanged, and held still when it changes', () => {
+      const { rerender } = render(inDirection('ltr'));
+      const tree = screen.getByRole('tree');
+      const observer = watchDirectionWrites(tree);
+      try {
+        rerender(inDirection('ltr'));
+        expect(directionWrites(observer)).toEqual([]);
+
+        rerender(inDirection('rtl'));
+        expect(directionWrites(observer)).toEqual([
+          ['data-direction-changing', null],
+          ['data-direction', 'ltr'],
+          ['data-direction-changing', ''],
+        ]);
+        expect(tree).not.toHaveAttribute('data-direction-changing');
+      } finally {
+        observer.disconnect();
+      }
+    });
+
+    it('follows a dir change on its next render, not only on mount', () => {
+      const { rerender } = render(inDirection('ltr'));
+      expect(screen.getByRole('tree')).toHaveAttribute('data-direction', 'ltr');
+      rerender(inDirection('rtl'));
+      expect(screen.getByRole('tree')).toHaveAttribute('data-direction', 'rtl');
+    });
+  });
 });

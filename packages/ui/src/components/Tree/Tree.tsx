@@ -81,6 +81,9 @@ export type TreeProps = TreeNamedByLabel | TreeNamedByElement;
 /** A pause longer than this starts a new type-ahead, in milliseconds. */
 const TYPE_AHEAD_WINDOW = 500;
 
+/** On the root while its direction is written: `Tree.module.css` holds the chevrons' turns still. */
+const DIRECTION_CHANGING_ATTRIBUTE = 'data-direction-changing';
+
 /** Not printable, but how a letter gets typed: they leave a type-ahead going. */
 const KEYS_WITHIN_TYPING = new Set(['Shift', 'CapsLock', 'AltGraph', 'Dead']);
 
@@ -201,12 +204,27 @@ export function TreeView({
     }
   });
 
-  // Written straight to the node for the reasons `DatePicker`'s `Calendar` gives: read from the page
-  // and not from `:dir()`, which a bundler can rewrite, and with no second render to see it.
+  // The closed chevrons turn by the reading direction. It is read from the page and written straight
+  // to the node, as `DatePicker`'s `Calendar` does, so there is no second render. Not `:dir()`: at
+  // the build's browser targets lightningcss rewrites it to a list of `:lang()`, which ignores `dir`.
+  // A new or changed direction corrects the glyphs rather than changing their state, so it is
+  // written with their turns held still (a closed branch mounting in a right-to-left page would
+  // otherwise turn through a half turn from its first, left-to-right guess), and only when it
+  // differs, so a render in the middle of a branch opening leaves the running turn alone.
   useLayoutEffect(() => {
-    if (rootRef.current !== null) {
-      rootRef.current.dataset.direction = getComputedStyle(rootRef.current).direction;
+    const rootElement = rootRef.current;
+    if (rootElement === null) {
+      return;
     }
+    const readingDirection = getComputedStyle(rootElement).direction;
+    if (rootElement.dataset.direction === readingDirection) {
+      return;
+    }
+    rootElement.setAttribute(DIRECTION_CHANGING_ATTRIBUTE, '');
+    rootElement.dataset.direction = readingDirection;
+    // Reading style makes the browser apply the new turns while the mark holds them still.
+    void getComputedStyle(rootElement).direction;
+    rootElement.removeAttribute(DIRECTION_CHANGING_ATTRIBUTE);
   });
 
   const toggleExpanded = (node: TreeNode) => {
@@ -413,6 +431,15 @@ export function TreeView({
  * else on the first enabled item. Focus never goes with an item: when it is removed or collapsed
  * away, focus moves to the nearest ancestor still shown. Only when every item goes does it fall to
  * the page, and it is not taken back when items return.
+ *
+ * A closed branch's chevron points to the reading end: right, or left in a right-to-left page. The
+ * tree reads the computed direction (a `dir` on any ancestor, or a stylesheet's `direction`) after
+ * each render, so a direction changed under a memoised subtree takes effect on its next render.
+ * Server-rendered HTML carries no direction until hydration, so before then a closed chevron in a
+ * right-to-left page points right. A new direction is applied without the chevrons' turn, so a
+ * branch toggled in the very render that finds a new direction snaps to its state instead of
+ * turning. That is accepted: it takes a direction changed outside React with no render before the
+ * press.
  */
 export function Tree(props: TreeProps) {
   return <TreeView {...props} />;
