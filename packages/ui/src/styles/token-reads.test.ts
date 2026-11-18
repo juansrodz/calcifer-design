@@ -757,6 +757,15 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/\{/],
   },
+  // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
+  // `LinkIconButton` had no hover cue under forced colours. The rule gives it the one an
+  // `IconButton`, a `Button` and a `LinkButton` have; a disabled button keeps its `GrayText` edge.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
   // `GrayText`: the dim took the glyph, the edge and a focused loading button's ring under 3:1.
   // The bare `color:` entries here and below carry a leading space: `contains` is a substring test,
