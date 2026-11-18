@@ -6,8 +6,8 @@
    declared: `--switch-track-unchecked-background` and `--switch-track-unchecked-border-color`, set
    from a class on any ancestor (they inherit). Checked, the track is the accent whatever they say.
    The border hook is a colour and not a shorthand, so the 1 px width the thumb's travel counts
-   stays; a consumer that wants no edge sets it to the fill or to `transparent`, which forced
-   colours still paint in the system text colour.
+   stays; a consumer that wants no edge sets it to the fill or to `transparent`. Forced colours
+   paint the edge `ButtonText` whatever the hook says (the block at the end of this file).
 
    The default border is the opaque control colour, as the checkbox's, not the hairline: unchecked,
    the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The control colour
