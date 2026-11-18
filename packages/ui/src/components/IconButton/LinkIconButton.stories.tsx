@@ -27,9 +27,9 @@ export const Ghost: Story = {};
 export const Secondary: Story = { args: { variant: 'secondary' } };
 export const Primary: Story = { args: { variant: 'primary' } };
 export const Small: Story = { args: { size: 'sm' } };
-/** The small soft circle a page header uses to go back to a list. */
+/** The small soft circle a page header uses to link to a list; the chevron points the way. */
 export const Soft: Story = {
-  args: { variant: 'soft', size: 'sm', label: 'Back to events', href: '#events' },
+  args: { variant: 'soft', size: 'sm', label: 'Open events', href: '#events' },
 };
 /** The count is drawn only; the label says it too. */
 export const WithBadge: Story = { args: { label: 'Messages, 3 unread', badge: 3 } };

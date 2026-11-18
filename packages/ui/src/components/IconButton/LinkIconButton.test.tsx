@@ -39,7 +39,7 @@ function renderRouterLink() {
     <LinkIconButton
       variant="soft"
       size="sm"
-      label="Back to events"
+      label="Open events"
       render={<RouterLink to="/events" onNavigate={onNavigate} />}
     >
       <ChevronRightIcon />
@@ -65,7 +65,7 @@ describe('LinkIconButton', () => {
 
   it('is an anchor announced as a link, named by its label', () => {
     render(<Soft />);
-    const link = screen.getByRole('link', { name: 'Back to events' });
+    const link = screen.getByRole('link', { name: 'Open events' });
     expect(link.tagName).toBe('A');
     expect(link).toHaveAttribute('href', '#events');
     expect(link).not.toHaveAttribute('role');
@@ -82,7 +82,7 @@ describe('LinkIconButton', () => {
 
   it('is announced as a link when a router link is rendered in its place', () => {
     renderRouterLink();
-    const link = screen.getByRole('link', { name: 'Back to events' });
+    const link = screen.getByRole('link', { name: 'Open events' });
     expect(link).toHaveAttribute('href', '/events');
     expect(link).not.toHaveAttribute('role');
     expect(link).toHaveAttribute('data-variant', 'soft');
@@ -110,7 +110,7 @@ describe('LinkIconButton', () => {
     const onNavigate = vi.fn();
     render(
       <LinkIconButton
-        label="Back to events"
+        label="Open events"
         onClick={onClick}
         render={<RouterLink to="/events" onNavigate={onNavigate} />}
       >
