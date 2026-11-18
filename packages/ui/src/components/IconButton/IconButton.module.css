@@ -156,8 +156,8 @@
    `Highlight`, its rule (a class and two attributes) outweighing the pressed rule; its badge
    follows. The pressed rule's `forced-color-adjust: none` also reaches a loading button's spinner;
    Spinner's own forced-colours rule draws its head in the glyph colour, `Canvas`, and its track in
-   `GrayText`, which vanishes on the fill and leaves an open arc. Off the fill, a loading button's
-   head and track are both `GrayText`; the track's dots tell them apart.
+   `GrayText`, which vanishes on the fill and leaves an open arc; off the fill both are `GrayText`,
+   and the track's dots tell them apart.
 
    The badge's fill is the page colour here, so it gets a 1 px border, declared in this block only:
    the badge grows 2 px, and the default look is untouched. The border is `transparent`, which the
