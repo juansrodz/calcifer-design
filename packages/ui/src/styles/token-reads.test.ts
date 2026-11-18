@@ -2361,7 +2361,7 @@ const expectations: ReadonlyArray<Expectation> = [
     // is the cue, so the card is not dimmed as well.
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{[^}]*\}\n\n {2}\.card\[data-disabled\] \{([^}]*)\}/m,
-    contains: ['opacity: 1;', 'border-color: GrayText;', 'color: GrayText;'],
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
     lacks: ['opacity: 0.45'],
   },
   {
