@@ -64,6 +64,13 @@ export interface ButtonProps extends Omit<
    * pressed, focused, disabled, loading, pending and chosen) at any weight, with no `[data-tone]`
    * to match. Each defaults to the variant and tone's own colour. A disabled button dims the
    * consumer's pair as it dims its own; under forced colours the system colours win.
+   *
+   * Set the hover pair with `--button-fill-hover` and `--button-label-color-hover`, not by changing
+   * `--button-fill` under your own `:hover`, which also reaches a disabled button. Prefer the class
+   * on the button itself: a hook set on a wrapper also reaches the buttons the library renders
+   * inside it (a `Toolbar`'s buttons, a `DataGrid`'s Clear filters and Retry, an `ErrorBoundary`'s
+   * reset, an `Upload`'s browse button, a `DatePicker`'s close), and it overrides the chosen tone's
+   * fill, so a chosen button no longer looks chosen.
    */
   className?: string;
 }
