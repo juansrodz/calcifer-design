@@ -157,18 +157,21 @@
 }
 
 /* A disabled control whose text has to stay readable: `Upload`'s drop zone, whose hint says what
-   the zone takes. The rule above would dim the text with the frame, so this mixes the frame's own
-   border and fill at the same 0.55 and leaves the text inside its colour. The wearer adds the class
-   while it is disabled. The mixes are local properties because the token lint refuses
-   `color-mix()` inline, as Button's inverse disabled fill does; a browser without `color-mix()`
-   keeps the plain opacity, text and all, rather than an unset border and fill. It lives here
-   because this file is the one stylesheet that names the input surface. */
-.dimmedFrame {
+   the zone takes. The rule above would dim the text with the control, so this mixes the control's
+   own border and fill at the same 0.55 and leaves the text inside its colour. The wearer adds the
+   class while it is disabled, and must not carry `data-disabled` or `data-invalid` on the same
+   element: `.control[data-disabled]` and `.control[data-invalid]` weigh (0,2,0) and would beat this
+   one-class rule (Upload puts those attributes on its input, and dims its own invalid colours).
+   The mixes are local properties because the token lint refuses `color-mix()` inline, as Button's
+   inverse disabled fill does; a browser without `color-mix()` keeps the plain opacity, text and
+   all, rather than an unset border and fill. It lives here because this file is the one
+   stylesheet that names the input surface. */
+.dimmedControl {
   opacity: 0.55;
 }
 
 @supports (color: color-mix(in srgb, red, blue)) {
-  .dimmedFrame {
+  .dimmedControl {
     --control-dimmed-border: color-mix(in srgb, var(--color-border-strong) 55%, transparent);
     --control-dimmed-fill: color-mix(in srgb, var(--color-surface-input) 55%, transparent);
 

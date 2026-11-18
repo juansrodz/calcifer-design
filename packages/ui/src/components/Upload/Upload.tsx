@@ -348,7 +348,7 @@ export function Upload({
           }}
         />
         <div
-          className={[fieldStyles.control, styles.face, disabled ? fieldStyles.dimmedFrame : null]
+          className={[fieldStyles.control, styles.face, disabled ? fieldStyles.dimmedControl : null]
             .filter(Boolean)
             .join(' ')}
           aria-hidden="true"

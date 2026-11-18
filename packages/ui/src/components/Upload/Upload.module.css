@@ -62,7 +62,7 @@
   background: var(--color-danger-surface);
 }
 
-/* Disabled, the face also wears `field.module.css`'s `.dimmedFrame`: the frame dims as a disabled
+/* Disabled, the face also wears `field.module.css`'s `.dimmedControl`: the frame dims as a disabled
    text field's does, the button dims itself (Button's own disabled rule), and the hint keeps
    `--color-text-muted`, because it says what the zone takes. An invalid zone's danger colours
    out-rank that class, so they are dimmed the same way here; a browser without `color-mix()` dims

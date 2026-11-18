@@ -86,10 +86,11 @@ describe('Upload', () => {
       return declarations;
     }
 
-    // What a disabled face wears over `.control`: the shared `.dimmedFrame`, then Upload's own
-    // disabled rule, which out-ranks the class and so wins wherever the two say the same thing.
+    // What a disabled face wears over `.control`: the shared `.dimmedControl`. Upload has no
+    // `.zone[data-disabled] .face` rule of its own now; it is read last so that one added back
+    // (which would out-rank the class) is caught here.
     const face = new Map([
-      ...declarationsOf(fieldRules, '.dimmedFrame'),
+      ...declarationsOf(fieldRules, '.dimmedControl'),
       ...declarationsOf(uploadRules, '.zone[data-disabled] .face'),
     ]);
     const faceOpacity = Number(face.get('opacity') ?? '1');
@@ -129,10 +130,10 @@ describe('Upload', () => {
 
     it('wears the shared dimmed frame only while disabled', () => {
       const { unmount } = render(<allStories.Disabled />);
-      expect(screen.getByText('or drop it here').parentElement).toHaveClass('dimmedFrame');
+      expect(screen.getByText('or drop it here').parentElement).toHaveClass('dimmedControl');
       unmount();
       render(<allStories.Default />);
-      expect(screen.getByText('or drop it here').parentElement).not.toHaveClass('dimmedFrame');
+      expect(screen.getByText('or drop it here').parentElement).not.toHaveClass('dimmedControl');
     });
 
     it('dims its frame, not the face that holds the hint', () => {
