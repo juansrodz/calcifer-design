@@ -768,6 +768,16 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['box-shadow'],
   },
   {
+    // The grid's checkboxes are blocks centred in their cells, not inline boxes on the cell's text
+    // baseline: there a box sat above the cell's middle, by 3.2px unchecked and 1.7px checked (an
+    // empty box's baseline is its bottom edge, a ticked one's the tick's). Two classes, so the
+    // field skin's `display: inline-flex` loses whatever order the two stylesheets load in.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.selectHeader > \.checkbox,\n\.selectCell > \.checkbox \{([^}]*)\}/m,
+    contains: ['display: flex;', 'margin-inline: auto;'],
+    lacks: [],
+  },
+  {
     // The state and error rows' content sticks to the scroll area's inline start, so it stays in
     // view while the body scrolls sideways, and keeps to the width the grid measures and sets on
     // the scroll area; jsdom lays nothing out, so the stylesheet is the pin.

@@ -383,6 +383,18 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
   max-width: calc(var(--space-2) * 5);
 }
 
+/*
+ * The checkbox is a block centred in its cell, not an inline box on the cell's text baseline: there
+ * it sat above the cell's middle, and by a different amount checked (on the tick's baseline) than
+ * unchecked (on the box's bottom edge). Two classes, so the field skin's `display: inline-flex`
+ * loses whichever stylesheet loads last.
+ */
+.selectHeader > .checkbox,
+.selectCell > .checkbox {
+  display: flex;
+  margin-inline: auto;
+}
+
 /* The expand column: its button and a little room, 1.75rem (about 28px), after any checkboxes. */
 .headerCell.expandHeader,
 .cell.expandCell {
