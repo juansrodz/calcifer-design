@@ -65,10 +65,10 @@ export const KeyboardOpen: Story = {
 };
 
 /**
- * A sheet that opens from a card's title and takes the title away while it is open, as an item
- * sheet does when the list behind it re-renders. Base UI has no trigger or focused control left
- * to return to, so `finalFocus` names where focus goes on close: the "Potluck dinners" heading,
- * which needs `tabIndex={-1}` to take focus. Without it, focus would fall to the page body.
+ * A sheet whose opener leaves the page while the sheet is open, as an item's does when the list
+ * behind it re-renders. Base UI has no trigger or focused control left to return to, so
+ * `finalFocus` names where focus goes on close: the "Potluck dinners" heading, which needs
+ * `tabIndex={-1}` to take focus. Without it, focus would fall to the page body.
  */
 export const FinalFocus: Story = {
   args: { variant: 'sheet', trigger: undefined, heading: 'Potluck salad' },
