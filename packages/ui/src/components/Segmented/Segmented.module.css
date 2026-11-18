@@ -76,9 +76,20 @@
   box-shadow: var(--segmented-pressed-shadow, none);
 }
 
+.option[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 /* Forced colours replace the accent fill and so erase the chosen option; system colours survive.
    `forced-color-adjust: none` because Chromium otherwise paints its Canvas backplate behind the
-   text, and `HighlightText` on that can be unreadable: measured white on white. */
+   text, and `HighlightText` on that can be unreadable: measured white on white.
+
+   A disabled option is `GrayText`, the system's own disabled colour, and not dimmed as well
+   (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label at 3.0 and 3.3:1. A
+   chosen one that is disabled is a `GrayText` fill with a `Canvas` ink instead of a dimmed
+   `Highlight` (2.4:1), so it reads disabled while its fill still says chosen. Both tie with the
+   disabled rule above at (0,2,0) or beat it, and that rule comes first so the tie falls to these. */
 @media (forced-colors: active) {
   .option[data-pressed] {
     forced-color-adjust: none;
@@ -89,11 +100,20 @@
     outline-color: CanvasText;
     /* stylelint-enable scale-unlimited/declaration-strict-value */
   }
-}
 
-.option[data-disabled] {
-  cursor: not-allowed;
-  opacity: 0.45;
+  .option[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    color: GrayText;
+  }
+
+  .option[data-pressed][data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    background: GrayText;
+    color: Canvas;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
 }
 
 .icon {

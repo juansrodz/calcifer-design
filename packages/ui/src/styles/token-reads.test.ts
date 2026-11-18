@@ -2490,6 +2490,22 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 0.45;'],
     lacks: [],
   },
+  // A disabled chip is `GrayText` and not dimmed as well: the 45% dim on top of it left the label and
+  // the edge at 3.0 and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink, not a dimmed
+  // `Highlight` (2.4:1): it reads disabled and its fill still says pressed. Both follow the
+  // top-level disabled rule, which they tie with (0,2,0) and would lose to by source order.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['background: GrayText;', ' color: Canvas;'],
+    lacks: ['Highlight'],
+  },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.icon > \* \{([^}]*)\}/m,
@@ -2513,6 +2529,35 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.row \{([^}]*)\}/m,
     contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
     lacks: [],
+  },
+
+  // Forced colours on `Segmented`: the chosen option is a `Highlight` fill with `HighlightText` ink,
+  // drawn outside the recolouring. A disabled option is `GrayText` and not dimmed as well (the dim
+  // took the label to 3.0 and 3.3:1), and a chosen one that is disabled is a `GrayText` fill with a
+  // `Canvas` ink, not a dimmed `Highlight` (2.4:1). Both follow the top-level disabled rule they tie
+  // with (0,2,0).
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.option\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'forced-color-adjust: none;',
+      'background: Highlight;',
+      ' color: HighlightText;',
+      'outline-color: CanvasText;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 1;', ' color: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['background: GrayText;', ' color: Canvas;'],
+    lacks: ['Highlight'],
   },
 
   // `ProgressBar`: a label row, a track and a helper line. The fill's colour is a local property,
