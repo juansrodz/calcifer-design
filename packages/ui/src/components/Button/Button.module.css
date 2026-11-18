@@ -260,9 +260,10 @@
    transparent border: it wins on weight, not on coming later.
 
    A disabled or loading button (Base UI sets `data-disabled` on both) is `GrayText` and not dimmed
-   as well (`opacity: 1`), as on `ChoiceCard`; a chosen one is a `GrayText` fill with a `Canvas`
-   ink. A pending button is exempt: busy, not disabled. The rule weighs (0,5,0), as the inverse
-   primary's disabled rule inside `@supports` does, so it comes after that one in the file.
+   as well (`opacity: 1`, and the loading label's own 70% lifted too), as on `ChoiceCard`; a chosen
+   one is a `GrayText` fill with a `Canvas` ink. A pending button is exempt: busy, not disabled. The
+   rule weighs (0,5,0), as the inverse primary's disabled rule inside `@supports` does, so it comes
+   after that one in the file.
 
    A pending button's label is hidden by `opacity: 0` alone here: the `color: transparent` that
    hides it elsewhere reverts to the system text colour, and a `loading` button's 70% (0,3,0) beat

@@ -46,14 +46,17 @@
 /* Forced colours replace every border colour with the text colour, so the ring is drawn in one
    colour all the way round and nothing shows it turning; and an ancestor that opts out of the
    recolouring (a pressed control, which draws its own fill) lets the accent head and the faint
-   track through on a fill they were not chosen for. The colours are named here instead. The head
-   is the ink the spinner inherits (`Canvas` on a `GrayText` fill, `HighlightText` on a `Highlight`
-   one, the text colour on the page), held in a local property because the style lint takes
-   `currentColor` from one rule and `currentcolor` from another. The track is `GrayText` and thinner,
-   1 px, so the head is told apart by weight as well as by colour: `GrayText` and the text colour
-   are close in luminance in the high contrast themes (about 1.5:1), and on a `GrayText` fill (a
-   disabled, pressed control) the track vanishes and the head alone reads, an open arc. The head
-   keeps its width, so the spinner's box does not move (the border is inside it). */
+   track through on a fill they were not chosen for. The colours are named here instead.
+
+   The head is the ink the spinner inherits (`Canvas` on a `GrayText` fill, `HighlightText` on a
+   `Highlight` one, the text colour on the page), held in a local property because the style lint
+   takes `currentColor` from one rule and `currentcolor` from another. It keeps its width, so the
+   spinner's box does not move (the border is inside it).
+
+   The track is `GrayText` and thinner, 1 px, so the head is told apart by weight as well as by
+   colour: `GrayText` and the text colour are close in luminance in the high contrast themes (about
+   1.5:1), and on a `GrayText` fill (a disabled, pressed control) the track vanishes and the head
+   alone reads, an open arc. */
 @media (forced-colors: active) {
   .root {
     --spinner-head: currentcolor;

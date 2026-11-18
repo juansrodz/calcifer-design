@@ -79,7 +79,7 @@
    (`opacity: 1`), as on `ChoiceCard`: the 45% dim on top of it left the label and the edge at 3.0
    and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink instead of a dimmed `Highlight`
    (2.4:1), so it reads disabled while its fill still says pressed. Both tie with the disabled rule
-   above at (0,2,0) or beat it, and that rule comes first so the tie falls to these. */
+   above at (0,2,0) or beat it, and it comes first, so the tie falls to these. */
 @media (forced-colors: active) {
   .chip {
     border: 1px solid transparent;
