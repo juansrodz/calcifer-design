@@ -304,6 +304,21 @@
       /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
       border-color: Highlight;
     }
+
+    /* That colour change alone is faint in High Contrast White (`ButtonText` or `LinkText` to
+       `Highlight`, 1.9:1 and 1.2:1), so the hovered edge also thickens to 3 px: an outline inside
+       the border, which moves nothing and stays clear of the focus ring outside the box. Forced
+       colours drop `box-shadow`, so it cannot be one. A focused button keeps its ring, both being
+       the outline; a chosen one keeps its fill alone, as on hover in the default look. */
+    .root:hover:not(
+        [data-disabled],
+        :focus-visible,
+        [data-tone='selected']:is([data-variant='primary'], [data-variant='secondary'])
+      ) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: var(--border-width-emphasis) solid Highlight;
+      outline-offset: calc(-1px - var(--border-width-emphasis));
+    }
   }
 
   .root[data-variant][data-tone][data-disabled]:not([data-pending]) {
