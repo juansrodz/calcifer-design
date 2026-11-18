@@ -778,6 +778,43 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
+    // The error cell spans the table, which can be wider than the scroll area (a phone), so its
+    // focus ring goes on the in-view box rather than on the cell, whose far edge is out of view.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.errorCell:focus-visible \{([^}]*)\}/m,
+    contains: ['outline: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.errorCell:focus-visible > \.inView \{([^}]*)\}/m,
+    contains: [
+      'outline: var(--focus-ring-width) solid var(--color-focus);',
+      'outline-offset: calc(var(--focus-ring-width) * -1);',
+    ],
+    lacks: [],
+  },
+  {
+    // The cell's block padding moves onto the in-view box, so the ring keeps clear of the button.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.errorCell \{([^}]*)\}/m,
+    contains: ['padding: 0;'],
+    lacks: ['var(--space-3)'],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.errorContent \{([^}]*)\}/m,
+    contains: ['padding-block: var(--space-3);'],
+    lacks: [],
+  },
+  {
+    // The shared ring rule no longer names the error cell.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^(\.headerCell:focus-visible,[^{]*)\{/m,
+    contains: ['.detailCell:focus-visible'],
+    lacks: ['.errorCell'],
+  },
+  {
     // The state and error rows' content sticks to the scroll area's inline start, so it stays in
     // view while the body scrolls sideways, and keeps to the width the grid measures and sets on
     // the scroll area; jsdom lays nothing out, so the stylesheet is the pin.

@@ -509,14 +509,16 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
   color: var(--color-text);
 }
 
-/* The error row closes the body: the message and its retry button, centred. */
+/* The error row closes the body: the message and its retry button, centred. The cell's padding is
+   on the in-view box inside it, which carries the focus ring, below. */
 .errorCell {
-  padding: var(--space-3) 0;
+  padding: 0;
   text-align: center;
   color: var(--color-text);
 }
 
 .errorContent {
+  padding-block: var(--space-3);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -531,8 +533,7 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 .headerCell:focus-visible,
 .filterCell:focus-visible,
 .cell:focus-visible,
-.detailCell:focus-visible,
-.errorCell:focus-visible {
+.detailCell:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: calc(var(--focus-ring-width) * -1);
 }
@@ -593,6 +594,18 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
   inset-inline-start: 0;
   max-inline-size: var(--data-grid-view-inline-size, none);
   padding-inline: var(--space-5);
+}
+
+/* The error cell spans the table, which can be wider than the scroll area (a phone), where its far
+   edge, and the ring along it, would be out of view. The in-view box above takes the ring instead:
+   it keeps to the scroll area's width and stays in view as the body scrolls sideways. */
+.errorCell:focus-visible {
+  outline: none;
+}
+
+.errorCell:focus-visible > .inView {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
 }
 
 .state {
