@@ -1099,12 +1099,22 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: GrayText;', ' color: Canvas;'],
     lacks: ['Highlight'],
   },
-  // The loading label's own 70% dim would take the `GrayText` label under 7:1; a pending button's
-  // label is hidden by the overlay, so it is left to that rule.
+  // The loading label's own 70% dim would take the `GrayText` label under 7:1. A pending button is
+  // left to the rule after this one.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-loading\]:not\(\[data-pending\]\) \.label \{([^}]*)\}/m,
     contains: ['opacity: 1;'],
+    lacks: [],
+  },
+  // A pending button's label is hidden under the spinner by `opacity: 0` alone in forced colours:
+  // the `color: transparent` that hides it in the default look reverts to the system text colour.
+  // A button that is `loading` as well meets the loading rule's 70% at (0,3,0), which beats the
+  // overlay rule's (0,2,0), so the label showed through at 70%; this rule weighs (0,4,0).
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-pending\] \.pendingOverlay \+ \.label \{([^}]*)\}/m,
+    contains: ['opacity: 0;'],
     lacks: [],
   },
   {
