@@ -3126,6 +3126,83 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' border-color: var(--color-accent);', ' background: var(--color-accent);'],
     lacks: ['--switch-track-unchecked'],
   },
+
+  // Forced colours on `Switch`. The browser drops the fills to Canvas, so the thumb (no border of its
+  // own) vanished into the track in both states. The track opts out (`forced-color-adjust` inherits
+  // to the thumb) and names system colours: unchecked, a Canvas track with a ButtonText edge and a
+  // solid ButtonText thumb; checked, a Highlight track with a HighlightText thumb; disabled,
+  // GrayText and not dimmed as well; the focus ring CanvasText, not the token the opt-out lets
+  // through. The block overrides the unchecked-track hooks too.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track \{([^}]*)\}/m,
+    contains: [' forced-color-adjust: none;', ' border-color: ButtonText;', ' background: Canvas;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track:focus-visible \{([^}]*)\}/m,
+    contains: [' outline-color: CanvasText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.thumb \{([^}]*)\}/m,
+    contains: [' background: ButtonText;', ' box-shadow: none;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\] \{([^}]*)\}/m,
+    contains: [' border-color: Highlight;', ' background: Highlight;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\] \.thumb \{([^}]*)\}/m,
+    contains: [' background: HighlightText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-disabled\] \{([^}]*)\}/m,
+    contains: [' opacity: 1;', ' border-color: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-disabled\] \.thumb \{([^}]*)\}/m,
+    contains: [' background: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: [' border-color: GrayText;', ' background: GrayText;'],
+    lacks: ['Highlight'],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track\[data-checked\]\[data-disabled\] \.thumb \{([^}]*)\}/m,
+    contains: [' background: Canvas;'],
+    lacks: [],
+  },
+  // The block comes right after the last normal-mode rule (`.thumb[data-checked]`), and nothing
+  // follows it: its rules tie the top-level ones they override and win by coming later, so a
+  // normal-mode rule appended after it would win the cascade back. Every rule inside is indented,
+  // so the first `}` at the start of a line closes the block.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.thumb\[data-checked\] \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n/m,
+    contains: [' .track {', ' .thumb {'],
+    lacks: [],
+  },
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
 ];
 
 // The chip's box is `--avatar-group-size` and its text `--avatar-group-font-size`, and each
