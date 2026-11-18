@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { expect, screen, userEvent, within } from 'storybook/test';
+import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Popover } from './Popover';
 
@@ -34,6 +34,7 @@ export const KeyboardOpen: Story = {
     canvas.getByRole('button', { name: 'Remote details' }).focus();
     await userEvent.keyboard('{Enter}');
     const popup = await screen.findByRole('dialog', { name: 'Showcase remote' });
-    await expect(popup.contains(document.activeElement)).toBe(true);
+    // Base UI moves focus into the popup after it mounts, a moment after it is in the DOM.
+    await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
   },
 };
