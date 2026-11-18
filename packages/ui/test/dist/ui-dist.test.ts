@@ -66,6 +66,8 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--avatar-size',
   '--avatar-font-size',
   '--collapsible-heading-size',
+  '--collapsible-trigger-padding-block',
+  '--collapsible-trigger-padding-inline',
   '--empty-state-heading-size',
   '--toggle-chip-pressed-ring',
   '--progress-bar-track-size',

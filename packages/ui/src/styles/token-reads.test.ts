@@ -1889,13 +1889,16 @@ const expectations: ReadonlyArray<Expectation> = [
       'align-items: center;',
       'gap: var(--space-2);',
       'width: 100%;',
-      'padding: 0;',
+      // Two consumer hooks, read here and never declared, so a misspelt one falls back silently
+      // past everything but this row and the dist scan's allow-list. Both default to no padding.
+      'padding-block: var(--collapsible-trigger-padding-block, 0);',
+      'padding-inline: var(--collapsible-trigger-padding-inline, 0);',
       'background: transparent;',
     ],
-    lacks: [],
+    lacks: ['padding: 0;'],
   },
   // The pointer target is at least 24 px tall (WCAG 2.5.8) without a taller row: the pseudo-element
-  // adds only what the row lacks, and the row keeps `padding: 0`.
+  // adds only what the row lacks, and by default the row has no padding.
   {
     file: 'components/Collapsible/Collapsible.module.css',
     rule: /^\.trigger::before \{([^}]*)\}/m,
@@ -1937,6 +1940,27 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Collapsible/Collapsible.module.css',
     rule: /^\.trigger\[data-panel-open\] \.chevron \{([^}]*)\}/m,
     contains: ['transform: rotate(180deg);'],
+    lacks: [],
+  },
+  // `chevron="end-down"`: closed, the down glyph turns a quarter to the reading end (right, or left
+  // in a right-to-left page); open, it is the glyph as drawn. Each rule outranks the one before it,
+  // so the open rule wins in both directions and the default rule above, at (0,3,0), loses to it.
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.chevron\[data-chevron='end-down'\] \{([^}]*)\}/m,
+    contains: ['transform: rotate(-90deg);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.chevron\[data-chevron='end-down'\]\[data-direction='rtl'\] \{([^}]*)\}/m,
+    contains: ['transform: rotate(90deg);'],
+    lacks: [],
+  },
+  {
+    file: 'components/Collapsible/Collapsible.module.css',
+    rule: /^\.trigger\[data-panel-open\] \.chevron\[data-chevron='end-down'\] \{([^}]*)\}/m,
+    contains: ['transform: none;'],
     lacks: [],
   },
   // The gap between the heading and what it opens. The visual check reads 12 px against the mock.

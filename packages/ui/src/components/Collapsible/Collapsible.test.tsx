@@ -155,4 +155,46 @@ describe('Collapsible', () => {
     expect(icon?.parentElement).toHaveAttribute('aria-hidden', 'true');
     expect(icon).toHaveAttribute('aria-hidden', 'true');
   });
+
+  /**
+   * jsdom draws nothing, so these prove the marks the stylesheet turns the chevron by; the turns
+   * themselves are pinned in `token-reads.test.ts` and seen in the `ChevronEndDown` story.
+   */
+  describe('the chevron', () => {
+    const chevronOf = (name: string) =>
+      screen.getByRole('button', { name }).querySelector('svg')?.parentElement;
+
+    it('is marked down-up by default: down while closed and up while open, as before', () => {
+      render(<Default />);
+      expect(chevronOf('Mains')).toHaveAttribute('data-chevron', 'down-up');
+    });
+
+    it('is marked end-down when asked: toward the reading end while closed, down while open', () => {
+      render(<Default chevron="end-down" />);
+      const chevron = chevronOf('Mains');
+      expect(chevron).toHaveAttribute('data-chevron', 'end-down');
+      expect(chevron).toHaveAttribute('data-direction', 'ltr');
+    });
+
+    it('marks the direction it is read in, from a dir attribute', () => {
+      render(
+        <div dir="rtl">
+          <Collapsible heading="Mains" chevron="end-down">
+            Lasagna for six
+          </Collapsible>
+        </div>,
+      );
+      expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
+    });
+
+    it('marks the computed direction, with no dir attribute at all', () => {
+      document.documentElement.style.direction = 'rtl';
+      try {
+        render(<Default chevron="end-down" />);
+        expect(chevronOf('Mains')).toHaveAttribute('data-direction', 'rtl');
+      } finally {
+        document.documentElement.style.removeProperty('direction');
+      }
+    });
+  });
 });
