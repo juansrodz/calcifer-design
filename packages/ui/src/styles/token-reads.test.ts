@@ -725,8 +725,8 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: ['--color-accent'],
   },
-  // Forced colours on `IconButton` and `LinkIconButton`. A pressed button is `Highlight` filled
-  // and drawn outside the browser's own recolouring, so its tint is not what marks it.
+  // Forced colours on `IconButton` and `LinkIconButton`. They erase the selected tint, so a pressed
+  // button is filled `Highlight` and drawn outside the browser's own recolouring.
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-pressed\],\n {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
@@ -757,10 +757,11 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/\{/],
   },
-  // The bare `color:` entries below carry a leading space: `contains` is a substring test, and
-  // `color: GrayText;` alone is also found in `border-color: GrayText;`, so the row could not fail.
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
   // `GrayText`: the dim took the glyph, the edge and a focused loading button's ring under 3:1.
+  // The bare `color:` entries here and below carry a leading space: `contains` is a substring test,
+  // and `color: GrayText;` alone is also found in `border-color: GrayText;`, so the entry could not
+  // fail.
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-disabled\] \{([^}]*)\}/m,
@@ -798,8 +799,8 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [noBorderShorthand],
   },
-  // A disabled or loading button's badge is `GrayText` too: the browser paints a loading button's
-  // badge in the text colour unasked, as it does not hold it disabled.
+  // A disabled or loading button's badge is `GrayText` too. Without this rule a loading button's
+  // badge would be drawn in the text colour, as the browser does not hold that button disabled.
   {
     file: 'components/IconButton/IconButton.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-disabled\] \.badge \{([^}]*)\}/m,
