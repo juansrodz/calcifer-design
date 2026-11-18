@@ -1186,6 +1186,22 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: GrayText;', ' color: Canvas;'],
     lacks: ['Highlight'],
   },
+  // What the caller puts inside a chosen button (a `Tag`, an icon with a colour of its own) sits
+  // inside the opt-out, where its token colours are painted as they are: a `Tag` kept its light pill
+  // and a tinted icon fell to 1.3:1 on the fill. Every descendant takes the button's ink, drops its
+  // fill and draws any border in that ink; a disabled or loading button's content follows its
+  // `GrayText`. A pending button is left out, so its spinner keeps its own track.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\)\s*\*,\n {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \* \{([^}]*)\}/m,
+    contains: [
+      '--button-content-edge: currentcolor;',
+      'border-color: var(--button-content-edge);',
+      'background-color: transparent;',
+      ' color: inherit;',
+    ],
+    lacks: [],
+  },
   // The loading label's own 70% dim would take the `GrayText` label under 7:1. A pending button is
   // left to the rule after this one.
   {
@@ -2510,6 +2526,20 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
     lacks: ['opacity: 0.45'],
   },
+  // A disabled card's disc and description, and what the caller put in them, kept the system text
+  // colour the browser gives a coloured element; they take the card's `GrayText`. The ring is not in
+  // the selector, so a chosen one keeps its `Highlight` fill.
+  {
+    file: 'components/ChoiceCard/ChoiceCard.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-disabled\] :is\(\.disc, \.description, \.disc \*, \.description \*\) \{([^}]*)\}/m,
+    contains: [
+      '--choice-card-content-edge: currentcolor;',
+      'border-color: var(--choice-card-content-edge);',
+      'background-color: transparent;',
+      ' color: inherit;',
+    ],
+    lacks: [],
+  },
   {
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.ring\[data-checked\] \{([^}]*)\}/m,
@@ -2612,6 +2642,19 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['background: GrayText;', ' color: Canvas;'],
     lacks: ['Highlight'],
   },
+  // A pressed chip's icon sits inside the opt-out, so its own token colours were painted as they
+  // are (a tinted icon at 1.4:1 on the fill). It takes the chip's ink, as in `Button`.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-pressed\] \.icon \* \{([^}]*)\}/m,
+    contains: [
+      '--toggle-chip-content-edge: currentcolor;',
+      'border-color: var(--toggle-chip-content-edge);',
+      'background-color: transparent;',
+      ' color: inherit;',
+    ],
+    lacks: [],
+  },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.icon > \* \{([^}]*)\}/m,
@@ -2674,6 +2717,19 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
     contains: ['background: GrayText;', ' color: Canvas;'],
     lacks: ['Highlight'],
+  },
+  // A badge or an icon inside the chosen option sits inside the opt-out: a `Tag` kept the token
+  // pill the default look re-points, and a tinted icon fell to 1.4:1. They take the option's ink.
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\] :is\(\.icon, \.badge\) \* \{([^}]*)\}/m,
+    contains: [
+      '--segmented-content-edge: currentcolor;',
+      'border-color: var(--segmented-content-edge);',
+      'background-color: transparent;',
+      ' color: inherit;',
+    ],
+    lacks: [],
   },
   // The block is the last thing in the file, after the chosen option's badge rule (the last
   // normal-mode rule), for the reason given for `ToggleChip` above.
