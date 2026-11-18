@@ -69,6 +69,7 @@ function stop() {
   stopped = true;
   signalRunnerGroup('SIGTERM');
 }
+process.on('SIGHUP', stop);
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
 
