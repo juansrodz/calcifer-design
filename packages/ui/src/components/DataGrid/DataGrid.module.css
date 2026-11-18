@@ -56,10 +56,13 @@
   max-inline-size: 100%;
 }
 
-/* The default leaves 16rem for a page header; the maxHeight prop overrides it inline. */
+/* The default leaves 16rem for a page header; the maxHeight prop overrides it inline. The top
+   border is the band's top hairline: outside the clip, so it stays put while the band, below,
+   sticks 1px above the scroll area's top edge. */
 .scroll {
   max-height: calc(100dvh - var(--space-10) * 2);
   overflow: auto;
+  border-block-start: 1px solid var(--color-border);
 }
 
 /* Fill the parent: the card takes its height and the scroll area flexes into what is left. */
@@ -80,17 +83,21 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The band stays in place while the body scrolls and follows it sideways. */
+/* The band stays in place while the body scrolls and follows it sideways. It sticks 1px above the
+   scroll area's top edge: a composited sticky layer can land up to a device pixel below the clip
+   (headed Chrome), which let a row of body text show above the band. The overlap puts that
+   rounding under the band, and the scroll area's border keeps its top hairline in place. */
 .head {
   position: sticky;
-  inset-block-start: 0;
+  inset-block-start: -1px;
   z-index: 1;
   background: var(--color-surface-1);
 }
 
 /*
- * The hairlines are pseudo-elements, not borders: in a collapsed table a border does not travel
- * with a sticky cell, so it would be left behind when the body scrolls.
+ * The bottom hairline is a pseudo-element, not a border: in a collapsed table a border does not
+ * travel with a sticky cell, so it would be left behind when the body scrolls. The top one is the
+ * scroll area's border, above.
  */
 .headerCell {
   position: relative;
@@ -102,21 +109,13 @@
   white-space: nowrap;
 }
 
-.headerCell::before,
 .headerCell::after {
   content: '';
   position: absolute;
   inset-inline: 0;
+  inset-block-end: 0;
   border-block-start: 1px solid var(--color-border);
   pointer-events: none;
-}
-
-.headerCell::before {
-  inset-block-start: 0;
-}
-
-.headerCell::after {
-  inset-block-end: 0;
 }
 
 .headerCell[data-sortable] {
@@ -467,8 +466,9 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 }
 
 /*
- * The row actions column: 4.5rem (about 72px), at the end, with a hairline before it. The header's hairline
- * joins its top and bottom ones, which are pseudo-elements for the reason given above.
+ * The row actions column: 4.5rem (about 72px), at the end, with a hairline before it. The header's
+ * hairline runs from the scroll area's top border to the band's bottom hairline, which is a
+ * pseudo-element for the reason given above; it draws no top line of its own over that border.
  */
 .headerCell.actionsHeader,
 .filterCell.actionsFilter,
@@ -490,6 +490,7 @@ tr:not(:first-child) > :is(.cell, .detailCell, .errorCell) {
 
 .headerCell.actionsHeader::after {
   inset-block-start: 0;
+  border-block-start: 0;
   border-inline-start: 1px solid var(--color-border);
   border-block-end: 1px solid var(--color-border);
 }

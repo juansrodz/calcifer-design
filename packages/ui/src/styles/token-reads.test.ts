@@ -815,6 +815,41 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['.errorCell'],
   },
   {
+    // The band sticks 1px above the scroll area's top edge. A composited sticky layer can land up
+    // to a device pixel below the clip (headed, GPU-composited Chrome), which let one row of body
+    // text show above the band; the overlap puts that rounding under the band instead.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.head \{([^}]*)\}/m,
+    contains: ['position: sticky;', 'inset-block-start: -1px;'],
+    lacks: ['inset-block-start: 0;'],
+  },
+  {
+    // The band's top hairline is the scroll area's own border: outside the clip, so it stays put
+    // while the band sticks 1px above it.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.scroll \{([^}]*)\}/m,
+    contains: ['border-block-start: 1px solid var(--color-border);'],
+    lacks: [],
+  },
+  {
+    // So the header cells draw only their bottom hairline, and the row actions header no top one.
+    file: 'components/DataGrid/DataGrid.module.css',
+    contains: [],
+    lacks: [/\.headerCell::before/],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.headerCell::after \{([^}]*)\}/m,
+    contains: ['inset-block-end: 0;', 'border-block-start: 1px solid var(--color-border);'],
+    lacks: ['inset-block-start'],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.headerCell\.actionsHeader::after \{([^}]*)\}/m,
+    contains: ['border-block-start: 0;', 'border-block-end: 1px solid var(--color-border);'],
+    lacks: [],
+  },
+  {
     // The state and error rows' content sticks to the scroll area's inline start, so it stays in
     // view while the body scrolls sideways, and keeps to the width the grid measures and sets on
     // the scroll area; jsdom lays nothing out, so the stylesheet is the pin.
