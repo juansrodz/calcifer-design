@@ -476,10 +476,11 @@ describe('Dialog', () => {
         expect(getTarget()).toHaveFocus();
       });
 
-      it('does not take focus when it is a plain heading, and no default takes over', async () => {
-        render(<ItemPage returnMode="ref" target="plainHeading" keepOpener={false} />);
+      it('does not take focus when it is a plain heading, and the opener does not take over', async () => {
+        render(<ItemPage returnMode="ref" target="plainHeading" />);
         await openFromOpenerAndClose();
         expect(getTarget()).not.toHaveFocus();
+        expect(getOpener()).not.toHaveFocus();
         expect(document.body).toHaveFocus();
       });
 
