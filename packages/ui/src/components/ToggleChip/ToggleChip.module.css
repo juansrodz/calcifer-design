@@ -6,9 +6,10 @@
    a check, and `--toggle-chip-pressed-ring` lets an app draw a bold ring round a pressed chip for
    a group that has no check. `aria-pressed` says the same to a screen reader.
 
-   No 44 px floor (L2-9, the mock's chips are 28 and 36 px): the padding below makes a chip with no
-   icon 32 px tall (one 0.875rem line at 1.15, plus two 0.5rem) and one with the 26 px disc 42 px,
-   both past WCAG 2.5.8's 24 px target, and the row's gap keeps neighbours apart. The keyboard focus
+   No 44 px floor (L2-9, the mock's chips are 28 and 36 px): at the default size, `md`, the padding
+   below makes a chip with no icon 32 px tall (one 0.875rem line at 1.15, plus two 0.5rem) and one
+   with the 26 px disc 42 px; `sm` is the mock's 28 and 36 px (below). Each is past WCAG 2.5.8's
+   24 px target, and the row's gap keeps neighbours apart. The keyboard focus
    ring is `base.css`'s `:focus-visible` outline, drawn round the chip itself and offset past the
    pressed fill so the two do not merge.
 
@@ -38,6 +39,22 @@
 /* A chip with an icon starts closer to the edge, so the disc sits in the pill's round end. */
 .chip[data-with-icon] {
   padding-inline-start: var(--space-1);
+}
+
+/* `size="sm"`, the WBW mock's chip (4e, 4f, 10g): the 12 px type, 28 px tall with no icon and 36 px
+   with the 26 px disc (5 px round it). The heights are floors (`1.75rem` and `2.25rem` are the
+   mock's measures, not tokens), so the line's leading cannot move them and a label that wraps still
+   grows the chip; the block padding is only what a wrapped label keeps from the edge. The inline
+   padding and the disc's inset are md's, 1 px off the mock's 13 and 5 px. Both floors are past
+   WCAG 2.5.8's 24 px target. */
+.chip[data-size='sm'] {
+  min-height: 1.75rem;
+  padding-block: var(--space-1);
+  font-size: var(--text-xs);
+}
+
+.chip[data-size='sm'][data-with-icon] {
+  min-height: 2.25rem;
 }
 
 @media (hover: hover) {

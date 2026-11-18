@@ -3103,11 +3103,18 @@ const expectations: ReadonlyArray<Expectation> = [
   // the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The hairline it
   // replaces measured 1.44 to 1.78:1 on the five surfaces. The border hook is a colour, not a
   // shorthand, so the 1 px width the thumb's travel counts stays, and forced colours still paint it.
+  // Prettier wraps the border's value, so it is pinned as Prettier prints it.
   {
     file: 'components/Switch/Switch.module.css',
     rule: /^\.track \{([^}]*)\}/m,
     contains: [
-      ' border: 1px solid var(--switch-track-unchecked-border-color, var(--color-border-control, var(--color-border-strong)));',
+      [
+        ' border: 1px solid',
+        '    var(',
+        '      --switch-track-unchecked-border-color,',
+        '      var(--color-border-control, var(--color-border-strong))',
+        '    );',
+      ].join('\n'),
       ' background: var(--switch-track-unchecked-background, var(--color-surface-3));',
     ],
     lacks: [

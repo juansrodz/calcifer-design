@@ -1,6 +1,19 @@
 /* Switch adds the track and the thumb; the row, the label type, the description and the error
    are `field.module.css`. There is deliberately no `[data-invalid]` rule — a switch's state is
-   binary and visible, so the message below it is the error signal. */
+   binary and visible, so the message below it is the error signal.
+
+   Unchecked, the track's fill and its border colour are two consumer hooks, read here and never
+   declared: `--switch-track-unchecked-background` and `--switch-track-unchecked-border-color`, set
+   from a class on any ancestor (they inherit). Checked, the track is the accent whatever they say.
+   The border hook is a colour and not a shorthand, so the 1 px width the thumb's travel counts
+   stays; a consumer that wants no edge sets it to the fill or to `transparent`, which forced
+   colours still paint in the system text colour.
+
+   The default border is the opaque control colour, as the checkbox's, not the hairline: unchecked,
+   the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The control colour
+   holds 3.26:1 or more on the five surfaces in both modes, where the hairline held 1.44 to 1.78:1.
+   A consumer that sets the hooks owns that ratio for its own colours. The hairline is the fallback
+   for a page on a tokens sheet older than 0.4.0, which declares no `--color-border-control`. */
 .track {
   display: inline-flex;
   flex: none;
@@ -8,9 +21,13 @@
   width: 2.5rem;
   height: 1.5rem;
   padding: var(--space-1);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid
+    var(
+      --switch-track-unchecked-border-color,
+      var(--color-border-control, var(--color-border-strong))
+    );
   border-radius: var(--radius-full);
-  background: var(--color-surface-3);
+  background: var(--switch-track-unchecked-background, var(--color-surface-3));
   cursor: pointer;
   transition-property: background-color, border-color;
   transition-duration: var(--motion-duration-1);

@@ -163,7 +163,11 @@ export { ChoiceCard } from './components/ChoiceCard/ChoiceCard';
 export type { ChoiceCardProps, ChoiceCardOption } from './components/ChoiceCard/ChoiceCard';
 export { ToggleChip } from './components/ToggleChip/ToggleChip';
 export { ToggleChipGroup } from './components/ToggleChip/ToggleChipGroup';
-export type { ToggleChipProps } from './components/ToggleChip/ToggleChip';
+export type {
+  ToggleChipCheckPosition,
+  ToggleChipProps,
+  ToggleChipSize,
+} from './components/ToggleChip/ToggleChip';
 export type {
   ToggleChipGroupProps,
   ToggleChipOption,
