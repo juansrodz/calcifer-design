@@ -2636,6 +2636,16 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
     lacks: [],
   },
+  // The forced-colours block is the last thing in the file, as in `Button` and `IconButton`: its
+  // rules tie with the top-level ones they override, or beat them by a little, so a normal-mode rule
+  // appended after it could win the cascade back. Every rule inside the block is indented, so the
+  // first `}` at the start of a line closes it.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.row \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n(?![\s\S])/m,
+    contains: ['.chip[data-pressed] {'],
+    lacks: [],
+  },
 
   // Forced colours on `Segmented`: the chosen option is a `Highlight` fill with `HighlightText`
   // ink, drawn outside the recolouring. A disabled option is `GrayText` and not dimmed as well (the
@@ -2664,6 +2674,14 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
     contains: ['background: GrayText;', ' color: Canvas;'],
     lacks: ['Highlight'],
+  },
+  // The block is the last thing in the file, after the chosen option's badge rule (the last
+  // normal-mode rule), for the reason given for `ToggleChip` above.
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-pressed\] \.badge \{[^}]*\}\n\n(?:\/\*[\s\S]*?\*\/\n)?@media \(forced-colors: active\) \{([\s\S]*?)^\}\n(?![\s\S])/m,
+    contains: ['.option[data-pressed] {'],
+    lacks: [],
   },
 
   // `ProgressBar`: a label row, a track and a helper line. The fill's colour is a local property,
