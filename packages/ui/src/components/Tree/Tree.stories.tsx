@@ -101,15 +101,30 @@ export const RightToLeft: Story = {
   ],
   // Runs in a browser only (jsdom has no transitions). A closed branch mounting in this page must
   // land pointing left with no turn running: the direction is written with the turns held still,
-  // so the glyph never spins through a half turn from its first, left-to-right guess. The story
-  // mounts itself so the check comes in the same task as the mount, well inside the turn's 120 ms.
+  // so the glyph never spins through a half turn from its first, left-to-right guess. An ordinary
+  // open and close must still turn, which a direction written (and held) on every render would
+  // stop. The story mounts itself and clicks the toggle itself, so each check comes in the same
+  // task as what it checks, well inside a turn's 120 ms.
   play: async ({ mount, canvasElement }) => {
     await mount();
     const reference = within(canvasElement).getByRole('treeitem', { name: 'Reference' });
-    const chevron = reference.querySelector('[data-toggle] > svg');
-    if (!chevron) throw new Error('Reference has no chevron');
+    const toggle = reference.querySelector<HTMLElement>('[data-toggle]');
+    const chevron = toggle?.querySelector('svg');
+    if (!toggle || !chevron) throw new Error('Reference has no chevron');
     await expect(chevron.getAnimations()).toHaveLength(0);
     await expect(getComputedStyle(chevron).transform).toBe('matrix(0, 1, -1, 0, 0, 0)');
+
+    // React commits a click's render in a microtask. The close waits for the open's turn to finish:
+    // a turn reversed before it has run a frame is cancelled, not turned back.
+    const clickAndGetTurns = async () => {
+      toggle.click();
+      await Promise.resolve();
+      return chevron.getAnimations();
+    };
+    const opening = await clickAndGetTurns();
+    await expect(opening).toHaveLength(1);
+    await Promise.all(opening.map((turn) => turn.finished));
+    await expect(await clickAndGetTurns()).toHaveLength(1);
   },
 };
 
