@@ -60,3 +60,74 @@
 .thumb[data-checked] {
   transform: translateX(0.875rem);
 }
+
+/* Forced colours drop every fill to Canvas, and the thumb has no border, so it vanished into the
+   track in both states. The track opts out (`forced-color-adjust` inherits to the thumb) and names
+   system colours instead, which also overrides the unchecked-track hooks:
+
+   - unchecked, a Canvas track with a ButtonText edge and a solid ButtonText thumb;
+   - checked, a Highlight track with a HighlightText thumb, the system's own selected pair;
+   - disabled, GrayText, and not dimmed as well (`opacity: 1`), as `ToggleChip` does: the 55% dim
+     on top of it would take GrayText under 3:1. Disabled and checked, a GrayText track with a
+     Canvas thumb, so it reads disabled while its fill still says checked;
+   - the focus ring CanvasText: the opt-out would otherwise let `base.css`'s token colour through.
+
+   Each rule ties the top-level rule it overrides, or beats it, and wins by coming later, so this
+   block stays the last thing in the file. */
+@media (forced-colors: active) {
+  .track {
+    forced-color-adjust: none;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: ButtonText;
+    background: Canvas;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .track:focus-visible {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    outline-color: CanvasText;
+  }
+
+  .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: ButtonText;
+    box-shadow: none;
+  }
+
+  .track[data-checked] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: Highlight;
+    background: Highlight;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .track[data-checked] .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: HighlightText;
+  }
+
+  .track[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: GrayText;
+  }
+
+  .track[data-disabled] .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: GrayText;
+  }
+
+  .track[data-checked][data-disabled] {
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    background: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
+  .track[data-checked][data-disabled] .thumb {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: Canvas;
+  }
+}
