@@ -7,8 +7,18 @@ import { Collapsible } from './Collapsible';
 import styles from './Collapsible.module.css';
 import * as stories from './Collapsible.stories';
 
-const { Default, OpenOnArrival, WithAside, Controlled, Disabled, HeadingSize, Dark } =
-  composeStories(stories);
+const {
+  Default,
+  OpenOnArrival,
+  WithAside,
+  Controlled,
+  Disabled,
+  HeadingSize,
+  ChevronEndDown,
+  ChevronEndDownRightToLeft,
+  TriggerPadding,
+  Dark,
+} = composeStories(stories);
 
 describe('Collapsible', () => {
   it.each([
@@ -18,6 +28,9 @@ describe('Collapsible', () => {
     ['Controlled', Controlled],
     ['Disabled', Disabled],
     ['HeadingSize', HeadingSize],
+    ['ChevronEndDown', ChevronEndDown],
+    ['ChevronEndDownRightToLeft', ChevronEndDownRightToLeft],
+    ['TriggerPadding', TriggerPadding],
     ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
