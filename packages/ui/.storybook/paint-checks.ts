@@ -127,6 +127,11 @@ async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
 }
 
 setPostVisit(async (page, context) => {
+  // After a failed play the runner calls this hook and then rethrows the play's own error, so a
+  // check that threw here would replace it. The runner names the flag `hasFailure`.
+  if (context.hasFailure) {
+    return;
+  }
   const storyContext = await getStoryContext(page, context);
   const checks = storyContext.parameters['paintChecks'] as readonly PaintCheck[] | undefined;
   for (const check of checks ?? []) {
