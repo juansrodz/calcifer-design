@@ -725,6 +725,80 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: ['--color-accent'],
   },
+  // Forced colours on `IconButton` and `LinkIconButton`. A pressed button is `Highlight` filled
+  // and drawn outside the browser's own recolouring, so its tint is not what marks it.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-pressed\],\n {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: [
+      'forced-color-adjust: none;',
+      'background: Highlight;',
+      'color: HighlightText;',
+      'outline-color: CanvasText;',
+    ],
+    lacks: [],
+  },
+  // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
+  // `GrayText`: the dim took the glyph, the edge and a focused loading button's ring under 3:1.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 1;', 'border-color: GrayText;', 'color: GrayText;'],
+    lacks: [],
+  },
+  // A pressed one that is disabled reads disabled while its fill still says pressed: the pressed
+  // rule would otherwise leave it `Highlight`.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['background: GrayText;', 'color: Canvas;'],
+    lacks: ['Highlight'],
+  },
+  // The pressed rule's `forced-color-adjust: none` reaches the spinner a loading button holds, which
+  // would then draw its token colours (a blue quarter on a `GrayText` fill); its ring takes the
+  // glyph colour of the disabled pressed rule above instead (loading is always disabled).
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-pressed\]\[data-loading\] \.icon > \* \{([^}]*)\}/m,
+    contains: ['border-color: Canvas;'],
+    lacks: [],
+  },
+  // The badge's fill is the page colour in forced colours, so its shape needs an edge of its own.
+  // The border is declared in the forced-colours block only; the top-level rule keeps none.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.badge \{([^}]*)\}/m,
+    contains: ['border: 1px solid transparent;'],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.badge \{([^}]*)\}/m,
+    contains: [],
+    lacks: [noBorderShorthand],
+  },
+  // A disabled or loading button's badge is `GrayText` too: the browser paints a loading button's
+  // badge in the text colour unasked, as it does not hold it disabled.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-disabled\] \.badge \{([^}]*)\}/m,
+    contains: ['color: GrayText;', 'border-color: GrayText;'],
+    lacks: [],
+  },
+  // The pressed badge is drawn outside the recolouring, so its border is named: `Highlight`, the
+  // button's own fill, or half of the badge would vanish into the page. Disabled, it is `GrayText`.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-pressed\] \.badge \{([^}]*)\}/m,
+    contains: ['background: HighlightText;', 'color: Highlight;', 'border-color: Highlight;'],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-pressed\]\[data-disabled\] \.badge \{([^}]*)\}/m,
+    contains: ['background: Canvas;', 'color: GrayText;', 'border-color: GrayText;'],
+    lacks: ['Highlight'],
+  },
   {
     // The grid's selected and highlighted rows take the soft selected tint and its text colour.
     file: 'components/DataGrid/DataGrid.module.css',
