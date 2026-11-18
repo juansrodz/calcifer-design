@@ -3073,11 +3073,9 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       '--spinner-head: currentcolor;',
       'border-width: 1px;',
-      'border-top-width: var(--border-width-emphasis);',
       'border-style: dotted;',
-      'border-top-style: solid;',
       'border-color: GrayText;',
-      'border-top-color: var(--spinner-head);',
+      'border-top: var(--border-width-emphasis) solid var(--spinner-head);',
     ],
     lacks: ['--color-accent', '--color-border-strong'],
   },
