@@ -780,10 +780,11 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkIconButton` had no hover cue under forced colours. The rule gives it the one an
-  // `IconButton`, a `Button` and a `LinkButton` have; a disabled button keeps its `GrayText` edge.
+  // `IconButton`, a `Button` and a `LinkButton` have; a disabled button keeps its `GrayText` edge,
+  // and a pressed one, as on `Segmented`, its fill alone.
   {
     file: 'components/IconButton/IconButton.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
     contains: ['border-color: Highlight;'],
     lacks: [],
   },
