@@ -2676,6 +2676,26 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['padding-inline-start: var(--space-1);'],
     lacks: [],
   },
+  // `size="sm"` is the WBW mock's chip (4e, 4f, 10g): 28 px tall with no icon and 36 px with the
+  // 26 px disc, in the 12 px type, against md's 32 and 42 px at 14 px. The heights are floors, not
+  // padding sums, so the line's leading cannot move them and a wrapped label still grows the chip.
+  // Both are past WCAG 2.5.8's 24 px.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-size='sm'\] \{([^}]*)\}/m,
+    contains: [
+      ' min-height: 1.75rem;',
+      ' padding-block: var(--space-1);',
+      ' font-size: var(--text-xs);',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-size='sm'\]\[data-with-icon\] \{([^}]*)\}/m,
+    contains: [' min-height: 2.25rem;'],
+    lacks: [],
+  },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^ {2}\.chip:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
@@ -3075,6 +3095,32 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
     contains: [],
     lacks: [/\{/],
+  },
+
+  // `Switch`'s unchecked track. Its fill and its border colour are two consumer hooks, read here and
+  // never declared, so a misspelt one falls back silently past everything but this row and the dist
+  // scan's allow-list. The default border is the opaque control colour, as the checkbox's: unchecked,
+  // the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The hairline it
+  // replaces measured 1.44 to 1.78:1 on the five surfaces. The border hook is a colour, not a
+  // shorthand, so the 1 px width the thumb's travel counts stays, and forced colours still paint it.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.track \{([^}]*)\}/m,
+    contains: [
+      ' border: 1px solid var(--switch-track-unchecked-border-color, var(--color-border-control, var(--color-border-strong)));',
+      ' background: var(--switch-track-unchecked-background, var(--color-surface-3));',
+    ],
+    lacks: [
+      ' border: 1px solid var(--color-border-strong);',
+      ' background: var(--color-surface-3);',
+    ],
+  },
+  // Checked, the track is the accent whatever the hooks say: they are the unchecked look only.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.track\[data-checked\] \{([^}]*)\}/m,
+    contains: [' border-color: var(--color-accent);', ' background: var(--color-accent);'],
+    lacks: ['--switch-track-unchecked'],
   },
 ];
 

@@ -16,6 +16,9 @@ const {
   WithError,
   DisabledOption,
   Dark,
+  Small,
+  CheckAtStart,
+  CheckAtStartRightToLeft,
 } = composeStories(stories);
 
 describe('ToggleChip', () => {
@@ -29,6 +32,9 @@ describe('ToggleChip', () => {
     ['WithError', WithError],
     ['DisabledOption', DisabledOption],
     ['Dark', Dark],
+    ['Small', Small],
+    ['CheckAtStart', CheckAtStart],
+    ['CheckAtStartRightToLeft', CheckAtStartRightToLeft],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -131,6 +137,13 @@ describe('ToggleChip', () => {
     expect(onPressedChange).not.toHaveBeenCalled();
     expect(chip).toHaveAttribute('aria-pressed', 'false');
     expect(chip).toBeDisabled();
+  });
+
+  it('is the md size unless it asks for sm', () => {
+    const { rerender } = render(<ToggleChip>Vegetarian</ToggleChip>);
+    expect(screen.getByRole('button')).toHaveAttribute('data-size', 'md');
+    rerender(<ToggleChip size="sm">Vegetarian</ToggleChip>);
+    expect(screen.getByRole('button')).toHaveAttribute('data-size', 'sm');
   });
 
   it('keeps the consumer’s class beside its own', () => {

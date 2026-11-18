@@ -7,7 +7,8 @@ import fieldStyles from '../../styles/field.module.css';
 import { Switch } from './Switch';
 import * as stories from './Switch.stories';
 
-const { Default, On, Described, Required, Disabled, WithError } = composeStories(stories);
+const { Default, On, Described, Required, Disabled, WithError, UncheckedTrack } =
+  composeStories(stories);
 
 describe('Switch', () => {
   it.each([
@@ -17,6 +18,7 @@ describe('Switch', () => {
     ['Required', Required],
     ['Disabled', Disabled],
     ['WithError', WithError],
+    ['UncheckedTrack', UncheckedTrack],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
