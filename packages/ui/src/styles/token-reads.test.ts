@@ -738,6 +738,16 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+  // The block's rules win by coming later: `.root[data-disabled]` weighs what the variants' border
+  // colours and the base 0.45 opacity weigh, and `.root[data-disabled] .badge` what the primary
+  // badge weighs. The regex starts at the last normal-mode rule they override, so a block moved
+  // above it fails to match.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^\.root\[data-variant='primary'\]\[data-pressed\] \.badge \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{\n {2}\.root\[data-pressed\],\n {2}\.root\[data-pressed\]:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
+    contains: ['forced-color-adjust: none;'],
+    lacks: [],
+  },
   // The bare `color:` entries below carry a leading space: `contains` is a substring test, and
   // `color: GrayText;` alone is also found in `border-color: GrayText;`, so the row could not fail.
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
