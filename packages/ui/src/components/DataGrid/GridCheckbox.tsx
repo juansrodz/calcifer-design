@@ -3,6 +3,7 @@ import { CheckIcon } from '../../icons/CheckIcon';
 import { MinusIcon } from '../../icons/MinusIcon';
 import fieldStyles from '../../styles/field.module.css';
 import checkboxStyles from '../Checkbox/Checkbox.module.css';
+import styles from './DataGrid.module.css';
 
 export interface GridCheckboxProps {
   /** The checkbox's accessible name. There is no visible label. */
@@ -17,7 +18,7 @@ export interface GridCheckboxProps {
 
 /**
  * The bare checkbox of the selection column: `Checkbox` without its field row and label, which a
- * grid cell has no room for.
+ * grid cell has no room for. The grid's stylesheet centres it in its cell.
  */
 export function GridCheckbox({
   label,
@@ -29,7 +30,7 @@ export function GridCheckbox({
 }: GridCheckboxProps) {
   return (
     <BaseCheckbox.Root
-      className={[fieldStyles.controlBox, checkboxStyles.box].join(' ')}
+      className={[fieldStyles.controlBox, checkboxStyles.box, styles.checkbox].join(' ')}
       aria-label={label}
       checked={checked}
       indeterminate={indeterminate}

@@ -8,7 +8,7 @@ import * as stories from './EmptyState.stories';
 
 // `Dark` is composed for its axe pass only: jsdom loads no CSS, so the theme it asks for changes
 // nothing here and the pass proves that both of its cards render and are accessible.
-const { Default, WithActions, Selected, HeadingLevel, Dark } = composeStories(stories);
+const { Default, WithActions, Selected, HeadingLevel, Dark, Bare } = composeStories(stories);
 
 /** The root is the only element a story's render carries `data-tone` on. */
 function rootOf(container: HTMLElement) {
@@ -22,6 +22,7 @@ describe('EmptyState', () => {
     ['Selected', Selected],
     ['HeadingLevel', HeadingLevel],
     ['Dark', Dark],
+    ['Bare', Bare],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -55,6 +56,18 @@ describe('EmptyState', () => {
     expect(root).toHaveAttribute('data-tone', 'neutral');
     expect(root).toHaveAttribute('data-align', 'center');
     expect(root).toHaveClass('root');
+  });
+
+  it('is a card unless bare: bare writes data-bare, which drops its surface and shadow', () => {
+    const { container, rerender } = render(<Default />);
+    expect(rootOf(container)).not.toHaveAttribute('data-bare');
+
+    rerender(<Default bare />);
+    const root = rootOf(container);
+    expect(root).toHaveAttribute('data-bare', '');
+    // The tone and the alignment are still written, so the bare box keeps their rules.
+    expect(root).toHaveAttribute('data-tone', 'neutral');
+    expect(root).toHaveAttribute('data-align', 'center');
   });
 
   it('makes the actions reachable by Tab', async () => {

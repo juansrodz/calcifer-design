@@ -94,15 +94,17 @@ export interface DataGridProps<Row extends RowData> {
   loading?: boolean;
   /**
    * Replaces the default empty message. The grid announces `labels.empty` when it is empty, not
-   * this node, so set `labels.empty` to match your message.
+   * this node, so set `labels.empty` to match your message. Pass `bare` to an `EmptyState` of your
+   * own, so that it sits flat in the grid's card.
    */
   emptyState?: ReactNode;
   /**
-   * Replaces the message shown when filters or search match nothing (by default an `EmptyState`
-   * headed `labels.filteredEmpty`, with a Clear filters button). It receives the grid's "clear
-   * filters and search" action. The grid announces `labels.filteredEmpty`. A read-only query (a
-   * controlled `query` without `onQueryChange`) cannot be cleared, so the action does nothing
-   * there: offer no button for it then, as the default does not.
+   * Replaces the message shown when filters or search match nothing (by default a `bare`
+   * `EmptyState` headed `labels.filteredEmpty`, with a Clear filters button). It receives the
+   * grid's "clear filters and search" action. The grid announces `labels.filteredEmpty`. Pass
+   * `bare` to an `EmptyState` of your own, as the default does, so that it sits flat in the grid's
+   * card. A read-only query (a controlled `query` without `onQueryChange`) cannot be cleared, so
+   * the action does nothing there: offer no button for it then, as the default does not.
    */
   filteredEmptyState?: (clearFilters: () => void) => ReactNode;
   density?: DataGridDensity;

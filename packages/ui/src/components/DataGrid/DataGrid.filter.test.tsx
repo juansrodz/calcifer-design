@@ -269,6 +269,18 @@ describe('the filtered-empty state', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
+  // The grid's card already frames the body, so the empty state inside it is bare: no second card.
+  it('draws the filtered-empty state bare, flat in the grid card', () => {
+    renderGrid({ initialQuery: matchesNothing });
+
+    const heading = within(screen.getByRole('grid')).getByRole('heading', {
+      name: 'No rows match the search or filters.',
+    });
+    const emptyState = heading.parentElement;
+    expect(emptyState).toHaveAttribute('data-bare', '');
+    expect(emptyState).toHaveClass('filteredEmpty');
+  });
+
   // The state cell spans the table, which can be wider than the scroll area (a phone), so the
   // message and its button keep to the scroll area's width, where they can be seen.
   it('keeps the filtered-empty state to the width of the scroll area', () => {

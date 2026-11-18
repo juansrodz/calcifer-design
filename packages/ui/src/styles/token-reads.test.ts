@@ -745,27 +745,110 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: ['--color-accent'],
   },
   {
-    // The row's divider is each cell's own inset line, so a pinned cell's surface never covers it
-    // and the row itself draws no border to be covered.
+    // A body row's divider is the line along the top of each of its cells, drawn by every row but
+    // the first. Along the bottom, a pinned (sticky) cell's line went missing or jogged at
+    // fractional row offsets; the stylesheet says why.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^tr:not\(:first-child\) > :is\(\.cell, \.detailCell, \.errorCell\) \{([^}]*)\}/m,
+    contains: ['box-shadow: inset 0 1px 0 var(--color-border);'],
+    lacks: [],
+  },
+  {
+    // No cell draws a line along its bottom edge any more, and the last row needs no rule to drop
+    // one; the expanded row's panel draws the line above itself and the row after it the one below.
+    file: 'components/DataGrid/DataGrid.module.css',
+    contains: [],
+    lacks: ['inset 0 -1px 0', /^\.row:last-child \.cell/m, /^\.detailRow \{/m],
+  },
+  {
+    // The divider rule above is the only place a cell gets a shadow.
     file: 'components/DataGrid/DataGrid.module.css',
     rule: /^\.cell \{([^}]*)\}/m,
-    contains: ['box-shadow: inset 0 -1px 0 var(--color-border);'],
+    contains: [],
+    lacks: ['box-shadow'],
+  },
+  {
+    // The grid's checkboxes are blocks centred in their cells, not inline boxes on the cell's text
+    // baseline, where a box sat above the middle by 3.2px unchecked and 1.7px checked. Two classes,
+    // so the field skin's `display: inline-flex` loses in whatever order the stylesheets load.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.selectHeader > \.checkbox,\n\.selectCell > \.checkbox \{([^}]*)\}/m,
+    contains: ['display: flex;', 'margin-inline: auto;'],
     lacks: [],
   },
   {
-    // The last row closes the body with no divider under it.
+    // The error cell spans the table, which can be wider than the scroll area (a phone), so its
+    // focus ring goes on the in-view box rather than on the cell, whose far edge is out of view.
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^\.row:last-child \.cell \{([^}]*)\}/m,
-    contains: ['box-shadow: none;'],
+    rule: /^\.errorCell:focus-visible \{([^}]*)\}/m,
+    contains: ['outline: none;'],
     lacks: [],
   },
   {
-    // The expanded row's own divider is the line above its panel; the panel adds only the one
-    // below, so the two never double.
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^\.detailRow \{([^}]*)\}/m,
-    contains: ['border-block-end: 1px solid var(--color-border);'],
-    lacks: ['border-block:', 'border-block-start'],
+    rule: /^\.errorCell:focus-visible > \.inView \{([^}]*)\}/m,
+    contains: [
+      'outline: var(--focus-ring-width) solid var(--color-focus);',
+      'outline-offset: calc(var(--focus-ring-width) * -1);',
+    ],
+    lacks: [],
+  },
+  {
+    // The cell's block padding moves onto the in-view box, so the ring keeps clear of the button.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.errorCell \{([^}]*)\}/m,
+    contains: ['padding: 0;'],
+    lacks: ['var(--space-3)'],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.errorContent \{([^}]*)\}/m,
+    contains: ['padding-block: var(--space-3);'],
+    lacks: [],
+  },
+  {
+    // The shared ring rule no longer names the error cell.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^(\.headerCell:focus-visible,[^{]*)\{/m,
+    contains: ['.detailCell:focus-visible'],
+    lacks: ['.errorCell'],
+  },
+  {
+    // The band sticks 1px above the scroll area's top edge. A composited sticky layer can land up
+    // to a device pixel below the clip (headed, GPU-composited Chrome), which let one row of body
+    // text show above the band; the overlap puts that rounding under the band instead.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.head \{([^}]*)\}/m,
+    contains: ['position: sticky;', 'inset-block-start: -1px;'],
+    lacks: ['inset-block-start: 0;'],
+  },
+  {
+    // The band's top hairline is the scroll area's own border: outside the clip, so it stays put
+    // while the band sticks 1px above it.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.scroll \{([^}]*)\}/m,
+    contains: ['border-block-start: 1px solid var(--color-border);'],
+    lacks: [],
+  },
+  {
+    // The header cells draw only their bottom hairline: the top one is the scroll area's border.
+    file: 'components/DataGrid/DataGrid.module.css',
+    contains: [],
+    lacks: [/\.headerCell::before/],
+  },
+  {
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.headerCell::after \{([^}]*)\}/m,
+    contains: ['inset-block-end: 0;', 'border-block-start: 1px solid var(--color-border);'],
+    lacks: ['inset-block-start'],
+  },
+  {
+    // The row actions header's hairline joins that border to the bottom one, so it draws no top
+    // line of its own.
+    file: 'components/DataGrid/DataGrid.module.css',
+    rule: /^\.headerCell\.actionsHeader::after \{([^}]*)\}/m,
+    contains: ['border-block-start: 0;', 'border-block-end: 1px solid var(--color-border);'],
+    lacks: [],
   },
   {
     // The state and error rows' content sticks to the scroll area's inline start, so it stays in
@@ -781,15 +864,16 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // Forced colours drop box-shadow, so there the row draws its divider as a border again.
+    // Forced colours drop box-shadow, so there each row and each open panel draws the line under
+    // it as a border instead, all but the last.
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^@media \(forced-colors: active\) \{\n {2}\.row \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.row,\n {2}\.detailRow \{([^}]*)\}/m,
     contains: ['border-block-end: 1px solid var(--color-border);'],
     lacks: [],
   },
   {
     file: 'components/DataGrid/DataGrid.module.css',
-    rule: /^ {2}\.row:last-child \{([^}]*)\}/m,
+    rule: /^ {2}\.row:last-child,\n {2}\.detailRow:last-child \{([^}]*)\}/m,
     contains: ['border-block-end: 0;'],
     lacks: [],
   },
@@ -1907,6 +1991,20 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/EmptyState/EmptyState.module.css',
     rule: /^\.root\[data-align='start'\] \{([^}]*)\}/m,
     contains: ['align-items: flex-start;', 'text-align: start;'],
+    lacks: [],
+  },
+  // `bare` drops the card's shadow and, under the neutral tone, its surface, for a container that
+  // already frames it. The selected tone keeps its fill, which its text colour needs.
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-bare\] \{([^}]*)\}/m,
+    contains: ['box-shadow: none;'],
+    lacks: ['background'],
+  },
+  {
+    file: 'components/EmptyState/EmptyState.module.css',
+    rule: /^\.root\[data-bare\]\[data-tone='neutral'\] \{([^}]*)\}/m,
+    contains: ['background: none;'],
     lacks: [],
   },
   {
