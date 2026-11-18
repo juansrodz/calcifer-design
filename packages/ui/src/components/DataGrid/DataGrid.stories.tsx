@@ -330,14 +330,17 @@ function TabsOverGrid() {
   const status = query.filters.status;
   return (
     <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
-      <Segmented
-        aria-label="Stock"
-        options={stockTabs}
-        value={typeof status === 'string' ? status : 'all'}
-        onValueChange={(value) =>
-          setQuery({ ...query, filters: value === 'all' ? {} : { status: value } })
-        }
-      />
+      {/* Tabs take their own width, not the column's. */}
+      <div style={{ justifySelf: 'start' }}>
+        <Segmented
+          aria-label="Stock"
+          options={stockTabs}
+          value={typeof status === 'string' ? status : 'all'}
+          onValueChange={(value) =>
+            setQuery({ ...query, filters: value === 'all' ? {} : { status: value } })
+          }
+        />
+      </div>
       <DataGrid<InventoryRow>
         gridId="inventory-filters-off-story"
         heading="Inventory by stock"
