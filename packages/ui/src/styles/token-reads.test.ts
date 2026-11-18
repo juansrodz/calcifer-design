@@ -757,6 +757,27 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/\{/],
   },
+  // The icon a caller puts in a pressed button sits inside the opt-out, so its token colours were
+  // painted as they are (a tinted icon at 1.4:1 on the fill). It takes the button's ink, as in
+  // `Button`, with `!important` so an inline colour cannot beat it; a loading button is left out,
+  // as its spinner sits in the same slot and draws its own track.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-pressed\]:not\(\[data-loading\]\) \.icon \* \{([^}]*)\}/m,
+    contains: [
+      '--icon-button-content-edge: currentcolor;',
+      'border-color: var(--icon-button-content-edge) !important;',
+      'background-color: transparent !important;',
+      ' color: inherit !important;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/!important;/],
+  },
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkIconButton` had no hover cue under forced colours. The rule gives it the one an
   // `IconButton`, a `Button` and a `LinkButton` have; a disabled button keeps its `GrayText` edge.
