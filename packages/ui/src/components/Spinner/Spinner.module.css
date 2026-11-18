@@ -1,7 +1,8 @@
 /* A ring with one quarter in the accent colour, rotating. The open quarter is what reads as
-   motion, so the track and the head share a width and differ only in colour. The reduced-motion
-   rule in base.css collapses the animation to a single 0.01ms iteration, which leaves this as a
-   static ring — the intended behaviour, so there is no media query here. */
+   motion, so the track and the head share a width and differ only in colour (forced colours thin
+   the track, see the end of the file). The reduced-motion rule in base.css collapses the animation
+   to a single 0.01ms iteration, which leaves this as a static ring — the intended behaviour, so
+   there is no media query here. */
 .root {
   display: inline-block;
   flex: none;
@@ -39,5 +40,31 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Forced colours replace every border colour with the text colour, so the ring is drawn in one
+   colour all the way round and nothing shows it turning; and an ancestor that opts out of the
+   recolouring (a pressed control, which draws its own fill) lets the accent head and the faint
+   track through on a fill they were not chosen for. The colours are named here instead.
+
+   The head is the ink the spinner inherits (`Canvas` on a `GrayText` fill, `HighlightText` on a
+   `Highlight` one, the text colour on the page), held in a local property because the style lint
+   takes `currentColor` from one rule and `currentcolor` from another. It keeps its width, so the
+   spinner's box does not move (the border is inside it).
+
+   The track is `GrayText` and thinner, 1 px, so the head is told apart by weight as well as by
+   colour: `GrayText` and the text colour are close in luminance in the high contrast themes (about
+   1.5:1), and on a `GrayText` fill (a disabled, pressed control) the track vanishes and the head
+   alone reads, an open arc. */
+@media (forced-colors: active) {
+  .root {
+    --spinner-head: currentcolor;
+
+    border-width: 1px;
+    border-top-width: var(--border-width-emphasis);
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    border-color: GrayText;
+    border-top-color: var(--spinner-head);
   }
 }

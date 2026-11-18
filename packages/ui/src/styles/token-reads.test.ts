@@ -1154,14 +1154,73 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: ['--color-accent', '--color-border-strong'],
   },
-  // Forced colours: a chosen primary or secondary keeps a `Highlight` edge, its only cue once the
-  // fills are replaced. The bare `[data-variant]` weighs it (0,4,0), over the selected secondary's
-  // (0,3,0) transparent border, so it does not win by source order alone.
+  // Forced colours: a chosen primary or secondary is a `Highlight` fill with `HighlightText` ink,
+  // drawn outside the browser's own recolouring (`forced-color-adjust: none`) as a pressed
+  // `IconButton` is. The `Highlight` edge alone moved it only 1.9:1 (light) and 2.3:1 (dark) from
+  // the resting edge, so the fill is the cue. The opt-out would keep the primary's shadow, so it is
+  // cleared, and the ring is `CanvasText`, as the fill would swallow a `Highlight` one. The bare
+  // `[data-variant]` weighs it (0,4,0), over the selected secondary's (0,3,0) transparent border,
+  // so it does not win by source order alone.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{\n {2}\.root\[data-tone='selected'\]\[data-variant\]:is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
-    contains: ['border-color: Highlight;'],
+    contains: [
+      'forced-color-adjust: none;',
+      'box-shadow: none;',
+      'border-color: Highlight;',
+      'background: Highlight;',
+      ' color: HighlightText;',
+      'outline-color: CanvasText;',
+    ],
     lacks: [],
+  },
+  // A disabled or loading button (Base UI sets `data-disabled` on both) is `GrayText`, the system's
+  // own disabled colour, and not dimmed as well, as on `ChoiceCard`: the 45% dim on top of it left
+  // the label and the edge at 3.0 and 3.3:1, and a loading button (not natively disabled) was
+  // `ButtonText` at 45%. A pending button is exempt: it is busy, not dimmed. The rule weighs
+  // (0,5,0), as the inverse primary's disabled rule inside `@supports` does, so it comes after that
+  // one in the file.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@supports \(color: color-mix\(in srgb, red, blue\)\) \{[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-variant\]\[data-tone\]\[data-disabled\]:not\(\[data-pending\]\) \{([^}]*)\}/m,
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
+    lacks: ['opacity: 0.45'],
+  },
+  // A chosen button that is disabled or loading reads disabled while its fill still says chosen: a
+  // `GrayText` fill with a `Canvas` ink, as a pressed disabled `IconButton`. It weighs (0,6,0),
+  // over the disabled rule above whatever the order.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-tone='selected'\]\[data-variant\]\[data-disabled\]:not\(\[data-pending\]\):is\(\s*\[data-variant='primary'\],\s*\[data-variant='secondary'\]\s*\) \{([^}]*)\}/m,
+    contains: ['background: GrayText;', ' color: Canvas;'],
+    lacks: ['Highlight'],
+  },
+  // The loading label's own 70% dim would take the `GrayText` label under 7:1. A pending button is
+  // left to the rule after this one.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-loading\]:not\(\[data-pending\]\) \.label \{([^}]*)\}/m,
+    contains: ['opacity: 1;'],
+    lacks: [],
+  },
+  // A pending button's label is hidden under the spinner by `opacity: 0` alone in forced colours:
+  // the `color: transparent` that hides it in the default look reverts to the system text colour.
+  // A button that is `loading` as well meets the loading rule's 70% at (0,3,0), which beats the
+  // overlay rule's (0,2,0), so the label showed through at 70%; this rule weighs (0,4,0).
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root\[data-pending\] \.pendingOverlay \+ \.label \{([^}]*)\}/m,
+    contains: ['opacity: 0;'],
+    lacks: [],
+  },
+  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back, as
+  // the block's rules tie with the `@supports` rule and the base rules and win by coming later.
+  // Every rule inside the block is indented, so the first `}` at the start of a line closes it.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
   {
     // The dimmed fill and ink sit inside the `@supports` block, and nothing else in the file mixes a
@@ -2457,7 +2516,7 @@ const expectations: ReadonlyArray<Expectation> = [
     // is the cue, so the card is not dimmed as well.
     file: 'components/ChoiceCard/ChoiceCard.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.card\[data-checked\] \{[^}]*\}\n\n {2}\.card\[data-disabled\] \{([^}]*)\}/m,
-    contains: ['opacity: 1;', 'border-color: GrayText;', 'color: GrayText;'],
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
     lacks: ['opacity: 0.45'],
   },
   {
@@ -2546,6 +2605,22 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['opacity: 0.45;'],
     lacks: [],
   },
+  // A disabled chip is `GrayText` and not dimmed as well: the 45% dim on top of it left the label
+  // and the edge at 3.0 and 3.3:1. A pressed one is a `GrayText` fill with a `Canvas` ink, not a
+  // dimmed `Highlight` (2.4:1): it reads disabled and its fill still says pressed. Both follow the
+  // top-level disabled rule, as the first ties it at (0,2,0) and wins by coming later.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 1;', 'border-color: GrayText;', ' color: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^\.chip\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.chip\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['background: GrayText;', ' color: Canvas;'],
+    lacks: ['Highlight'],
+  },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     rule: /^\.icon > \* \{([^}]*)\}/m,
@@ -2569,6 +2644,35 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.row \{([^}]*)\}/m,
     contains: ['display: flex;', 'flex-wrap: wrap;', 'gap: var(--space-2);'],
     lacks: [],
+  },
+
+  // Forced colours on `Segmented`: the chosen option is a `Highlight` fill with `HighlightText`
+  // ink, drawn outside the recolouring. A disabled option is `GrayText` and not dimmed as well (the
+  // dim took the label to 3.0 and 3.3:1), and a chosen one that is disabled is a `GrayText` fill
+  // with a `Canvas` ink, not a dimmed `Highlight` (2.4:1). Both follow the top-level disabled rule,
+  // as the first ties it at (0,2,0) and wins by coming later.
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}\.option\[data-pressed\] \{([^}]*)\}/m,
+    contains: [
+      'forced-color-adjust: none;',
+      'background: Highlight;',
+      ' color: HighlightText;',
+      'outline-color: CanvasText;',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['opacity: 1;', ' color: GrayText;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Segmented/Segmented.module.css',
+    rule: /^\.option\[data-disabled\] \{[^}]*\}[\s\S]*?^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.option\[data-pressed\]\[data-disabled\] \{([^}]*)\}/m,
+    contains: ['background: GrayText;', ' color: Canvas;'],
+    lacks: ['Highlight'],
   },
 
   // `ProgressBar`: a label row, a track and a helper line. The fill's colour is a local property,
@@ -2732,6 +2836,43 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^ {2}\.indicator \{([^}]*)\}/m,
     contains: ['forced-color-adjust: none;', 'background: Highlight;'],
     lacks: [],
+  },
+
+  // `Spinner`: a ring with one quarter in the accent colour. Forced colours collapse every border to
+  // the text colour, so the ring was uniform and its rotation invisible, and an ancestor with
+  // `forced-color-adjust: none` (a pressed control) let the token colours through. The forced rule
+  // names the colours: a head in the ink the spinner inherits (a local property holds `currentcolor`
+  // because the style lint takes `currentColor` from one rule and `currentcolor` from another) and a
+  // thinner `GrayText` track, so the head is told apart by weight, not by colour alone. The head
+  // keeps its width; the track is 1 px.
+  {
+    file: 'components/Spinner/Spinner.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [
+      'border: var(--border-width-emphasis) solid var(--color-border-strong);',
+      'border-top-color: var(--color-accent);',
+    ],
+    lacks: ['GrayText', 'currentcolor'],
+  },
+  {
+    file: 'components/Spinner/Spinner.module.css',
+    rule: /^\.root \{[\s\S]*?^@media \(forced-colors: active\) \{\n {2}\.root \{([^}]*)\}/m,
+    contains: [
+      '--spinner-head: currentcolor;',
+      'border-width: 1px;',
+      'border-top-width: var(--border-width-emphasis);',
+      'border-color: GrayText;',
+      'border-top-color: var(--spinner-head);',
+    ],
+    lacks: ['--color-accent', '--color-border-strong'],
+  },
+  // Nothing follows the block either: the forced rule ties the base `.root` at (0,1,0) and wins by
+  // coming later, so a rule appended after it would win the borders back.
+  {
+    file: 'components/Spinner/Spinner.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
 ];
 
