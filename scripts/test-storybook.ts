@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { resolve, sep } from 'node:path';
 
 // Serves the built Storybook (`bun run storybook:build` writes packages/ui/storybook-static) on a
@@ -35,22 +36,63 @@ const server = Bun.serve({
   },
 });
 
-const runner = Bun.spawn(
-  [
-    resolve(repoRoot, 'node_modules/.bin/test-storybook'),
-    '--url',
-    `http://127.0.0.1:${server.port}`,
-    ...process.argv.slice(2),
-  ],
-  { cwd: uiDirectory, stdout: 'inherit', stderr: 'inherit' },
+// `detached` puts the runner in a process group of its own, which jest and its workers join, so
+// a signal sent to this script alone can be passed to all of them instead of orphaning the
+// workers. Ctrl-C in a terminal now reaches only this script, which passes it on the same way.
+const runner = spawn(
+  resolve(repoRoot, 'node_modules/.bin/test-storybook'),
+  ['--url', `http://127.0.0.1:${server.port}`, ...process.argv.slice(2)],
+  { cwd: uiDirectory, stdio: 'inherit', detached: true },
 );
+const runnerExited = new Promise<number | null>((settle) => {
+  runner.on('exit', (code) => settle(code));
+  runner.on('error', (error) => {
+    console.error(`storybook:test: could not start test-storybook: ${error.message}`);
+    settle(null);
+  });
+});
 
+function signalRunnerGroup(signal: NodeJS.Signals) {
+  if (runner.pid === undefined) {
+    return;
+  }
+  try {
+    // A negative pid signals the whole group.
+    process.kill(-runner.pid, signal);
+  } catch {
+    // The group has already gone.
+  }
+}
+
+let stopped = false;
 function stop() {
-  runner.kill();
+  stopped = true;
+  signalRunnerGroup('SIGTERM');
 }
 process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
 
-const exitCode = await runner.exited;
+function runnerGroupAlive(): boolean {
+  if (runner.pid === undefined) {
+    return false;
+  }
+  try {
+    process.kill(-runner.pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const exitCode = await runnerExited;
+// `test-storybook` is a wrapper that can exit before jest has finished its teardown (which closes
+// the browser), so wait for the group to empty. jest-worker replaces a worker that dies mid-run,
+// so a stop can leave a fresh worker behind; whatever outlives the wait is killed.
+const groupDeadline = Date.now() + 5_000;
+while (runnerGroupAlive() && Date.now() < groupDeadline) {
+  await Bun.sleep(100);
+}
+signalRunnerGroup('SIGKILL');
 await server.stop(true);
-process.exit(exitCode);
+// 143 (128 + SIGTERM) whenever the run was stopped, whichever signal stopped it.
+process.exit(stopped ? 143 : (exitCode ?? 1));
