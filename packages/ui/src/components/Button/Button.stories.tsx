@@ -166,3 +166,41 @@ export const FocusVisible: Story = {
     await expect(canvas.getByRole('button')).toHaveFocus();
   },
 };
+
+/**
+ * A destructive action on a fill of the consumer's own, from the hooks alone: a class on the
+ * button sets `--button-fill`, `--button-fill-hover` and `--button-label-color`. No selector
+ * matches `[data-tone]` and none weighs more than the class: the library declares no hook, so the
+ * class wins at rest, on hover, pressed, focused, disabled and busy. `--button-label-color-hover`
+ * is left out, so the hover label falls back to `--button-label-color`. Here the fill is the
+ * theme's danger colour on the inverse ink (white in light, near-black in dark), and the hover
+ * fill moves it a step toward the text colour, which deepens it in light and lifts it in dark.
+ */
+export const DangerViaHooks: Story = {
+  parameters: { controls: { disable: true } },
+  render: () => (
+    <>
+      <style>{`.button-danger {
+  --button-fill: var(--color-danger);
+  --button-fill-hover: color-mix(in srgb, var(--color-danger) 88%, var(--color-text));
+  --button-label-color: var(--color-inverse-text);
+}`}</style>
+      <Button className="button-danger">Delete event</Button>
+    </>
+  ),
+  // Runs in a browser only (jsdom loads no CSS): the button paints the hooks' pair, not the
+  // accent's, though it carries `data-tone="accent"`. Probes resolve the two tokens in this theme.
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole('button', { name: 'Delete event' });
+    const probe = canvasElement.ownerDocument.createElement('span');
+    probe.style.background = 'var(--color-danger)';
+    probe.style.color = 'var(--color-inverse-text)';
+    canvasElement.append(probe);
+    const expected = getComputedStyle(probe);
+    const painted = getComputedStyle(button);
+    await expect(button).toHaveAttribute('data-tone', 'accent');
+    await expect(painted.backgroundColor).toBe(expected.backgroundColor);
+    await expect(painted.color).toBe(expected.color);
+    probe.remove();
+  },
+};
