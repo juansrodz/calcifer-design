@@ -904,6 +904,15 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+  // The browser turns a hovered button's border `Highlight` on its own, and paints it even on a
+  // dimmed one, so a button marked `aria-disabled` keeps its resting `ButtonText` there. Not one
+  // that is `data-disabled` too (a loading button keeps its `GrayText`), nor a pressed one.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root\[aria-disabled='true'\]:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    contains: [' border-color: ButtonText;'],
+    lacks: [],
+  },
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
   // `GrayText`: the dim took the glyph, the edge and a focused loading button's ring under 3:1.
   // The bare `color:` entries here and below carry a leading space: `contains` is a substring test,
