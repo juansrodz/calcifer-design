@@ -27,46 +27,28 @@
    share one centre line. A heading that wraps to three lines or more takes the end group to the
    middle of the block with it; the mock has no such case.
 
-   The close's 44 px touch target reaches past its 36 px circle by half the difference, on every
-   side, and the popup clips what passes its padding edge (it scrolls) and its rounded corners. The
-   target is a square, and its corner clears the popup's rounded corner when it sits
-   `r × (1 - 1/√2)` (0.293 r) in from both edges, on the arc. An edge whose padding hook
-   (`popup.module.css`) is set under the reach and that corner inset together would clip the
-   target, so the header pads the rest on that edge: at the inline end always, at the block start
-   when the header comes first (a centred dialog, an end drawer; the bottom sheet's handle sits
-   above its header), and at the block end when nothing follows it. Each edge is held to the corner
-   inset on its own, which is more than a corner needs when the other edge is roomy; the cost is a
-   few pixels, only under a padding of about 9 px or less. At the default 24 px each room is
-   `0px`. */
+   The close's 44 px target reaches 4 px past its 36 px circle, and the popup clips at its padding
+   edge and its rounded corner; the target's square corner clears a corner of radius r when it is
+   r × (1 - 1/√2), 0.293 r, in from both edges. Under an inline padding thinner than the reach plus
+   that inset, the header pads the rest at its inline end. At 24 px the room is `0px` for any
+   `--radius-dialog` under about 68 px. The block edges get no room: no hook moves the header's top
+   in a centred dialog or a drawer. In the bottom sheet the handle and its gap sit above it, which
+   clear the corner while `--sheet-padding-block-start` and `--sheet-handle-gap` add up to at least
+   0.293 r less 1 px (4 px at the default radius); the `SheetAtTheFloor` story holds that floor. */
 .header {
   --dialog-close-reach: calc((var(--size-touch) - var(--size-close)) / 2);
   --dialog-close-corner: calc(var(--radius-dialog) * 0.293);
-  --dialog-close-clearance: calc(var(--dialog-close-reach) + var(--dialog-close-corner));
   --dialog-header-room-inline-end: max(
     0px,
-    calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-inline))
-  );
-  --dialog-header-room-block-start: max(
-    0px,
-    calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-block-start))
-  );
-  --dialog-header-room-block-end: max(
-    0px,
-    calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-block-end))
+    calc(
+      var(--dialog-close-reach) + var(--dialog-close-corner) - var(--dialog-surface-padding-inline)
+    )
   );
 
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding-inline-end: var(--dialog-header-room-inline-end);
-}
-
-.header:first-child {
-  padding-block-start: var(--dialog-header-room-block-start);
-}
-
-.header:last-child {
-  padding-block-end: var(--dialog-header-room-block-end);
 }
 
 /* The three `--dialog-heading-*` hooks are set by a consumer on a `ThemeScope` (whose portal host
@@ -103,19 +85,10 @@ h4.heading {
 }
 
 /* The sheet's grab handle: a bottom sheet's first child, drawn only for that placement. Its size is
-   a consumer hook; the colour is the theme's. Its distance from the sheet's top edge is the
-   sheet's block-start padding (`--sheet-padding-block-start`), and the space under it is
-   `--sheet-handle-gap`, which defaults to the sheet's `--space-4` gap: the end margin is the hook
-   less that gap, `0px` by default. The private length is registered so a bare `0` still computes. */
-@property --dialog-handle-gap {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0;
-}
-
+   a consumer hook; the colour is the theme's. `--sheet-handle-gap` replaces the sheet's `--space-4`
+   gap under it: the end margin is the hook less that gap, `0px` by default. */
 .handle {
-  --dialog-handle-gap: var(--sheet-handle-gap, var(--space-4));
-  --dialog-handle-gap-shift: calc(var(--dialog-handle-gap) - var(--space-4));
+  --dialog-handle-gap-shift: calc(var(--sheet-handle-gap, var(--space-4)) - var(--space-4));
 
   width: var(--sheet-handle-width, 2.5rem);
   height: var(--sheet-handle-height, 0.3125rem);
@@ -138,10 +111,8 @@ h4.heading {
    long dialog usable on a short viewport. Scrolling clips at the body's padding edge, and a focused
    control at the body's edge draws its ring (the ring width plus its offset) outside the control, so
    the body pads that much and takes it back as a negative margin: the ring shows, and the content
-   sits exactly where it did. A margin that reached past the popup's own padding would overflow
-   the popup and scroll it sideways, so where a padding hook sets an edge thinner than the room,
-   the margin takes back only the padding, and the content sits the rest further in: on the inline
-   sides, and at the block end when nothing follows the body. */
+   sits exactly where it did. Under an inline padding hook thinner than the room, the margin takes
+   back only the padding, so the popup does not scroll sideways. */
 .body {
   --dialog-body-ring-room: calc(var(--focus-ring-width) + var(--focus-ring-offset));
   --dialog-body-ring-reach: calc(var(--dialog-body-ring-room) * -1);
@@ -155,14 +126,6 @@ h4.heading {
   padding: var(--dialog-body-ring-room);
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-.body:last-child {
-  --dialog-body-ring-reach-block-end: calc(
-    min(var(--dialog-body-ring-room), var(--dialog-surface-padding-block-end)) * -1
-  );
-
-  margin-block-end: var(--dialog-body-ring-reach-block-end);
 }
 
 /* A body that overflows is a Tab stop (`Dialog.tsx`). Its ring is drawn inward, inside the ring

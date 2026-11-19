@@ -1941,110 +1941,76 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
-  // `Dialog`'s padding hooks (V-m3). Each placement resolves its three edges into the registered
-  // `--dialog-surface-padding-*` lengths: its own hook (`--sheet-padding-*` on the bottom sheet,
-  // `--drawer-padding-*` on the end drawer), then `--dialog-padding-*`, then `--space-5`, the
-  // padding every placement drew before. The entries carry a leading space, so `padding-block:`
-  // cannot match inside `--dialog-surface-padding-block:` or a longer property name.
+  // `Dialog`'s padding hooks (V-m3): `--sheet-padding-block-start`, `--sheet-padding-inline`,
+  // `--sheet-handle-gap` and `--drawer-padding-inline`, each defaulting to the step it replaces.
+  // Each placement declares `--dialog-surface-padding-inline`, which the header and the body read.
+  // The entries carry a leading space, so a longer property name cannot match them.
   {
     file: 'styles/popup.module.css',
     rule: /^\.surface\[data-popup='dialog'\] \{([^}]*)\}/m,
-    contains: [
-      ' --dialog-surface-padding-block-start: var(--dialog-padding-block-start, var(--space-5));',
-      ' --dialog-surface-padding-block-end: var(--dialog-padding-block-end, var(--space-5));',
-      ' --dialog-surface-padding-inline: var(--dialog-padding-inline, var(--space-5));',
-      ' padding-block: var(--dialog-surface-padding-block-start) var(--dialog-surface-padding-block-end);',
-      ' padding-inline: var(--dialog-surface-padding-inline);',
-    ],
-    lacks: [' padding:', '--sheet-padding', '--drawer-padding'],
+    contains: [' --dialog-surface-padding-inline: var(--space-5);', ' padding: var(--space-5);'],
+    lacks: ['--sheet-padding', '--drawer-padding', '--dialog-padding'],
   },
   {
     file: 'styles/popup.module.css',
     rule: /^\.surface\[data-popup='sheet'\] \{([^}]*)\}/m,
     contains: [
-      wrappedDeclaration(
-        ' --dialog-surface-padding-block-start: var(--sheet-padding-block-start, var(--dialog-padding-block-start, var(--space-5)));',
-      ),
-      wrappedDeclaration(
-        ' --dialog-surface-padding-block-end: var(--sheet-padding-block-end, var(--dialog-padding-block-end, var(--space-5)));',
-      ),
-      wrappedDeclaration(
-        ' --dialog-surface-padding-inline: var(--sheet-padding-inline, var(--dialog-padding-inline, var(--space-5)));',
-      ),
-      ' padding-block: var(--dialog-surface-padding-block-start) var(--dialog-surface-padding-block-end);',
+      ' --dialog-surface-padding-inline: var(--space-5);',
+      ' padding-block: var(--space-5);',
       ' padding-inline: var(--dialog-surface-padding-inline);',
+      // The gap the handle's margin takes back is the sheet's own.
+      ' gap: var(--space-4);',
     ],
-    lacks: [' padding:', '--drawer-padding'],
+    lacks: [' padding:', '--sheet-padding', '--drawer-padding', '--dialog-padding'],
   },
   {
-    // The drawer redeclares the three lengths and inherits the sheet rule's padding declarations,
-    // which read them, so no `--sheet-padding-*` hook reaches it.
+    // The bottom sheet's hooks, on the bottom side alone, so none reaches the drawer.
+    file: 'styles/popup.module.css',
+    rule: /^\.surface\[data-popup='sheet'\]\[data-side='bottom'\] \{([^}]*)\}/m,
+    contains: [
+      ' --dialog-surface-padding-inline: var(--sheet-padding-inline, var(--space-5));',
+      ' padding-block-start: var(--sheet-padding-block-start, var(--space-5));',
+    ],
+    lacks: [' padding:', ' padding-block:', ' padding-inline', '--drawer-padding'],
+  },
+  {
     file: 'styles/popup.module.css',
     rule: /^\.surface\[data-popup='sheet'\]\[data-side='end'\] \{([^}]*)\}/m,
-    contains: [
-      wrappedDeclaration(
-        ' --dialog-surface-padding-block-start: var(--drawer-padding-block-start, var(--dialog-padding-block-start, var(--space-5)));',
-      ),
-      wrappedDeclaration(
-        ' --dialog-surface-padding-block-end: var(--drawer-padding-block-end, var(--dialog-padding-block-end, var(--space-5)));',
-      ),
-      wrappedDeclaration(
-        ' --dialog-surface-padding-inline: var(--drawer-padding-inline, var(--dialog-padding-inline, var(--space-5)));',
-      ),
-    ],
+    contains: [' --dialog-surface-padding-inline: var(--drawer-padding-inline, var(--space-5));'],
     lacks: [' padding', '--sheet-padding'],
   },
-  // Registered as lengths, so a consumer's bare `0` computes to `0px` and the header's arithmetic
-  // below stays valid; an unregistered `0` would make that `calc()` invalid and drop the room.
-  ...['block-start', 'block-end', 'inline'].map((edge): Expectation => ({
-    file: 'styles/popup.module.css',
-    rule: new RegExp(`^@property --dialog-surface-padding-${edge} \\{([^}]*)\\}`, 'm'),
-    contains: [" syntax: '<length-percentage>';", ' inherits: true;', ' initial-value: 0;'],
-    lacks: [],
-  })),
   {
-    // The close's 44 px touch target reaches past its 36 px circle by half the difference, and its
-    // square corner must also clear the popup's rounded corner: inset `r × (1 - 1/√2)` from both
-    // edges, it sits on the arc. Where an edge's padding is less than the two together, the header
-    // pads the rest, so the target stays inside the popup's clip; at the default 24 px each room is
-    // `0px`.
+    // No registered custom properties: the hooks take a length with a unit.
+    file: 'styles/popup.module.css',
+    contains: [],
+    lacks: ['@property', '--dialog-surface-padding-block'],
+  },
+  {
+    // The close's 44 px target reaches 4 px past its 36 px circle, and its square corner clears
+    // the popup's rounded corner 0.293 r in from both edges. Under a thinner inline padding the
+    // header pads the rest at its inline end; at the default 24 px the room is `0px`.
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.header \{([^}]*)\}/m,
     contains: [
       ' --dialog-close-reach: calc((var(--size-touch) - var(--size-close)) / 2);',
       ' --dialog-close-corner: calc(var(--radius-dialog) * 0.293);',
-      ' --dialog-close-clearance: calc(var(--dialog-close-reach) + var(--dialog-close-corner));',
       wrappedDeclaration(
-        ' --dialog-header-room-inline-end: max(0px, calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-inline)));',
-      ),
-      wrappedDeclaration(
-        ' --dialog-header-room-block-start: max(0px, calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-block-start)));',
-      ),
-      wrappedDeclaration(
-        ' --dialog-header-room-block-end: max(0px, calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-block-end)));',
+        ' --dialog-header-room-inline-end: max(0px, calc(var(--dialog-close-reach) + var(--dialog-close-corner) - var(--dialog-surface-padding-inline)));',
       ),
       ' padding-inline-end: var(--dialog-header-room-inline-end);',
     ],
-    lacks: [' padding:', ' padding-inline:', ' padding-block'],
+    lacks: [' padding:', ' padding-inline:', ' padding-block', 'header-room-block'],
   },
   {
-    // A header is first in a centred dialog and an end drawer (the bottom sheet's handle comes
-    // before it), and last in a dialog with nothing under it.
+    // Only the inline end has a room: no hook moves a header's block edges.
     file: 'components/Dialog/Dialog.module.css',
-    rule: /^\.header:first-child \{([^}]*)\}/m,
-    contains: [' padding-block-start: var(--dialog-header-room-block-start);'],
-    lacks: [' padding-block-end', ' padding-inline'],
+    contains: [],
+    lacks: ['.header:first-child', '.header:last-child', '.body:last-child', '@property'],
   },
   {
-    file: 'components/Dialog/Dialog.module.css',
-    rule: /^\.header:last-child \{([^}]*)\}/m,
-    contains: [' padding-block-end: var(--dialog-header-room-block-end);'],
-    lacks: [' padding-block-start', ' padding-inline'],
-  },
-  {
-    // The body's ring room reaches past the popup's content edge by its negative margin. Under a
-    // padding thinner than the room, that would overflow the popup and scroll it sideways, so the
-    // inline margin takes back no more than the padding; at the default it is the whole room.
+    // The body's ring room reaches past the content edge by its negative margin; under an inline
+    // padding thinner than the room the margin takes back only the padding, so the popup does not
+    // scroll sideways. At the default it is the whole room.
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.body \{([^}]*)\}/m,
     contains: [
@@ -2056,41 +2022,15 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   {
-    // A body with no footer under it is the popup's last part, and meets the block-end padding.
-    file: 'components/Dialog/Dialog.module.css',
-    rule: /^\.body:last-child \{([^}]*)\}/m,
-    contains: [
-      wrappedDeclaration(
-        ' --dialog-body-ring-reach-block-end: calc(min(var(--dialog-body-ring-room), var(--dialog-surface-padding-block-end)) * -1);',
-      ),
-      ' margin-block-end: var(--dialog-body-ring-reach-block-end);',
-    ],
-    lacks: [' margin:', ' margin-inline'],
-  },
-  {
     // `--sheet-handle-gap` replaces the sheet's `--space-4` gap under the handle: the handle's end
     // margin is the hook less that gap, `0px` by default.
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.handle \{([^}]*)\}/m,
     contains: [
-      ' --dialog-handle-gap: var(--sheet-handle-gap, var(--space-4));',
-      ' --dialog-handle-gap-shift: calc(var(--dialog-handle-gap) - var(--space-4));',
+      ' --dialog-handle-gap-shift: calc(var(--sheet-handle-gap, var(--space-4)) - var(--space-4));',
       ' margin-block-end: var(--dialog-handle-gap-shift);',
     ],
-    lacks: [' margin:', ' margin-block:'],
-  },
-  {
-    file: 'components/Dialog/Dialog.module.css',
-    rule: /^@property --dialog-handle-gap \{([^}]*)\}/m,
-    contains: [" syntax: '<length>';", ' inherits: false;', ' initial-value: 0;'],
-    lacks: [],
-  },
-  {
-    // The gap the handle's margin takes back is the sheet's own.
-    file: 'styles/popup.module.css',
-    rule: /^\.surface\[data-popup='sheet'\] \{([^}]*)\}/m,
-    contains: [' gap: var(--space-4);'],
-    lacks: [],
+    lacks: [' margin:', ' margin-block:', '--dialog-handle-gap:'],
   },
   {
     // `base.css` tracks `h1` to `h3` only, so an `h4` heading keeps the browser's `normal`; the hook

@@ -15,6 +15,23 @@ export type DialogVariant = 'center' | 'sheet';
 /** The edge a sheet docks to: `bottom` is the phone pattern, `end` a full-height side panel. */
 export type SheetSide = 'bottom' | 'end';
 
+/**
+ * Dialog's consumer hooks are custom properties set on a `ThemeScope` (whose portal host holds the
+ * popup) or another ancestor of the popup. Each defaults to what the dialog drew before it:
+ * - `--dialog-heading-size`, `--dialog-heading-tracking` and `--dialog-heading-leading` restyle
+ *   the heading (default `--text-h3`, the heading tracking, the snug leading).
+ * - `--sheet-handle-width` and `--sheet-handle-height` size the bottom sheet's grab handle.
+ * - `--sheet-padding-block-start` is the space above the bottom sheet's handle,
+ *   `--sheet-handle-gap` the space between the handle and the header, and
+ *   `--sheet-padding-inline` the sheet's inline padding. `--drawer-padding-inline` is the end
+ *   drawer's inline padding. The gap defaults to `--space-4`, the paddings to `--space-5` (24 px).
+ *   Each takes a length with a unit (`0px`, not `0`, and no percentage). The padding sits inside
+ *   the popup's 1 px border.
+ *
+ * Under a thin inline padding the header insets the close so its 44 px touch target stays inside
+ * the popup's rounded corner. In the bottom sheet, keep `--sheet-padding-block-start` plus
+ * `--sheet-handle-gap` at 4 px or more (at the default radius) for the same reason.
+ */
 export interface DialogProps {
   /**
    * The control that opens the dialog. Optional: a dialog driven by application state passes
@@ -49,30 +66,7 @@ export interface DialogProps {
    * that needs to close it does so through `open`/`onOpenChange`.
    */
   footer?: ReactNode;
-  /**
-   * `center` floats in the middle of the viewport; `sheet` docks to an edge — see `side`.
-   *
-   * Each placement's padding is a set of consumer hooks, custom properties set on a `ThemeScope`
-   * (whose portal host holds the popup) or another ancestor of the popup. Each takes a length or a
-   * percentage, a bare `0` included, and each defaults to `--space-5` (24 px), the padding every
-   * placement drew before the hooks. The padding sits inside the popup's 1 px border, so content
-   * starts one pixel further in than the value.
-   * - `--dialog-padding-block-start`, `--dialog-padding-block-end` and `--dialog-padding-inline` pad
-   *   every placement: the top, the bottom, and both inline sides.
-   * - `--sheet-padding-block-start`, `--sheet-padding-block-end` and `--sheet-padding-inline` pad
-   *   the bottom sheet, over the `--dialog-padding-*` value for the same edge. The bottom sheet's
-   *   block-start padding is the space above its grab handle.
-   * - `--drawer-padding-block-start`, `--drawer-padding-block-end` and `--drawer-padding-inline`
-   *   pad the end drawer (`side="end"`) the same way. A `--sheet-padding-*` hook never reaches it.
-   * - `--sheet-handle-gap` is the space between the bottom sheet's grab handle and its header, a
-   *   length (default `--space-4`, the sheet's gap between its parts).
-   *
-   * Under any padding the close keeps its 36 px circle and its 44 px touch target inside the popup.
-   * The target reaches 4 px past the circle, and its corner has to clear the popup's rounded corner
-   * (about 4.7 px more at the default `--radius-dialog`), so where an edge's padding is under about
-   * 9 px the header pads the difference on that edge. The body keeps its focus-ring room the same
-   * way: under a padding thinner than the room, its content sits that much further in.
-   */
+  /** `center` floats in the middle of the viewport; `sheet` docks to an edge — see `side`. */
   variant?: DialogVariant;
   /**
    * The edge a `sheet` docks to. `bottom` (the default) is the phone pattern; `end` is a
