@@ -356,3 +356,21 @@ export const DrawerAtTheFloor: Story = {
   args: { ...SheetAtTheFloor.args, side: 'end' },
   play: playAtTheFloor,
 };
+
+/**
+ * Opened with the pointer: the close takes focus with its ring held back, as a pointer user asked
+ * for none, and the first key lets it back. A keyboard open (`KeyboardOpen`) draws it at once.
+ */
+export const QuietPointerOpen: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove remote' }));
+    const close = await screen.findByRole('button', { name: 'Close' });
+    await waitFor(() => expect(close).toHaveFocus());
+    await expect(close).toHaveAttribute('data-quiet-focus');
+    await expect(getComputedStyle(close).outlineStyle).toBe('none');
+    await userEvent.keyboard('{Shift}');
+    await expect(close).not.toHaveAttribute('data-quiet-focus');
+    await waitFor(() => expect(getComputedStyle(close).outlineStyle).toBe('solid'));
+  },
+};

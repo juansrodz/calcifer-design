@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { composeStories } from '@storybook/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -12,6 +14,19 @@ import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { demoTheme } from '../ThemeScope/fixtures';
 import { Dialog, type DialogVariant, type SheetSide } from './Dialog';
 import * as stories from './Dialog.stories';
+
+// Read as plain text, as `token-reads.test.ts` reads it: Vitest's CSS modules give class names, not
+// declarations.
+const dialogCss = readFileSync(join(import.meta.dirname, 'Dialog.module.css'), 'utf8');
+
+/** The body of the one rule `prelude` matches (its first capture group); a miss fails the test. */
+function ruleBody(prelude: RegExp): string {
+  const body = prelude.exec(dialogCss)?.[1];
+  if (body === undefined) {
+    throw new Error(`Dialog.module.css has no rule matching ${prelude}`);
+  }
+  return body;
+}
 
 const {
   Default,
@@ -1065,5 +1080,97 @@ describe('Dialog', () => {
         expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
       },
     );
+  });
+
+  // A pointer did not ask for a ring: the opening focus holds it back until a key or a move.
+  describe('the quiet opening focus', () => {
+    it('holds the ring back on Close after a mouse open', async () => {
+      render(<Default />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).toHaveAttribute('data-quiet-focus');
+    });
+
+    it('holds it back on the popup itself after a touch open', async () => {
+      render(<Sheet defaultOpen={false} />);
+      const trigger = screen.getByRole('button', { name: 'Remove remote' });
+      await userEvent.pointer({ keys: '[TouchA]', target: trigger });
+      const popup = await screen.findByRole('dialog');
+      await waitFor(() => expect(popup).toHaveFocus());
+      expect(popup).toHaveAttribute('data-quiet-focus');
+    });
+
+    it('draws the ring after a keyboard open', async () => {
+      render(<Default />);
+      screen.getByRole('button', { name: 'Remove remote' }).focus();
+      await userEvent.keyboard('{Enter}');
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('lets the ring back at the first key', async () => {
+      render(<Default />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
+      await userEvent.keyboard('{Shift}');
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+      expect(close).toHaveFocus();
+    });
+
+    it('lets the ring back when focus leaves the control', async () => {
+      render(<Default />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
+      act(() => screen.getByRole('button', { name: 'Remove' }).focus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+      act(() => close.focus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('never holds it back with quietFocus={false}', async () => {
+      render(<Default quietFocus={false} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('draws the ring on an open no trigger saw, unless quietFocus says a pointer opened it', async () => {
+      const { rerender } = render(<Dialog heading="Pasta night" open />);
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+      rerender(<Dialog heading="Pasta night" open={false} />);
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      rerender(<Dialog heading="Pasta night" open quietFocus />);
+      const reopenedClose = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(reopenedClose).toHaveFocus());
+      expect(reopenedClose).toHaveAttribute('data-quiet-focus');
+    });
+
+    it('never holds back a text field’s ring', async () => {
+      render(
+        <Dialog heading="Rename" closeHidden open quietFocus>
+          <Field label="Name">
+            <TextInput />
+          </Field>
+        </Dialog>,
+      );
+      const field = await screen.findByRole('textbox', { name: 'Name' });
+      await waitFor(() => expect(field).toHaveFocus());
+      expect(field).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('is drawn by a rule that drops the outline style', () => {
+      expect(
+        ruleBody(
+          /^\.popup\[data-quiet-focus\]:focus-visible,\n\.popup \[data-quiet-focus\]:focus-visible \{([^}]*)\}/m,
+        ),
+      ).toContain(' outline-style: none;');
+    });
   });
 });
