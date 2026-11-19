@@ -906,10 +906,11 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   // The browser turns a hovered button's border `Highlight` on its own, and paints it even on a
   // dimmed one, so a button marked `aria-disabled` keeps its resting `ButtonText` there. Not one
-  // that is `data-disabled` too (a loading button keeps its `GrayText`), nor a pressed one.
+  // that is `data-disabled` too (a loading button keeps its `GrayText`), nor a pressed one, nor a
+  // focused one, whose border the browser turns `Highlight` with its ring.
   {
     file: 'components/IconButton/IconButton.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root\[aria-disabled='true'\]:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root\[aria-disabled='true'\]:hover:not\(\[data-disabled\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
     contains: [' border-color: ButtonText;'],
     lacks: [],
   },
