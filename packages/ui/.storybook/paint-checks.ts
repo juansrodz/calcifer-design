@@ -17,9 +17,10 @@ export interface PaintCheck {
   /** A selector for the element, inside the story root. */
   target: string;
   /**
-   * `rest` leaves the element alone, with the pointer away from it: the state forced colours need
-   * a reading in too. `hover` moves a real pointer over the element. `press` forces `:active` with
-   * no pointer over it, as a touch press is: no hover rule runs.
+   * `rest` leaves the element as it is, with the pointer away from it: the state to read when there
+   * is no pointer or `:active` to set, as in a forced-colours reading. `hover` moves a real pointer
+   * over the element. `press` forces `:active` with no pointer over it, as a touch press is: no
+   * hover rule runs. Any other value throws.
    */
   interaction: 'rest' | 'hover' | 'press';
   /** Runs the check under forced colours (`forced-colors: active`). */
@@ -28,8 +29,11 @@ export interface PaintCheck {
    * The expected colours, as any CSS colour value (a `var()`, a system colour), and the expected
    * `box-shadow`, as any shadow list (`none`, a `var()`, a comma list). Each one is resolved on a
    * probe in the story, with `forced-color-adjust: none`, so a system colour stays itself under
-   * forced colours. The probe keeps its shadow there as well, and the element does not (forced
-   * colours drop it): a check that runs under forced colours expects `none`.
+   * forced colours. The probe keeps its shadow there as well, and an element under
+   * `forced-color-adjust: auto` does not (forced colours drop it), so a check on one expects
+   * `none`; an element that opts out expects what its own CSS paints. A shadow other than `none`
+   * that the probe resolves to `none` (a missing token, a typo) throws: it would equal an element
+   * with no shadow and compare nothing.
    */
   expected: Partial<Record<PaintProperty, string>>;
 }
@@ -61,6 +65,17 @@ async function readPaint(
       try {
         const painted = getComputedStyle(element);
         const probed = getComputedStyle(probe);
+        // A `var()` to a missing token computes to `none`, and a value the parser rejects is
+        // dropped, so the expected shadow would equal the `none` of an element with no shadow.
+        if (
+          expectedValues.boxShadow !== undefined &&
+          expectedValues.boxShadow.trim().toLowerCase() !== 'none' &&
+          probed.boxShadow === 'none'
+        ) {
+          throw new Error(
+            `paint check: the expected shadow (${expectedValues.boxShadow}) resolved to none, so nothing can be compared: a missing token or a typo`,
+          );
+        }
         return {
           painted: {
             backgroundColor: painted.backgroundColor,
@@ -114,13 +129,24 @@ async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
     if (check.forcedColors) {
       await page.emulateMedia({ forcedColors: 'active' });
     }
-    if (check.interaction === 'hover') {
-      await page.hover(selector);
-    } else {
-      await page.mouse.move(0, 0);
-      if (check.interaction === 'press') {
+    switch (check.interaction) {
+      case 'hover':
+        await page.hover(selector);
+        break;
+      case 'press':
+        await page.mouse.move(0, 0);
         forcedNode = await findNodeId(session, selector);
         await forceActive(session, forcedNode, true);
+        break;
+      case 'rest':
+        await page.mouse.move(0, 0);
+        break;
+      default: {
+        // A story cast past the type, or written in JavaScript, must not read the wrong state.
+        const unknownInteraction: never = check.interaction;
+        throw new Error(
+          `paint check on ${check.target}: unknown interaction ${String(unknownInteraction)}`,
+        );
       }
     }
     const mismatches = findMismatches(check, await readPaint(page, selector, check.expected));

@@ -87,7 +87,28 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {};
-export const Secondary: Story = { args: { variant: 'secondary' } };
+/**
+ * The raised fill at rest, and `--color-surface-2` under a real pointer. Its two paint checks also
+ * pin what the `rest` interaction means: the pointer is away, so a reading that took the hover fill
+ * would fail the first.
+ */
+export const Secondary: Story = {
+  args: { variant: 'secondary' },
+  parameters: {
+    paintChecks: [
+      {
+        target: 'button',
+        interaction: 'rest',
+        expected: { backgroundColor: 'var(--color-surface-raised)' },
+      },
+      {
+        target: 'button',
+        interaction: 'hover',
+        expected: { backgroundColor: 'var(--color-surface-2)' },
+      },
+    ] satisfies readonly PaintCheck[],
+  },
+};
 export const Ghost: Story = { args: { variant: 'ghost' } };
 export const Small: Story = { args: { size: 'sm' } };
 export const Disabled: Story = { args: { disabled: true } };
@@ -200,7 +221,7 @@ export const DangerViaHooks: Story = {
         forcedColors: true,
         expected: { backgroundColor: 'ButtonFace', color: 'ButtonText' },
       },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
@@ -260,7 +281,7 @@ export const RowViaHooks: Story = {
     paintChecks: [
       { target: 'button', interaction: 'press', expected: rowHoverPaint },
       { target: 'button', interaction: 'hover', expected: rowHoverPaint },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   decorators: inRowBox,
   render: () => (
@@ -277,8 +298,8 @@ export const RowViaHooks: Story = {
   ),
 };
 
-// What ElevationViaHook's Suggestions pill paints on hover: its fill pair, which sets no hover pair,
-// so the rest pair holds on hover in place of the secondary's surface-2 hover.
+// What ElevationViaHook's Suggestions pill paints at rest and on hover: its fill pair, which sets no
+// hover pair, so the rest pair holds on hover in place of the secondary's surface-2 hover.
 const suggestionsPaint = {
   backgroundColor: 'var(--color-selected-soft)',
   color: 'var(--color-selected-soft-text)',
@@ -321,18 +342,19 @@ export const ElevationViaHook: Story = {
     paintChecks: [
       { target: '.button-card-shadow-ring', interaction: 'rest', expected: ringPaint },
       { target: '.button-card-shadow-ring', interaction: 'hover', expected: ringPaint },
-      {
-        target: 'button.button-card-shadow',
-        interaction: 'hover',
-        expected: { boxShadow: cardShadow },
-      },
-      { target: 'a.button-card-shadow', interaction: 'hover', expected: { boxShadow: cardShadow } },
+      ...['button.button-card-shadow', 'a.button-card-shadow'].flatMap((target) =>
+        (['rest', 'hover'] as const).map((interaction) => ({
+          target,
+          interaction,
+          expected: { boxShadow: cardShadow },
+        })),
+      ),
       ...forcedShadowChecks(
         '.button-card-shadow-ring',
         'button.button-card-shadow',
         'a.button-card-shadow',
       ),
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
@@ -363,7 +385,8 @@ export const ElevationViaHook: Story = {
     const participants = canvas.getByRole('button', { name: 'Participants' });
     const suggestions = canvas.getByRole('button', { name: 'Suggestions 2' });
     const share = canvas.getByRole('link', { name: 'Share' });
-    // Forced colours drop every shadow, the probe's too, so there is nothing to compare.
+    // Forced colours drop every shadow, and this play's own probe has no opt-out (a paint check's
+    // does), so there is nothing to compare here: the paint checks pin the forced reading.
     if (window.matchMedia('(forced-colors: active)').matches) {
       return;
     }
@@ -416,7 +439,7 @@ export const ElevationOnChosenViaHook: Story = {
         })),
       ),
       ...forcedShadowChecks('.button-chosen-primary', '.button-chosen-secondary'),
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
