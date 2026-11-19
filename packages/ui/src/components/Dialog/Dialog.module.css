@@ -199,3 +199,19 @@ h4.heading {
 [data-popup='sheet'] > .footer {
   margin-top: auto;
 }
+
+/* Under forced colours a hovered close draws `IconButton`'s 3 px `Highlight` edge, which skips a
+   focused button because its ring is the outline. A close whose opening ring is held back
+   (`quietFocus`) but which Chromium still marks `:focus-visible` (a quiet open with no trigger, a
+   mouse reopen from a keyboard-focused trigger) has no ring, so it showed only the browser's 1 px
+   `Highlight` border on hover; it takes the ordinary close's edge back, drawn the same way. Last in
+   the file, so no normal-mode rule after it wins the cascade back. */
+@media (forced-colors: active) {
+  @media (hover: hover) {
+    .close[data-quiet-focus]:focus-visible:hover {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: var(--border-width-emphasis) solid Highlight;
+      outline-offset: calc(-1px - var(--border-width-emphasis));
+    }
+  }
+}

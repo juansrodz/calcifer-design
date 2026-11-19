@@ -393,7 +393,7 @@ export function Dialog({
                           label={closeLabel}
                           variant={closeVariant}
                           size="sm"
-                          className={closeCircleStyles.close}
+                          className={[closeCircleStyles.close, styles.close].join(' ')}
                         >
                           <CloseIcon />
                         </IconButton>

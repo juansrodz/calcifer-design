@@ -2341,6 +2341,28 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['margin-top: auto;'],
     lacks: ['flex: none'],
   },
+  // A close whose opening ring is held back (`quietFocus`) but which Chromium also marks
+  // `:focus-visible` (a trigger-less quiet open, a mouse reopen from a keyboard-focused trigger)
+  // takes the same forced-colours hover edge as an ordinary close: `IconButton`'s 3 px `Highlight`
+  // band skips a focused button, whose ring is the outline, and the quiet rule removes that ring,
+  // which left only the browser's 1 px `Highlight` border. Inside the hover gate, under forced
+  // colours only.
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^@media \(forced-colors: active\) \{\n {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.close\[data-quiet-focus\]:focus-visible:hover \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Nothing follows the forced block: a normal-mode rule after it would win the cascade back.
+  {
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
   {
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.headerEnd \{([^}]*)\}/m,
