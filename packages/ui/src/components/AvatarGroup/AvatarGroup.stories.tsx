@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, within } from 'storybook/test';
 import type { AvatarSize } from '../Avatar/Avatar';
 import { avatarColorsTheme, avatarColorsThemeCss } from '../Avatar/fixtures';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { AvatarGroup } from './AvatarGroup';
 import type { AvatarGroupItem } from './AvatarGroup';
+import { photoPeople } from './fixtures';
 
 const people: readonly AvatarGroupItem[] = [
   { id: 'uid-1', name: 'Ada Lovelace', colorSeed: 'uid-1' },
@@ -51,32 +53,112 @@ export const Overflow: Story = {
 
 const sizes: readonly AvatarSize[] = ['xs', 'sm', 'md', 'lg', 'xl'];
 
-// How many avatars each row shows before its chip. A row is its avatars and the chip, each tucked
-// 8px under the one before it, so at `xl` (96px) two avatars and the chip are 272px, where three
-// would be 360px and run past the 358px a 390px phone leaves. The sizes below it fit at four.
+// How many avatars each row shows before its chip. At `xl` (96px) each item is tucked 8px under
+// the one before it, so two avatars and the chip are 272px, where three would be 360px and run
+// past the 358px a 390px phone leaves. The sizes below it fit at four.
 const maxBySize: Readonly<Record<AvatarSize, number>> = { xs: 4, sm: 4, md: 4, lg: 4, xl: 2 };
 
 const column = { display: 'flex', flexDirection: 'column', gap: '1rem' } as const;
 
+// Storybook loads no web font, so the initials draw in whatever the platform's sans stack gives,
+// and how wide they are decides what the `Sizes` play measures. Arial's widths, which Liberation
+// Sans keeps on a Linux runner, are the stack's usual ones, so that story reads the same on each.
+const metricStableSansCss = `.avatar-group-metric-sans {
+  --font-sans: Arial, 'Liberation Sans', Helvetica, sans-serif;
+}`;
+
+/**
+ * How far an avatar's initials sit clear of the next item in the row, in css px: from the right
+ * edge of the initials' box to the neighbour's left edge, read at the row of the box nearest the
+ * neighbour's centre, where its round edge reaches furthest left. Negative means the neighbour
+ * covers the end of the initials.
+ */
+function clearanceFromNeighbour(avatar: Element, neighbour: Element): number {
+  const initials = avatar.querySelector('[aria-hidden="true"]');
+  if (initials === null) {
+    throw new Error('the avatar draws no initials');
+  }
+  const range = document.createRange();
+  range.selectNodeContents(initials);
+  const initialsBox = range.getBoundingClientRect();
+  const neighbourBox = neighbour.getBoundingClientRect();
+  const radius = neighbourBox.height / 2;
+  const centreY = neighbourBox.top + radius;
+  const nearestRowOffset =
+    Math.min(Math.max(centreY, initialsBox.top), initialsBox.bottom) - centreY;
+  const neighbourEdge =
+    neighbourBox.left + radius - Math.sqrt(radius * radius - nearestRowOffset * nearestRowOffset);
+  return neighbourEdge - initialsBox.right;
+}
+
+// The least clearance, in css px, the `Sizes` play accepts at each size. `xs` and `sm` are the two
+// sizes whose overlap was cut to keep the letters whole; their initials read about 1.4px clear in
+// Arial's widths, so a floor of 1px fails an overlap one pixel larger (about 0.5px). The other
+// three only have to stay uncut: `md` reads 1.1px, too little to hold 1px against the rounding of
+// a glyph's advance on another platform. The play is the coarse net, in that one face;
+// `AvatarGroup.test.tsx` pins the overlap itself.
+const minimumClearanceBySize: Readonly<Record<AvatarSize, number>> = {
+  xs: 1,
+  sm: 1,
+  md: 0,
+  lg: 0,
+  xl: 0,
+};
+
 /**
  * Each of the five sizes, the chip drawn to the same height as the avatars beside it and its count
- * at their initials size. The largest size shows fewer avatars so that every row fits a phone.
+ * at their initials size. The largest size shows fewer avatars so that every row fits a phone. The
+ * play checks the gap from each avatar's initials to the avatar or the chip after it, in Arial's
+ * widths (the wrapper's font), against `minimumClearanceBySize`.
  */
 export const Sizes: Story = {
   parameters: { controls: { disable: true } },
+  play: async ({ canvasElement }) => {
+    await document.fonts.ready;
+    for (const list of within(canvasElement).getAllByRole('list')) {
+      const size = list.dataset['size'] as AvatarSize;
+      const items = Array.from(list.children);
+      for (const [index, item] of items.slice(0, -1).entries()) {
+        const avatar = item.firstElementChild;
+        const neighbour = items[index + 1]?.firstElementChild;
+        if (!avatar || !neighbour) {
+          throw new Error('the row has an item with nothing in it');
+        }
+        await expect(
+          clearanceFromNeighbour(avatar, neighbour),
+          `size ${size}, avatar ${index + 1}`,
+        ).toBeGreaterThanOrEqual(minimumClearanceBySize[size]);
+      }
+    }
+  },
   render: (args) => (
-    <div style={column}>
-      {sizes.map((size) => (
-        <AvatarGroup
-          key={size}
-          items={people}
-          max={maxBySize[size]}
-          size={size}
-          label={`${args.label}, size ${size}`}
-        />
-      ))}
-    </div>
+    <>
+      <style>{metricStableSansCss}</style>
+      <div className="avatar-group-metric-sans" style={column}>
+        {sizes.map((size) => (
+          <AvatarGroup
+            key={size}
+            items={people}
+            max={maxBySize[size]}
+            size={size}
+            label={`${args.label}, size ${size}`}
+          />
+        ))}
+      </div>
+    </>
   ),
+};
+
+/**
+ * Six people have a photo each, and `max` 4 shows the first four, then a chip for the other two;
+ * raise `max` to see the last two (a sage and a near-black portrait). The photos are drawings
+ * inlined as data, so the story needs no network. Where one photo overlaps the next, the ring
+ * sets them apart in the ground colour. Under forced colours there is no ring, so what sits
+ * between two photos is the front photo's own 1 px edge in the system text colour, and how well
+ * it shows depends on how the two photos' brightness compares.
+ */
+export const Photos: Story = {
+  args: { items: photoPeople, max: 4, size: 'md' },
 };
 
 export const Dark: Story = {
