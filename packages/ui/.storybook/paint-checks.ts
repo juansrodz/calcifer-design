@@ -65,17 +65,6 @@ async function readPaint(
       try {
         const painted = getComputedStyle(element);
         const probed = getComputedStyle(probe);
-        // A `var()` to a missing token computes to `none`, and a value the parser rejects is
-        // dropped, so the expected shadow would equal the `none` of an element with no shadow.
-        if (
-          expectedValues.boxShadow !== undefined &&
-          expectedValues.boxShadow.trim().toLowerCase() !== 'none' &&
-          probed.boxShadow === 'none'
-        ) {
-          throw new Error(
-            `paint check: the expected shadow (${expectedValues.boxShadow}) resolved to none, so nothing can be compared: a missing token or a typo`,
-          );
-        }
         return {
           painted: {
             backgroundColor: painted.backgroundColor,
@@ -109,6 +98,26 @@ async function forceActive(session: CDPSession, nodeId: number, forced: boolean)
     nodeId,
     forcedPseudoClasses: forced ? ['active'] : [],
   });
+}
+
+function describeCheck(check: PaintCheck): string {
+  const state = `${check.interaction}${check.forcedColors ? ', forced colours' : ''}`;
+  return `paint check on ${check.target} (${state})`;
+}
+
+// A `var()` to a missing token computes to `none`, and a value the parser rejects is dropped, so
+// the expected shadow would equal the `none` of an element with no shadow.
+function assertShadowResolved(check: PaintCheck, { probed }: PaintReading): void {
+  const expectedShadow = check.expected.boxShadow;
+  if (
+    expectedShadow !== undefined &&
+    expectedShadow.trim().toLowerCase() !== 'none' &&
+    probed.boxShadow === 'none'
+  ) {
+    throw new Error(
+      `${describeCheck(check)}: the expected shadow (${expectedShadow}) resolved to none, so nothing can be compared: a missing token or a typo`,
+    );
+  }
 }
 
 function findMismatches(check: PaintCheck, { painted, probed }: PaintReading): string[] {
@@ -149,10 +158,11 @@ async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
         );
       }
     }
-    const mismatches = findMismatches(check, await readPaint(page, selector, check.expected));
+    const reading = await readPaint(page, selector, check.expected);
+    assertShadowResolved(check, reading);
+    const mismatches = findMismatches(check, reading);
     if (mismatches.length > 0) {
-      const state = `${check.interaction}${check.forcedColors ? ', forced colours' : ''}`;
-      throw new Error(`paint check on ${check.target} (${state}): ${mismatches.join('; ')}`);
+      throw new Error(`${describeCheck(check)}: ${mismatches.join('; ')}`);
     }
   } finally {
     if (forcedNode !== undefined) {
