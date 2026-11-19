@@ -2003,21 +2003,25 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   })),
   {
-    // The close's 44 px touch target reaches past its 36 px circle by half the difference. Where an
-    // edge's padding is less than that reach, the header pads the rest, so the target stays inside
-    // the popup's scroll clip; at the default 24 px each room is `0px`.
+    // The close's 44 px touch target reaches past its 36 px circle by half the difference, and its
+    // square corner must also clear the popup's rounded corner: inset `r × (1 - 1/√2)` from both
+    // edges, it sits on the arc. Where an edge's padding is less than the two together, the header
+    // pads the rest, so the target stays inside the popup's clip; at the default 24 px each room is
+    // `0px`.
     file: 'components/Dialog/Dialog.module.css',
     rule: /^\.header \{([^}]*)\}/m,
     contains: [
       ' --dialog-close-reach: calc((var(--size-touch) - var(--size-close)) / 2);',
+      ' --dialog-close-corner: calc(var(--radius-dialog) * 0.293);',
+      ' --dialog-close-clearance: calc(var(--dialog-close-reach) + var(--dialog-close-corner));',
       wrappedDeclaration(
-        ' --dialog-header-room-inline-end: max(0px, calc(var(--dialog-close-reach) - var(--dialog-surface-padding-inline)));',
+        ' --dialog-header-room-inline-end: max(0px, calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-inline)));',
       ),
       wrappedDeclaration(
-        ' --dialog-header-room-block-start: max(0px, calc(var(--dialog-close-reach) - var(--dialog-surface-padding-block-start)));',
+        ' --dialog-header-room-block-start: max(0px, calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-block-start)));',
       ),
       wrappedDeclaration(
-        ' --dialog-header-room-block-end: max(0px, calc(var(--dialog-close-reach) - var(--dialog-surface-padding-block-end)));',
+        ' --dialog-header-room-block-end: max(0px, calc(var(--dialog-close-clearance) - var(--dialog-surface-padding-block-end)));',
       ),
       ' padding-inline-end: var(--dialog-header-room-inline-end);',
     ],
@@ -2036,6 +2040,32 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.header:last-child \{([^}]*)\}/m,
     contains: [' padding-block-end: var(--dialog-header-room-block-end);'],
     lacks: [' padding-block-start', ' padding-inline'],
+  },
+  {
+    // The body's ring room reaches past the popup's content edge by its negative margin. Under a
+    // padding thinner than the room, that would overflow the popup and scroll it sideways, so the
+    // inline margin takes back no more than the padding; at the default it is the whole room.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.body \{([^}]*)\}/m,
+    contains: [
+      wrappedDeclaration(
+        ' --dialog-body-ring-reach-inline: calc(min(var(--dialog-body-ring-room), var(--dialog-surface-padding-inline)) * -1);',
+      ),
+      ' margin-inline: var(--dialog-body-ring-reach-inline);',
+    ],
+    lacks: [],
+  },
+  {
+    // A body with no footer under it is the popup's last part, and meets the block-end padding.
+    file: 'components/Dialog/Dialog.module.css',
+    rule: /^\.body:last-child \{([^}]*)\}/m,
+    contains: [
+      wrappedDeclaration(
+        ' --dialog-body-ring-reach-block-end: calc(min(var(--dialog-body-ring-room), var(--dialog-surface-padding-block-end)) * -1);',
+      ),
+      ' margin-block-end: var(--dialog-body-ring-reach-block-end);',
+    ],
+    lacks: [' margin:', ' margin-inline'],
   },
   {
     // `--sheet-handle-gap` replaces the sheet's `--space-4` gap under the handle: the handle's end

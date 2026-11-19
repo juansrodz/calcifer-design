@@ -67,9 +67,11 @@ export interface DialogProps {
    * - `--sheet-handle-gap` is the space between the bottom sheet's grab handle and its header, a
    *   length (default `--space-4`, the sheet's gap between its parts).
    *
-   * Under any padding the close keeps its 36 px circle and its 44 px touch target inside the popup:
-   * where an edge's padding is under the 4 px the target reaches past the circle, the header pads
-   * the difference on that edge.
+   * Under any padding the close keeps its 36 px circle and its 44 px touch target inside the popup.
+   * The target reaches 4 px past the circle, and its corner has to clear the popup's rounded corner
+   * (about 4.7 px more at the default `--radius-dialog`), so where an edge's padding is under about
+   * 9 px the header pads the difference on that edge. The body keeps its focus-ring room the same
+   * way: under a padding thinner than the room, its content sits that much further in.
    */
   variant?: DialogVariant;
   /**
