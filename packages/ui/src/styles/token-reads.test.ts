@@ -1561,6 +1561,13 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [/(?:^|[\s{;])box-shadow\s*:/],
   },
   {
+    // Nor does a secondary, ghost or row variant rule: one there, at (0,2,0) or more, would beat a
+    // consumer's (0,1,x) `box-shadow` on that variant, which wins on base.
+    file: 'components/Button/Button.module.css',
+    contains: [],
+    lacks: [/^\.root\[data-variant='(?:secondary|ghost|row)'\][^{]*\{[^}]*box-shadow\s*:/m],
+  },
+  {
     // Before the forced-colours block every `box-shadow` reads the hook, so no state or tone draws
     // a shadow of its own over a consumer's.
     file: 'components/Button/Button.module.css',
