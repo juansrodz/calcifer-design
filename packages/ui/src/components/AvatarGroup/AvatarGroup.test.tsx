@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { composeStories } from '@storybook/react';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -133,5 +135,36 @@ describe('AvatarGroup', () => {
     expect(extraLarge).toHaveAttribute('data-size', 'xl');
     expect(within(extraLarge!).getAllByTestId('avatar')).toHaveLength(2);
     expect(within(extraLarge!).getByText('+5')).toBeInTheDocument();
+  });
+});
+
+// The stack's overlap is a local property on the list: 8px by default and less at the two sizes
+// whose initials are wide for their disc. The real clearance is measured in a browser (the Sizes
+// story's play); these read the declaration that produces it, as `styles/token-reads.test.ts` reads
+// the rest of the component CSS, so a size cannot lose its override unseen. The leading space of
+// each string keeps it from matching inside another property's name.
+describe('AvatarGroup’s overlap per size', () => {
+  const stylesheet = readFileSync(join(import.meta.dirname, 'AvatarGroup.module.css'), 'utf-8');
+
+  function sizeRule(size: string): string {
+    const match = stylesheet.match(
+      new RegExp(`^\\.list\\[data-size='${size}'\\] \\{([^}]*)\\}`, 'm'),
+    );
+    expect(match, `no .list[data-size='${size}'] rule`).not.toBeNull();
+    return match?.[1] ?? '';
+  }
+
+  it('overlaps by half a space step at xs and a whole one at sm', () => {
+    expect(sizeRule('xs')).toContain(' --avatar-group-overlap: calc(-1 * var(--space-1) / 2);');
+    expect(sizeRule('sm')).toContain(' --avatar-group-overlap: calc(-1 * var(--space-1));');
+  });
+
+  it.each(['md', 'lg', 'xl'])('keeps the default overlap at %s', (size) => {
+    expect(sizeRule(size)).not.toContain(' --avatar-group-overlap');
+  });
+
+  it('keeps two space steps as the default, which the larger sizes read', () => {
+    const match = stylesheet.match(/^\.list \{([^}]*)\}/m);
+    expect(match?.[1]).toContain(' --avatar-group-overlap: calc(-1 * var(--space-2));');
   });
 });

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, within } from 'storybook/test';
 import type { AvatarSize } from '../Avatar/Avatar';
 import { avatarColorsTheme, avatarColorsThemeCss } from '../Avatar/fixtures';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
@@ -59,11 +60,55 @@ const maxBySize: Readonly<Record<AvatarSize, number>> = { xs: 4, sm: 4, md: 4, l
 const column = { display: 'flex', flexDirection: 'column', gap: '1rem' } as const;
 
 /**
+ * How far an avatar's initials sit clear of the next item in the row, in css px: from the right
+ * edge of the initials' box to the neighbour's left edge, read at the row of the box nearest the
+ * neighbour's centre, where its round edge reaches furthest left. Negative means the neighbour
+ * covers the end of the initials.
+ */
+function clearanceFromNeighbour(avatar: Element, neighbour: Element): number {
+  const initials = avatar.querySelector('[aria-hidden="true"]');
+  if (initials === null) {
+    throw new Error('the avatar draws no initials');
+  }
+  const range = document.createRange();
+  range.selectNodeContents(initials);
+  const initialsBox = range.getBoundingClientRect();
+  const neighbourBox = neighbour.getBoundingClientRect();
+  const radius = neighbourBox.height / 2;
+  const centreY = neighbourBox.top + radius;
+  const nearestRowOffset =
+    Math.min(Math.max(centreY, initialsBox.top), initialsBox.bottom) - centreY;
+  const neighbourEdge =
+    neighbourBox.left + radius - Math.sqrt(radius * radius - nearestRowOffset * nearestRowOffset);
+  return neighbourEdge - initialsBox.right;
+}
+
+/**
  * Each of the five sizes, the chip drawn to the same height as the avatars beside it and its count
- * at their initials size. The largest size shows fewer avatars so that every row fits a phone.
+ * at their initials size. The largest size shows fewer avatars so that every row fits a phone. The
+ * play checks that, at every size, no avatar's initials run under the avatar or the chip after it:
+ * at `xs` and `sm` the stack overlaps less than the larger sizes, which is what keeps the letters
+ * whole.
  */
 export const Sizes: Story = {
   parameters: { controls: { disable: true } },
+  play: async ({ canvasElement }) => {
+    await document.fonts.ready;
+    for (const list of within(canvasElement).getAllByRole('list')) {
+      const items = Array.from(list.children);
+      for (const [index, item] of items.slice(0, -1).entries()) {
+        const avatar = item.firstElementChild;
+        const neighbour = items[index + 1]?.firstElementChild;
+        if (!avatar || !neighbour) {
+          throw new Error('the row has an item with nothing in it');
+        }
+        await expect(
+          clearanceFromNeighbour(avatar, neighbour),
+          `size ${list.dataset['size']}, avatar ${index + 1}`,
+        ).toBeGreaterThanOrEqual(0);
+      }
+    }
+  },
   render: (args) => (
     <div style={column}>
       {sizes.map((size) => (
