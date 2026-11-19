@@ -141,7 +141,10 @@
 
    The icon of a pressed chip is inside the opt-out, so its own token colours were painted as they
    are (a tinted icon at 1.4:1 on the fill). It takes the chip's ink instead, drops its fill and
-   draws any border in that ink, as in `Button`, over an inline `style` too. */
+   draws any border in that ink, as in `Button`, over an inline `style` too.
+
+   The hovered edge also thickens to 3 px, as an outline inside the border; the rule for it says
+   why. */
 @media (forced-colors: active) {
   .chip {
     border: 1px solid transparent;
@@ -180,5 +183,25 @@
     border-color: var(--toggle-chip-content-edge) !important;
     background-color: transparent !important;
     color: inherit !important;
+  }
+
+  /* A hovered chip had only the browser's swap of its edge from `ButtonText` to `Highlight`, under
+     2:1 in High Contrast White. As on `IconButton`, the edge turns `Highlight` here and thickens to
+     3 px: an outline, as forced colours drop `box-shadow`, drawn inside the border so it moves
+     nothing and stays clear of the focus ring outside the chip. The offset is the 1 px border plus
+     the outline's own width, so the band sits flush inside it. A disabled chip keeps its
+     `GrayText` edge and a pressed one its fill alone; a focused chip keeps its ring, both being
+     the outline. */
+  @media (hover: hover) {
+    .chip:hover:not([data-disabled], [data-pressed]) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: Highlight;
+    }
+
+    .chip:hover:not([data-disabled], [data-pressed], :focus-visible) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: var(--border-width-emphasis) solid Highlight;
+      outline-offset: calc(-1px - var(--border-width-emphasis));
+    }
   }
 }
