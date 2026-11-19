@@ -233,8 +233,8 @@
     /* The browser also turns a hovered `<button>`'s border `Highlight` on its own and paints it,
        even dimmed, so a button marked `aria-disabled` keeps its resting colour. Not one that is
        `data-disabled` too (a loading button, `GrayText` above) nor a pressed one, which keep their
-       own rules. */
-    .root[aria-disabled='true']:hover:not([data-disabled], [data-pressed]) {
+       own rules, nor a focused one, whose border the browser turns `Highlight` with its ring. */
+    .root[aria-disabled='true']:hover:not([data-disabled], [data-pressed], :focus-visible) {
       /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
       border-color: ButtonText;
     }
