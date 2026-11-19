@@ -5,6 +5,7 @@ import { avatarColorsTheme, avatarColorsThemeCss } from '../Avatar/fixtures';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { AvatarGroup } from './AvatarGroup';
 import type { AvatarGroupItem } from './AvatarGroup';
+import { photoPeople } from './fixtures';
 
 const people: readonly AvatarGroupItem[] = [
   { id: 'uid-1', name: 'Ada Lovelace', colorSeed: 'uid-1' },
@@ -122,6 +123,16 @@ export const Sizes: Story = {
       ))}
     </div>
   ),
+};
+
+/**
+ * Six people with a photo each and `max` 4: four photos, then a chip for the other two. The photos
+ * are drawings inlined as data, so the story needs no network. Where one photo overlaps the next,
+ * the ring separates them in the ground colour; under forced colours there is no ring, and the
+ * front photo's own 1 px edge in the system text colour does it.
+ */
+export const Photos: Story = {
+  args: { items: photoPeople, max: 4, size: 'md' },
 };
 
 export const Dark: Story = {

@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest';
 import { axe } from '../../../test/axe';
 import { AvatarGroup } from './AvatarGroup';
 import styles from './AvatarGroup.module.css';
+import { photoPeople } from './fixtures';
 import * as stories from './AvatarGroup.stories';
 
-const { Default, Overflow, Sizes, Dark } = composeStories(stories);
+const { Default, Overflow, Sizes, Photos, Dark } = composeStories(stories);
 
 const sevenPeople = [
   { id: 'uid-1', name: 'Ada Lovelace', colorSeed: 'uid-1' },
@@ -25,6 +26,7 @@ describe('AvatarGroup', () => {
     ['Default', Default],
     ['Overflow', Overflow],
     ['Sizes', Sizes],
+    ['Photos', Photos],
     ['Dark', Dark],
   ])('%s has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
@@ -135,6 +137,23 @@ describe('AvatarGroup', () => {
     expect(extraLarge).toHaveAttribute('data-size', 'xl');
     expect(within(extraLarge!).getAllByTestId('avatar')).toHaveLength(2);
     expect(within(extraLarge!).getByText('+5')).toBeInTheDocument();
+  });
+
+  it('draws four photo avatars and a chip for the other two in the Photos story', () => {
+    render(<Photos />);
+    const list = screen.getByRole('list', { name: 'Going to this event' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(5);
+    expect(within(list).getAllByTestId('avatar')).toHaveLength(4);
+    expect(within(list).getByText('+2')).toHaveAttribute('aria-hidden', 'true');
+    expect(within(list).getByText('2 more')).toBeInTheDocument();
+  });
+
+  it('gives every photo person a photo drawn from data, with no network address', () => {
+    expect(photoPeople).toHaveLength(6);
+    for (const person of photoPeople) {
+      expect(person.src).toMatch(/^data:image\/svg\+xml,/);
+    }
+    expect(new Set(photoPeople.map((person) => person.src)).size).toBe(photoPeople.length);
   });
 });
 
