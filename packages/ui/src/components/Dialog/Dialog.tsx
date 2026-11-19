@@ -1,5 +1,12 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
-import { useId, useRef, type ReactElement, type ReactNode } from 'react';
+import {
+  useCallback,
+  useId,
+  useRef,
+  type FocusEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { CloseIcon } from '../../icons/CloseIcon';
 import { useOverflowFocusable } from '../../hooks/useOverflowFocusable';
 import { IconButton } from '../IconButton/IconButton';
@@ -9,6 +16,10 @@ import closeCircleStyles from '../../styles/closeCircle.module.css';
 import popupStyles from '../../styles/popup.module.css';
 import { hasContent } from '../../utils/hasContent';
 import styles from './Dialog.module.css';
+
+// The package's `types` carry no Node globals, so the declaration build does not know `process`.
+// Declared at module scope, as in `TabBar`, so it never collides with a global `process`.
+declare const process: { env: { NODE_ENV?: string } };
 
 export type DialogVariant = 'center' | 'sheet';
 
@@ -25,12 +36,14 @@ export type SheetSide = 'bottom' | 'end';
  *   `--sheet-handle-gap` the space between the handle and the header, and
  *   `--sheet-padding-inline` the sheet's inline padding. `--drawer-padding-inline` is the end
  *   drawer's inline padding. The gap defaults to `--space-4`, the paddings to `--space-5` (24 px).
- *   Each takes a length with a unit (`0px`, not `0`, and no percentage). The padding sits inside
- *   the popup's 1 px border.
+ *   Each takes a length with a unit (`0px`, not `0`, and no percentage; a development build warns
+ *   about a bare number). The padding sits inside the popup's 1 px border.
  *
  * Under a thin inline padding the header insets the close so its 44 px touch target stays inside
  * the popup's rounded corner. In the bottom sheet, keep `--sheet-padding-block-start` plus
- * `--sheet-handle-gap` at 4 px or more (at the default radius) for the same reason.
+ * `--sheet-handle-gap` at 4 px or more (at the default radius) for the same reason. That floor
+ * assumes the default 5 px handle (`--sheet-handle-height`), which sits between the two: a shorter
+ * handle raises it by the difference.
  */
 export interface DialogProps {
   /**
@@ -125,6 +138,26 @@ export interface DialogProps {
    * focus trap.
    */
   finalFocus?: BaseDialog.Popup.Props['finalFocus'];
+  /**
+   * Holds back the focus ring on the control the dialog focuses as it opens, until a key is
+   * pressed or focus leaves that control; then it draws as usual. A pointer user (mouse, touch,
+   * pen) asked for no ring, and a phone browser can light one on scripted focus. Under forced
+   * colours the ring is held back too, but the browser's own `Highlight` border on a focused
+   * button stays, so focus still shows there.
+   *
+   * Only the focus the dialog places as it opens is held back: when focus is already inside at
+   * open (an `autoFocus` field, a child that focuses itself), nothing is. A text field (an `input`
+   * of a text type, a `textarea`, an editable element) is never held back: its ring shows where
+   * typing goes. A slider, a date, a file or a colour input is held back like a button. A ring a
+   * component draws on another element (a `ChoiceCard`'s card, an `Upload`'s face) is not.
+   *
+   * - left out: quiet when Base UI saw a pointer open the dialog through its `trigger`. A keyboard
+   *   open, and an open it cannot see (no `trigger`, the app's own state), draw the ring.
+   * - `true`: quiet for every open except a keyboard one Base UI saw. A dialog opened from app
+   *   state passes it when the app knows a pointer (or a link) opened it.
+   * - `false`: never quiet; the opening focus draws whatever the browser draws.
+   */
+  quietFocus?: boolean;
   open?: boolean;
   defaultOpen?: boolean;
   /** Base UI calls this as `(open, eventDetails)`; the second argument is passed through. */
@@ -132,6 +165,64 @@ export interface DialogProps {
 }
 
 const headingTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
+
+/** The opens Base UI reports for a pointer: its `initialFocus` function receives one of these. */
+const POINTER_OPENS = new Set(['mouse', 'touch', 'pen']);
+
+/**
+ * A control that takes typing: its ring says where the text goes, so it is never held back. The
+ * text types only; a slider, a date, a file or a colour input is held back like a button.
+ */
+const TEXT_ENTRY = [
+  'input:not([type])',
+  ...['text', 'search', 'url', 'tel', 'email', 'password', 'number'].map(
+    (inputType) => `input[type="${inputType}"]`,
+  ),
+  'textarea',
+  '[contenteditable]:not([contenteditable="false"])',
+].join(', ');
+
+/**
+ * Marks `element` so `Dialog.module.css` draws no focus ring on it, until a key is pressed
+ * anywhere in its document or focus leaves it. Returns the function that lifts the mark early.
+ */
+function holdRingBack(element: HTMLElement): () => void {
+  const ownerDocument = element.ownerDocument;
+  const lift = () => {
+    element.removeAttribute('data-quiet-focus');
+    ownerDocument.removeEventListener('keydown', lift, true);
+    element.removeEventListener('blur', lift);
+  };
+  element.setAttribute('data-quiet-focus', '');
+  ownerDocument.addEventListener('keydown', lift, true);
+  element.addEventListener('blur', lift);
+  return lift;
+}
+
+/** The padding hooks each placement reads. */
+const PADDING_HOOKS = {
+  bottom: ['--sheet-padding-block-start', '--sheet-padding-inline', '--sheet-handle-gap'],
+  end: ['--drawer-padding-inline'],
+} as const;
+
+const UNITLESS_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+
+/**
+ * The padding hooks take a length with a unit. A bare number (`0`) is no length: the paddings
+ * read it as nothing and fall back, and the handle gap's `calc()` is invalid and keeps 16 px. CSS
+ * says nothing, so a development build says it here.
+ */
+function warnUnitlessPaddingHooks(popup: HTMLElement, side: SheetSide): void {
+  const computed = getComputedStyle(popup);
+  for (const hook of PADDING_HOOKS[side]) {
+    const value = computed.getPropertyValue(hook).trim();
+    if (UNITLESS_NUMBER.test(value)) {
+      console.warn(
+        `Dialog: ${hook} is "${value}", a number with no unit, which the dialog cannot use; write a length such as "${value}px".`,
+      );
+    }
+  }
+}
 
 export function Dialog({
   trigger,
@@ -150,6 +241,7 @@ export function Dialog({
   closeHidden = false,
   dismissOnOutsidePress = true,
   finalFocus,
+  quietFocus,
   open,
   defaultOpen,
   onOpenChange,
@@ -164,12 +256,81 @@ export function Dialog({
   const container = usePortalContainer();
   const popupRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // The quiet opening focus (`quietFocus`). A quiet open arms `disarmQuietRef`; the opening focus
+  // Base UI then places takes that arming (`holdOpeningRingBack`) and marks its target, which
+  // `liftQuietRef` unmarks. Base UI places no opening focus when focus is already inside (an
+  // `autoFocus` field), so that open arms nothing; and any key disarms, so a focus that comes
+  // after a key is never taken for the opening one.
+  const disarmQuietRef = useRef<(() => void) | null>(null);
+  const liftQuietRef = useRef<(() => void) | null>(null);
+  const endQuiet = useCallback(() => {
+    disarmQuietRef.current?.();
+    liftQuietRef.current?.();
+  }, []);
   // Base UI's own rule focuses the first tabbable control on open, which would be a slot button
   // whenever `headerEnd` holds one, and the popup itself on a touch open (so a phone sheet opens
   // with no ring on the close circle). This keeps the touch rule and otherwise targets the close
   // control; with `closeHidden` the ref is empty and `true` hands the choice back to Base UI.
-  const initialFocus = (interactionType: string) =>
-    interactionType === 'touch' ? popupRef.current : (closeRef.current ?? true);
+  // Base UI passes the open's interaction type, `''` when no trigger saw it.
+  const initialFocus = (interactionType: string) => {
+    endQuiet();
+    const popup = popupRef.current;
+    const quiet =
+      quietFocus === undefined
+        ? POINTER_OPENS.has(interactionType)
+        : quietFocus && interactionType !== 'keyboard';
+    if (popup !== null && quiet && !popup.contains(popup.ownerDocument.activeElement)) {
+      const ownerDocument = popup.ownerDocument;
+      const disarm = () => {
+        ownerDocument.removeEventListener('keydown', disarm, true);
+        disarmQuietRef.current = null;
+      };
+      ownerDocument.addEventListener('keydown', disarm, true);
+      disarmQuietRef.current = disarm;
+    }
+    return interactionType === 'touch' ? popup : (closeRef.current ?? true);
+  };
+  const holdOpeningRingBack = (event: FocusEvent<HTMLDivElement>) => {
+    const disarm = disarmQuietRef.current;
+    if (disarm === null) {
+      return;
+    }
+    disarm();
+    if (!event.target.matches(TEXT_ENTRY)) {
+      liftQuietRef.current = holdRingBack(event.target);
+    }
+  };
+  // Base UI's focus guards, the popup's siblings, pass a Tab that reaches one back into the popup
+  // a frame later (`enqueueFocus`), so a second Tab inside that frame (a held key on a busy page)
+  // goes on from the guard to the page behind. Focusing the popup itself at once keeps focus in
+  // the trap through that frame; Base UI's own redirect then lands as it always did. Only this
+  // dialog's own two guards, the viewport's children: React's focus event also bubbles here from
+  // the guards of a popover or a nested dialog inside, which are theirs to handle.
+  const holdFocusInTrap = (event: FocusEvent<HTMLDivElement>) => {
+    const target = event.target;
+    if (
+      target.parentElement === event.currentTarget &&
+      target.hasAttribute('data-base-ui-focus-guard')
+    ) {
+      popupRef.current?.focus({ preventScroll: true });
+    }
+  };
+  // The popup's ref. On mount it checks the padding hooks: development only (the literal
+  // `process.env.NODE_ENV` is the form a consumer's bundler replaces, as in `TabBar`), and not for
+  // a centred dialog, which has no hooks. On unmount it ends any quiet focus, so a dialog closed
+  // while quiet leaves no mark or listener behind. Stable per side, so React attaches it once per
+  // mount rather than on every render.
+  const attachPopup = useCallback(
+    (popup: HTMLDivElement | null) => {
+      popupRef.current = popup;
+      if (popup === null) {
+        endQuiet();
+      } else if (sheetSide !== undefined && process.env.NODE_ENV !== 'production') {
+        warnUnitlessPaddingHooks(popup, sheetSide);
+      }
+    },
+    [endQuiet, sheetSide],
+  );
   const showEndGroup = hasContent(headerEnd) || !closeHidden;
   // A body that scrolls is a Tab stop while it overflows, named by the heading, so a keyboard can
   // scroll text that holds no control of its own (Safari makes no scroller focusable). A body that
@@ -194,10 +355,11 @@ export function Dialog({
           className={[popupStyles.dialogLayer, styles.viewport].join(' ')}
           data-variant={variant}
           data-side={sheetSide}
+          onFocus={holdFocusInTrap}
         >
           <BaseDialog.Popup
-            ref={popupRef}
-            className={popupStyles.surface}
+            ref={attachPopup}
+            className={[popupStyles.surface, styles.popup].join(' ')}
             data-popup={variant === 'sheet' ? 'sheet' : 'dialog'}
             data-side={sheetSide}
             // Modal (Base UI's default, which this wrapper never changes): focus is trapped and
@@ -206,6 +368,7 @@ export function Dialog({
             aria-modal="true"
             initialFocus={initialFocus}
             finalFocus={finalFocus}
+            onFocus={holdOpeningRingBack}
           >
             {sheetSide === 'bottom' ? <div className={styles.handle} aria-hidden="true" /> : null}
             <div className={styles.header}>

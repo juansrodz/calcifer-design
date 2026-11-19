@@ -22,6 +22,35 @@
   place-items: center end;
 }
 
+/* The end drawer under a right-to-left page. The viewport's `end` above is already logical, so the
+   drawer docks on the left there; the skin's rounding and slide are physical (`translateX`, the two
+   left corners), so the drawer would round the corners that meet the viewport's edge and slide in
+   from the right. Its rounded corners are the inline-start pair, written logically here (a class on
+   the viewport and on the popup outweigh the skin's three-part rule, whichever loads first). The
+   slide has no logical form, so a `[dir='rtl']` ancestor turns it; the nearest `dir` is not
+   modelled, so a `dir='ltr'` island inside a right-to-left page slides as the page does. */
+.viewport > .popup[data-popup='sheet'][data-side='end'] {
+  border-radius: 0;
+  border-start-start-radius: var(--radius-dialog);
+  border-end-start-radius: var(--radius-dialog);
+}
+
+[dir='rtl'] .viewport > .popup[data-popup='sheet'][data-side='end'][data-starting-style],
+[dir='rtl'] .viewport > .popup[data-popup='sheet'][data-side='end'][data-ending-style] {
+  transform: translateX(-100%);
+}
+
+/* The opening focus held back from a pointer open (`quietFocus` in `Dialog.tsx`): no ring until a
+   key is pressed or focus moves on, where `Dialog.tsx` lifts the mark. The mark sits on the popup
+   itself after a touch open, on a control inside it otherwise. The ring is `base.css`'s outline,
+   so the style goes, under forced colours too: a pointer user there asked for no ring either, and
+   the colour alone would be forced back to a system colour. The browser's own `Highlight` border
+   on a focused button is left as it is, so a forced-colours user still sees where focus is. */
+.popup[data-quiet-focus]:focus-visible,
+.popup [data-quiet-focus]:focus-visible {
+  outline-style: none;
+}
+
 /* The header row centres its children on the cross axis, as the mock's close-circle rows all do: a
    one-line heading, a `headerStart` tag and the end group (a 44 px "More" button, the 36 px close)
    share one centre line. A heading that wraps to three lines or more takes the end group to the
@@ -34,7 +63,9 @@
    `--radius-dialog` under about 68 px. The block edges get no room: no hook moves the header's top
    in a centred dialog or a drawer. In the bottom sheet the handle and its gap sit above it, which
    clear the corner while `--sheet-padding-block-start` and `--sheet-handle-gap` add up to at least
-   0.293 r less 1 px (4 px at the default radius); the `SheetAtTheFloor` story holds that floor. */
+   0.293 r less 1 px (4 px at the default radius); the `SheetAtTheFloor` story holds that floor.
+   That floor assumes the default 5 px handle (`--sheet-handle-height`), which sits between the two
+   hooks and counts toward the clearance: a shorter handle raises the floor by the difference. */
 .header {
   --dialog-close-reach: calc((var(--size-touch) - var(--size-close)) / 2);
   --dialog-close-corner: calc(var(--radius-dialog) * 0.293);
@@ -46,6 +77,7 @@
   );
 
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   padding-inline-end: var(--dialog-header-room-inline-end);
@@ -54,10 +86,18 @@
 /* The three `--dialog-heading-*` hooks are set by a consumer on a `ThemeScope` (whose portal host
    holds the popup) or a DOM ancestor of the popup, and never declared here; each defaults to the
    step this heading always drew (`--text-h3`, the heading tracking, the snug leading), so a dialog
-   with no hook set looks as it did. */
+   with no hook set looks as it did.
+
+   Room at the inline end for the close (200% text on a 390 px phone): the heading takes what the
+   end group leaves (a zero basis that grows, so nothing moves while the row fits), but never less
+   than its longest word (a flex item's automatic minimum), so when its longest word does not fit
+   beside the end group the header wraps (its `flex-wrap`, above) and the end group, the close
+   circle at its size, takes a row of its own. Only a word wider than the whole row breaks: the
+   minimum is held to the row (`max-width`), and `overflow-wrap` breaks that one word inside it. A
+   visually hidden heading is out of the row's flow and keeps its 1 px box. */
 .heading {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  max-width: 100%;
   color: var(--color-text);
   font-size: var(--dialog-heading-size, var(--text-h3));
   font-family: var(--font-display);
@@ -66,6 +106,7 @@
   text-transform: var(--text-transform-display);
   letter-spacing: var(--dialog-heading-tracking, var(--tracking-heading));
   line-height: var(--dialog-heading-leading, var(--leading-snug));
+  overflow-wrap: break-word;
 }
 
 /* `base.css` tracks `h1` to `h3` only, so an `h4` heading has always drawn with the browser's

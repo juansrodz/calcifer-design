@@ -1,17 +1,35 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { composeStories } from '@storybook/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installManualAnimationFrames } from '../../../test/animationFrames';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
+import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
+import { Popover } from '../Popover/Popover';
 import { TextInput } from '../TextInput/TextInput';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { demoTheme } from '../ThemeScope/fixtures';
 import { Dialog, type DialogVariant, type SheetSide } from './Dialog';
 import * as stories from './Dialog.stories';
+
+// Read as plain text, as `token-reads.test.ts` reads it: Vitest's CSS modules give class names, not
+// declarations.
+const dialogCss = readFileSync(join(import.meta.dirname, 'Dialog.module.css'), 'utf8');
+
+/** The body of the one rule `prelude` matches (its first capture group); a miss fails the test. */
+function ruleBody(prelude: RegExp): string {
+  const body = prelude.exec(dialogCss)?.[1];
+  if (body === undefined) {
+    throw new Error(`Dialog.module.css has no rule matching ${prelude}`);
+  }
+  return body;
+}
 
 const {
   Default,
@@ -30,6 +48,9 @@ const {
   DrawerPaddingHooks,
   SheetAtTheFloor,
   DrawerAtTheFloor,
+  SideSheetRightToLeft,
+  HeadingAtDoubleText,
+  DefaultAtDoubleText,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -49,6 +70,9 @@ describe('Dialog', () => {
     ['DrawerPaddingHooks', DrawerPaddingHooks],
     ['SheetAtTheFloor', SheetAtTheFloor],
     ['DrawerAtTheFloor', DrawerAtTheFloor],
+    ['SideSheetRightToLeft', SideSheetRightToLeft],
+    ['HeadingAtDoubleText', HeadingAtDoubleText],
+    ['DefaultAtDoubleText', DefaultAtDoubleText],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -1065,5 +1089,333 @@ describe('Dialog', () => {
         expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
       },
     );
+  });
+
+  // A pointer did not ask for a ring: the opening focus holds it back until a key or a move.
+  describe('the quiet opening focus', () => {
+    it('holds the ring back on Close after a mouse open', async () => {
+      render(<Default />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).toHaveAttribute('data-quiet-focus');
+    });
+
+    it('holds it back on the popup itself after a touch open', async () => {
+      render(<Sheet defaultOpen={false} />);
+      const trigger = screen.getByRole('button', { name: 'Remove remote' });
+      await userEvent.pointer({ keys: '[TouchA]', target: trigger });
+      const popup = await screen.findByRole('dialog');
+      await waitFor(() => expect(popup).toHaveFocus());
+      expect(popup).toHaveAttribute('data-quiet-focus');
+    });
+
+    it('draws the ring after a keyboard open', async () => {
+      render(<Default />);
+      screen.getByRole('button', { name: 'Remove remote' }).focus();
+      await userEvent.keyboard('{Enter}');
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('lets the ring back at the first key', async () => {
+      render(<Default />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
+      await userEvent.keyboard('{Shift}');
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+      expect(close).toHaveFocus();
+    });
+
+    it('lets the ring back when focus leaves the control', async () => {
+      render(<Default />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
+      act(() => screen.getByRole('button', { name: 'Remove' }).focus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+      act(() => close.focus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('never holds it back with quietFocus={false}', async () => {
+      render(<Default quietFocus={false} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Remove remote' }));
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('draws the ring on an open no trigger saw, unless quietFocus says a pointer opened it', async () => {
+      const { rerender } = render(<Dialog heading="Pasta night" open />);
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveFocus());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+      rerender(<Dialog heading="Pasta night" open={false} />);
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      rerender(<Dialog heading="Pasta night" open quietFocus />);
+      const reopenedClose = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(reopenedClose).toHaveFocus());
+      expect(reopenedClose).toHaveAttribute('data-quiet-focus');
+    });
+
+    it('never holds back a text field’s ring', async () => {
+      render(
+        <Dialog heading="Rename" closeHidden open quietFocus>
+          <Field label="Name">
+            <TextInput />
+          </Field>
+        </Dialog>,
+      );
+      const field = await screen.findByRole('textbox', { name: 'Name' });
+      await waitFor(() => expect(field).toHaveFocus());
+      expect(field).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('is drawn by a rule that drops the outline style', () => {
+      expect(
+        ruleBody(
+          /^\.popup\[data-quiet-focus\]:focus-visible,\n\.popup \[data-quiet-focus\]:focus-visible \{([^}]*)\}/m,
+        ),
+      ).toContain(' outline-style: none;');
+    });
+
+    // A pointer opens a dialog whose field focuses itself at open: Base UI places no opening focus.
+    async function openWithAutoFocusField(): Promise<void> {
+      render(
+        <Dialog
+          heading="Rename"
+          trigger={<Button variant="secondary">Rename</Button>}
+          footer={<Button size="sm">Save</Button>}
+          closeHidden
+        >
+          <Field label="Name">
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the case under test: a field that focuses itself at open */}
+            <TextInput autoFocus defaultValue="Showcase" />
+          </Field>
+        </Dialog>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+      const field = await screen.findByRole('textbox', { name: 'Name' });
+      await waitFor(() => expect(field).toHaveFocus());
+    }
+
+    it('arms nothing when focus is already inside at open, so the first Tab rings', async () => {
+      await openWithAutoFocusField();
+      await userEvent.tab();
+      const save = screen.getByRole('button', { name: 'Save' });
+      expect(save).toHaveFocus();
+      expect(save).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('arms nothing when focus is already inside at open, so a later focus is not held back', async () => {
+      await openWithAutoFocusField();
+      const save = screen.getByRole('button', { name: 'Save' });
+      act(() => save.focus());
+      expect(save).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('lifts the mark when the dialog closes while still quiet', async () => {
+      const { rerender } = render(<Dialog heading="Pasta night" open quietFocus />);
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
+      rerender(<Dialog heading="Pasta night" open={false} quietFocus />);
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('holds back a control that takes no typing, such as a slider', async () => {
+      render(
+        <Dialog heading="Volume" closeHidden open quietFocus>
+          <input type="range" aria-label="Volume" />
+        </Dialog>,
+      );
+      const slider = await screen.findByRole('slider', { name: 'Volume' });
+      await waitFor(() => expect(slider).toHaveFocus());
+      expect(slider).toHaveAttribute('data-quiet-focus');
+    });
+  });
+
+  // Base UI places the opening focus a frame after it asks where (`enqueueFocus`); a key pressed in
+  // between is a keyboard user, so the focus that then lands is not held back.
+  describe('a key before the opening focus lands', () => {
+    const { queuedFrames, runOneFrame } = installManualAnimationFrames();
+    // The helper's spies are restored by the file's own `vi.restoreAllMocks()`; this file has none
+    // at the top level, so the block restores them before a later test needs real frames.
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('disarms the quiet opening', async () => {
+      render(<Dialog heading="Pasta night" open quietFocus />);
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(queuedFrames.size).toBeGreaterThan(0));
+      expect(close).not.toHaveFocus();
+      await userEvent.keyboard('{Shift}');
+      for (let frame = 0; frame < 3 && !close.matches(':focus'); frame += 1) {
+        act(() => runOneFrame());
+      }
+      expect(close).toHaveFocus();
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+  });
+
+  // Base UI's focus guards hand a Tab back into the popup a frame later; until then the guard,
+  // outside the popup, held focus, and a second Tab inside that frame went on to the page behind.
+  describe('the focus trap’s guards', () => {
+    it('hold focus inside the popup the moment a guard takes it, before Base UI’s frame', async () => {
+      render(<Default defaultOpen />);
+      const popup = await screen.findByRole('dialog');
+      await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
+      const guards = Array.from(
+        popup.parentElement?.querySelectorAll(':scope > [data-base-ui-focus-guard]') ?? [],
+      );
+      expect(guards).toHaveLength(2);
+      for (const guard of guards) {
+        act(() => (guard as HTMLElement).focus());
+        expect(popup.contains(document.activeElement)).toBe(true);
+      }
+    });
+
+    it('leave a popover’s own guards alone: Tab out of a popover in the dialog reaches the next control', async () => {
+      render(
+        <Dialog heading="Edit" defaultOpen>
+          <Popover trigger={<Button variant="secondary">Info</Button>} heading="Info">
+            <Button size="sm">Inside</Button>
+          </Popover>
+          <Button size="sm">After</Button>
+        </Dialog>,
+      );
+      await userEvent.click(await screen.findByRole('button', { name: 'Info' }));
+      const inside = await screen.findByRole('button', { name: 'Inside' });
+      act(() => inside.focus());
+      await userEvent.tab();
+      await waitFor(() => expect(screen.getByRole('button', { name: 'After' })).toHaveFocus());
+    });
+
+    it('leave a nested dialog’s guards to it: one Tab past its last control stays in it', async () => {
+      render(
+        <Dialog heading="Outer" defaultOpen>
+          <Dialog
+            heading="Inner"
+            trigger={<Button variant="secondary">Open inner</Button>}
+            footer={<Button size="sm">Inner save</Button>}
+          />
+        </Dialog>,
+      );
+      await userEvent.click(await screen.findByRole('button', { name: 'Open inner' }));
+      const inner = await screen.findByRole('dialog', { name: 'Inner' });
+      await waitFor(() => expect(inner.contains(document.activeElement)).toBe(true));
+      const afterGuard = inner.nextElementSibling;
+      if (
+        !(afterGuard instanceof HTMLElement) ||
+        !afterGuard.hasAttribute('data-base-ui-focus-guard')
+      ) {
+        throw new Error('the inner popup has no guard after it');
+      }
+      act(() => afterGuard.focus());
+      expect(inner.contains(document.activeElement)).toBe(true);
+    });
+  });
+
+  describe('the end drawer under a right-to-left page', () => {
+    it('rounds its inline-start corners, written logically', () => {
+      const body = ruleBody(
+        /^\.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\] \{([^}]*)\}/m,
+      );
+      expect(body).toContain(' border-start-start-radius: var(--radius-dialog);');
+      expect(body).toContain(' border-end-start-radius: var(--radius-dialog);');
+    });
+
+    it('slides in from the left under a [dir="rtl"] ancestor', () => {
+      expect(
+        ruleBody(
+          /^\[dir='rtl'\] \.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\]\[data-starting-style\],\n\[dir='rtl'\] \.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\]\[data-ending-style\] \{([^}]*)\}/m,
+        ),
+      ).toContain(' transform: translateX(-100%);');
+    });
+  });
+
+  // 200% text on a 390 px phone: the heading takes what the end group leaves, the header wraps
+  // before a word breaks, and only a word wider than the row breaks. Measured in a browser by the
+  // `HeadingAtDoubleText` story's play.
+  describe('the heading beside the close', () => {
+    it('grows from nothing, never narrower than its longest word nor wider than the row', () => {
+      const body = ruleBody(/^\.heading \{([^}]*)\}/m);
+      expect(body).toContain(' flex: 1 1 0;');
+      expect(body).toContain(' max-width: 100%;');
+      expect(body).not.toContain('min-width');
+      expect(body).toContain(' overflow-wrap: break-word;');
+    });
+
+    it('wraps the header row', () => {
+      expect(ruleBody(/^\.header \{([^}]*)\}/m)).toContain(' flex-wrap: wrap;');
+    });
+  });
+
+  // A bare number in a padding hook is no length, and CSS says nothing about it.
+  describe('the unitless padding hook warning', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function renderWithHooks(css: string, side: SheetSide) {
+      return render(
+        <>
+          <style>{css}</style>
+          <div className="hook-scope">
+            <ThemeScope theme={demoTheme}>
+              <Dialog heading="Pasta night" variant="sheet" side={side} defaultOpen />
+            </ThemeScope>
+          </div>
+        </>,
+      );
+    }
+
+    it('names each bottom-sheet hook set to a bare number', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      renderWithHooks(
+        `[data-popup] { --sheet-padding-block-start: 0; --sheet-padding-inline: 12px; --sheet-handle-gap: 0; }`,
+        'bottom',
+      );
+      await screen.findByRole('dialog');
+      expect(warn.mock.calls.map(([message]) => message)).toEqual([
+        'Dialog: --sheet-padding-block-start is "0", a number with no unit, which the dialog cannot use; write a length such as "0px".',
+        'Dialog: --sheet-handle-gap is "0", a number with no unit, which the dialog cannot use; write a length such as "0px".',
+      ]);
+    });
+
+    it('names the drawer’s hook, and only the drawer’s', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      renderWithHooks(
+        `[data-popup] { --sheet-padding-inline: 0; --drawer-padding-inline: 8; }`,
+        'end',
+      );
+      await screen.findByRole('dialog');
+      expect(warn.mock.calls.map(([message]) => message)).toEqual([
+        'Dialog: --drawer-padding-inline is "8", a number with no unit, which the dialog cannot use; write a length such as "8px".',
+      ]);
+    });
+
+    it('stays quiet for lengths and in a production build', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const { unmount } = renderWithHooks(
+        `[data-popup] { --sheet-padding-inline: 0px; --sheet-handle-gap: 1rem; }`,
+        'bottom',
+      );
+      await screen.findByRole('dialog');
+      expect(warn).not.toHaveBeenCalled();
+      unmount();
+      vi.stubEnv('NODE_ENV', 'production');
+      try {
+        renderWithHooks(`[data-popup] { --sheet-padding-inline: 0; }`, 'bottom');
+        await screen.findByRole('dialog');
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
   });
 });
