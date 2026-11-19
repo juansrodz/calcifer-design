@@ -18,6 +18,10 @@ import popupStyles from '../../styles/popup.module.css';
 import { hasContent } from '../../utils/hasContent';
 import styles from './Dialog.module.css';
 
+// The package's `types` carry no Node globals, so the declaration build does not know `process`.
+// Declared at module scope, as in `TabBar`, so it never collides with a global `process`.
+declare const process: { env: { NODE_ENV?: string } };
+
 export type DialogVariant = 'center' | 'sheet';
 
 /** The edge a sheet docks to: `bottom` is the phone pattern, `end` a full-height side panel. */
@@ -138,8 +142,15 @@ export interface DialogProps {
   /**
    * Holds back the focus ring on the control the dialog focuses as it opens, until a key is
    * pressed or focus leaves that control; then it draws as usual. A pointer user (mouse, touch,
-   * pen) asked for no ring, and a phone browser can light one on scripted focus. Forced colours
-   * behave the same. A text field is never held back: its ring shows where typing goes.
+   * pen) asked for no ring, and a phone browser can light one on scripted focus. Under forced
+   * colours the ring is held back too, but the browser's own `Highlight` border on a focused
+   * button stays, so focus still shows there.
+   *
+   * Only the focus the dialog places as it opens is held back: when focus is already inside at
+   * open (an `autoFocus` field, a child that focuses itself), nothing is. A text field (an `input`
+   * of a text type, a `textarea`, an editable element) is never held back: its ring shows where
+   * typing goes. A slider, a date, a file or a colour input is held back like a button. A ring a
+   * component draws on another element (a `ChoiceCard`'s card, an `Upload`'s face) is not.
    *
    * - left out: quiet when Base UI saw a pointer open the dialog through its `trigger`. A keyboard
    *   open, and an open it cannot see (no `trigger`, the app's own state), draw the ring.
@@ -159,9 +170,18 @@ const headingTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
 /** The opens Base UI reports for a pointer: its `initialFocus` function receives one of these. */
 const POINTER_OPENS = new Set(['mouse', 'touch', 'pen']);
 
-/** A control that takes typing: its ring says where the text goes, so it is never held back. */
-const TEXT_ENTRY =
-  'input:not([type="button"], [type="checkbox"], [type="radio"], [type="reset"], [type="submit"]), textarea, [contenteditable]:not([contenteditable="false"])';
+/**
+ * A control that takes typing: its ring says where the text goes, so it is never held back. The
+ * text types only; a slider, a date, a file or a colour input is held back like a button.
+ */
+const TEXT_ENTRY = [
+  'input:not([type])',
+  ...['text', 'search', 'url', 'tel', 'email', 'password', 'number'].map(
+    (inputType) => `input[type="${inputType}"]`,
+  ),
+  'textarea',
+  '[contenteditable]:not([contenteditable="false"])',
+].join(', ');
 
 /**
  * Marks `element` so `Dialog.module.css` draws no focus ring on it, until a key is pressed
@@ -240,49 +260,82 @@ export function Dialog({
   // whenever `headerEnd` holds one, and the popup itself on a touch open (so a phone sheet opens
   // with no ring on the close circle). This keeps the touch rule and otherwise targets the close
   // control; with `closeHidden` the ref is empty and `true` hands the choice back to Base UI.
-  // Base UI passes the open's interaction type, `''` when no trigger saw it; a quiet open holds
-  // the ring back on whatever takes the focus next, which is the opening focus (`onFocus` below).
+  // Base UI passes the open's interaction type, `''` when no trigger saw it. A quiet open arms a
+  // flag that the opening focus Base UI then places consumes (`onFocus` below), marking it. Base UI
+  // places none when focus is already inside (an `autoFocus` field), so that arms nothing; and any
+  // key disarms it, so a focus that comes after a key is never taken for the opening one.
   const quietPendingRef = useRef(false);
   const liftQuietRef = useRef<(() => void) | null>(null);
-  const initialFocus = (interactionType: string) => {
+  const disarmQuietRef = useRef<(() => void) | null>(null);
+  const endQuiet = () => {
+    disarmQuietRef.current?.();
     liftQuietRef.current?.();
-    quietPendingRef.current =
+  };
+  const initialFocus = (interactionType: string) => {
+    endQuiet();
+    const popup = popupRef.current;
+    const focusInside = popup !== null && popup.contains(popup.ownerDocument.activeElement);
+    const quiet =
       quietFocus === undefined
         ? POINTER_OPENS.has(interactionType)
         : quietFocus && interactionType !== 'keyboard';
-    return interactionType === 'touch' ? popupRef.current : (closeRef.current ?? true);
+    if (quiet && !focusInside && popup !== null) {
+      const ownerDocument = popup.ownerDocument;
+      const disarm = () => {
+        quietPendingRef.current = false;
+        ownerDocument.removeEventListener('keydown', disarm, true);
+        disarmQuietRef.current = null;
+      };
+      quietPendingRef.current = true;
+      ownerDocument.addEventListener('keydown', disarm, true);
+      disarmQuietRef.current = disarm;
+    }
+    return interactionType === 'touch' ? popup : (closeRef.current ?? true);
   };
   const holdOpeningRingBack = (event: FocusEvent<HTMLDivElement>) => {
     if (!quietPendingRef.current) {
       return;
     }
-    quietPendingRef.current = false;
+    disarmQuietRef.current?.();
     if (!event.target.matches(TEXT_ENTRY)) {
       liftQuietRef.current = holdRingBack(event.target);
     }
   };
-  useEffect(() => () => liftQuietRef.current?.(), []);
   // Base UI's focus guards, the popup's siblings, pass a Tab that reaches one back into the popup
   // a frame later (`enqueueFocus`), so a second Tab inside that frame (a held key on a busy page)
   // goes on from the guard to the page behind. Focusing the popup itself at once keeps focus in
-  // the trap through that frame; Base UI's own redirect then lands as it always did.
+  // the trap through that frame; Base UI's own redirect then lands as it always did. Only this
+  // dialog's own two guards, the viewport's children: React's focus event also bubbles here from
+  // the guards of a popover or a nested dialog inside, which are theirs to handle.
   const holdFocusInTrap = (event: FocusEvent<HTMLDivElement>) => {
-    if (event.target.hasAttribute('data-base-ui-focus-guard')) {
+    const target = event.target;
+    if (
+      target.parentElement === event.currentTarget &&
+      target.hasAttribute('data-base-ui-focus-guard')
+    ) {
       popupRef.current?.focus({ preventScroll: true });
     }
   };
-  // Development only, and once per mount of the popup (the literal `process.env.NODE_ENV` is the
-  // form a consumer's bundler replaces, as in `TabBar`). Not for a centred dialog: it has no hooks.
-  // Stable per side, so React attaches it once per mount rather than on every render.
-  const checkPaddingHooks = useCallback(
+  // The popup's ref. On mount it checks the padding hooks: development only (the literal
+  // `process.env.NODE_ENV` is the form a consumer's bundler replaces, as in `TabBar`), and not for
+  // a centred dialog, which has no hooks. On unmount it ends any quiet focus, so a dialog closed
+  // while quiet leaves no mark or listener behind. Stable per side, so React attaches it once per
+  // mount rather than on every render; `endQuiet` reads refs only.
+  const attachPopup = useCallback(
     (popup: HTMLDivElement | null) => {
       popupRef.current = popup;
-      if (popup !== null && sheetSide !== undefined && process.env.NODE_ENV !== 'production') {
+      if (popup === null) {
+        disarmQuietRef.current?.();
+        liftQuietRef.current?.();
+        return;
+      }
+      if (sheetSide !== undefined && process.env.NODE_ENV !== 'production') {
         warnUnitlessPaddingHooks(popup, sheetSide);
       }
     },
     [sheetSide],
   );
+  useEffect(() => endQuiet, []);
   const showEndGroup = hasContent(headerEnd) || !closeHidden;
   // A body that scrolls is a Tab stop while it overflows, named by the heading, so a keyboard can
   // scroll text that holds no control of its own (Safari makes no scroller focusable). A body that
@@ -310,7 +363,7 @@ export function Dialog({
           onFocus={holdFocusInTrap}
         >
           <BaseDialog.Popup
-            ref={checkPaddingHooks}
+            ref={attachPopup}
             className={[popupStyles.surface, styles.popup].join(' ')}
             data-popup={variant === 'sheet' ? 'sheet' : 'dialog'}
             data-side={sheetSide}

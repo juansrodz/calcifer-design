@@ -5,10 +5,13 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installManualAnimationFrames } from '../../../test/animationFrames';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
+import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
+import { Popover } from '../Popover/Popover';
 import { TextInput } from '../TextInput/TextInput';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { demoTheme } from '../ThemeScope/fixtures';
@@ -1176,6 +1179,98 @@ describe('Dialog', () => {
         ),
       ).toContain(' outline-style: none;');
     });
+
+    it('arms nothing when focus is already inside at open, so the first Tab rings', async () => {
+      render(
+        <Dialog
+          heading="Rename"
+          trigger={<Button variant="secondary">Rename</Button>}
+          footer={<Button size="sm">Save</Button>}
+          closeHidden
+        >
+          <Field label="Name">
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the case under test: a field that focuses itself at open */}
+            <TextInput autoFocus defaultValue="Showcase" />
+          </Field>
+        </Dialog>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+      const field = await screen.findByRole('textbox', { name: 'Name' });
+      await waitFor(() => expect(field).toHaveFocus());
+      await userEvent.tab();
+      const save = screen.getByRole('button', { name: 'Save' });
+      expect(save).toHaveFocus();
+      expect(save).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('arms nothing when focus is already inside at open, so a later focus is not held back', async () => {
+      render(
+        <Dialog
+          heading="Rename"
+          trigger={<Button variant="secondary">Rename</Button>}
+          footer={<Button size="sm">Save</Button>}
+          closeHidden
+        >
+          <Field label="Name">
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the case under test: a field that focuses itself at open */}
+            <TextInput autoFocus defaultValue="Showcase" />
+          </Field>
+        </Dialog>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+      const field = await screen.findByRole('textbox', { name: 'Name' });
+      await waitFor(() => expect(field).toHaveFocus());
+      const save = screen.getByRole('button', { name: 'Save' });
+      act(() => save.focus());
+      expect(save).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('lifts the mark when the dialog closes while still quiet', async () => {
+      function Harness({ open }: { open: boolean }) {
+        return <Dialog heading="Pasta night" open={open} quietFocus />;
+      }
+      const { rerender } = render(<Harness open />);
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
+      rerender(<Harness open={false} />);
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
+
+    it('holds back a control that takes no typing, such as a slider', async () => {
+      render(
+        <Dialog heading="Volume" closeHidden open quietFocus>
+          <input type="range" aria-label="Volume" />
+        </Dialog>,
+      );
+      const slider = await screen.findByRole('slider', { name: 'Volume' });
+      await waitFor(() => expect(slider).toHaveFocus());
+      expect(slider).toHaveAttribute('data-quiet-focus');
+    });
+  });
+
+  // Base UI places the opening focus a frame after it asks where (`enqueueFocus`); a key pressed in
+  // between is a keyboard user, so the focus that then lands is not held back.
+  describe('a key before the opening focus lands', () => {
+    const { queuedFrames, runOneFrame } = installManualAnimationFrames();
+    // The helper's spies are restored by the file's own `vi.restoreAllMocks()`; this file has none
+    // at the top level, so the block restores them before a later test needs real frames.
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('disarms the quiet opening', async () => {
+      render(<Dialog heading="Pasta night" open quietFocus />);
+      const close = await screen.findByRole('button', { name: 'Close' });
+      await waitFor(() => expect(queuedFrames.size).toBeGreaterThan(0));
+      expect(close).not.toHaveFocus();
+      await userEvent.keyboard('{Shift}');
+      for (let frame = 0; frame < 3 && !close.matches(':focus'); frame += 1) {
+        act(() => runOneFrame());
+      }
+      expect(close).toHaveFocus();
+      expect(close).not.toHaveAttribute('data-quiet-focus');
+    });
   });
 
   // Base UI's focus guards hand a Tab back into the popup a frame later; until then the guard,
@@ -1193,6 +1288,46 @@ describe('Dialog', () => {
         act(() => (guard as HTMLElement).focus());
         expect(popup.contains(document.activeElement)).toBe(true);
       }
+    });
+
+    it('leave a popover’s own guards alone: Tab out of a popover in the dialog reaches the next control', async () => {
+      render(
+        <Dialog heading="Edit" defaultOpen>
+          <Popover trigger={<Button variant="secondary">Info</Button>} heading="Info">
+            <Button size="sm">Inside</Button>
+          </Popover>
+          <Button size="sm">After</Button>
+        </Dialog>,
+      );
+      await userEvent.click(await screen.findByRole('button', { name: 'Info' }));
+      const inside = await screen.findByRole('button', { name: 'Inside' });
+      act(() => inside.focus());
+      await userEvent.tab();
+      await waitFor(() => expect(screen.getByRole('button', { name: 'After' })).toHaveFocus());
+    });
+
+    it('leave a nested dialog’s guards to it: one Tab past its last control stays in it', async () => {
+      render(
+        <Dialog heading="Outer" defaultOpen>
+          <Dialog
+            heading="Inner"
+            trigger={<Button variant="secondary">Open inner</Button>}
+            footer={<Button size="sm">Inner save</Button>}
+          />
+        </Dialog>,
+      );
+      await userEvent.click(await screen.findByRole('button', { name: 'Open inner' }));
+      const inner = await screen.findByRole('dialog', { name: 'Inner' });
+      await waitFor(() => expect(inner.contains(document.activeElement)).toBe(true));
+      const afterGuard = inner.nextElementSibling;
+      if (
+        !(afterGuard instanceof HTMLElement) ||
+        !afterGuard.hasAttribute('data-base-ui-focus-guard')
+      ) {
+        throw new Error('the inner popup has no guard after it');
+      }
+      act(() => afterGuard.focus());
+      expect(inner.contains(document.activeElement)).toBe(true);
     });
   });
 
