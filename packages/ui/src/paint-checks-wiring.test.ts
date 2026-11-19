@@ -79,7 +79,7 @@ describe('the paint checks wiring', () => {
 });
 
 /** A reading where the element paints what the probe resolved, every expected colour resolved. */
-function agreeingReading(overrides: Partial<PaintReading> = {}): PaintReading {
+function agreeingReading(): PaintReading {
   const paint = {
     backgroundColor: 'rgb(10, 20, 30)',
     color: 'rgb(40, 50, 60)',
@@ -90,38 +90,34 @@ function agreeingReading(overrides: Partial<PaintReading> = {}): PaintReading {
     painted: { ...paint },
     probed: { ...paint },
     colourResolutions: {
-      backgroundColor: ['rgb(10, 20, 30)', 'rgb(10, 20, 30)'],
-      color: ['rgb(40, 50, 60)', 'rgb(40, 50, 60)'],
-      outlineColor: ['rgb(70, 80, 90)', 'rgb(70, 80, 90)'],
+      backgroundColor: [paint.backgroundColor, paint.backgroundColor],
+      color: [paint.color, paint.color],
+      outlineColor: [paint.outlineColor, paint.outlineColor],
     },
-    ...overrides,
   };
 }
 
-const colourCheck: PaintCheck = {
-  target: '.thing',
-  interaction: 'hover',
-  expected: {
-    backgroundColor: 'var(--color-surface-1)',
-    color: 'var(--color-text)',
-    outlineColor: 'var(--color-focus)',
-  },
-};
+/** A check on a stand-in element; its target and interaction only name it in an error. */
+function checkExpecting(expected: PaintCheck['expected']): PaintCheck {
+  return { target: '.thing', interaction: 'rest', expected };
+}
+
+const colourCheck = checkExpecting({
+  backgroundColor: 'var(--color-surface-1)',
+  color: 'var(--color-text)',
+  outlineColor: 'var(--color-focus)',
+});
 
 describe('the paint comparison', () => {
   // A property left out of the list leaves every check that expects it comparing nothing, and
-  // `storybook:test` stays green.
-  // Listed here, not read from `paintProperties`: a property dropped from that list must drop no case.
+  // `storybook:test` stays green. Listed here, not read from `paintProperties`: a property dropped
+  // from that list must drop no case.
   it.each(['backgroundColor', 'color', 'outlineColor', 'boxShadow'] as const)(
     'reports a %s that differs from the probe',
     (property) => {
       const reading = agreeingReading();
       reading.painted[property] = 'rgb(255, 0, 0)';
-      const check: PaintCheck = {
-        target: '.thing',
-        interaction: 'rest',
-        expected: { [property]: 'x' },
-      };
+      const check = checkExpecting({ [property]: 'x' });
       expect(findMismatches(check, reading)).toEqual([expect.stringContaining(property)]);
       expect(findMismatches(check, agreeingReading())).toEqual([]);
     },
@@ -129,13 +125,9 @@ describe('the paint comparison', () => {
 
   it('refuses an expected shadow that its probe resolves to none', () => {
     // A missing token or a typo makes the probe `none`, equal to an element with no shadow.
-    const check: PaintCheck = {
-      target: '.thing',
-      interaction: 'hover',
-      expected: { boxShadow: 'var(--shadow-sofft)' },
-    };
+    const check = checkExpecting({ boxShadow: 'var(--shadow-sofft)' });
     expect(() => assertShadowResolved(check, agreeingReading())).toThrow(/resolved to none/);
-    const expectsNone: PaintCheck = { ...check, expected: { boxShadow: 'none' } };
+    const expectsNone = checkExpecting({ boxShadow: 'none' });
     expect(() => assertShadowResolved(expectsNone, agreeingReading())).not.toThrow();
   });
 
@@ -160,9 +152,9 @@ describe('the paint comparison', () => {
   });
 
   it('refuses a reading that lacks an expected colour, rather than skipping it', () => {
-    expect(() =>
-      assertColoursResolved(colourCheck, agreeingReading({ colourResolutions: {} })),
-    ).toThrow(/did not resolve/);
+    const reading = agreeingReading();
+    reading.colourResolutions = {};
+    expect(() => assertColoursResolved(colourCheck, reading)).toThrow(/did not resolve/);
   });
 });
 
