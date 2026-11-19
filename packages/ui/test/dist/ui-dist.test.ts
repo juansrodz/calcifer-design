@@ -59,6 +59,7 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--button-fill-hover',
   '--button-label-color',
   '--button-label-color-hover',
+  '--button-shadow',
   '--icon-button-shadow',
   '--segmented-pressed-shadow',
   '--dialog-heading-size',
@@ -83,6 +84,7 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--switch-track-checked-border-color',
   '--switch-thumb-background',
   '--toggle-chip-pressed-ring',
+  '--toggle-chip-font-size',
   '--progress-bar-track-size',
 ] as const;
 

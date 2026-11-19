@@ -31,7 +31,11 @@ interface ToggleChipGroupBaseProps extends FieldFrameProps {
   required?: boolean;
   /** Called when the focus leaves a chip, as `RadioGroup`'s `onBlur` is. */
   onBlur?: () => void;
-  /** Every chip's size: `md` by default, `sm` for the smaller chip (`ToggleChipSize`). */
+  /**
+   * Every chip's size: `md` by default, `sm` for the smaller chip (`ToggleChipSize`). A
+   * `--toggle-chip-font-size` set on the group or a wrapper sets every chip's label size, in place
+   * of the size's own type step (`ToggleChipProps.size`).
+   */
   size?: ToggleChipSize;
 }
 

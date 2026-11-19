@@ -46,6 +46,7 @@ const {
   PendingInverse,
   DangerViaHooks,
   RowViaHooks,
+  ElevationViaHook,
 } = composeStories(stories);
 
 describe('Button', () => {
@@ -72,6 +73,7 @@ describe('Button', () => {
     ['PendingInverse', PendingInverse],
     ['DangerViaHooks', DangerViaHooks],
     ['RowViaHooks', RowViaHooks],
+    ['ElevationViaHook', ElevationViaHook],
   ])('%s story renders and has no axe violations', async (_name, Story) => {
     const { container } = render(<Story />);
     expect(await axe(container)).toHaveNoViolations();
@@ -107,6 +109,30 @@ describe('Button', () => {
     expect(css).toContain('--button-label-color: var(--color-danger);');
     expect(css).toContain('--button-fill-hover: var(--color-danger);');
     expect(css).toContain('--button-label-color-hover: var(--color-inverse-text);');
+    expect(css).not.toMatch(directPaint);
+  });
+
+  // The shadow's side of the hooks, as above: the story's classes set `--button-shadow` (one with an
+  // inset ring in the same comma list, and the fill pair beside it) and never a `box-shadow` or a
+  // paint of their own. The library's side is pinned in `token-reads.test.ts`, and the play checks
+  // the drawn shadow in a browser.
+  it('has the ElevationViaHook story set the shadow hook from a class, with no box-shadow and no paint of its own', () => {
+    const { container } = render(<ElevationViaHook />);
+    const css = storyCss(container);
+    const participants = screen.getByRole('button', { name: 'Participants' });
+    const suggestions = screen.getByRole('button', { name: 'Suggestions 2' });
+    const share = screen.getByRole('link', { name: 'Share' });
+    for (const element of [participants, suggestions, share]) {
+      expect(element).toHaveAttribute('data-variant', 'secondary');
+    }
+    expect(participants).toHaveClass('root', 'button-card-shadow');
+    expect(share).toHaveClass('root', 'button-card-shadow');
+    expect(suggestions).toHaveClass('root', 'button-card-shadow-ring');
+    expect(css).toMatch(/^\.button-card-shadow \{\n {2}--button-shadow: var\(--shadow-soft\);/m);
+    expect(css).toMatch(/--button-shadow: var\(--shadow-soft\), inset 0 0 0 1\.5px /);
+    expect(css).toContain('--button-fill: var(--color-selected-soft);');
+    expect(css).toContain('--button-label-color: var(--color-selected-soft-text);');
+    expect(css).not.toMatch(/(?:^|[\s{;])box-shadow\s*:/m);
     expect(css).not.toMatch(directPaint);
   });
 

@@ -19,6 +19,7 @@ const {
   Small,
   CheckAtStart,
   CheckAtStartRightToLeft,
+  FontSizeViaHook,
 } = composeStories(stories);
 
 describe('ToggleChip', () => {
@@ -35,9 +36,31 @@ describe('ToggleChip', () => {
     ['Small', Small],
     ['CheckAtStart', CheckAtStart],
     ['CheckAtStartRightToLeft', CheckAtStartRightToLeft],
+    ['FontSizeViaHook', FontSizeViaHook],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
+  });
+
+  // jsdom loads no CSS, so this pins the story's side of the hook: each chip wrapper sets
+  // `--toggle-chip-font-size` and no `font-size`, inside a wrapper that stands in for an app's type
+  // scale (`--text-xs` at 10 px, the one token it re-scopes). The library's side (both sizes read
+  // the hook, nothing declares it) is pinned in `token-reads.test.ts`, and the story's play checks
+  // the drawn size in a browser.
+  it('has the FontSizeViaHook story set the chip size from a wrapper, with no font-size of its own', () => {
+    const { container } = render(<FontSizeViaHook />);
+    const css = container.querySelector('style')?.textContent ?? '';
+    expect(css).toMatch(/^\.chip-type-category \{ --toggle-chip-font-size: 0\.78125rem; \}$/m);
+    expect(css).toMatch(/^\.chip-type-dietary \{ --toggle-chip-font-size: 0\.75rem; \}$/m);
+    expect(css).toMatch(/^\.chip-type-scale \{ --text-xs: 0\.625rem; \}$/m);
+    expect(css.match(/--text-[\w-]+\s*:/g)).toHaveLength(1);
+    expect(css).not.toMatch(/(?:^|[\s{;])font-size\s*:/m);
+    const side = screen.getByRole('button', { name: 'Side' });
+    const spicy = screen.getByRole('button', { name: 'Spicy' });
+    expect(side.closest('.chip-type-category')?.closest('.chip-type-scale')).not.toBeNull();
+    expect(spicy.closest('.chip-type-dietary')?.closest('.chip-type-scale')).not.toBeNull();
+    expect(side).toHaveAttribute('data-size', 'sm');
+    expect(spicy).toHaveAttribute('data-size', 'sm');
   });
 
   it('is a toggle button that starts unpressed', () => {

@@ -786,7 +786,7 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/Button/Button.module.css',
     rule: /^\.root\[data-variant='primary'\] \{([^}]*)\}/m,
-    contains: ['box-shadow: var(--shadow-action);'],
+    contains: [' box-shadow: var(--button-shadow, var(--shadow-action));'],
     lacks: [],
   },
 
@@ -1385,7 +1385,7 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       ' --button-default-background: var(--color-inverse);',
       ' --button-default-color: var(--color-inverse-text);',
-      'box-shadow: var(--shadow-action-inverse);',
+      ' box-shadow: var(--button-shadow, var(--shadow-action-inverse));',
     ],
     lacks: ['--color-accent'],
   },
@@ -1694,6 +1694,50 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [
       /(?:^|[\s{;])--button-(?!(?:default-background|default-color|state-fill|state-label-color|inverse-disabled-fill|inverse-disabled-ink|lg-padding-inline|content-edge)\s*:)[\w-]+\s*:/,
     ],
+  },
+  // `Button`'s elevation hook, `--button-shadow`: a consumer's class gives any variant a shadow (a
+  // comma list, so an inset ring can ride with it). The base read is `:where(.root)`, at (0,0,0);
+  // the primary and the inverse primary read it first over `--shadow-action` and
+  // `--shadow-action-inverse`, at the weight they had. Nothing declares the hook, so a class that
+  // sets it wins in every state. Forced colours drop every shadow, and the chosen opt-out clears it.
+  {
+    file: 'components/Button/Button.module.css',
+    contains: [' var(--button-shadow, '],
+    lacks: [/--button-shadow\s*:/],
+  },
+  {
+    // Every variant reads the hook, with today's `none` under it, at zero weight: a secondary,
+    // ghost or row that sets no hook draws no shadow, and a consumer's own unlayered `box-shadow` on
+    // one, at any weight above zero and in any order, still wins, as when nothing was declared. A
+    // rule in a cascade layer, or a zero-weight tie loaded first, now loses there.
+    file: 'components/Button/Button.module.css',
+    rule: /^:where\(\.root\) \{([^}]*)\}/m,
+    contains: [' box-shadow: var(--button-shadow, none);'],
+    lacks: [],
+  },
+  {
+    // `.root` itself declares no shadow, so the base read cannot drift back to (0,1,0), where a
+    // consumer's element selector or an equal-weight rule loaded first would lose to it.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [],
+    // A declaration, not the word: `transition-property` names `box-shadow` too.
+    lacks: [/(?:^|[\s{;])box-shadow\s*:/],
+  },
+  {
+    // Nor does a secondary, ghost or row variant rule: one there, at (0,2,0) or more, would beat a
+    // consumer's (0,1,x) `box-shadow` on that variant, which wins on base.
+    file: 'components/Button/Button.module.css',
+    contains: [],
+    lacks: [/^\.root\[data-variant='(?:secondary|ghost|row)'\][^{]*\{[^}]*box-shadow\s*:/m],
+  },
+  {
+    // Before the forced-colours block every `box-shadow` reads the hook, so no state or tone draws
+    // a shadow of its own over a consumer's.
+    file: 'components/Button/Button.module.css',
+    rule: /^([\s\S]*?)^@media \(forced-colors: active\) \{/m,
+    contains: [],
+    lacks: [/(?:^|[\s{;])box-shadow\s*:(?!\s*var\(--button-shadow, )/m],
   },
   {
     // Outside the forced-colours block nothing else paints the root's fill or ink: every variant,
@@ -3171,7 +3215,7 @@ const expectations: ReadonlyArray<Expectation> = [
       'color: var(--color-text);',
       sansFamily,
       'font-weight: var(--font-weight-label);',
-      'font-size: var(--text-sm);',
+      ' font-size: var(--toggle-chip-font-size, var(--text-sm));',
       'line-height: var(--leading-tight);',
     ],
     lacks: [anyWeightLiteral],
@@ -3192,11 +3236,23 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [
       ' min-height: 1.75rem;',
       ' padding-block: var(--space-1);',
-      ' font-size: var(--text-xs);',
+      ' font-size: var(--toggle-chip-font-size, var(--text-xs));',
     ],
     // The inline padding and the icon chip's start inset stay md's: a `padding` shorthand here,
     // at the icon rule's (0,2,0) and after it, would silently drop the inset.
     lacks: [' padding:', ' padding-inline', ' height:'],
+  },
+  // `--toggle-chip-font-size`, the label's size: a consumer sets it on a chip or a wrapper, in place
+  // of re-scoping a type token, and each size falls back to its own step (`--text-sm` at md,
+  // `--text-xs` at sm). Nothing declares it, and every `font-size` in the file reads it, so no
+  // state sets a size of its own over a consumer's.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    contains: [' var(--toggle-chip-font-size, '],
+    lacks: [
+      /--toggle-chip-font-size\s*:/,
+      /(?:^|[\s{;])font-size\s*:(?!\s*var\(--toggle-chip-font-size, )/m,
+    ],
   },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',

@@ -28,7 +28,8 @@ export interface LinkButtonProps extends ComponentPropsWithRef<'a'> {
  * anything that acts on the current page. Give it an `href`, or a `render` element that draws
  * one: an `<a>` with no `href` is not a link, and is not focusable. A class in `className` takes
  * `Button`'s four fill hooks (`--button-fill`, `--button-fill-hover`, `--button-label-color`,
- * `--button-label-color-hover`), as the two share a stylesheet.
+ * `--button-label-color-hover`) and its shadow hook (`--button-shadow`), as the two share a
+ * stylesheet.
  */
 export function LinkButton({
   variant = 'primary',

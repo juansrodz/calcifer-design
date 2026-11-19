@@ -13,7 +13,14 @@
    `:focus-visible` outline, drawn round the chip itself and offset past the pressed fill so the
    two do not merge.
 
-   `max-width` and `overflow-wrap` keep a long label from pushing the row past a phone's width. */
+   `max-width` and `overflow-wrap` keep a long label from pushing the row past a phone's width.
+
+   `--toggle-chip-font-size` is the label's size, a hook a consumer sets on a chip or a wrapper and
+   the library never declares. Each size reads it first, over its own step (`--text-sm` at md,
+   `--text-xs` at sm), so an app whose type scale moves those steps can keep its chips' type
+   without re-scoping a global token. At sm the heights are floors, so a size up to about 17 px
+   leaves the chip 28 and 36 px tall; at md the chip is its line plus its padding, so its height
+   follows the size. */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -26,7 +33,7 @@
   color: var(--color-text);
   font-family: var(--font-sans);
   font-weight: var(--font-weight-label);
-  font-size: var(--text-sm);
+  font-size: var(--toggle-chip-font-size, var(--text-sm));
   line-height: var(--leading-tight);
   overflow-wrap: anywhere;
   cursor: pointer;
@@ -50,7 +57,7 @@
 .chip[data-size='sm'] {
   min-height: 1.75rem;
   padding-block: var(--space-1);
-  font-size: var(--text-xs);
+  font-size: var(--toggle-chip-font-size, var(--text-xs));
 }
 
 .chip[data-size='sm'][data-with-icon] {
