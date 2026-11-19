@@ -290,8 +290,10 @@ export const DrawerPaddingHooks: Story = {
 
 /**
  * Every edge at a bare `0`. The close's 44 px touch target reaches 4 px past its 36 px circle, and
- * the popup clips what passes its padding edge, so the header pads those 4 px at the top and the
- * inline end. The play presses the target's outer corner, past the circle, and finds the close.
+ * the popup clips what passes its padding edge and its rounded corner, so the header pads the reach
+ * and the corner's inset at the top and the inline end. The play presses the target's outer
+ * corner, past the circle and in the popup's rounded corner, and finds the close; and the popup
+ * does not scroll sideways.
  */
 export const ZeroPadding: Story = {
   args: { defaultOpen: true },
@@ -331,5 +333,6 @@ export const ZeroPadding: Story = {
       closeBox.top - reach + 0.5,
     );
     await expect(close.contains(cornerTarget)).toBe(true);
+    await expect(popup.scrollWidth).toBe(popup.clientWidth);
   },
 };
