@@ -1,5 +1,6 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -32,8 +33,8 @@ export type SheetSide = 'bottom' | 'end';
  *   `--sheet-handle-gap` the space between the handle and the header, and
  *   `--sheet-padding-inline` the sheet's inline padding. `--drawer-padding-inline` is the end
  *   drawer's inline padding. The gap defaults to `--space-4`, the paddings to `--space-5` (24 px).
- *   Each takes a length with a unit (`0px`, not `0`, and no percentage). The padding sits inside
- *   the popup's 1 px border.
+ *   Each takes a length with a unit (`0px`, not `0`, and no percentage; a development build warns
+ *   about a bare number). The padding sits inside the popup's 1 px border.
  *
  * Under a thin inline padding the header insets the close so its 44 px touch target stays inside
  * the popup's rounded corner. In the bottom sheet, keep `--sheet-padding-block-start` plus
@@ -177,6 +178,30 @@ function holdRingBack(element: HTMLElement): () => void {
   return lift;
 }
 
+/**
+ * The padding hooks take a length with a unit. A bare number (`0`) is no length: the paddings
+ * read it as nothing and fall back, and the handle gap's `calc()` is invalid and keeps 16 px. CSS
+ * says nothing, so a development build says it here. Each placement reads only its own hooks.
+ */
+const PADDING_HOOKS = {
+  bottom: ['--sheet-padding-block-start', '--sheet-padding-inline', '--sheet-handle-gap'],
+  end: ['--drawer-padding-inline'],
+} as const;
+
+const UNITLESS_NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+
+function warnUnitlessPaddingHooks(popup: HTMLElement, side: SheetSide) {
+  const computed = getComputedStyle(popup);
+  for (const hook of PADDING_HOOKS[side]) {
+    const value = computed.getPropertyValue(hook).trim();
+    if (UNITLESS_NUMBER.test(value)) {
+      console.warn(
+        `Dialog: ${hook} is "${value}", a number with no unit, which the dialog cannot use; write a length such as "${value}px".`,
+      );
+    }
+  }
+}
+
 export function Dialog({
   trigger,
   heading,
@@ -244,6 +269,18 @@ export function Dialog({
       popupRef.current?.focus({ preventScroll: true });
     }
   };
+  // Development only, and once per mount of the popup (the literal `process.env.NODE_ENV` is the
+  // form a consumer's bundler replaces, as in `TabBar`). Not for a centred dialog: it has no hooks.
+  // Stable per side, so React attaches it once per mount rather than on every render.
+  const checkPaddingHooks = useCallback(
+    (popup: HTMLDivElement | null) => {
+      popupRef.current = popup;
+      if (popup !== null && sheetSide !== undefined && process.env.NODE_ENV !== 'production') {
+        warnUnitlessPaddingHooks(popup, sheetSide);
+      }
+    },
+    [sheetSide],
+  );
   const showEndGroup = hasContent(headerEnd) || !closeHidden;
   // A body that scrolls is a Tab stop while it overflows, named by the heading, so a keyboard can
   // scroll text that holds no control of its own (Safari makes no scroller focusable). A body that
@@ -271,7 +308,7 @@ export function Dialog({
           onFocus={holdFocusInTrap}
         >
           <BaseDialog.Popup
-            ref={popupRef}
+            ref={checkPaddingHooks}
             className={[popupStyles.surface, styles.popup].join(' ')}
             data-popup={variant === 'sheet' ? 'sheet' : 'dialog'}
             data-side={sheetSide}

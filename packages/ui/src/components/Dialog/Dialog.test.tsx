@@ -1233,4 +1233,68 @@ describe('Dialog', () => {
       expect(ruleBody(/^\.headingHidden \{([^}]*)\}/m)).toContain(' min-width: 0;');
     });
   });
+
+  // A bare number in a padding hook is no length, and CSS says nothing about it.
+  describe('the unitless padding hook warning', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function renderWithHooks(css: string, side: SheetSide) {
+      return render(
+        <>
+          <style>{css}</style>
+          <div className="hook-scope">
+            <ThemeScope theme={demoTheme}>
+              <Dialog heading="Pasta night" variant="sheet" side={side} defaultOpen />
+            </ThemeScope>
+          </div>
+        </>,
+      );
+    }
+
+    it('names each bottom-sheet hook set to a bare number', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      renderWithHooks(
+        `[data-popup] { --sheet-padding-block-start: 0; --sheet-padding-inline: 12px; --sheet-handle-gap: 0; }`,
+        'bottom',
+      );
+      await screen.findByRole('dialog');
+      expect(warn.mock.calls.map(([message]) => message)).toEqual([
+        'Dialog: --sheet-padding-block-start is "0", a number with no unit, which the dialog cannot use; write a length such as "0px".',
+        'Dialog: --sheet-handle-gap is "0", a number with no unit, which the dialog cannot use; write a length such as "0px".',
+      ]);
+    });
+
+    it('names the drawer’s hook, and only the drawer’s', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      renderWithHooks(
+        `[data-popup] { --sheet-padding-inline: 0; --drawer-padding-inline: 8; }`,
+        'end',
+      );
+      await screen.findByRole('dialog');
+      expect(warn.mock.calls.map(([message]) => message)).toEqual([
+        'Dialog: --drawer-padding-inline is "8", a number with no unit, which the dialog cannot use; write a length such as "8px".',
+      ]);
+    });
+
+    it('stays quiet for lengths and in a production build', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const { unmount } = renderWithHooks(
+        `[data-popup] { --sheet-padding-inline: 0px; --sheet-handle-gap: 1rem; }`,
+        'bottom',
+      );
+      await screen.findByRole('dialog');
+      expect(warn).not.toHaveBeenCalled();
+      unmount();
+      vi.stubEnv('NODE_ENV', 'production');
+      try {
+        renderWithHooks(`[data-popup] { --sheet-padding-inline: 0; }`, 'bottom');
+        await screen.findByRole('dialog');
+        expect(warn).not.toHaveBeenCalled();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+  });
 });
