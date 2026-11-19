@@ -155,12 +155,16 @@ let runnerViewport: ViewportSize | null = null;
 // A story that names a viewport (`globals: { viewport: { value: 'mobile' } }`, as the Storybook
 // toolbar reads it) renders, plays and is paint-checked in a window that size, not the runner's
 // 1280 px one with a stand-in width. Set before the story renders, so it lays out at that size
-// from the start.
+// from the start. A story that names none gets the runner's size back here too, should a story
+// before it have stopped (a hard timeout) before the post-visit hook could size the page back.
 setPreVisit(async (page, context) => {
   const size = storyViewportSize(await getStoryContext(page, context));
   if (size !== undefined) {
     runnerViewport ??= page.viewportSize();
     await page.setViewportSize(size);
+  } else if (runnerViewport !== null) {
+    await page.setViewportSize(runnerViewport);
+    runnerViewport = null;
   }
 });
 
