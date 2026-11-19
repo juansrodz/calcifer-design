@@ -2,10 +2,19 @@
 // the page read, and whether the two agree. Pure, so Vitest can load it (the runner's hook in
 // `paint-checks.ts` cannot load there) and pin each guard on its own.
 
-export type PaintProperty = 'backgroundColor' | 'color' | 'boxShadow';
+export type PaintProperty = 'backgroundColor' | 'color' | 'outlineColor' | 'boxShadow';
 export type ColourProperty = Exclude<PaintProperty, 'boxShadow'>;
-export const paintProperties: readonly PaintProperty[] = ['backgroundColor', 'color', 'boxShadow'];
-export const colourProperties: readonly ColourProperty[] = ['backgroundColor', 'color'];
+export const paintProperties: readonly PaintProperty[] = [
+  'backgroundColor',
+  'color',
+  'outlineColor',
+  'boxShadow',
+];
+export const colourProperties: readonly ColourProperty[] = [
+  'backgroundColor',
+  'color',
+  'outlineColor',
+];
 
 /**
  * Two colours no check expects, one per reading of an expected colour, set as the inherited
@@ -34,7 +43,8 @@ export interface PaintCheck {
   /** Runs the check under forced colours (`forced-colors: active`). */
   forcedColors?: boolean;
   /**
-   * The expected colours, as any CSS colour value (a `var()`, a system colour), and the expected
+   * The expected colours (the background, the text and the outline, whether or not an outline is
+   * drawn), as any CSS colour value (a `var()`, a system colour), and the expected
    * `box-shadow`, as any shadow list (`none`, a `var()`, a comma list). Each one is resolved on a
    * probe in the story, with `forced-color-adjust: none`, so a system colour stays itself under
    * forced colours. The probe keeps its shadow there as well, and an element under

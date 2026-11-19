@@ -89,13 +89,18 @@
     /* The opt-out is inherited, and the start icon is the consumer's (an icon, an avatar), so its
        token colours, and the slot's own, would come back on the fill. Everything inside takes the
        item's ink, its edges included; `!important` so a consumer's inline colour cannot beat it,
-       as in `NavMenu`'s item and `IconButton`'s pressed rule. A literal `fill` or `stroke`, a
-       shadow or an image is left to the consumer. */
+       as in `NavMenu`'s item and `IconButton`'s pressed rule. The opt-out would also bring back
+       what the browser does outside it: it drops every shadow (an `AvatarGroup`'s ring, in a theme
+       colour, came back on the fill at 2.0 to 2.4:1) and paints an outline in the ink (an avatar's
+       transparent edge stayed transparent). So shadows go and outlines take the ink. A literal
+       `fill` or `stroke`, or an image, is left to the consumer. */
     .item[data-highlighted]:not([data-disabled], :focus-visible) * {
       --menu-content-edge: currentcolor;
 
       border-color: var(--menu-content-edge) !important;
+      outline-color: var(--menu-content-edge) !important;
       background-color: transparent !important;
+      box-shadow: none !important;
       color: inherit !important;
     }
   }

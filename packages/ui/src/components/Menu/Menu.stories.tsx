@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import type { PaintCheck } from '../../../.storybook/paint-checks';
 import { Avatar } from '../Avatar/Avatar';
+import { AvatarGroup } from '../AvatarGroup/AvatarGroup';
 import { Button } from '../Button/Button';
 import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
 import { Menu } from './Menu';
@@ -202,5 +203,68 @@ export const WithStartIconsHighlighted: Story = {
     askAgain.blur();
     await waitFor(() => expect(askAgain).not.toHaveFocus());
     await expect(askAgain).toHaveAttribute('data-highlighted');
+  },
+};
+
+/** The avatars and the `+N` chip of the `AvatarGroup` in the highlighted item's start slot. */
+const groupAvatars =
+  '[role="menuitem"][data-highlighted] [role="list"] > li > [data-testid="avatar"]';
+const groupChip = '[role="menuitem"][data-highlighted] [role="list"] > li > [aria-hidden="true"]';
+
+/**
+ * An item whose start slot holds an `AvatarGroup` (three avatars and a `+1` chip), highlighted and
+ * not focused, as in `WithStartIconsHighlighted`. Under forced colours the hovered item's fill opts
+ * out of the browser's colours, which brings back what the browser drops elsewhere: the group's ring
+ * (a box shadow in a theme colour) and the chip's shadow. The content guard drops both, and draws
+ * the avatars' and the chip's edges (a transparent outline the browser would paint) in the item's
+ * `HighlightText`, as their edges are `CanvasText` at rest. The paint checks pin both.
+ */
+export const WithAvatarGroupHighlighted: Story = {
+  args: {
+    defaultOpen: true,
+    trigger: <Button variant="secondary">Who is bringing</Button>,
+    items: [
+      { id: 'reload', label: 'Reload the list', onSelect: fn(), startIcon: <RefreshGlyph /> },
+      {
+        id: 'cooks',
+        label: 'The cooks',
+        onSelect: fn(),
+        startIcon: (
+          <AvatarGroup
+            label="The cooks"
+            size="xs"
+            max={3}
+            items={[
+              { id: 'sebastian', name: 'Juan Sebastian Rodriguez', colorSeed: 'sebastian' },
+              { id: 'christian', name: 'Christian Ocampo', colorSeed: 'christian' },
+              { id: 'ada', name: 'Ada Lovelace', colorSeed: 'ada' },
+              { id: 'grace', name: 'Grace Hopper', colorSeed: 'grace' },
+            ]}
+          />
+        ),
+      },
+    ],
+  },
+  decorators: WithStartIconsHighlighted.decorators,
+  parameters: {
+    ...openMenuA11y,
+    paintChecks: [
+      ...[groupAvatars, groupChip].map((target): PaintCheck => ({
+        target,
+        interaction: 'press',
+        forcedColors: true,
+        expected: { outlineColor: 'HighlightText', boxShadow: 'none' },
+      })),
+    ] satisfies readonly PaintCheck[],
+  },
+  play: async () => {
+    const cooks = await screen.findByRole('menuitem', { name: 'The cooks' });
+    cooks.focus();
+    await waitFor(() => expect(cooks).toHaveAttribute('data-highlighted'));
+    cooks.blur();
+    await waitFor(() => expect(cooks).not.toHaveFocus());
+    await expect(cooks).toHaveAttribute('data-highlighted');
+    await expect(document.querySelectorAll(groupAvatars)).toHaveLength(3);
+    await expect(document.querySelectorAll(groupChip)).toHaveLength(1);
   },
 };

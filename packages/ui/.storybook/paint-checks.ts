@@ -34,6 +34,7 @@ async function readPaint(
       probe.style.setProperty('forced-color-adjust', 'none');
       probe.style.backgroundColor = expectedValues.backgroundColor ?? 'transparent';
       probe.style.color = expectedValues.color ?? 'inherit';
+      probe.style.outlineColor = expectedValues.outlineColor ?? 'currentcolor';
       probe.style.boxShadow = expectedValues.boxShadow ?? 'none';
       // Each expected colour as the `color` of a probe inside a host of each shade in turn: see
       // `unresolvedShades`. Both opt out of forced colours, which would repaint either.
@@ -63,11 +64,13 @@ async function readPaint(
           painted: {
             backgroundColor: painted.backgroundColor,
             color: painted.color,
+            outlineColor: painted.outlineColor,
             boxShadow: painted.boxShadow,
           },
           probed: {
             backgroundColor: probed.backgroundColor,
             color: probed.color,
+            outlineColor: probed.outlineColor,
             boxShadow: probed.boxShadow,
           },
           colourResolutions,

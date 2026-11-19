@@ -64,13 +64,19 @@ describe('the paint checks wiring', () => {
 
 /** A reading where the element paints what the probe resolved, every expected colour resolved. */
 function agreeingReading(overrides: Partial<PaintReading> = {}): PaintReading {
-  const paint = { backgroundColor: 'rgb(10, 20, 30)', color: 'rgb(40, 50, 60)', boxShadow: 'none' };
+  const paint = {
+    backgroundColor: 'rgb(10, 20, 30)',
+    color: 'rgb(40, 50, 60)',
+    outlineColor: 'rgb(70, 80, 90)',
+    boxShadow: 'none',
+  };
   return {
     painted: { ...paint },
     probed: { ...paint },
     colourResolutions: {
       backgroundColor: ['rgb(10, 20, 30)', 'rgb(10, 20, 30)'],
       color: ['rgb(40, 50, 60)', 'rgb(40, 50, 60)'],
+      outlineColor: ['rgb(70, 80, 90)', 'rgb(70, 80, 90)'],
     },
     ...overrides,
   };
@@ -79,14 +85,18 @@ function agreeingReading(overrides: Partial<PaintReading> = {}): PaintReading {
 const colourCheck: PaintCheck = {
   target: '.thing',
   interaction: 'hover',
-  expected: { backgroundColor: 'var(--color-surface-1)', color: 'var(--color-text)' },
+  expected: {
+    backgroundColor: 'var(--color-surface-1)',
+    color: 'var(--color-text)',
+    outlineColor: 'var(--color-focus)',
+  },
 };
 
 describe('the paint comparison', () => {
   // A property left out of the list leaves every check that expects it comparing nothing, and
   // `storybook:test` stays green.
   // Listed here, not read from `paintProperties`: a property dropped from that list must drop no case.
-  it.each(['backgroundColor', 'color', 'boxShadow'] as const)(
+  it.each(['backgroundColor', 'color', 'outlineColor', 'boxShadow'] as const)(
     'reports a %s that differs from the probe',
     (property) => {
       const reading = agreeingReading();
@@ -113,7 +123,7 @@ describe('the paint comparison', () => {
     expect(() => assertShadowResolved(expectsNone, agreeingReading())).not.toThrow();
   });
 
-  it.each(['backgroundColor', 'color'] as const)(
+  it.each(['backgroundColor', 'color', 'outlineColor'] as const)(
     'refuses an expected %s that reads as each inherited shade in turn',
     (property) => {
       // A missing token falls back to the initial or inherited colour: `transparent` on the probe
@@ -150,7 +160,10 @@ describe('the stories that declare paint checks', () => {
       expect(['rest', 'hover', 'press']).toContain(check.interaction);
       // A check with nothing to compare passes whatever the element paints.
       expect(
-        check.expected.backgroundColor ?? check.expected.color ?? check.expected.boxShadow,
+        check.expected.backgroundColor ??
+          check.expected.color ??
+          check.expected.outlineColor ??
+          check.expected.boxShadow,
       ).toEqual(expect.any(String));
     }
   });

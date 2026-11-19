@@ -139,12 +139,16 @@
     /* The opt-out is inherited, and an item's content is the consumer's (`renderLink`), so its
        token colours would come back on the fill. Everything inside takes the item's ink, its edges
        included; `!important` so a consumer's inline colour cannot beat it, as in `IconButton`'s
-       pressed rule. A literal `fill` or `stroke`, a shadow or an image is left to the consumer. */
+       pressed rule. The opt-out would also bring back what the browser does outside it: it drops
+       every shadow and paints an outline in the ink, so shadows go and outlines take the ink, as in
+       `Menu`'s item. A literal `fill` or `stroke`, or an image, is left to the consumer. */
     .item[data-highlighted]:not([aria-current='page'], :focus-visible) * {
       --nav-menu-content-edge: currentcolor;
 
       border-color: var(--nav-menu-content-edge) !important;
+      outline-color: var(--nav-menu-content-edge) !important;
       background-color: transparent !important;
+      box-shadow: none !important;
       color: inherit !important;
     }
   }

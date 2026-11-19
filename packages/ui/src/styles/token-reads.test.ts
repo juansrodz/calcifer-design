@@ -461,13 +461,18 @@ const expectations: ReadonlyArray<Expectation> = [
   // its token colours would come back on the fill. Everything inside takes the item's ink, its
   // edges included, with `!important` so a consumer's inline colour cannot beat it, as `NavMenu`'s
   // item content does; it keeps its border styles as the sibling consumer-content rows require.
+  // It drops shadows and inks outlines, as the browser does outside the opt-out: an `AvatarGroup`'s
+  // ring came back in a theme colour (2.0 to 2.4:1 on the fill) and an avatar's edge stayed
+  // transparent.
   {
     file: 'components/Menu/Menu.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \* \{([^}]*)\}/m,
     contains: [
       '--menu-content-edge: currentcolor;',
       ' border-color: var(--menu-content-edge) !important;',
+      ' outline-color: var(--menu-content-edge) !important;',
       ' background-color: transparent !important;',
+      ' box-shadow: none !important;',
       ' color: inherit !important;',
     ],
     lacks: consumerContentKeepsStyles,
@@ -1537,14 +1542,17 @@ const expectations: ReadonlyArray<Expectation> = [
   // The opt-out is inherited, and an item's content is the consumer's (`renderLink`), so its colours
   // would come back on the fill. Everything inside takes the item's ink, its edges included, with
   // `!important` so a consumer's inline colour cannot beat it, as in `IconButton`'s pressed rule,
-  // and it keeps its border styles as the sibling consumer-content rows require.
+  // and it keeps its border styles as the sibling consumer-content rows require. Shadows go and
+  // outlines take the ink, as in `Menu`'s item.
   {
     file: 'components/NavMenu/NavMenu.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \* \{([^}]*)\}/m,
     contains: [
       '--nav-menu-content-edge: currentcolor;',
       ' border-color: var(--nav-menu-content-edge) !important;',
+      ' outline-color: var(--nav-menu-content-edge) !important;',
       ' background-color: transparent !important;',
+      ' box-shadow: none !important;',
       ' color: inherit !important;',
     ],
     lacks: consumerContentKeepsStyles,
