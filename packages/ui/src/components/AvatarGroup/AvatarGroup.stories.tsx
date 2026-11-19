@@ -152,10 +152,12 @@ export const Sizes: Story = {
 };
 
 /**
- * Six people with a photo each and `max` 4: four photos, then a chip for the other two. The photos
- * are drawings inlined as data, so the story needs no network. Where one photo overlaps the next,
- * the ring separates them in the ground colour; under forced colours there is no ring, and the
- * front photo's own 1 px edge in the system text colour does it.
+ * Six people have a photo each, and `max` 4 shows the first four, then a chip for the other two;
+ * raise `max` to see the last two (a sage and a near-black portrait). The photos are drawings
+ * inlined as data, so the story needs no network. Where one photo overlaps the next, the ring
+ * sets them apart in the ground colour. Under forced colours there is no ring, so what sits
+ * between two photos is the front photo's own 1 px edge in the system text colour, and how well
+ * it shows depends on how the two photos' brightness compares.
  */
 export const Photos: Story = {
   args: { items: photoPeople, max: 4, size: 'md' },
