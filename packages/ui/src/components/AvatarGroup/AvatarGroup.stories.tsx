@@ -91,12 +91,27 @@ function clearanceFromNeighbour(avatar: Element, neighbour: Element): number {
   return neighbourEdge - initialsBox.right;
 }
 
+// The least clearance each row's play accepts. `xs` and `sm` are the two sizes whose overlap was
+// cut to keep the letters whole; their initials read about 1.4px clear in Arial's widths, so a
+// floor of 1px fails an overlap one pixel larger (which reads about 0.5px). The other three only
+// have to stay uncut: `md` reads 1.1px, too little to hold 1px against the rounding of a glyph's
+// advance on another platform. The play is the coarse net for the overlap's geometry in that one
+// face; `AvatarGroup.test.tsx` pins the overlap itself, and a consumer's own font has its own
+// clearance.
+const minimumClearanceBySize: Readonly<Record<AvatarSize, number>> = {
+  xs: 1,
+  sm: 1,
+  md: 0,
+  lg: 0,
+  xl: 0,
+};
+
 /**
  * Each of the five sizes, the chip drawn to the same height as the avatars beside it and its count
  * at their initials size. The largest size shows fewer avatars so that every row fits a phone. The
- * play checks that, at every size, no avatar's initials run under the avatar or the chip after it:
- * at `xs` and `sm` the stack overlaps less than the larger sizes, which is what keeps the letters
- * whole.
+ * play checks the gap from each avatar's initials to the avatar or the chip after it, in Arial's
+ * widths (the wrapper's font): at `xs` and `sm` the stack overlaps less than at the larger sizes,
+ * which is what keeps the letters whole, and those two rows must keep 1px of clearance.
  */
 export const Sizes: Story = {
   parameters: { controls: { disable: true } },
@@ -110,10 +125,11 @@ export const Sizes: Story = {
         if (!avatar || !neighbour) {
           throw new Error('the row has an item with nothing in it');
         }
+        const size = list.dataset['size'] as AvatarSize;
         await expect(
           clearanceFromNeighbour(avatar, neighbour),
-          `size ${list.dataset['size']}, avatar ${index + 1}`,
-        ).toBeGreaterThanOrEqual(0);
+          `size ${size}, avatar ${index + 1}`,
+        ).toBeGreaterThanOrEqual(minimumClearanceBySize[size]);
       }
     }
   },
