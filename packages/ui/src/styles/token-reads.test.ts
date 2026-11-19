@@ -441,13 +441,15 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
-  // The select trigger's border turned `Highlight` on hover, the browser's own cue, which is under
-  // 3:1 against the resting edge. Its edge thickens to 3 px as `Button`'s does: a 2 px outline
-  // inside the 1 px border. Not on a disabled or a focused trigger.
+  // The select trigger had no painted hover cue: Chromium reports its border as `Highlight` on
+  // hover but keeps painting it in `ButtonText`. Its edge turns 3 px of `Highlight` as `Button`'s
+  // does: the 1 px border, said explicitly, and a 2 px outline inside it. Not on a disabled or a
+  // focused trigger.
   {
     file: 'components/Select/Select.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
     contains: [
+      ' border-color: Highlight;',
       ' outline: var(--border-width-emphasis) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
     ],
