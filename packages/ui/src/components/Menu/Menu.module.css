@@ -41,6 +41,13 @@
   height: 1rem;
 }
 
+/* A disabled item's icon follows its label: the subtle colour here, and `GrayText` under forced
+   colours, where the slot's own muted token would otherwise be replaced with `CanvasText` and the
+   icon read as available. */
+.item[data-disabled] .startIcon {
+  color: inherit;
+}
+
 .separator {
   height: 1px;
   margin-block: var(--space-1);
@@ -54,12 +61,18 @@
    which Base UI still highlights. `forced-color-adjust: none` because Chromium otherwise paints its
    `Canvas` backplate behind the text, and `HighlightText` on it was measured white on white (as in
    `Segmented.module.css`). A disabled item is `GrayText`: the browser replaced its subtle token with
-   `CanvasText`, the enabled items' ink, so it did not read as disabled. Last in the file, so no
+   `CanvasText`, the enabled items' ink, so it did not read as disabled. The separator is a 1 px
+   fill, which forced colours erase, so it is drawn in `CanvasText`. Last in the file, so no
    normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
   .item[data-disabled] {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     color: GrayText;
+  }
+
+  .separator {
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    background: CanvasText;
   }
 
   @media (hover: hover) {
