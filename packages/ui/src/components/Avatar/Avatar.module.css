@@ -90,3 +90,15 @@
   align-items: center;
   justify-content: center;
 }
+
+/* Forced colours drop the fill to Canvas, so an initials disc on a Canvas page lost its shape. A
+   transparent 1 px outline, which forced colours paint in the system text colour, gives it an
+   edge. It is drawn inside the box (`outline-offset: -1px`), so it takes no layout, follows the
+   radius and is not cut by the clip; an image keeps its own pixels inside it. The rule ties the
+   top-level `.root` and wins by coming later, so this block stays the last thing in the file. */
+@media (forced-colors: active) {
+  .root {
+    outline: 1px solid transparent;
+    outline-offset: -1px;
+  }
+}

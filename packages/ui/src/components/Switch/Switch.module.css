@@ -2,12 +2,15 @@
    are `field.module.css`. There is deliberately no `[data-invalid]` rule — a switch's state is
    binary and visible, so the message below it is the error signal.
 
-   Unchecked, the track's fill and its border colour are two consumer hooks, read here and never
-   declared: `--switch-track-unchecked-background` and `--switch-track-unchecked-border-color`, set
-   from a class on any ancestor (they inherit). Checked, the track is the accent whatever they say.
-   The border hook is a colour and not a shorthand, so the 1 px width the thumb's travel counts
-   stays; a consumer that wants no edge sets it to the fill or to `transparent`. Forced colours
-   paint the edge `ButtonText` whatever the hook says (the block at the end of this file).
+   Five consumer hooks restyle it, read here and never declared, set from a class on any ancestor
+   (they inherit): unchecked, the track's fill and border colour are
+   `--switch-track-unchecked-background` and `--switch-track-unchecked-border-color`; checked, they
+   are `--switch-track-checked-background` and `--switch-track-checked-border-color`, which fall
+   back to the accent; and the thumb, in both states, is `--switch-thumb-background`, which falls
+   back to the raised surface. Neither pair reaches the other state. The border hooks are colours
+   and not shorthands, so the 1 px width the thumb's travel counts stays; a consumer that wants no
+   edge sets one to the fill or to `transparent`. Forced colours paint system colours whatever the
+   hooks say (the block at the end of this file).
 
    The default border is the opaque control colour, as the checkbox's, not the hairline: unchecked,
    the boundary is what says a switch is there, and WCAG 1.4.11 asks 3:1 of it. The control colour
@@ -35,8 +38,8 @@
 }
 
 .track[data-checked] {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
+  border-color: var(--switch-track-checked-border-color, var(--color-accent));
+  background: var(--switch-track-checked-background, var(--color-accent));
 }
 
 .track[data-disabled] {
@@ -48,7 +51,7 @@
   width: 1rem;
   height: 1rem;
   border-radius: var(--radius-full);
-  background: var(--color-surface-raised);
+  background: var(--switch-thumb-background, var(--color-surface-raised));
   box-shadow: var(--elevation-1);
   transition-property: transform;
   transition-duration: var(--motion-duration-1);
@@ -63,7 +66,7 @@
 
 /* Forced colours drop every fill to Canvas, and the thumb has no border, so it vanished into the
    track in both states. The track opts out (`forced-color-adjust` inherits to the thumb) and names
-   system colours instead, which also overrides the unchecked-track hooks:
+   system colours instead, which also overrides all five hooks (no rule here reads one):
 
    - unchecked, a Canvas track with a ButtonText edge and a solid ButtonText thumb;
    - checked, a Highlight track with a HighlightText thumb, the system's own selected pair;

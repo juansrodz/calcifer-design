@@ -7,8 +7,17 @@ import fieldStyles from '../../styles/field.module.css';
 import { Switch } from './Switch';
 import * as stories from './Switch.stories';
 
-const { Default, On, Described, Required, Disabled, WithError, UncheckedTrack } =
-  composeStories(stories);
+const {
+  Default,
+  On,
+  Described,
+  Required,
+  Disabled,
+  WithError,
+  UncheckedTrack,
+  TrackAndThumbHooks,
+  TrackAndThumbHooksDark,
+} = composeStories(stories);
 
 describe('Switch', () => {
   it.each([
@@ -19,6 +28,8 @@ describe('Switch', () => {
     ['Disabled', Disabled],
     ['WithError', WithError],
     ['UncheckedTrack', UncheckedTrack],
+    ['TrackAndThumbHooks', TrackAndThumbHooks],
+    ['TrackAndThumbHooksDark', TrackAndThumbHooksDark],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -84,6 +95,18 @@ describe('Switch', () => {
 
     const { container: defaultContainer } = render(<Default />);
     expect(defaultContainer.querySelector(`.${fieldStyles.required}`)).not.toBeInTheDocument();
+  });
+
+  it('renders an unchecked and a checked switch in the hooks story', () => {
+    render(<TrackAndThumbHooks />);
+    expect(screen.getByRole('switch', { name: 'Email me when someone joins' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(screen.getByRole('switch', { name: 'Text me the day before' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   it('refuses the pointer when disabled and says so, so the skin can dim it', async () => {

@@ -3346,14 +3346,33 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [
       ' border: 1px solid var(--color-border-strong);',
       ' background: var(--color-surface-3);',
+      '--switch-track-checked',
+      '--switch-thumb',
     ],
   },
-  // Checked, the track is the accent whatever the hooks say: they are the unchecked look only.
+  // Checked, the track reads two hooks of its own, which fall back to the accent: the unchecked
+  // hooks never reach it. The checked look was the accent and nothing else, so a consumer whose
+  // surface the accent fails 3:1 on had no way to move it.
   {
     file: 'components/Switch/Switch.module.css',
     rule: /^\.track\[data-checked\] \{([^}]*)\}/m,
-    contains: [' border-color: var(--color-accent);', ' background: var(--color-accent);'],
-    lacks: ['--switch-track-unchecked'],
+    contains: [
+      ' border-color: var(--switch-track-checked-border-color, var(--color-accent));',
+      ' background: var(--switch-track-checked-background, var(--color-accent));',
+    ],
+    lacks: [
+      '--switch-track-unchecked',
+      ' border-color: var(--color-accent);',
+      ' background: var(--color-accent);',
+    ],
+  },
+  // The thumb reads one hook, in both states, which falls back to the raised surface: a dark theme
+  // whose raised surface sits close to the track (WBW's measured 1.54:1) needs a lighter knob.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^\.thumb \{([^}]*)\}/m,
+    contains: [' background: var(--switch-thumb-background, var(--color-surface-raised));'],
+    lacks: [' background: var(--color-surface-raised);'],
   },
 
   // Forced colours on `Switch`. The browser drops the fills to Canvas, so the thumb (no border of its
@@ -3361,7 +3380,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // to the thumb) and names system colours: unchecked, a Canvas track with a ButtonText edge and a
   // solid ButtonText thumb; checked, a Highlight track with a HighlightText thumb; disabled,
   // GrayText and not dimmed as well; the focus ring CanvasText, not the token the opt-out lets
-  // through. The block overrides the unchecked-track hooks too.
+  // through. The block overrides all five hooks too.
   {
     file: 'components/Switch/Switch.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track \{([^}]*)\}/m,
@@ -3428,6 +3447,38 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
+  // The forced block names system colours only and reads none of the five hooks, so a consumer's
+  // track and thumb colours never reach a forced-colours page.
+  {
+    file: 'components/Switch/Switch.module.css',
+    rule: /^@media \(forced-colors: active\) \{([\s\S]*?)^\}\n/m,
+    contains: [' background: Canvas;'],
+    lacks: ['--switch-', 'var('],
+  },
+
+  // Forced colours drop `Avatar`'s fill to Canvas, so an initials disc on a Canvas page had no
+  // shape left. A transparent 1 px outline, drawn inside the box (`outline-offset: -1px`) so it
+  // takes no layout and is not clipped, is painted in the system text colour by forced colours.
+  // It is declared in the forced block only, so the normal look is untouched.
+  {
+    file: 'components/Avatar/Avatar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.root \{([^}]*)\}/m,
+    contains: [' outline: 1px solid transparent;', ' outline-offset: -1px;'],
+    lacks: [' border:', 'forced-color-adjust'],
+  },
+  {
+    file: 'components/Avatar/Avatar.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [],
+    lacks: [' outline'],
+  },
+  // Nothing follows the block: its rule ties the top-level `.root` and would lose to a later one.
+  {
+    file: 'components/Avatar/Avatar.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
     contains: [],
     lacks: [/\{/],
