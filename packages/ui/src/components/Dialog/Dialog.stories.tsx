@@ -428,10 +428,12 @@ export const SideSheetRightToLeft: Story = {
 
 /**
  * The runner's window is 1280 px wide, so the 200% text stories pin the centred popup at the
- * 358 px a 390 px phone gives it (its 16 px viewport gutters off), and the root at twice the size.
+ * width a 390 px phone gives it, and the root at twice the size. The viewport's gutter is
+ * `--space-4`, which doubles with the text: the popup is 326 px, not the 358 px a 16 px gutter
+ * would leave.
  */
 const doubleTextOnAPhone = `html { font-size: 200%; }
-[data-popup='dialog'] { width: min(32rem, 358px) !important; }`;
+[data-popup='dialog'] { width: min(32rem, calc(390px - 2 * var(--space-4))) !important; }`;
 
 /**
  * The play for the 200% text stories: the end group and the heading stay inside the popup's
