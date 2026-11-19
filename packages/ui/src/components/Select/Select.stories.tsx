@@ -1,8 +1,9 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import fieldStyles from '../../styles/field.module.css';
 import { Avatar } from '../Avatar/Avatar';
+import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
 import { Select } from './Select';
 import styles from './Select.module.css';
 
@@ -181,5 +182,69 @@ export const KeyboardOpen: Story = {
     const firstOption = await screen.findByRole('option', { name: 'Mains' });
     // Base UI moves focus to the option after the popup mounts, a moment after it is in the DOM.
     await waitFor(() => expect(firstOption).toHaveFocus());
+  },
+};
+
+/**
+ * Holds the select's portal inside the story root, where the test runner's paint checks look; Base
+ * UI would otherwise portal the popup to `<body>`. (`Menu.stories.tsx` has the same wrapper.)
+ */
+function PortalInStoryRoot({ children }: { children: ReactNode }) {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <PortalContainerContext.Provider value={host}>
+      {children}
+      <div ref={setHost} />
+    </PortalContainerContext.Provider>
+  );
+}
+
+/**
+ * `Chosen`, open, with the chosen option highlighted and not focused, as a pointer leaves it after
+ * the select was opened with a press. The `play` opens the select, which highlights and focuses the
+ * chosen option, then takes the focus away; the highlight stays.
+ *
+ * The test runner checks the paint under forced colours with the pointer away (`press`, which also
+ * holds `:active`; nothing in the popup reads it): the chosen option is filled `Highlight` with
+ * `HighlightText` ink and its check mark takes that ink, and the disabled option is `GrayText`.
+ */
+export const ChosenHighlighted: Story = {
+  args: { defaultValue: 'sides' },
+  decorators: [
+    (Story) => (
+      <PortalInStoryRoot>
+        <Story />
+      </PortalInStoryRoot>
+    ),
+  ],
+  parameters: {
+    paintChecks: [
+      {
+        target: '[role="option"][data-selected]',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { backgroundColor: 'Highlight', color: 'HighlightText' },
+      },
+      {
+        target: `[role="option"][data-selected] .${styles.indicator}`,
+        interaction: 'press',
+        forcedColors: true,
+        expected: { color: 'HighlightText' },
+      },
+      {
+        target: '[role="option"][data-disabled]',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { color: 'GrayText' },
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('combobox', { name: 'Category' }));
+    const sides = await screen.findByRole('option', { name: 'Sides' });
+    await waitFor(() => expect(sides).toHaveAttribute('data-highlighted'));
+    sides.blur();
+    await waitFor(() => expect(sides).not.toHaveFocus());
+    await expect(sides).toHaveAttribute('data-highlighted');
   },
 };

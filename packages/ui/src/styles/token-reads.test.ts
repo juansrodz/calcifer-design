@@ -514,6 +514,32 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+  // A disabled item's start icon follows the item's colour, its label's: the subtle text colour in
+  // normal mode, and `GrayText` under forced colours, where the slot's own muted token is replaced
+  // with `CanvasText` and the icon read as available. In the normal-mode rules, so it holds in both.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^\.item\[data-disabled\] \.startIcon \{([^}]*)\}/m,
+    contains: [' color: inherit;'],
+    lacks: [],
+  },
+  // The separator is a 1 px fill, which forced colours erase; it is drawn in `CanvasText` there, so
+  // the groups it parts stay parted. Outside the hover gate: it is never a hover cue.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.separator \{([^}]*)\}/m,
+    contains: [' background: CanvasText;'],
+    lacks: [],
+  },
+  // A disabled option reads as a disabled control does under forced colours: `GrayText`, not dimmed
+  // (`opacity: 1`). The 0.45 dim left its text at 3.4:1 and its focus ring at 2.5:1 in High
+  // Contrast White, in the enabled options' ink. Outside the hover gate, so it holds in every state.
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.option\[data-disabled\] \{([^}]*)\}/m,
+    contains: [' opacity: 1;', ' color: GrayText;'],
+    lacks: [' background'],
+  },
   // Nothing follows either forced block: a normal-mode rule appended after one would win the
   // cascade back. Every rule inside a block is indented, so the first `}` at the start of a line
   // closes it.

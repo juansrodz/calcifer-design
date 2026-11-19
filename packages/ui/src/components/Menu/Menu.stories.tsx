@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState, type ReactNode } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Avatar } from '../Avatar/Avatar';
 import { Button } from '../Button/Button';
+import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
 import { Menu } from './Menu';
 
 const meta = {
@@ -82,6 +84,10 @@ function RefreshGlyph({ tinted = false }: { tinted?: boolean }) {
  * decorative, so each item is still named by its label. Under forced colours the item under the
  * pointer is filled `Highlight`, and everything in the slot (the tinted glyph, the avatar's fill and
  * initials) takes its `HighlightText` ink, so nothing on the fill is left in a token colour.
+ *
+ * The menu opens on load, before any press, so the browser treats the focus Base UI moves to an
+ * item under the pointer as keyboard focus: that item shows its focus ring, not the fill. Close
+ * and reopen it with the pointer to see the fill, or see `WithStartIconsHighlighted`.
  */
 export const WithStartIcons: Story = {
   args: {
@@ -118,4 +124,82 @@ export const WithStartIcons: Story = {
     ],
   },
   parameters: openMenuA11y,
+};
+
+/**
+ * Holds the menu's portal inside the story root, where the test runner's paint checks look; Base
+ * UI would otherwise portal the popup to `<body>`.
+ */
+function PortalInStoryRoot({ children }: { children: ReactNode }) {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <PortalContainerContext.Provider value={host}>
+      {children}
+      <div ref={setHost} />
+    </PortalContainerContext.Provider>
+  );
+}
+
+/**
+ * `WithStartIcons` with "Ask again" highlighted and not focused, as a pointer leaves it after the
+ * menu was opened with a press: the guarded fill shows, with no focus ring. The `play` moves Base
+ * UI's highlight there by focusing the item, then takes the focus away; the highlight stays.
+ *
+ * The test runner checks the paint with the pointer away (`press`, which also holds `:active`;
+ * nothing in the menu reads it). Under forced colours: the highlighted item is filled `Highlight`
+ * with `HighlightText` ink, and its accent-tinted glyph takes that ink over its inline colour; the
+ * disabled item's glyph is `GrayText` as its label is; the separator is drawn in `CanvasText`. Out of
+ * forced colours, the disabled item's glyph takes its label's subtle colour.
+ */
+export const WithStartIconsHighlighted: Story = {
+  ...WithStartIcons,
+  decorators: [
+    (Story) => (
+      <PortalInStoryRoot>
+        <Story />
+      </PortalInStoryRoot>
+    ),
+  ],
+  parameters: {
+    ...openMenuA11y,
+    paintChecks: [
+      {
+        target: '[role="menuitem"][data-highlighted]',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { backgroundColor: 'Highlight', color: 'HighlightText' },
+      },
+      {
+        target: '[role="menuitem"][data-highlighted] svg',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { color: 'HighlightText' },
+      },
+      {
+        target: '[role="menuitem"][data-disabled] svg',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { color: 'GrayText' },
+      },
+      {
+        target: '[role="separator"]',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { backgroundColor: 'CanvasText' },
+      },
+      {
+        target: '[role="menuitem"][data-disabled] svg',
+        interaction: 'press',
+        expected: { color: 'var(--color-text-subtle)' },
+      },
+    ],
+  },
+  play: async () => {
+    const askAgain = await screen.findByRole('menuitem', { name: 'Ask again' });
+    askAgain.focus();
+    await waitFor(() => expect(askAgain).toHaveAttribute('data-highlighted'));
+    askAgain.blur();
+    await waitFor(() => expect(askAgain).not.toHaveFocus());
+    await expect(askAgain).toHaveAttribute('data-highlighted');
+  },
 };
