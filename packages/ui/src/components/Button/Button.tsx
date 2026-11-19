@@ -71,6 +71,13 @@ export interface ButtonProps extends Omit<
    * inside it (a `Toolbar`'s buttons, a `DataGrid`'s Clear filters and Retry, an `ErrorBoundary`'s
    * reset, an `Upload`'s browse button, a `DatePicker`'s close), and it overrides the chosen tone's
    * fill, so a chosen button no longer looks chosen.
+   *
+   * A fifth hook, `--button-shadow`, is the button's shadow: any `box-shadow` value, in place of the
+   * variant's own (none, or the primary's `--shadow-action`). It holds in every state, as the fill
+   * hooks do, and composes with them and with the keyboard focus ring, which is an outline. A comma
+   * list draws an inset ring with the shadow, such as
+   * `var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected)`; the ring sits inside the 1 px
+   * border. Forced colours drop it, as they drop every shadow.
    */
   className?: string;
 }

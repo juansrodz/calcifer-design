@@ -297,6 +297,56 @@ export const CheckAtStartRightToLeft: Story = {
   },
 };
 
+/**
+ * `--toggle-chip-font-size` sets the label's size from a wrapper. Here the outer wrapper stands in
+ * for an app whose type scale sets `--text-xs` to 10 px (WBW's), which a `sm` chip reads; the two
+ * inner wrappers set the hook instead, to the mock's 12.5 px category chips and 12 px dietary
+ * chips. The hook wins over the token, so no global token is re-scoped for the chips' sake.
+ */
+export const FontSizeViaHook: Story = {
+  render: () => (
+    <>
+      <style>{`.chip-type-category { --toggle-chip-font-size: 0.78125rem; }
+.chip-type-dietary { --toggle-chip-font-size: 0.75rem; }
+.chip-type-scale { --text-xs: 0.625rem; }`}</style>
+      <div className="chip-type-scale" style={{ display: 'grid', gap: 'var(--space-4)' }}>
+        <div className="chip-type-category">
+          <ToggleChipGroup
+            selectionMode="single"
+            label="Dish type"
+            options={dishOptions}
+            defaultValue="main"
+            size="sm"
+            onValueChange={fn()}
+          />
+        </div>
+        <div className="chip-type-dietary">
+          <ToggleChipGroup
+            selectionMode="multiple"
+            label="Dietary needs"
+            options={dietaryOptions}
+            defaultValue={['vegan', 'gluten-free']}
+            size="sm"
+            checkPosition="start"
+            onValueChange={fn()}
+          />
+        </div>
+      </div>
+    </>
+  ),
+  // Runs in a browser only (jsdom loads no CSS): each group's chips are the hook's size, not the
+  // re-scoped token's 10 px, and the sm heights are the mock's still.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const side = canvas.getByRole('button', { name: 'Side' });
+    const spicy = canvas.getByRole('button', { name: 'Spicy' });
+    await expect(getComputedStyle(side).fontSize).toBe('12.5px');
+    await expect(getComputedStyle(spicy).fontSize).toBe('12px');
+    await expect(side.offsetHeight).toBe(36);
+    await expect(spicy.offsetHeight).toBe(28);
+  },
+};
+
 export const Dark: Story = {
   render: () => (
     <ToggleChipGroup

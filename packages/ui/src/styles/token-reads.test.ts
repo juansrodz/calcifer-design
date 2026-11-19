@@ -2977,7 +2977,10 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
     contains: ['var(--toggle-chip-font-size, '],
-    lacks: [/--toggle-chip-font-size\s*:/, /(?:^|[\s{;])font-size\s*:(?!\s*var\(--toggle-chip-font-size, )/m],
+    lacks: [
+      /--toggle-chip-font-size\s*:/,
+      /(?:^|[\s{;])font-size\s*:(?!\s*var\(--toggle-chip-font-size, )/m,
+    ],
   },
   {
     file: 'components/ToggleChip/ToggleChip.module.css',

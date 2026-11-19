@@ -275,3 +275,85 @@ export const RowViaHooks: Story = {
     </>
   ),
 };
+
+// What ElevationViaHook's Suggestions pill paints on hover: its fill pair, which sets no hover pair,
+// so the rest pair holds on hover in place of the secondary's surface-2 hover.
+const suggestionsPaint = {
+  backgroundColor: 'var(--color-selected-soft)',
+  color: 'var(--color-selected-soft-text)',
+};
+
+/**
+ * A soft card shadow on two secondary pills, from `--button-shadow` alone (the WBW mock's 4a,
+ * Participants and Suggestions). The second pill's value is a comma list: the same shadow, then a
+ * 1.5 px inset ring, drawn inside the 1 px border. It also sets the fill pair, so the shadow and
+ * the fill hooks compose on one button. A `LinkButton` shares the stylesheet and takes the hook
+ * too. The keyboard ring is the outline, outside the box, so it shows over the shadow.
+ */
+export const ElevationViaHook: Story = {
+  parameters: {
+    controls: { disable: true },
+    // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
+    // pointer: the fill pair under the shadow holds on hover. The hook reads colours only, so the
+    // play below checks the shadow.
+    paintChecks: [
+      { target: '.button-card-shadow-ring', interaction: 'hover', expected: suggestionsPaint },
+    ],
+  },
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+      <style>{`.button-card-shadow {
+  --button-shadow: var(--shadow-soft);
+}
+.button-card-shadow-ring {
+  --button-shadow: var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected);
+  --button-fill: var(--color-selected-soft);
+  --button-label-color: var(--color-selected-soft-text);
+}`}</style>
+      <Button variant="secondary" className="button-card-shadow">
+        Participants
+      </Button>
+      <Button variant="secondary" className="button-card-shadow-ring" badge="2">
+        Suggestions
+      </Button>
+      <LinkButton variant="secondary" className="button-card-shadow" href="#share">
+        Share
+      </LinkButton>
+    </div>
+  ),
+  // Runs in a browser only (jsdom loads no CSS): each element draws its class's shadow, the ring
+  // pill its fill pair too, and a keyboard focus adds the outline ring and keeps the shadow. A
+  // probe resolves the expected values in this theme.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const participants = canvas.getByRole('button', { name: 'Participants' });
+    const suggestions = canvas.getByRole('button', { name: 'Suggestions 2' });
+    const share = canvas.getByRole('link', { name: 'Share' });
+    const probe = canvasElement.ownerDocument.createElement('span');
+    canvasElement.append(probe);
+    try {
+      probe.style.boxShadow = 'var(--shadow-soft)';
+      const cardShadow = getComputedStyle(probe).boxShadow;
+      probe.style.boxShadow = 'var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected)';
+      const ringShadow = getComputedStyle(probe).boxShadow;
+      probe.style.background = suggestionsPaint.backgroundColor;
+      probe.style.color = suggestionsPaint.color;
+      const { backgroundColor: ringFill, color: ringInk } = getComputedStyle(probe);
+      await expect(cardShadow).not.toBe('none');
+      await expect(getComputedStyle(participants).boxShadow).toBe(cardShadow);
+      await expect(getComputedStyle(share).boxShadow).toBe(cardShadow);
+      await expect(getComputedStyle(suggestions).boxShadow).toBe(ringShadow);
+      await expect(getComputedStyle(suggestions).backgroundColor).toBe(ringFill);
+      await expect(getComputedStyle(suggestions).color).toBe(ringInk);
+
+      await userEvent.tab();
+      await expect(participants).toHaveFocus();
+      await expect(participants.matches(':focus-visible')).toBe(true);
+      await expect(getComputedStyle(participants).outlineStyle).not.toBe('none');
+      await expect(getComputedStyle(participants).boxShadow).toBe(cardShadow);
+      participants.blur();
+    } finally {
+      probe.remove();
+    }
+  },
+};

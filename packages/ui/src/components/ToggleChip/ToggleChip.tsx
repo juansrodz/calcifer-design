@@ -31,7 +31,13 @@ export interface ToggleChipProps {
    */
   icon?: ReactNode;
   disabled?: boolean;
-  /** `md` by default; `sm` is the smaller chip (`ToggleChipSize`). */
+  /**
+   * `md` by default; `sm` is the smaller chip (`ToggleChipSize`). The label's size is the size's
+   * own step (`--text-sm` at md, `--text-xs` at sm) unless a consumer sets
+   * `--toggle-chip-font-size` on the chip or a wrapper: a hook the library never declares, so an
+   * app sets its chips' type without re-scoping a global type token. At sm the heights are floors
+   * and hold for a size up to about 17 px; at md the height follows the size.
+   */
   size?: ToggleChipSize;
   /** The label, and the chip's accessible name. */
   children: ReactNode;
