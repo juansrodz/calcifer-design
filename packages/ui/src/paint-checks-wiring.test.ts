@@ -13,14 +13,22 @@ import * as buttonStories from './components/Button/Button.stories';
 // under Vitest; the stories are imported.
 const storybookDirectory = join(import.meta.dirname, '..', '.storybook');
 
-function declaredChecks(): readonly PaintCheck[] {
-  return Object.values(composeStories(buttonStories)).flatMap(
-    (story) => (story.parameters['paintChecks'] ?? []) as readonly PaintCheck[],
-  );
+const composedStories = composeStories(buttonStories);
+
+function checksOf(story: { parameters: Record<string, unknown> }): readonly PaintCheck[] {
+  return (story.parameters['paintChecks'] ?? []) as readonly PaintCheck[];
 }
 
+function declaredChecks(): readonly PaintCheck[] {
+  return Object.values(composedStories).flatMap((story) => checksOf(story));
+}
+
+// Comments are stripped, whole-line `//` and `/* */` blocks, so a pin on a line of code cannot be
+// met by a comment that quotes it.
 function readCode(fileName: string): string {
-  return readFileSync(join(storybookDirectory, fileName), 'utf-8').replace(/^\s*\/\/.*$/gm, '');
+  return readFileSync(join(storybookDirectory, fileName), 'utf-8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
 }
 
 describe('the paint checks wiring', () => {
@@ -38,14 +46,11 @@ describe('the paint checks wiring', () => {
     expect(hook).toContain("storyContext.parameters['paintChecks']");
   });
 
-  it('has paint-checks.ts read the box shadow from the element and from its probe', () => {
-    // A property the helper does not read leaves every check that expects it comparing nothing, so
-    // each reading is pinned: the list the mismatches loop over, the element's, and the probe's.
-    const hook = readCode('paint-checks.ts');
-    expect(hook).toMatch(/paintProperties[^=]*=\s*\[[^\]]*'boxShadow'/);
-    expect(hook).toContain('painted.boxShadow');
-    expect(hook).toContain('probe.style.boxShadow');
-    expect(hook).toContain('probed.boxShadow');
+  it('has paint-checks.ts list the box shadow among the properties it compares', () => {
+    // A property left out of this list leaves every check that expects it comparing nothing, and
+    // `storybook:test` stays green: the one failure here with no other signal. A reading of it
+    // missing from the element or the probe fails `tsc` or the shadow checks themselves.
+    expect(readCode('paint-checks.ts')).toMatch(/paintProperties[^=]*=\s*\[[^\]]*'boxShadow'/);
   });
 
   it('has a story declare paintChecks that the hook can run', () => {
@@ -53,7 +58,7 @@ describe('the paint checks wiring', () => {
     expect(checks.length).toBeGreaterThan(0);
     for (const check of checks) {
       expect(check.target).toEqual(expect.any(String));
-      // Any other value would fall through to the press branch.
+      // The helper throws on any other value, so a cast or hand-written story fails at the runner.
       expect(['rest', 'hover', 'press']).toContain(check.interaction);
       // A check with nothing to compare passes whatever the element paints.
       expect(
@@ -62,17 +67,26 @@ describe('the paint checks wiring', () => {
     }
   });
 
-  it('has stories check a box shadow, at rest and on hover, and its absence under forced colours', () => {
-    const shadowChecks = declaredChecks().filter((check) => check.expected.boxShadow !== undefined);
-    const shadowStates = (forcedColors: boolean) =>
-      shadowChecks
-        .filter((check) => Boolean(check.forcedColors) === forcedColors)
-        .map((check) => check.interaction);
-    expect(shadowStates(false)).toEqual(expect.arrayContaining(['rest', 'hover']));
-    // Forced colours drop a shadow, the hook's too: `none`, at rest and on hover.
-    expect(shadowStates(true)).toEqual(expect.arrayContaining(['rest', 'hover']));
-    for (const check of shadowChecks.filter((candidate) => candidate.forcedColors)) {
-      expect(check.expected.boxShadow).toBe('none');
-    }
-  });
+  // Each story is read on its own: a read pooled over every Button story would stay green while one
+  // of these lost all of its shadow checks.
+  it.each(['ElevationViaHook', 'ElevationOnChosenViaHook'] as const)(
+    'has %s check its box shadow at rest and on hover, and its absence under forced colours',
+    (storyName) => {
+      const shadowChecks = checksOf(composedStories[storyName]).filter(
+        (check) => check.expected.boxShadow !== undefined,
+      );
+      const interactions = (forcedColors: boolean) =>
+        shadowChecks
+          .filter((check) => Boolean(check.forcedColors) === forcedColors)
+          .map((check) => check.interaction);
+      expect(interactions(false)).toEqual(expect.arrayContaining(['rest', 'hover']));
+      expect(interactions(true)).toEqual(expect.arrayContaining(['rest', 'hover']));
+      // These buttons lose their shadow under forced colours (the browser drops it, and the chosen
+      // opt-out's own rule clears it), so `none`. A component that opts out of forced colours and
+      // keeps a shadow on purpose would pin that shadow instead.
+      for (const check of shadowChecks.filter((candidate) => candidate.forcedColors)) {
+        expect(check.expected.boxShadow).toBe('none');
+      }
+    },
+  );
 });
