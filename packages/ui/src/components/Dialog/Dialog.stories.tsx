@@ -374,3 +374,31 @@ export const QuietPointerOpen: Story = {
     await waitFor(() => expect(getComputedStyle(close).outlineStyle).toBe('solid'));
   },
 };
+
+/**
+ * The end drawer in a right-to-left page: it docks on the inline end, the left, and rounds its
+ * inline-start corners, the right pair, while the two that meet the viewport's edges stay square.
+ */
+export const SideSheetRightToLeft: Story = {
+  args: { variant: 'sheet', side: 'end', defaultOpen: true, heading: 'تعديل الطبق' },
+  decorators: [
+    (Story) => (
+      <div dir="rtl">
+        <style>{demoThemeCss}</style>
+        <ThemeScope theme={demoTheme}>
+          <Story />
+        </ThemeScope>
+      </div>
+    ),
+  ],
+  play: async () => {
+    const popup = await settledDialog();
+    const popupStyle = getComputedStyle(popup);
+    await expect(popupStyle.direction).toBe('rtl');
+    await expect(popup.getBoundingClientRect().left).toBeCloseTo(0, 0);
+    await expect(popupStyle.borderTopLeftRadius).toBe('0px');
+    await expect(popupStyle.borderBottomLeftRadius).toBe('0px');
+    await expect(popupStyle.borderTopRightRadius).not.toBe('0px');
+    await expect(popupStyle.borderBottomRightRadius).toBe(popupStyle.borderTopRightRadius);
+  },
+};

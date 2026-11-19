@@ -22,6 +22,24 @@
   place-items: center end;
 }
 
+/* The end drawer under a right-to-left page. The viewport's `end` above is already logical, so the
+   drawer docks on the left there; the skin's rounding and slide are physical (`translateX`, the two
+   left corners), so the drawer would round the corners that meet the viewport's edge and slide in
+   from the right. Its rounded corners are the inline-start pair, written logically here (a class on
+   the viewport and on the popup outweigh the skin's three-part rule, whichever loads first). The
+   slide has no logical form, so a `[dir='rtl']` ancestor turns it; the nearest `dir` is not
+   modelled, so a `dir='ltr'` island inside a right-to-left page slides as the page does. */
+.viewport > .popup[data-popup='sheet'][data-side='end'] {
+  border-radius: 0;
+  border-start-start-radius: var(--radius-dialog);
+  border-end-start-radius: var(--radius-dialog);
+}
+
+[dir='rtl'] .viewport > .popup[data-popup='sheet'][data-side='end'][data-starting-style],
+[dir='rtl'] .viewport > .popup[data-popup='sheet'][data-side='end'][data-ending-style] {
+  transform: translateX(-100%);
+}
+
 /* The opening focus held back from a pointer open (`quietFocus` in `Dialog.tsx`): no ring until a
    key is pressed or focus moves on, where `Dialog.tsx` lifts the mark. The mark sits on the popup
    itself after a touch open, on a control inside it otherwise. The ring is `base.css`'s outline,

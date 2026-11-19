@@ -45,6 +45,7 @@ const {
   DrawerPaddingHooks,
   SheetAtTheFloor,
   DrawerAtTheFloor,
+  SideSheetRightToLeft,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -64,6 +65,7 @@ describe('Dialog', () => {
     ['DrawerPaddingHooks', DrawerPaddingHooks],
     ['SheetAtTheFloor', SheetAtTheFloor],
     ['DrawerAtTheFloor', DrawerAtTheFloor],
+    ['SideSheetRightToLeft', SideSheetRightToLeft],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -1189,6 +1191,24 @@ describe('Dialog', () => {
         act(() => (guard as HTMLElement).focus());
         expect(popup.contains(document.activeElement)).toBe(true);
       }
+    });
+  });
+
+  describe('the end drawer under a right-to-left page', () => {
+    it('rounds its inline-start corners, written logically', () => {
+      const body = ruleBody(
+        /^\.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\] \{([^}]*)\}/m,
+      );
+      expect(body).toContain(' border-start-start-radius: var(--radius-dialog);');
+      expect(body).toContain(' border-end-start-radius: var(--radius-dialog);');
+    });
+
+    it('slides in from the left under a [dir="rtl"] ancestor', () => {
+      expect(
+        ruleBody(
+          /^\[dir='rtl'\] \.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\]\[data-starting-style\],\n\[dir='rtl'\] \.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\]\[data-ending-style\] \{([^}]*)\}/m,
+        ),
+      ).toContain(' transform: translateX(-100%);');
     });
   });
 });
