@@ -60,6 +60,13 @@ const maxBySize: Readonly<Record<AvatarSize, number>> = { xs: 4, sm: 4, md: 4, l
 
 const column = { display: 'flex', flexDirection: 'column', gap: '1rem' } as const;
 
+// Storybook loads no web font, so the initials draw in whatever the platform's sans stack gives,
+// and how wide they are decides what the `Sizes` play measures. Arial's widths, which Liberation
+// Sans keeps on a Linux runner, are the stack's usual ones, so that story reads the same on each.
+const metricStableSansCss = `.avatar-group-metric-sans {
+  --font-sans: Arial, 'Liberation Sans', Helvetica, sans-serif;
+}`;
+
 /**
  * How far an avatar's initials sit clear of the next item in the row, in css px: from the right
  * edge of the initials' box to the neighbour's left edge, read at the row of the box nearest the
@@ -111,17 +118,20 @@ export const Sizes: Story = {
     }
   },
   render: (args) => (
-    <div style={column}>
-      {sizes.map((size) => (
-        <AvatarGroup
-          key={size}
-          items={people}
-          max={maxBySize[size]}
-          size={size}
-          label={`${args.label}, size ${size}`}
-        />
-      ))}
-    </div>
+    <>
+      <style>{metricStableSansCss}</style>
+      <div className="avatar-group-metric-sans" style={column}>
+        {sizes.map((size) => (
+          <AvatarGroup
+            key={size}
+            items={people}
+            max={maxBySize[size]}
+            size={size}
+            label={`${args.label}, size ${size}`}
+          />
+        ))}
+      </div>
+    </>
   ),
 };
 
