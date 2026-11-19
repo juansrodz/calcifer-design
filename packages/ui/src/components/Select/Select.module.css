@@ -93,18 +93,21 @@
   height: 1rem;
 }
 
-/* Forced colours drop the option highlight's tint, and the trigger has only the browser's hover
-   cue, its 1 px border turned `Highlight`, which is under 3:1 against the resting edge. Last in the
-   file, so no normal-mode rule after it wins the cascade back. */
+/* Forced colours drop the option highlight's tint, and the trigger showed no hover cue either:
+   Chromium reports its border as `Highlight` on hover but keeps painting it in `ButtonText`
+   (measured). Last in the file, so no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
   @media (hover: hover) {
-    /* The hovered trigger's edge thickens to 3 px, as `Button`'s does: an outline drawn inside the
-       border (forced colours drop `box-shadow`), its offset the 1 px border plus the outline's own
-       width, so the band sits flush inside it and nothing moves. Not on a focused trigger, whose
-       ring is the outline too, nor on a disabled one. */
+    /* The hovered trigger's edge turns 3 px of `Highlight`, as `Button`'s does: the 1 px border,
+       said here so it is painted, and an outline drawn inside it (forced colours drop
+       `box-shadow`), its offset the border plus the outline's own width, so the band sits flush
+       inside it and nothing moves. Not on a focused trigger, whose ring is the outline too, nor on
+       a disabled one. */
     .trigger:hover:not([data-disabled], :focus-visible) {
-      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+      border-color: Highlight;
       outline: var(--border-width-emphasis) solid Highlight;
+      /* stylelint-enable scale-unlimited/declaration-strict-value */
       outline-offset: calc(-1px - var(--border-width-emphasis));
     }
 
