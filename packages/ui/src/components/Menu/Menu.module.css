@@ -41,9 +41,8 @@
   height: 1rem;
 }
 
-/* A disabled item's icon follows its label: the subtle colour here, and `GrayText` under forced
-   colours, where the slot's own muted token would otherwise be replaced with `CanvasText` and the
-   icon read as available. */
+/* A disabled item's icon takes its label's colour, not the slot's muted one: the subtle token here,
+   and `GrayText` under forced colours. */
 .item[data-disabled] .startIcon {
   color: inherit;
 }
@@ -54,28 +53,30 @@
   background: var(--color-border);
 }
 
-/* Forced colours drop the highlight's tint, so the item under the pointer showed no change at all.
-   It takes the platform's own menu highlight instead, a `Highlight` fill with `HighlightText` ink,
-   a fill and no edge because the whole row is the target. Not on a focused item, which keyboard
-   focus marks with its ring (a fill too would be two cues for one state), nor on a disabled one,
-   which Base UI still highlights. `forced-color-adjust: none` because Chromium otherwise paints its
-   `Canvas` backplate behind the text, and `HighlightText` on it was measured white on white (as in
-   `Segmented.module.css`). A disabled item is `GrayText`: the browser replaced its subtle token with
-   `CanvasText`, the enabled items' ink, so it did not read as disabled. The separator is a 1 px
-   fill, which forced colours erase, so it is drawn in `CanvasText`. Last in the file, so no
-   normal-mode rule after it wins the cascade back. */
+/* Forced colours replace the colours the rules above set, so each rule here restores what they erased.
+   Last in the file, so no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
+  /* A disabled item is `GrayText`: the browser replaced its subtle token with `CanvasText`, the
+     enabled items' ink, so it did not read as disabled. */
   .item[data-disabled] {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     color: GrayText;
   }
 
+  /* The separator is a 1 px fill, which forced colours erase. */
   .separator {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     background: CanvasText;
   }
 
   @media (hover: hover) {
+    /* Forced colours drop the highlight's tint, so the item under the pointer showed no change at
+       all. It takes the platform's own menu highlight instead, a `Highlight` fill with
+       `HighlightText` ink, a fill and no edge because the whole row is the target. Not on a focused
+       item, which keyboard focus marks with its ring (a fill too would be two cues for one state),
+       nor on a disabled one, which Base UI still highlights. `forced-color-adjust: none` because
+       Chromium otherwise paints its `Canvas` backplate behind the text, and `HighlightText` on it
+       was measured white on white (as in `Segmented.module.css`). */
     .item[data-highlighted]:not([data-disabled], :focus-visible) {
       forced-color-adjust: none;
 

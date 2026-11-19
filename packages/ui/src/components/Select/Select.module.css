@@ -95,10 +95,10 @@
 
 /* Forced colours drop the option highlight's tint, and the trigger showed no hover cue either:
    Chromium computes the browser's own hover border as `Highlight` but, on its own, does not repaint
-   it. A disabled option is `GrayText` and not dimmed as well, as a disabled `IconButton` is: the
-   0.45 dim left its text at 3.4:1 and its focus ring at 2.5:1, in the enabled options' ink. Last in
-   the file, so no normal-mode rule after it wins the cascade back. */
+   it. Last in the file, so no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
+  /* A disabled option is `GrayText` and not dimmed as well, as a disabled `IconButton` is: the 0.45
+     dim left its text at 3.4:1 and its focus ring at 2.5:1, in the enabled options' ink. */
   .option[data-disabled] {
     opacity: 1;
 
@@ -122,10 +122,9 @@
     }
 
     /* The option under the pointer takes the platform's list highlight, a `Highlight` fill with
-       `HighlightText` ink, as `Menu`'s items do, and no edge as well. The chosen one too, which
-       showed no hover cue when it kept its check mark alone. Not on a focused option, which
-       keyboard focus marks with its ring, nor on a disabled one. Out of forced colours, as
-       `Menu`'s item says why. */
+       `HighlightText` ink, as `Menu`'s items do, and no edge as well. The chosen option too, or it
+       would show no hover cue. Not on a focused option, which keyboard focus marks with its ring,
+       nor on a disabled one. Out of forced colours, as `Menu`'s item says why. */
     .option[data-highlighted]:not([data-disabled], :focus-visible) {
       forced-color-adjust: none;
 

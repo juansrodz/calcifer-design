@@ -125,7 +125,7 @@
   /* The month button at the end of the range reads as a disabled `IconButton` does here: a
      `GrayText` glyph and edge, not dimmed. The 0.45 dim left its glyph at 3.4:1 and its focus ring
      at 2.5:1 in High Contrast White, and kept the enabled buttons' ink, so it read as dimmed rather
-     than unavailable. It stays focusable (`aria-disabled`), and its ring is now drawn in full. */
+     than unavailable. It stays focusable (`aria-disabled`), and its ring is drawn in full. */
   .previous[aria-disabled='true'],
   .next[aria-disabled='true'] {
     opacity: 1;

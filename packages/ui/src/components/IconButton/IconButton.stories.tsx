@@ -52,12 +52,14 @@ export const PressedAndBadge: Story = {
   ),
 };
 
+const unavailableVariants = ['ghost', 'secondary', 'primary', 'soft'] as const;
+
 const unavailablePaint = {
   ghost: { backgroundColor: 'transparent', color: 'var(--color-text-muted)' },
   secondary: { backgroundColor: 'var(--color-surface-raised)', color: 'var(--color-text)' },
   primary: { backgroundColor: 'var(--color-accent)', color: 'var(--color-accent-text)' },
   soft: { backgroundColor: 'var(--color-surface-2)', color: 'var(--color-text)' },
-} as const;
+} satisfies Record<(typeof unavailableVariants)[number], object>;
 
 /**
  * Each variant marked `aria-disabled`: focusable and announced, but unavailable, as the
@@ -69,10 +71,10 @@ const unavailablePaint = {
 export const Unavailable: Story = {
   parameters: {
     paintChecks: [
-      ...Object.entries(unavailablePaint).map(([variant, expected]) => ({
+      ...unavailableVariants.map((variant) => ({
         target: `button[aria-disabled='true'][data-variant='${variant}']:not([data-loading])`,
         interaction: 'hover' as const,
-        expected,
+        expected: unavailablePaint[variant],
       })),
       {
         target: 'button[data-loading]',
@@ -83,7 +85,7 @@ export const Unavailable: Story = {
   },
   render: (args) => (
     <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-      {(['ghost', 'secondary', 'primary', 'soft'] as const).map((variant) => (
+      {unavailableVariants.map((variant) => (
         <IconButton
           key={variant}
           {...args}

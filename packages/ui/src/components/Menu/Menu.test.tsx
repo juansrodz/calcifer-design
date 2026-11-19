@@ -107,6 +107,7 @@ describe('Menu', () => {
     render(<OpenOnLoad />);
     expect(await screen.findByRole('menu')).toHaveAttribute('data-popup', 'menu');
   });
+
   it('draws a start icon in a hidden slot before the label, and keeps the label as the name', async () => {
     render(
       <Menu
