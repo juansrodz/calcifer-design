@@ -16,6 +16,7 @@ import { TextInput } from '../TextInput/TextInput';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { demoTheme } from '../ThemeScope/fixtures';
 import { Dialog, type DialogVariant, type SheetSide } from './Dialog';
+import styles from './Dialog.module.css';
 import * as stories from './Dialog.stories';
 
 // Read as plain text, as `token-reads.test.ts` reads it: Vitest's CSS modules give class names, not
@@ -229,6 +230,19 @@ describe('Dialog', () => {
       expect(close).toHaveAttribute('data-variant', 'soft');
       expect(close).toHaveAttribute('data-size', 'sm');
       expect(close).toHaveClass(closeCircleStyles.close);
+    });
+
+    // Dialog's own class on the close is what its forced-colours rule for a quiet-focused close
+    // (`.closeButton[data-quiet-focus]:focus-visible:hover`) matches: without it the rule matches
+    // nothing, and a hovered quiet close shows only the browser's 1 px border again.
+    it('carries the dialog’s own close class beside the close-circle one', async () => {
+      render(<OpenOnLoad />);
+      const close = within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Close',
+      });
+      expect(styles.closeButton).toEqual(expect.any(String));
+      expect(styles.closeButton).not.toBe(closeCircleStyles.close);
+      expect(close).toHaveClass(styles.closeButton);
     });
   });
 

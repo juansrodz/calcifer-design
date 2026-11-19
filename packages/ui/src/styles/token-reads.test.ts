@@ -2357,7 +2357,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // colours only.
   {
     file: 'components/Dialog/Dialog.module.css',
-    rule: /^@media \(forced-colors: active\) \{\n {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.close\[data-quiet-focus\]:focus-visible:hover \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{\n {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.closeButton\[data-quiet-focus\]:focus-visible:hover \{([^}]*)\}/m,
     contains: [
       ' outline: var(--border-width-emphasis) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
