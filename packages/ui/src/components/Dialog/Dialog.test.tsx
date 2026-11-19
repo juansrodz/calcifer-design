@@ -1173,4 +1173,22 @@ describe('Dialog', () => {
       ).toContain(' outline-style: none;');
     });
   });
+
+  // Base UI's focus guards hand a Tab back into the popup a frame later; until then the guard,
+  // outside the popup, held focus, and a second Tab inside that frame went on to the page behind.
+  describe('the focus trap’s guards', () => {
+    it('hold focus inside the popup the moment a guard takes it, before Base UI’s frame', async () => {
+      render(<Default defaultOpen />);
+      const popup = await screen.findByRole('dialog');
+      await waitFor(() => expect(popup.contains(document.activeElement)).toBe(true));
+      const guards = Array.from(
+        popup.parentElement?.querySelectorAll(':scope > [data-base-ui-focus-guard]') ?? [],
+      );
+      expect(guards).toHaveLength(2);
+      for (const guard of guards) {
+        act(() => (guard as HTMLElement).focus());
+        expect(popup.contains(document.activeElement)).toBe(true);
+      }
+    });
+  });
 });

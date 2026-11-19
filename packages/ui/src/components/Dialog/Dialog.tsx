@@ -235,6 +235,15 @@ export function Dialog({
     }
   };
   useEffect(() => () => liftQuietRef.current?.(), []);
+  // Base UI's focus guards, the popup's siblings, pass a Tab that reaches one back into the popup
+  // a frame later (`enqueueFocus`), so a second Tab inside that frame (a held key on a busy page)
+  // goes on from the guard to the page behind. Focusing the popup itself at once keeps focus in
+  // the trap through that frame; Base UI's own redirect then lands as it always did.
+  const holdFocusInTrap = (event: FocusEvent<HTMLDivElement>) => {
+    if (event.target.hasAttribute('data-base-ui-focus-guard')) {
+      popupRef.current?.focus({ preventScroll: true });
+    }
+  };
   const showEndGroup = hasContent(headerEnd) || !closeHidden;
   // A body that scrolls is a Tab stop while it overflows, named by the heading, so a keyboard can
   // scroll text that holds no control of its own (Safari makes no scroller focusable). A body that
@@ -259,6 +268,7 @@ export function Dialog({
           className={[popupStyles.dialogLayer, styles.viewport].join(' ')}
           data-variant={variant}
           data-side={sheetSide}
+          onFocus={holdFocusInTrap}
         >
           <BaseDialog.Popup
             ref={popupRef}
