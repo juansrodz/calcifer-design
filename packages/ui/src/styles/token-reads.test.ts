@@ -1119,7 +1119,7 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     file: 'components/DatePicker/DatePicker.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.day\[aria-current='date'\]:hover:not\(\[aria-disabled='true'\], \[aria-selected='true'\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.day\[aria-current='date'\]:hover:not\(\s*\[aria-disabled='true'\],\s*\[aria-selected='true'\],\s*:focus-visible\s*\) \{([^}]*)\}/m,
     contains: [' outline-offset: calc(-1px - var(--border-width-emphasis));'],
     lacks: [' outline:'],
   },
