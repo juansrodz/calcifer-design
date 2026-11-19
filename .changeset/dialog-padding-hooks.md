@@ -6,4 +6,4 @@
 
 The space above the bottom sheet's first content was not a bug: it was the sheet's 24 px padding above the handle and its 16 px gap under it, the same padding and gap every placement uses. The hooks expose both instead of changing them.
 
-The close keeps its 36 px circle and its 44 px touch target inside the popup under any padding: where an edge's padding is under the 4 px the target reaches past the circle, the header pads the difference on that edge. With no hook set, every dialog, sheet and drawer looks as it did.
+The close keeps its 36 px circle and its 44 px touch target inside the popup under any padding. The target reaches 4 px past the circle and its corner has to clear the popup's rounded corner, so where an edge's padding is under about 9 px the header pads the difference on that edge. The body keeps its focus-ring room the same way: under a padding thinner than that room, its content sits that much further in rather than scrolling the popup sideways. With no hook set, every dialog, sheet and drawer looks as it did.
