@@ -2,8 +2,15 @@
 '@calcifer-design/ui': minor
 ---
 
-`Dialog` takes ten consumer hooks for its padding, set on a `ThemeScope` (whose portal host holds the popup) or another ancestor, as the heading hooks are. `--dialog-padding-block-start`, `--dialog-padding-block-end` and `--dialog-padding-inline` pad every placement. `--sheet-padding-*` (the same three edges) pads the bottom sheet over them, and `--drawer-padding-*` pads the end drawer (`side="end"`); a `--sheet-padding-*` hook never reaches the drawer. Each takes a length or a percentage, a bare `0` included, and defaults to `--space-5` (24 px), the padding every placement drew before. The padding sits inside the popup's 1 px border. `--sheet-handle-gap` sets the space between the bottom sheet's grab handle and its header, defaulting to the sheet's `--space-4` gap. The bottom sheet's block-start padding is the space above its handle, so `--sheet-padding-block-start` and `--sheet-handle-gap` together set how far down its first content starts.
+`Dialog` takes four padding hooks, set on a `ThemeScope` (whose portal host holds the popup) or another ancestor, as its heading hooks are:
 
-The space above the bottom sheet's first content was not a bug: it was the sheet's 24 px padding above the handle and its 16 px gap under it, the same padding and gap every placement uses. The hooks expose both instead of changing them.
+- `--sheet-padding-block-start`, the space above the bottom sheet's grab handle;
+- `--sheet-handle-gap`, the space between the handle and the header;
+- `--sheet-padding-inline`, the bottom sheet's inline padding;
+- `--drawer-padding-inline`, the end drawer's inline padding.
 
-The close keeps its 36 px circle and its 44 px touch target inside the popup under any padding. The target reaches 4 px past the circle and its corner has to clear the popup's rounded corner, so where an edge's padding is under about 9 px the header pads the difference on that edge. The body keeps its focus-ring room the same way: under a padding thinner than that room, its content sits that much further in rather than scrolling the popup sideways. With no hook set, every dialog, sheet and drawer looks as it did.
+The gap defaults to `--space-4` and the paddings to `--space-5`, which is what each placement drew before, so no dialog changes until a hook is set, in any theme whose `--radius-dialog` is under about 68 px. Each hook takes a length with a unit: `0px`, not `0`, and no percentage. The padding sits inside the popup's 1 px border.
+
+The space above a bottom sheet's first content was not a bug. It is the sheet's 24 px padding and 16 px gap around the handle, which these hooks now expose.
+
+Under a thin inline padding, the header insets the close so that its 44 px touch target stays inside the popup's rounded corner. The body's focus-ring margin no longer scrolls the popup sideways. In the bottom sheet, keep `--sheet-padding-block-start` plus `--sheet-handle-gap` at 4 px or more at the default radius.
