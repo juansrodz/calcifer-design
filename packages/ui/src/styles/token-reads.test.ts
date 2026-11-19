@@ -531,14 +531,51 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' background: CanvasText;'],
     lacks: [],
   },
-  // A disabled option reads as a disabled control does under forced colours: `GrayText`, not dimmed
-  // (`opacity: 1`). The 0.45 dim left its text at 3.4:1 and its focus ring at 2.5:1 in High
-  // Contrast White, in the enabled options' ink. Outside the hover gate, so it holds in every state.
+  // A disabled option reads as a disabled control does under forced colours: `GrayText`, its content
+  // not dimmed (`opacity: 1`). The 0.45 dim left its text at 3.4:1 in High Contrast White, in the
+  // enabled options' ink. The chosen one's check mark inherits the `GrayText`: its accent token was
+  // replaced with `CanvasText`. Outside the hover gate, so each holds in every state.
   {
     file: 'components/Select/Select.module.css',
     rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.option\[data-disabled\] \{([^}]*)\}/m,
-    contains: [' opacity: 1;', ' color: GrayText;'],
-    lacks: [' background'],
+    contains: [' color: GrayText;'],
+    lacks: [' background', ' opacity'],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.option\[data-disabled\] > \* \{([^}]*)\}/m,
+    contains: [' opacity: 1;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.option\[data-disabled\] \.indicator \{([^}]*)\}/m,
+    contains: [' color: inherit;'],
+    lacks: [],
+  },
+  // Out of forced colours a disabled option dims its content, not the row, which draws the focus
+  // ring: an opacity on the row dimmed the ring to 1.87:1 (light) and 2.49:1 (dark). The highlight's
+  // tint is mixed down to the 45% the row's opacity gave it.
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^\.option\[data-disabled\] \{([^}]*)\}/m,
+    contains: [
+      ' --select-option-disabled-tint: color-mix(in srgb, var(--color-surface-2) 45%, transparent);',
+      ' cursor: not-allowed;',
+    ],
+    lacks: [' opacity'],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^\.option\[data-disabled\] > \* \{([^}]*)\}/m,
+    contains: [' opacity: 0.45;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^\.option\[data-disabled\]\[data-highlighted\] \{([^}]*)\}/m,
+    contains: [' background: var(--select-option-disabled-tint);'],
+    lacks: [],
   },
   // Nothing follows either forced block: a normal-mode rule appended after one would win the
   // cascade back. Every rule inside a block is indented, so the first `}` at the start of a line

@@ -77,9 +77,23 @@
   background: var(--color-surface-2);
 }
 
+/* A disabled option is dimmed through its content, the text and the check mark, not the row: the
+   row draws the focus ring, and an opacity on it dimmed the ring with the text (1.87:1 in light,
+   2.49:1 in dark against the popup). The two never overlap, so dimming each paints what dimming the
+   row did, and the highlight's tint, which the row's opacity dimmed as well, is mixed down to the
+   same 45%. */
 .option[data-disabled] {
+  --select-option-disabled-tint: color-mix(in srgb, var(--color-surface-2) 45%, transparent);
+
   cursor: not-allowed;
+}
+
+.option[data-disabled] > * {
   opacity: 0.45;
+}
+
+.option[data-disabled][data-highlighted] {
+  background: var(--select-option-disabled-tint);
 }
 
 .indicator {
@@ -98,12 +112,19 @@
    it. Last in the file, so no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
   /* A disabled option is `GrayText` and not dimmed as well, as a disabled `IconButton` is: the 0.45
-     dim left its text at 3.4:1 and its focus ring at 2.5:1, in the enabled options' ink. */
+     dim left its text at 3.4:1, in the enabled options' ink. Its check mark too, when it is the
+     chosen one: the accent token there was replaced with `CanvasText`, the enabled options' ink. */
   .option[data-disabled] {
-    opacity: 1;
-
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     color: GrayText;
+  }
+
+  .option[data-disabled] > * {
+    opacity: 1;
+  }
+
+  .option[data-disabled] .indicator {
+    color: inherit;
   }
 
   @media (hover: hover) {

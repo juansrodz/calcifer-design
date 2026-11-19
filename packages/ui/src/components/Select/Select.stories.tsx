@@ -251,3 +251,53 @@ export const ChosenHighlighted: Story = {
     await expect(sides).toHaveAttribute('data-highlighted');
   },
 };
+
+/**
+ * A disabled option that is also the chosen one, opened from the keyboard, so it takes focus with
+ * its ring. The ring is drawn at full strength, 3:1 or more against the popup like any other focus
+ * ring: the dim falls on the option's text and check mark, not on the row that draws the ring.
+ *
+ * Under forced colours (the test runner's paint checks) the whole option is `GrayText`, its check
+ * mark included, as the rest of a disabled option is.
+ */
+export const ChosenDisabledFocused: Story = {
+  args: { defaultValue: 'drinks' },
+  decorators: [
+    (Story) => (
+      <PortalInStoryRoot>
+        <Story />
+      </PortalInStoryRoot>
+    ),
+  ],
+  parameters: {
+    paintChecks: [
+      {
+        target: '[role="option"][data-disabled]',
+        interaction: 'press',
+        forcedColors: true,
+        expected: { color: 'GrayText' },
+      },
+      {
+        target: `[role="option"][data-disabled] .${styles.indicator}`,
+        interaction: 'press',
+        forcedColors: true,
+        expected: { color: 'GrayText' },
+      },
+    ] satisfies readonly PaintCheck[],
+  },
+  play: async ({ canvasElement }) => {
+    within(canvasElement).getByRole('combobox', { name: 'Category' }).focus();
+    await userEvent.keyboard('{Enter}');
+    const drinks = await screen.findByRole('option', { name: 'Drinks' });
+    await waitFor(() => expect(drinks).toHaveFocus());
+    await expect(drinks).toHaveAttribute('aria-disabled', 'true');
+    await expect(drinks.matches(':focus-visible')).toBe(true);
+    // The row draws the ring, so nothing dims the row; its text and check mark carry the dim.
+    await expect(getComputedStyle(drinks).opacity).toBe('1');
+    await expect(getComputedStyle(drinks).outlineStyle).toBe('solid');
+    for (const part of Array.from(drinks.children)) {
+      await expect(getComputedStyle(part).opacity).toBe('0.45');
+    }
+    await expect(drinks.children).toHaveLength(2);
+  },
+};
