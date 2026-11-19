@@ -1,4 +1,5 @@
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   customPropertyNamesOf,
@@ -6,6 +7,7 @@ import {
   tokens,
   tokensToCss,
 } from '@calcifer-design/tokens';
+import { rspack } from '@rsbuild/core';
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
 
@@ -15,6 +17,46 @@ const componentsSource = path.resolve(import.meta.dirname, '../../src/components
 // R7: every class name the build emits starts with `ui<version>-` (`rslib.config.ts` derives it
 // from the same `package.json`), so two ui versions on one page never share a class.
 const classPrefix = `ui${packageJson.version.replaceAll('.', '-')}-`;
+
+/**
+ * Bundles one shipped module as a consumer's bundler would in `mode` (Rspack, which defines
+ * `process.env.NODE_ENV` from the mode and minifies a production build), with every import but
+ * the module itself left external, and returns the bundle's code.
+ */
+async function bundleAsAConsumer(
+  entry: string,
+  mode: 'development' | 'production',
+): Promise<string> {
+  const outputDirectory = await mkdtemp(path.join(tmpdir(), 'ui-dist-bundle-'));
+  try {
+    const compiler = rspack({
+      mode,
+      entry,
+      devtool: false,
+      target: 'web',
+      externalsType: 'module',
+      externals: [
+        ({ request }, callback) => (request === entry ? callback() : callback(undefined, request)),
+      ],
+      output: { path: outputDirectory, filename: 'bundle.js', library: { type: 'module' } },
+    });
+    await new Promise<void>((settle, fail) => {
+      compiler.run((error, stats) => {
+        compiler.close(() => undefined);
+        if (error) {
+          fail(error);
+        } else if (stats?.hasErrors()) {
+          fail(new Error(stats.toString('errors-only')));
+        } else {
+          settle();
+        }
+      });
+    });
+    return await readFile(path.join(outputDirectory, 'bundle.js'), 'utf8');
+  } finally {
+    await rm(outputDirectory, { recursive: true, force: true });
+  }
+}
 
 async function collectCssFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -189,6 +231,24 @@ describe('@calcifer-design/ui dist', () => {
   it('leaves TabBar’s `process.env.NODE_ENV` for the consumer’s bundler', async () => {
     const tabBar = await readFile(path.join(distRoot, 'components/TabBar/TabBar.js'), 'utf8');
     expect(tabBar).toContain('process.env.NODE_ENV');
+  });
+
+  // The other half of that contract: a consumer's production build drops each development warning
+  // outright, message and all. Each shipped module is bundled on its own, every import external,
+  // as a consumer's bundler would in `production` and `development` mode. The development build is
+  // the control: it keeps the message, so a missing match below is the guard at work, not a
+  // misspelt message. A warning left unguarded keeps its message in production too.
+  it.each([
+    ['Dialog', 'a number with no unit'],
+    ['TabBar', 'expected two to five items'],
+    ['DatePicker', 'Intl.DateTimeFormat refused formatOptions'],
+  ])('drops %s’s development warning from a production build', async (component, message) => {
+    const entry = path.join(distRoot, `components/${component}/${component}.js`);
+    expect(await bundleAsAConsumer(entry, 'development')).toContain(message);
+    const production = await bundleAsAConsumer(entry, 'production');
+    // Still the component, not an empty bundle that would hold no message either.
+    expect(production).toMatch(new RegExp(`export\\s*\\{[^}]*\\b${component}\\b`));
+    expect(production).not.toContain(message);
   });
 
   it('emits per-component stylesheets with the hashed class-name pattern', async () => {
