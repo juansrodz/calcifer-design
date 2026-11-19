@@ -84,10 +84,10 @@
 }
 
 /* Forced colours drop the chip's fill to Canvas and its ring with every other shadow, so a `+N` on
-   a Canvas page had no edge. The transparent 1 px outline `Avatar`'s disc takes, which forced
-   colours paint in the system text colour, gives it one. It is drawn inside the box
-   (`outline-offset: -1px`), so it takes no layout and follows the radius. The rule ties the
-   top-level `.overflow` and wins by coming later, so this block stays the last thing in the file. */
+   a Canvas page had no edge. A transparent 1 px outline, which forced colours paint in the system
+   text colour, gives it one. It is drawn inside the box (`outline-offset: -1px`), so it takes no
+   layout and follows the radius. A later `.overflow` rule that sets an outline would beat it at the
+   same weight, so this block stays the last thing in the file. */
 @media (forced-colors: active) {
   .overflow {
     outline: 1px solid transparent;

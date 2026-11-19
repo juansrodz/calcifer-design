@@ -2608,9 +2608,9 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [anyWeightLiteral, 'font-size: var(--text-'],
   },
   // Forced colours drop the chip's fill to Canvas and its ring with every other shadow, so the
-  // `+N` had no edge on a Canvas page. The transparent 1 px outline `Avatar`'s disc takes, drawn
-  // inside the box (`outline-offset: -1px`) so it takes no layout, is painted in the system text
-  // colour. It is declared in the forced block only; the top-level chip keeps no outline.
+  // `+N` had no edge on a Canvas page. A transparent 1 px outline, which forced colours paint in
+  // the system text colour, gives it one, and `outline-offset: -1px` draws it inside the box so it
+  // takes no layout. It is declared in the forced block only; the top-level chip keeps no outline.
   {
     file: 'components/AvatarGroup/AvatarGroup.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.overflow \{([^}]*)\}/m,
@@ -2623,7 +2623,8 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [' outline'],
   },
-  // Nothing follows the block: its rule ties the top-level `.overflow` and would lose to a later one.
+  // Nothing follows the block: a later `.overflow` rule that sets an outline would beat its rule at
+  // the same weight.
   {
     file: 'components/AvatarGroup/AvatarGroup.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
