@@ -56,8 +56,11 @@ export const KeyboardOpen: Story = {
   },
 };
 
-/** A 16x16 stroke glyph in the text colour, as a consumer's icon set draws one. */
-function RefreshGlyph() {
+/**
+ * A 16x16 stroke glyph in the text colour, as a consumer's icon set draws one; `tinted` colours it
+ * with the accent through an inline style.
+ */
+function RefreshGlyph({ tinted = false }: { tinted?: boolean }) {
   return (
     <svg
       viewBox="0 0 16 16"
@@ -66,6 +69,7 @@ function RefreshGlyph() {
       strokeWidth="1.5"
       strokeLinecap="round"
       aria-hidden="true"
+      style={tinted ? { color: 'var(--color-accent)' } : undefined}
     >
       <path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3" />
     </svg>
@@ -89,11 +93,7 @@ export const WithStartIcons: Story = {
         id: 'tinted',
         label: 'Ask again',
         onSelect: fn(),
-        startIcon: (
-          <span style={{ display: 'inline-flex', color: 'var(--color-accent)' }}>
-            <RefreshGlyph />
-          </span>
-        ),
+        startIcon: <RefreshGlyph tinted />,
       },
       {
         id: 'sebastian',
