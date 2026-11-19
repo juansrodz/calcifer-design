@@ -1544,8 +1544,9 @@ const expectations: ReadonlyArray<Expectation> = [
   },
   {
     // Every variant reads the hook, with today's `none` under it, at zero weight: a secondary,
-    // ghost or row that sets no hook draws no shadow, and a consumer's own `box-shadow` on one, at
-    // any weight and in any order, still wins, as when nothing was declared.
+    // ghost or row that sets no hook draws no shadow, and a consumer's own unlayered `box-shadow` on
+    // one, at any weight above zero and in any order, still wins, as when nothing was declared. A
+    // rule in a cascade layer, or a zero-weight tie loaded first, now loses there.
     file: 'components/Button/Button.module.css',
     rule: /^:where\(\.root\) \{([^}]*)\}/m,
     contains: [' box-shadow: var(--button-shadow, none);'],
