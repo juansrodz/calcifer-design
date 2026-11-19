@@ -15,6 +15,23 @@ export type DialogVariant = 'center' | 'sheet';
 /** The edge a sheet docks to: `bottom` is the phone pattern, `end` a full-height side panel. */
 export type SheetSide = 'bottom' | 'end';
 
+/**
+ * Dialog's consumer hooks are custom properties set on a `ThemeScope` (whose portal host holds the
+ * popup) or another ancestor of the popup. Each defaults to what the dialog drew before it:
+ * - `--dialog-heading-size`, `--dialog-heading-tracking` and `--dialog-heading-leading` restyle
+ *   the heading (default `--text-h3`, the heading tracking, the snug leading).
+ * - `--sheet-handle-width` and `--sheet-handle-height` size the bottom sheet's grab handle.
+ * - `--sheet-padding-block-start` is the space above the bottom sheet's handle,
+ *   `--sheet-handle-gap` the space between the handle and the header, and
+ *   `--sheet-padding-inline` the sheet's inline padding. `--drawer-padding-inline` is the end
+ *   drawer's inline padding. The gap defaults to `--space-4`, the paddings to `--space-5` (24 px).
+ *   Each takes a length with a unit (`0px`, not `0`, and no percentage). The padding sits inside
+ *   the popup's 1 px border.
+ *
+ * Under a thin inline padding the header insets the close so its 44 px touch target stays inside
+ * the popup's rounded corner. In the bottom sheet, keep `--sheet-padding-block-start` plus
+ * `--sheet-handle-gap` at 4 px or more (at the default radius) for the same reason.
+ */
 export interface DialogProps {
   /**
    * The control that opens the dialog. Optional: a dialog driven by application state passes

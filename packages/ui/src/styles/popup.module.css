@@ -81,8 +81,15 @@
 /* The dialog and the sheets size in percentages of their grid area, never in viewport units: the
    area belongs to `Dialog.module.css`'s `.viewport` (`position: fixed; inset: 0`), whose
    containing block is the browser viewport standalone and the nearest transformed ancestor when
-   the scope is embedded, which is meant to let an embedded scope's overlays follow its box. */
+   the scope is embedded, which is meant to let an embedded scope's overlays follow its box.
+
+   Each placement declares `--dialog-surface-padding-inline`, its inline padding, which
+   `Dialog.module.css`'s header and body read. The bottom sheet's `--sheet-padding-block-start` and
+   `--sheet-padding-inline` and the drawer's `--drawer-padding-inline` are consumer hooks, set on an
+   ancestor of the popup and never declared here; each defaults to `--space-5`. */
 .surface[data-popup='dialog'] {
+  --dialog-surface-padding-inline: var(--space-5);
+
   gap: var(--space-4);
   width: min(32rem, 100%);
   max-width: 100%;
@@ -93,13 +100,24 @@
 }
 
 .surface[data-popup='sheet'] {
+  --dialog-surface-padding-inline: var(--space-5);
+
   gap: var(--space-4);
   width: 100%;
   max-width: 100%;
   max-height: 85%;
-  padding: var(--space-5);
+  padding-block: var(--space-5);
+  padding-inline: var(--dialog-surface-padding-inline);
   border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
   box-shadow: var(--shadow-sheet);
+}
+
+/* The bottom sheet's hooks sit on the bottom side alone, so the drawer, also a sheet, never reads
+   them. The block-start padding is the space above the grab handle. */
+.surface[data-popup='sheet'][data-side='bottom'] {
+  --dialog-surface-padding-inline: var(--sheet-padding-inline, var(--space-5));
+
+  padding-block-start: var(--sheet-padding-block-start, var(--space-5));
 }
 
 /* A select's width is its trigger's rather than a fixed dropdown width, and that is the one
@@ -140,6 +158,8 @@
    below: under `dir="rtl"` the panel would slide in from the wrong side and round the wrong
    corners. The library has no RTL story yet, and this is the first rule that would need one. */
 .surface[data-popup='sheet'][data-side='end'] {
+  --dialog-surface-padding-inline: var(--drawer-padding-inline, var(--space-5));
+
   width: min(var(--size-drawer), 100%);
   height: 100%;
   max-height: 100%;

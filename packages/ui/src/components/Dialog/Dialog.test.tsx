@@ -26,6 +26,10 @@ const {
   HiddenClose,
   HeadingHooks,
   LongBody,
+  PaddingHooks,
+  DrawerPaddingHooks,
+  SheetAtTheFloor,
+  DrawerAtTheFloor,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -41,6 +45,10 @@ describe('Dialog', () => {
     ['SideSheetWithFooter', SideSheetWithFooter],
     ['HeadingHooks', HeadingHooks],
     ['LongBody', LongBody],
+    ['PaddingHooks', PaddingHooks],
+    ['DrawerPaddingHooks', DrawerPaddingHooks],
+    ['SheetAtTheFloor', SheetAtTheFloor],
+    ['DrawerAtTheFloor', DrawerAtTheFloor],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -987,6 +995,27 @@ describe('Dialog', () => {
       ]) {
         expect(css).toContain(hook);
       }
+    });
+  });
+
+  // The padding itself is computed in a browser (the stories' plays, the token-reads pins); jsdom
+  // checks the structure the hooks rely on.
+  describe('the padding hooks', () => {
+    it('find the handle first in the bottom sheet, with the header straight after it', async () => {
+      render(<Dialog heading="Pasta night" variant="sheet" defaultOpen />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup.firstElementChild).toHaveClass('handle');
+      expect(popup.children[1]).toHaveClass('header');
+    });
+
+    it('reach the popup from a scope around the dialog, which holds the portal', async () => {
+      render(
+        <ThemeScope theme={demoTheme} className="padding-scope">
+          <Dialog heading="Pasta night" variant="sheet" side="end" defaultOpen />
+        </ThemeScope>,
+      );
+      const popup = await screen.findByRole('dialog');
+      expect(popup.closest('.padding-scope')).not.toBeNull();
     });
   });
 
