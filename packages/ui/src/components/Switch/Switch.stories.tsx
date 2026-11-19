@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, fn, within } from 'storybook/test';
+import type { PaintCheck } from '../../../.storybook/paint-checks';
 import { Switch } from './Switch';
 
 const meta = {
@@ -107,7 +108,7 @@ const forcedColourChecks = [
     forcedColors: true,
     expected: { backgroundColor: 'HighlightText' },
   },
-];
+] satisfies readonly PaintCheck[];
 
 /**
  * All five hooks, set from a class on a wrapper (they inherit): the unchecked track's

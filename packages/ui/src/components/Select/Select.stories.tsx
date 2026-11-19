@@ -1,6 +1,7 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { useState, type ReactNode } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import type { PaintCheck } from '../../../.storybook/paint-checks';
 import fieldStyles from '../../styles/field.module.css';
 import { Avatar } from '../Avatar/Avatar';
 import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
@@ -237,7 +238,7 @@ export const ChosenHighlighted: Story = {
         forcedColors: true,
         expected: { color: 'GrayText' },
       },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole('combobox', { name: 'Category' }));

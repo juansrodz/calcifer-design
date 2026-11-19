@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState, type ReactNode } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import type { PaintCheck } from '../../../.storybook/paint-checks';
 import { Avatar } from '../Avatar/Avatar';
 import { Button } from '../Button/Button';
 import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
@@ -192,7 +193,7 @@ export const WithStartIconsHighlighted: Story = {
         interaction: 'press',
         expected: { color: 'var(--color-text-subtle)' },
       },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   play: async () => {
     const askAgain = await screen.findByRole('menuitem', { name: 'Ask again' });

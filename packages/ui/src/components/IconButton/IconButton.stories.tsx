@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { PaintCheck } from '../../../.storybook/paint-checks';
 import { IconButton } from './IconButton';
 
 /** A 16x16 stroke glyph, sized by the button's own stylesheet. */
@@ -81,7 +82,7 @@ export const Unavailable: Story = {
         interaction: 'hover' as const,
         expected: unavailablePaint.ghost,
       },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   render: (args) => (
     <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
