@@ -102,3 +102,19 @@
     color: var(--color-text);
   }
 }
+
+/* Forced colours drop the remove control's hover tint, and the browser's own hover cue, a
+   `Highlight` border, has no border to draw on: a hovered control showed no change at all. It gains
+   a 2 px `Highlight` edge, as `Button` does: an outline drawn inside the circle, so nothing moves,
+   2 px because the control has no border to sit inside and the glyph leaves 5 px around it. Not on
+   a focused control, whose ring is the outline too, nor on one a disabled fieldset disables. Last
+   in the file, so no normal-mode rule after it wins the cascade back. */
+@media (forced-colors: active) {
+  @media (hover: hover) {
+    .remove:hover:not(:disabled, :focus-visible) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: var(--border-width-emphasis) solid Highlight;
+      outline-offset: calc(-1 * var(--border-width-emphasis));
+    }
+  }
+}
