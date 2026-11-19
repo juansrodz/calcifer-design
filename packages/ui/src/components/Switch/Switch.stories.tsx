@@ -19,13 +19,26 @@ export const Described: Story = {
 export const Required: Story = { args: { required: true } };
 export const Disabled: Story = { args: { disabled: true, defaultChecked: true } };
 export const WithError: Story = { args: { required: true, error: 'Turn this on to continue.' } };
+
+/** Resolves a CSS colour on a probe in the story, as the track and thumb would paint it. */
+function resolveColour(canvasElement: HTMLElement, value: string): string {
+  const probe = canvasElement.ownerDocument.createElement('span');
+  probe.style.color = value;
+  canvasElement.append(probe);
+  try {
+    return getComputedStyle(probe).color;
+  } finally {
+    probe.remove();
+  }
+}
+
 /**
  * The two unchecked-track hooks, `--switch-track-unchecked-background` and
  * `--switch-track-unchecked-border-color`, set from a class on a wrapper (they inherit): here a solid
  * track with no edge of its own, as the WBW mock draws its switch (4e). The mock's lavender is the
  * app's to set; this story fills the track with the control colour instead, so it still holds 3:1
- * on every surface, as WCAG 1.4.11 asks and as a consumer's own colours must. Checked, the track is
- * the accent whatever the hooks say.
+ * on every surface, as WCAG 1.4.11 asks and as a consumer's own colours must. Checked, the two
+ * unchecked hooks do not reach the track; `TrackAndThumbHooks` shows the checked pair.
  */
 export const UncheckedTrack: Story = {
   decorators: [
@@ -46,11 +59,7 @@ export const UncheckedTrack: Story = {
     const track = within(canvasElement).getByRole('switch', {
       name: 'Email me when someone joins',
     });
-    const probe = document.createElement('span');
-    probe.style.color = 'var(--color-border-control)';
-    canvasElement.append(probe);
-    const controlColour = getComputedStyle(probe).color;
-    probe.remove();
+    const controlColour = resolveColour(canvasElement, 'var(--color-border-control)');
     const trackStyle = getComputedStyle(track);
     await expect(trackStyle.backgroundColor).toBe(controlColour);
     await expect(trackStyle.borderTopColor).toBe('rgba(0, 0, 0, 0)');
@@ -69,18 +78,6 @@ const hookColours = {
   checkedBorder: 'var(--color-border-control)',
   thumb: 'var(--color-surface-1)',
 } as const;
-
-/** Resolves a CSS colour on a probe in the story, as the track and thumb would paint it. */
-function resolveColour(canvasElement: HTMLElement, value: string): string {
-  const probe = canvasElement.ownerDocument.createElement('span');
-  probe.style.color = value;
-  canvasElement.append(probe);
-  try {
-    return getComputedStyle(probe).color;
-  } finally {
-    probe.remove();
-  }
-}
 
 // What forced colours paint whatever the hooks say, for each track and thumb. Run by
 // `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) under a real pointer;
@@ -172,6 +169,5 @@ export const TrackAndThumbHooks: Story = {
 export const TrackAndThumbHooksDark: Story = {
   ...TrackAndThumbHooks,
   globals: { theme: 'dark' },
-  parameters: { controls: { disable: true }, paintChecks: forcedColourChecks },
   play: TrackAndThumbHooks.play,
 };
