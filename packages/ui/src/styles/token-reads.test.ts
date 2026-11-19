@@ -1250,13 +1250,19 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [' outline'],
   },
   // The opt-out is inherited, and an item's content is the consumer's (`renderLink`), so its colours
-  // would come back on the fill. Everything inside takes the item's ink, with `!important` so a
-  // consumer's inline colour cannot beat it, as in `IconButton`'s pressed rule.
+  // would come back on the fill. Everything inside takes the item's ink, its edges included, with
+  // `!important` so a consumer's inline colour cannot beat it, as in `IconButton`'s pressed rule,
+  // and it keeps its border styles as the sibling consumer-content rows require.
   {
     file: 'components/NavMenu/NavMenu.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \* \{([^}]*)\}/m,
-    contains: [' background-color: transparent !important;', ' color: inherit !important;'],
-    lacks: [],
+    contains: [
+      '--nav-menu-content-edge: currentcolor;',
+      ' border-color: var(--nav-menu-content-edge) !important;',
+      ' background-color: transparent !important;',
+      ' color: inherit !important;',
+    ],
+    lacks: consumerContentKeepsStyles,
   },
   importantOnlyInForcedBlock('components/NavMenu/NavMenu.module.css'),
   // Nothing follows the block: a normal-mode rule appended after it would win the cascade back.
