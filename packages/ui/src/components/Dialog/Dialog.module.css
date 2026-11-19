@@ -74,6 +74,7 @@
   );
 
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   padding-inline-end: var(--dialog-header-room-inline-end);
@@ -82,10 +83,17 @@
 /* The three `--dialog-heading-*` hooks are set by a consumer on a `ThemeScope` (whose portal host
    holds the popup) or a DOM ancestor of the popup, and never declared here; each defaults to the
    step this heading always drew (`--text-h3`, the heading tracking, the snug leading), so a dialog
-   with no hook set looks as it did. */
+   with no hook set looks as it did.
+
+   Room at the inline end for the close (200% text on a 390 px phone): the heading takes what the
+   end group leaves (a zero basis that grows, so nothing moves while the row fits) and the end group
+   never shrinks, so the close circle keeps its size and the row's gap. A word wider than that room
+   breaks inside it rather than running on under the close. When less than three of the heading's
+   own ems are left beside a `headerStart` and the end group, the row wraps instead (the header's
+   `flex-wrap`, above), so the heading is not cut down to a letter a line. */
 .heading {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: min(3em, 100%);
   color: var(--color-text);
   font-size: var(--dialog-heading-size, var(--text-h3));
   font-family: var(--font-display);
@@ -94,6 +102,13 @@
   text-transform: var(--text-transform-display);
   letter-spacing: var(--dialog-heading-tracking, var(--tracking-heading));
   line-height: var(--dialog-heading-leading, var(--leading-snug));
+  overflow-wrap: break-word;
+}
+
+/* A visually hidden heading leaves the row's flow and keeps the 1 px box `a11y.module.css` draws;
+   the floor above is for a heading that shares the row. */
+.headingHidden {
+  min-width: 0;
 }
 
 /* `base.css` tracks `h1` to `h3` only, so an `h4` heading has always drawn with the browser's

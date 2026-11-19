@@ -402,3 +402,48 @@ export const SideSheetRightToLeft: Story = {
     await expect(popupStyle.borderBottomRightRadius).toBe(popupStyle.borderTopRightRadius);
   },
 };
+
+/**
+ * A long heading beside a `headerStart` tag, a "More" button and the close, at 200% text. The
+ * heading's words never run on under the end group: a word too wide for its room breaks, and
+ * with too little room the row wraps. The close stays the 36 px circle (twice that here, as the
+ * text is twice its size).
+ */
+export const HeadingAtDoubleText: Story = {
+  args: {
+    defaultOpen: true,
+    heading: 'Grandmother’s extravagant lasagne',
+    headerStart: <Tag>Draft</Tag>,
+    headerEnd: (
+      <IconButton label="More" variant="soft">
+        <MoreGlyph />
+      </IconButton>
+    ),
+  },
+  decorators: [
+    (Story) => (
+      <>
+        <style>{'html { font-size: 200%; }'}</style>
+        <Story />
+      </>
+    ),
+  ],
+  play: async () => {
+    const popup = await settledDialog();
+    const heading = within(popup).getByRole('heading');
+    const endGroup = within(popup).getByRole('button', { name: 'Close' }).parentElement;
+    if (endGroup === null) {
+      throw new Error('the close has no end group');
+    }
+    const groupBox = endGroup.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(heading);
+    for (const line of Array.from(range.getClientRects())) {
+      const sharesRow = line.bottom > groupBox.top && line.top < groupBox.bottom;
+      await expect(sharesRow && line.right > groupBox.left).toBe(false);
+    }
+    const rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const close = within(popup).getByRole('button', { name: 'Close' });
+    await expect(close.getBoundingClientRect().width).toBeCloseTo((36 / 16) * rootSize, 0);
+  },
+};

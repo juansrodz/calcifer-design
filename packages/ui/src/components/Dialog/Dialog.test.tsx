@@ -46,6 +46,7 @@ const {
   SheetAtTheFloor,
   DrawerAtTheFloor,
   SideSheetRightToLeft,
+  HeadingAtDoubleText,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -66,6 +67,7 @@ describe('Dialog', () => {
     ['SheetAtTheFloor', SheetAtTheFloor],
     ['DrawerAtTheFloor', DrawerAtTheFloor],
     ['SideSheetRightToLeft', SideSheetRightToLeft],
+    ['HeadingAtDoubleText', HeadingAtDoubleText],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -1209,6 +1211,26 @@ describe('Dialog', () => {
           /^\[dir='rtl'\] \.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\]\[data-starting-style\],\n\[dir='rtl'\] \.viewport > \.popup\[data-popup='sheet'\]\[data-side='end'\]\[data-ending-style\] \{([^}]*)\}/m,
         ),
       ).toContain(' transform: translateX(-100%);');
+    });
+  });
+
+  // 200% text on a 390 px phone: the heading takes what the end group leaves, breaks a word too
+  // wide for that, and wraps the row when less than three ems are left. Measured in a browser by
+  // the `HeadingAtDoubleText` story's play.
+  describe('the heading beside the close', () => {
+    it('grows from nothing, keeps a floor and breaks a word too wide for its room', () => {
+      const body = ruleBody(/^\.heading \{([^}]*)\}/m);
+      expect(body).toContain(' flex: 1 1 0;');
+      expect(body).toContain(' min-width: min(3em, 100%);');
+      expect(body).toContain(' overflow-wrap: break-word;');
+    });
+
+    it('wraps the header row', () => {
+      expect(ruleBody(/^\.header \{([^}]*)\}/m)).toContain(' flex-wrap: wrap;');
+    });
+
+    it('lets a visually hidden heading keep its 1 px box', () => {
+      expect(ruleBody(/^\.headingHidden \{([^}]*)\}/m)).toContain(' min-width: 0;');
     });
   });
 });
