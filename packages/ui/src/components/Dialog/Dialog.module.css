@@ -62,7 +62,9 @@
    `--radius-dialog` under about 68 px. The block edges get no room: no hook moves the header's top
    in a centred dialog or a drawer. In the bottom sheet the handle and its gap sit above it, which
    clear the corner while `--sheet-padding-block-start` and `--sheet-handle-gap` add up to at least
-   0.293 r less 1 px (4 px at the default radius); the `SheetAtTheFloor` story holds that floor. */
+   0.293 r less 1 px (4 px at the default radius); the `SheetAtTheFloor` story holds that floor.
+   That floor assumes the default 5 px handle (`--sheet-handle-height`), which sits between the two
+   hooks and counts toward the clearance: a shorter handle raises the floor by the difference. */
 .header {
   --dialog-close-reach: calc((var(--size-touch) - var(--size-close)) / 2);
   --dialog-close-corner: calc(var(--radius-dialog) * 0.293);

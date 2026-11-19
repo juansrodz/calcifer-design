@@ -38,7 +38,9 @@ export type SheetSide = 'bottom' | 'end';
  *
  * Under a thin inline padding the header insets the close so its 44 px touch target stays inside
  * the popup's rounded corner. In the bottom sheet, keep `--sheet-padding-block-start` plus
- * `--sheet-handle-gap` at 4 px or more (at the default radius) for the same reason.
+ * `--sheet-handle-gap` at 4 px or more (at the default radius) for the same reason. That floor
+ * assumes the default 5 px handle (`--sheet-handle-height`), which sits between the two: a shorter
+ * handle raises it by the difference.
  */
 export interface DialogProps {
   /**
