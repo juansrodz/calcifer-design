@@ -380,10 +380,9 @@ export function Dialog({
               {headerStart}
               <BaseDialog.Title
                 id={titleId}
-                className={(headingHidden
-                  ? [styles.heading, styles.headingHidden, a11yStyles.visuallyHidden]
-                  : [styles.heading]
-                ).join(' ')}
+                className={[styles.heading, headingHidden ? a11yStyles.visuallyHidden : undefined]
+                  .filter(Boolean)
+                  .join(' ')}
                 render={<Heading />}
               >
                 {heading}

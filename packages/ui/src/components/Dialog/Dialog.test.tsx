@@ -50,6 +50,7 @@ const {
   DrawerAtTheFloor,
   SideSheetRightToLeft,
   HeadingAtDoubleText,
+  DefaultAtDoubleText,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -71,6 +72,7 @@ describe('Dialog', () => {
     ['DrawerAtTheFloor', DrawerAtTheFloor],
     ['SideSheetRightToLeft', SideSheetRightToLeft],
     ['HeadingAtDoubleText', HeadingAtDoubleText],
+    ['DefaultAtDoubleText', DefaultAtDoubleText],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -1353,19 +1355,16 @@ describe('Dialog', () => {
   // wide for that, and wraps the row when less than three ems are left. Measured in a browser by
   // the `HeadingAtDoubleText` story's play.
   describe('the heading beside the close', () => {
-    it('grows from nothing, keeps a floor and breaks a word too wide for its room', () => {
+    it('grows from nothing, never narrower than its longest word nor wider than the row', () => {
       const body = ruleBody(/^\.heading \{([^}]*)\}/m);
       expect(body).toContain(' flex: 1 1 0;');
-      expect(body).toContain(' min-width: min(3em, 100%);');
+      expect(body).toContain(' max-width: 100%;');
+      expect(body).not.toContain('min-width');
       expect(body).toContain(' overflow-wrap: break-word;');
     });
 
     it('wraps the header row', () => {
       expect(ruleBody(/^\.header \{([^}]*)\}/m)).toContain(' flex-wrap: wrap;');
-    });
-
-    it('lets a visually hidden heading keep its 1 px box', () => {
-      expect(ruleBody(/^\.headingHidden \{([^}]*)\}/m)).toContain(' min-width: 0;');
     });
   });
 

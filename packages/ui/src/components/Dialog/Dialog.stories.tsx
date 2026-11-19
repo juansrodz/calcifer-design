@@ -378,6 +378,7 @@ export const QuietPointerOpen: Story = {
 /**
  * The end drawer in a right-to-left page: it docks on the inline end, the left, and rounds its
  * inline-start corners, the right pair, while the two that meet the viewport's edges stay square.
+ * It slides out to the left as it closes.
  */
 export const SideSheetRightToLeft: Story = {
   args: { variant: 'sheet', side: 'end', defaultOpen: true, heading: 'تعديل الطبق' },
@@ -400,18 +401,108 @@ export const SideSheetRightToLeft: Story = {
     await expect(popupStyle.borderBottomLeftRadius).toBe('0px');
     await expect(popupStyle.borderTopRightRadius).not.toBe('0px');
     await expect(popupStyle.borderBottomRightRadius).toBe(popupStyle.borderTopRightRadius);
+    // The slide, read from the closing transition itself.
+    await userEvent.keyboard('{Escape}');
+    const slide = await waitFor(() => {
+      const transition = popup
+        .getAnimations()
+        .find(
+          (animation) =>
+            animation instanceof CSSTransition && animation.transitionProperty === 'transform',
+        );
+      if (transition === undefined) {
+        throw new Error('the drawer has no transform transition yet');
+      }
+      return transition;
+    });
+    // Held halfway through, the drawer's painted position lies off its left edge.
+    slide.pause();
+    const halfway = Number(slide.effect?.getComputedTiming().duration ?? 0) / 2;
+    slide.currentTime = halfway;
+    const slidTo = new DOMMatrixReadOnly(getComputedStyle(popup).transform);
+    slide.finish();
+    await expect(halfway).toBeGreaterThan(0);
+    await expect(slidTo.m41).toBeLessThan(0);
   },
 };
 
 /**
- * A long heading beside a `headerStart` tag, a "More" button and the close, at 200% text. The
- * heading's words never run on under the end group: a word too wide for its room breaks, and
- * with too little room the row wraps. The close stays the 36 px circle (twice that here, as the
- * text is twice its size).
+ * The runner's window is 1280 px wide, so the 200% text stories pin the centred popup at the
+ * 358 px a 390 px phone gives it (its 16 px viewport gutters off), and the root at twice the size.
+ */
+const doubleTextOnAPhone = `html { font-size: 200%; }
+[data-popup='dialog'] { width: min(32rem, 358px) !important; }`;
+
+/**
+ * The play for the 200% text stories: the end group and the heading stay inside the popup's
+ * padding box, the heading holds its text (nothing runs past its box), no line of it crosses the end group, a word
+ * breaks only when it is wider than the whole header row, and the close stays the 36 px circle
+ * (twice that here, as the text is twice its size).
+ */
+const playHeadingAtDoubleText: Story['play'] = async () => {
+  const popup = await settledDialog();
+  const heading = within(popup).getByRole('heading');
+  const close = within(popup).getByRole('button', { name: 'Close' });
+  const header = heading.parentElement;
+  const endGroup = close.parentElement;
+  if (header === null || endGroup === null) {
+    throw new Error('the heading has no header row, or the close no end group');
+  }
+  const popupBox = popup.getBoundingClientRect();
+  const popupStyle = getComputedStyle(popup);
+  const contentLeft =
+    popupBox.left + parseFloat(popupStyle.borderLeftWidth) + parseFloat(popupStyle.paddingLeft);
+  const contentRight =
+    popupBox.right - parseFloat(popupStyle.borderRightWidth) - parseFloat(popupStyle.paddingRight);
+  const groupBox = endGroup.getBoundingClientRect();
+  await expect(groupBox.left).toBeGreaterThanOrEqual(contentLeft - 0.5);
+  await expect(groupBox.right).toBeLessThanOrEqual(contentRight + 0.5);
+  const headingBox = heading.getBoundingClientRect();
+  await expect(headingBox.left).toBeGreaterThanOrEqual(contentLeft - 0.5);
+  await expect(headingBox.right).toBeLessThanOrEqual(contentRight + 0.5);
+  await expect(heading.scrollWidth).toBeLessThanOrEqual(heading.clientWidth);
+
+  const headingText = heading.firstChild;
+  if (!(headingText instanceof Text)) {
+    throw new Error('the heading holds no text node');
+  }
+  const headerStyle = getComputedStyle(header);
+  const rowWidth =
+    header.clientWidth - parseFloat(headerStyle.paddingLeft) - parseFloat(headerStyle.paddingRight);
+  const range = document.createRange();
+  range.selectNodeContents(heading);
+  for (const line of Array.from(range.getClientRects())) {
+    const sharesRow = line.bottom > groupBox.top && line.top < groupBox.bottom;
+    await expect(sharesRow && line.right > groupBox.left).toBe(false);
+  }
+  for (const word of headingText.data.matchAll(/\S+/g)) {
+    range.setStart(headingText, word.index);
+    range.setEnd(headingText, word.index + word[0].length);
+    const pieces = Array.from(range.getClientRects());
+    if (pieces.length > 1) {
+      const wordWidth = pieces.reduce((total, piece) => total + piece.width, 0);
+      await expect({ word: word[0], widerThanTheRow: wordWidth > rowWidth }).toEqual({
+        word: word[0],
+        widerThanTheRow: true,
+      });
+    }
+  }
+  const rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  await expect(close.getBoundingClientRect().width).toBeCloseTo((36 / 16) * rootSize, 0);
+};
+
+/**
+ * A long heading beside a `headerStart` tag, a "More" button and the close, at 200% text on a
+ * 390 px phone. The header wraps before any word breaks, so the end group takes a row of its own;
+ * only "Grandmother’s", wider than the whole row, breaks.
  */
 export const HeadingAtDoubleText: Story = {
   args: {
     defaultOpen: true,
+    // The header is the subject: at twice the text a body would scroll, and the axe smoke check
+    // can run before the scrolling body becomes a Tab stop.
+    description: undefined,
+    children: undefined,
     heading: 'Grandmother’s extravagant lasagne',
     headerStart: <Tag>Draft</Tag>,
     headerEnd: (
@@ -423,27 +514,17 @@ export const HeadingAtDoubleText: Story = {
   decorators: [
     (Story) => (
       <>
-        <style>{'html { font-size: 200%; }'}</style>
+        <style>{doubleTextOnAPhone}</style>
         <Story />
       </>
     ),
   ],
-  play: async () => {
-    const popup = await settledDialog();
-    const heading = within(popup).getByRole('heading');
-    const endGroup = within(popup).getByRole('button', { name: 'Close' }).parentElement;
-    if (endGroup === null) {
-      throw new Error('the close has no end group');
-    }
-    const groupBox = endGroup.getBoundingClientRect();
-    const range = document.createRange();
-    range.selectNodeContents(heading);
-    for (const line of Array.from(range.getClientRects())) {
-      const sharesRow = line.bottom > groupBox.top && line.top < groupBox.bottom;
-      await expect(sharesRow && line.right > groupBox.left).toBe(false);
-    }
-    const rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const close = within(popup).getByRole('button', { name: 'Close' });
-    await expect(close.getBoundingClientRect().width).toBeCloseTo((36 / 16) * rootSize, 0);
-  },
+  play: playHeadingAtDoubleText,
+};
+
+/** The default dialog at 200% text on a 390 px phone: the heading reads in whole words. */
+export const DefaultAtDoubleText: Story = {
+  args: { defaultOpen: true, description: undefined, children: undefined },
+  decorators: HeadingAtDoubleText.decorators,
+  play: playHeadingAtDoubleText,
 };
