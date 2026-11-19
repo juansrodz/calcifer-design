@@ -122,6 +122,20 @@
    hover tint too, so a hovered day gains an edge instead; its rule says why. Last in the file, so
    no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
+  /* The month button at the end of the range reads as a disabled `IconButton` does here: a
+     `GrayText` glyph and edge, not dimmed. The 0.45 dim left its glyph at 3.4:1 and its focus ring
+     at 2.5:1 in High Contrast White, and kept the enabled buttons' ink, so it read as dimmed rather
+     than unavailable. It stays focusable (`aria-disabled`), and its ring is drawn in full. */
+  .previous[aria-disabled='true'],
+  .next[aria-disabled='true'] {
+    opacity: 1;
+
+    /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+    border-color: GrayText;
+    color: GrayText;
+    /* stylelint-enable scale-unlimited/declaration-strict-value */
+  }
+
   .day[aria-selected='true'] {
     forced-color-adjust: none;
 
@@ -140,6 +154,16 @@
   }
 
   @media (hover: hover) {
+    /* Under the pointer `IconButton` holds an `aria-disabled` button's border at its resting
+       `ButtonText`, a rule of four classes; this one has five, so the month button's edge stays
+       `GrayText` and it shows no hover cue. A focused one is left to the rule above, as
+       `IconButton` leaves it. */
+    .header .previous[aria-disabled='true']:hover:not(:focus-visible),
+    .header .next[aria-disabled='true']:hover:not(:focus-visible) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: GrayText;
+    }
+
     /* With the tint gone a hovered day showed no change at all, so it gains a `Highlight` edge, as
        `Button` does: an outline drawn inside the cell, so nothing moves and no neighbouring day is
        covered. It is 2 px, `Button`'s outline width; `Button`'s 3 px edge counts its 1 px border,

@@ -1,5 +1,6 @@
 import { Menu as BaseMenu } from '@base-ui/react/menu';
-import { Fragment, type ReactElement } from 'react';
+import { Fragment, type ReactElement, type ReactNode } from 'react';
+import { hasContent } from '../../utils/hasContent';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import type { PopupAlign, PopupSide } from '../Popover/Popover';
@@ -10,6 +11,22 @@ export interface MenuItem {
   id: string;
   /** The visible text, and what Base UI's typeahead matches against. */
   label: string;
+  /**
+   * Content before the label: an icon from your own set (an `<svg>` is sized to 1rem and coloured
+   * by the text-muted role, as on `Select`'s `startIcon`) or a small avatar, such as an
+   * `<Avatar size="xs" />` for the person the item names. Absent (or `null`, `false`, `''`), the
+   * item is exactly what it is without the prop.
+   *
+   * It is decorative: the slot is `aria-hidden`, so nothing in it (an avatar's hidden name
+   * included) is announced, and typeahead matches the `label`, not the slot's text. Keep it free of
+   * anything focusable, and say what it means in the `label` when the label does not already.
+   *
+   * Under forced colours the item under the pointer is filled `Highlight`, and everything in the
+   * slot takes its `HighlightText` ink, borders and backgrounds included. A literal `fill` or
+   * `stroke` attribute, a shadow or an image (an avatar's photo) is drawn as authored there, so an
+   * icon should paint with `currentColor`.
+   */
+  startIcon?: ReactNode;
   onSelect?: () => void;
   disabled?: boolean;
   /** Draws a hairline above this item, separating the group below from the one above. */
@@ -71,7 +88,15 @@ export function Menu({
                   className={styles.item}
                   disabled={item.disabled}
                   onClick={item.onSelect}
+                  // Typeahead reads the item's text otherwise, and the slot's (an avatar's
+                  // initials) comes first.
+                  label={item.label}
                 >
+                  {hasContent(item.startIcon) ? (
+                    <span className={styles.startIcon} aria-hidden="true">
+                      {item.startIcon}
+                    </span>
+                  ) : null}
                   {item.label}
                 </BaseMenu.Item>
               </Fragment>

@@ -58,21 +58,25 @@
   color: var(--color-selected-soft-text);
 }
 
+/* No variant tints a button marked `aria-disabled` under the pointer: it stays focusable, as the
+   `DatePicker`'s month button at the end of its range does, but it is unavailable, so it looks as it
+   does at rest. A loading button is `data-disabled` too. The pressed rule is left as it is: it
+   repaints the pressed pair it already has at rest. */
 @media (hover: hover) {
-  .root[data-variant='ghost']:hover:not([data-disabled]) {
+  .root[data-variant='ghost']:hover:not([data-disabled], [aria-disabled='true']) {
     background: var(--color-surface-2);
     color: var(--color-text);
   }
 
-  .root[data-variant='secondary']:hover:not([data-disabled]) {
+  .root[data-variant='secondary']:hover:not([data-disabled], [aria-disabled='true']) {
     background: var(--color-surface-2);
   }
 
-  .root[data-variant='primary']:hover:not([data-disabled]) {
+  .root[data-variant='primary']:hover:not([data-disabled], [aria-disabled='true']) {
     background: var(--color-accent-hover);
   }
 
-  .root[data-variant='soft']:hover:not([data-disabled]) {
+  .root[data-variant='soft']:hover:not([data-disabled], [aria-disabled='true']) {
     background: var(--color-surface-3);
   }
 
