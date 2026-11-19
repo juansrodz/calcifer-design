@@ -53,6 +53,13 @@ describe('the paint checks wiring', () => {
     expect(readCode('paint-checks.ts')).toMatch(/paintProperties[^=]*=\s*\[[^\]]*'boxShadow'/);
   });
 
+  it('has paint-checks.ts refuse an expected shadow that its probe resolves to none', () => {
+    // A missing token or a typo makes the probe `none`, equal to an element with no shadow, so a
+    // check on it would compare nothing and pass. With the guard deleted every story stays green:
+    // the failure here with no other signal.
+    expect(readCode('paint-checks.ts')).toMatch(/probed\.boxShadow === 'none'/);
+  });
+
   it('has a story declare paintChecks that the hook can run', () => {
     const checks = declaredChecks();
     expect(checks.length).toBeGreaterThan(0);
@@ -75,16 +82,18 @@ describe('the paint checks wiring', () => {
       const shadowChecks = checksOf(composedStories[storyName]).filter(
         (check) => check.expected.boxShadow !== undefined,
       );
-      const interactions = (forcedColors: boolean) =>
-        shadowChecks
-          .filter((check) => Boolean(check.forcedColors) === forcedColors)
-          .map((check) => check.interaction);
-      expect(interactions(false)).toEqual(expect.arrayContaining(['rest', 'hover']));
-      expect(interactions(true)).toEqual(expect.arrayContaining(['rest', 'hover']));
+      const normalChecks = shadowChecks.filter((check) => !check.forcedColors);
+      const forcedChecks = shadowChecks.filter((check) => check.forcedColors);
+      expect(normalChecks.map((check) => check.interaction)).toEqual(
+        expect.arrayContaining(['rest', 'hover']),
+      );
+      expect(forcedChecks.map((check) => check.interaction)).toEqual(
+        expect.arrayContaining(['rest', 'hover']),
+      );
       // These buttons lose their shadow under forced colours (the browser drops it, and the chosen
       // opt-out's own rule clears it), so `none`. A component that opts out of forced colours and
       // keeps a shadow on purpose would pin that shadow instead.
-      for (const check of shadowChecks.filter((candidate) => candidate.forcedColors)) {
+      for (const check of forcedChecks) {
         expect(check.expected.boxShadow).toBe('none');
       }
     },
