@@ -6,6 +6,8 @@ import { Field } from '../Field/Field';
 import { IconButton } from '../IconButton/IconButton';
 import { Tag } from '../Tag/Tag';
 import { TextInput } from '../TextInput/TextInput';
+import { demoTheme, demoThemeCss } from '../ThemeScope/fixtures';
+import { ThemeScope } from '../ThemeScope/ThemeScope';
 import { Dialog } from './Dialog';
 
 /** A three-dot glyph for the header's "More" button; the library ships no such icon. */
@@ -213,4 +215,121 @@ export const HeadingHooks: Story = {
       </>
     ),
   ],
+};
+
+/**
+ * The hooks as a consumer sets them: from a class on a `ThemeScope`, whose portal host holds the
+ * popup, so they inherit into it. These are the WBW mock's container metrics (11b, 11a), each a
+ * pixel under the mock's figure for the popup's 1 px border: the bottom sheet's content 20 px in
+ * from its sides and its handle 10 px down, 12 px between the handle and the header, and the end
+ * drawer's content 28 px in from its sides. Every edge left unset stays 24 px.
+ */
+const paddingHooksCss = `.dialog-padding-hooks {
+  --sheet-padding-block-start: 9px;
+  --sheet-padding-inline: 19px;
+  --sheet-handle-gap: 12px;
+  --drawer-padding-inline: 27px;
+}`;
+
+/** Waits for the popup's opening transition, which moves it (and scales a centred one). */
+async function settledDialog(): Promise<HTMLElement> {
+  const popup = await screen.findByRole('dialog');
+  await waitFor(() => expect(popup).not.toHaveAttribute('data-starting-style'));
+  await Promise.all(popup.getAnimations().map((animation) => animation.finished));
+  return popup;
+}
+
+const playPaddingHooks: Story['play'] = async () => {
+  const popup = await settledDialog();
+  const popupStyle = getComputedStyle(popup);
+  if (popup.dataset['side'] === 'end') {
+    await expect(popupStyle.paddingInlineStart).toBe('27px');
+    await expect(popupStyle.paddingInlineEnd).toBe('27px');
+    await expect(popupStyle.paddingBlockStart).toBe('24px');
+    await expect(popupStyle.paddingBlockEnd).toBe('24px');
+    return;
+  }
+  await expect(popupStyle.paddingBlockStart).toBe('9px');
+  await expect(popupStyle.paddingInlineStart).toBe('19px');
+  await expect(popupStyle.paddingInlineEnd).toBe('19px');
+  await expect(popupStyle.paddingBlockEnd).toBe('24px');
+  const handle = popup.firstElementChild;
+  const header = within(popup).getByRole('heading').parentElement;
+  if (!(handle instanceof HTMLElement) || header === null) {
+    throw new Error('the bottom sheet has no handle or no header');
+  }
+  const popupBox = popup.getBoundingClientRect();
+  const handleBox = handle.getBoundingClientRect();
+  // The handle sits under the 1 px border and the 9 px padding; the header 12 px under the handle.
+  await expect(handleBox.top - popupBox.top).toBeCloseTo(10, 1);
+  await expect(header.getBoundingClientRect().top - handleBox.bottom).toBeCloseTo(12, 1);
+};
+
+/** A bottom sheet padded through the hooks; the play reads the padding the popup computes. */
+export const PaddingHooks: Story = {
+  args: { variant: 'sheet', defaultOpen: true },
+  decorators: [
+    (Story) => (
+      <>
+        <style>{`${demoThemeCss}\n${paddingHooksCss}`}</style>
+        <ThemeScope theme={demoTheme} className="dialog-padding-hooks">
+          <Story />
+        </ThemeScope>
+      </>
+    ),
+  ],
+  play: playPaddingHooks,
+};
+
+/** The same scope around an end drawer: only the drawer's own hook reaches it. */
+export const DrawerPaddingHooks: Story = {
+  ...PaddingHooks,
+  args: { ...PaddingHooks.args, side: 'end' },
+  play: playPaddingHooks,
+};
+
+/**
+ * Every edge at a bare `0`. The close's 44 px touch target reaches 4 px past its 36 px circle, and
+ * the popup clips what passes its padding edge, so the header pads those 4 px at the top and the
+ * inline end. The play presses the target's outer corner, past the circle, and finds the close.
+ */
+export const ZeroPadding: Story = {
+  args: { defaultOpen: true },
+  decorators: [
+    (Story) => (
+      <>
+        <style>
+          {`${demoThemeCss}
+.dialog-zero-padding {
+  --dialog-padding-block-start: 0;
+  --dialog-padding-block-end: 0;
+  --dialog-padding-inline: 0;
+}`}
+        </style>
+        <ThemeScope theme={demoTheme} className="dialog-zero-padding">
+          <Story />
+        </ThemeScope>
+      </>
+    ),
+  ],
+  play: async () => {
+    const popup = await settledDialog();
+    await expect(getComputedStyle(popup).paddingBlockStart).toBe('0px');
+    await expect(getComputedStyle(popup).paddingInlineEnd).toBe('0px');
+    const close = within(popup).getByRole('button', { name: 'Close' });
+    const closeBox = close.getBoundingClientRect();
+    const reach = (44 - closeBox.width) / 2;
+    const popupBox = popup.getBoundingClientRect();
+    // The target's box sits inside the popup's padding box, inside the 1 px border.
+    await expect(closeBox.top - reach).toBeGreaterThanOrEqual(popupBox.top + popup.clientTop);
+    await expect(closeBox.right + reach).toBeLessThanOrEqual(
+      popupBox.left + popup.clientLeft + popup.clientWidth,
+    );
+    // Half a pixel inside the target's outer corner, past the circle: the press still lands on it.
+    const cornerTarget = document.elementFromPoint(
+      closeBox.right + reach - 0.5,
+      closeBox.top - reach + 0.5,
+    );
+    await expect(close.contains(cornerTarget)).toBe(true);
+  },
 };

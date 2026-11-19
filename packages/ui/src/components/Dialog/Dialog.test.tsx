@@ -26,6 +26,9 @@ const {
   HiddenClose,
   HeadingHooks,
   LongBody,
+  PaddingHooks,
+  DrawerPaddingHooks,
+  ZeroPadding,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -41,6 +44,9 @@ describe('Dialog', () => {
     ['SideSheetWithFooter', SideSheetWithFooter],
     ['HeadingHooks', HeadingHooks],
     ['LongBody', LongBody],
+    ['PaddingHooks', PaddingHooks],
+    ['DrawerPaddingHooks', DrawerPaddingHooks],
+    ['ZeroPadding', ZeroPadding],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
@@ -988,6 +994,54 @@ describe('Dialog', () => {
         expect(css).toContain(hook);
       }
     });
+  });
+
+  // The padding itself is computed in a browser (the stories' plays, the token-reads pins); jsdom
+  // checks the structure the header's `:first-child` and `:last-child` rooms rely on.
+  describe('the padding hooks', () => {
+    it.each([
+      ['OpenOnLoad', OpenOnLoad],
+      ['SideSheet', SideSheet],
+      ['DrawerPaddingHooks', DrawerPaddingHooks],
+      ['ZeroPadding', ZeroPadding],
+    ])(
+      'find the header first in %s, so it pads the close target’s room at the top',
+      async (_name, Story) => {
+        render(<Story />);
+        const popup = await screen.findByRole('dialog');
+        expect(popup.firstElementChild).toHaveClass('header');
+      },
+    );
+
+    it('find the handle first in the bottom sheet, with the header straight after it', async () => {
+      render(<PaddingHooks />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup.firstElementChild).toHaveClass('handle');
+      expect(popup.children[1]).toHaveClass('header');
+    });
+
+    it('find the header last in a dialog with nothing under it', async () => {
+      render(<Dialog heading="Saved" defaultOpen />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup.lastElementChild).toHaveClass('header');
+    });
+
+    it.each([
+      ['PaddingHooks', PaddingHooks, 'dialog-padding-hooks'],
+      ['DrawerPaddingHooks', DrawerPaddingHooks, 'dialog-padding-hooks'],
+      ['ZeroPadding', ZeroPadding, 'dialog-zero-padding'],
+    ])(
+      'are set in %s from a class on the scope that holds the popup',
+      async (_name, Story, scopeClass) => {
+        render(<Story />);
+        const popup = await screen.findByRole('dialog');
+        expect(popup.closest(`.${scopeClass}`)).not.toBeNull();
+        const css = Array.from(document.querySelectorAll('style'))
+          .map((sheet) => sheet.textContent)
+          .join('\n');
+        expect(css).toMatch(/--(?:sheet|drawer|dialog)-padding-(?:block-start|inline):/);
+      },
+    );
   });
 
   // A focus trap keeps the keyboard in; a screen reader's virtual cursor walks the DOM, not the tab
