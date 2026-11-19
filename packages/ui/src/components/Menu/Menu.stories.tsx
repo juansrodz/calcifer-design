@@ -128,6 +128,18 @@ export const WithStartIcons: Story = {
 };
 
 /**
+ * Moves Base UI's highlight to an item by focusing it, then takes the focus away, as a pointer
+ * leaves an item after the menu was opened with a press: the highlight stays, with no focus ring.
+ */
+async function highlightWithoutFocus(item: HTMLElement): Promise<void> {
+  item.focus();
+  await waitFor(() => expect(item).toHaveAttribute('data-highlighted'));
+  item.blur();
+  await waitFor(() => expect(item).not.toHaveFocus());
+  await expect(item).toHaveAttribute('data-highlighted');
+}
+
+/**
  * `WithStartIcons` with "Ask again" highlighted and not focused, as a pointer leaves it after the
  * menu was opened with a press: the guarded fill shows, with no focus ring. The `play` moves Base
  * UI's highlight there by focusing the item, then takes the focus away; the highlight stays.
@@ -182,12 +194,7 @@ export const WithStartIconsHighlighted: Story = {
     ] satisfies readonly PaintCheck[],
   },
   play: async () => {
-    const askAgain = await screen.findByRole('menuitem', { name: 'Ask again' });
-    askAgain.focus();
-    await waitFor(() => expect(askAgain).toHaveAttribute('data-highlighted'));
-    askAgain.blur();
-    await waitFor(() => expect(askAgain).not.toHaveFocus());
-    await expect(askAgain).toHaveAttribute('data-highlighted');
+    await highlightWithoutFocus(await screen.findByRole('menuitem', { name: 'Ask again' }));
   },
 };
 
@@ -233,22 +240,15 @@ export const WithAvatarGroupHighlighted: Story = {
   decorators: WithStartIconsHighlighted.decorators,
   parameters: {
     ...openMenuA11y,
-    paintChecks: [
-      ...[groupAvatars, groupChip].map((target): PaintCheck => ({
-        target,
-        interaction: 'press',
-        forcedColors: true,
-        expected: { outlineColor: 'HighlightText', boxShadow: 'none' },
-      })),
-    ] satisfies readonly PaintCheck[],
+    paintChecks: [groupAvatars, groupChip].map((target): PaintCheck => ({
+      target,
+      interaction: 'press',
+      forcedColors: true,
+      expected: { outlineColor: 'HighlightText', boxShadow: 'none' },
+    })) satisfies readonly PaintCheck[],
   },
   play: async () => {
-    const cooks = await screen.findByRole('menuitem', { name: 'The cooks' });
-    cooks.focus();
-    await waitFor(() => expect(cooks).toHaveAttribute('data-highlighted'));
-    cooks.blur();
-    await waitFor(() => expect(cooks).not.toHaveFocus());
-    await expect(cooks).toHaveAttribute('data-highlighted');
+    await highlightWithoutFocus(await screen.findByRole('menuitem', { name: 'The cooks' }));
     await expect(document.querySelectorAll(groupAvatars)).toHaveLength(3);
     await expect(document.querySelectorAll(groupChip)).toHaveLength(1);
   },
