@@ -422,13 +422,11 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' text-align: start;'],
     lacks: [blockSizing, physicalSide],
   },
-  // Forced colours drop the highlight's tint, so a highlighted menu item or select option showed
-  // no change at all under the pointer. It takes the platform's `Highlight` fill and
-  // `HighlightText` ink instead, and no edge as well. A disabled row gets none, nor a chosen option,
-  // nor a focused row, which keyboard focus marks with its ring. The rule sits in the forced
-  // block's hover gate, and opts out of forced colours: Chromium otherwise paints its `Canvas`
-  // backplate behind the text, and `HighlightText` on it was measured white on white. These rows
-  // find the rule before the gate's closing brace, so a rule moved out of the gate fails them.
+  // A highlighted menu item or select option takes the platform's `Highlight` fill and
+  // `HighlightText` ink under forced colours, and no edge as well; `Menu.module.css` says why the
+  // rule opts out of forced colours. A disabled row gets none, nor a chosen option, nor a focused
+  // row, which keyboard focus marks with its ring. These rows find the rule before the hover gate's
+  // closing brace, so a rule moved out of the gate fails them.
   {
     file: 'components/Menu/Menu.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
@@ -441,11 +439,9 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
-  // The select trigger had no painted hover cue: Chromium computes the browser's own hover border
-  // as `Highlight` but, on its own, does not repaint it. Its edge turns 3 px of `Highlight` as
-  // `Button`'s does: a 2 px outline inside the 1 px border, and the border said `Highlight` too, as
-  // on `Button` and `IconButton`, so the band does not rely on the browser's own hover border. Not
-  // on a disabled or a focused trigger.
+  // The select trigger's edge turns 3 px of `Highlight` as `Button`'s does: a 2 px outline inside
+  // the 1 px border, and the border says `Highlight` too, as on `Button` and `IconButton`, so the
+  // band does not rely on the browser's own hover border. Not on a disabled or a focused trigger.
   {
     file: 'components/Select/Select.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
