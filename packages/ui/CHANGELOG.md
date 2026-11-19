@@ -1,5 +1,56 @@
 # @calcifer-design/ui
 
+## 0.13.0
+
+### Minor Changes
+
+- 3ebb250: `Button` and `LinkButton` take four fill hooks, so a consumer can give a button a fill of its own from a class. Nothing changes for a button that no consumer rule recolours: every default equals today's colour, in every variant, tone and state.
+
+  - `--button-fill` and `--button-label-color` set the fill and the label colour at rest; `--button-fill-hover` and `--button-label-color-hover` set them on hover and on a row's press (a touch press too). Each hover hook falls back to its rest hook, so a fill set without a hover pair keeps its colour on hover. Set the hover pair with these two, not by changing `--button-fill` under your own `:hover`, which also reaches a disabled button.
+  - The library declares no hook, so a class that sets them wins in every state at any weight: rest, hover, pressed, focused, disabled, loading, pending and chosen. It no longer has to match `[data-tone]` to get past the accent hover. A disabled button dims the consumer's pair as it dims its own. Under forced colours the system colours still win.
+  - Like the other consumer hooks they inherit, so a class on a wrapper reaches every `Button` and `LinkButton` inside it, whatever the variant, including the ones the library renders there (a `Toolbar`'s buttons, a `DataGrid`'s Clear filters and Retry, an `ErrorBoundary`'s reset, an `Upload`'s browse button, a `DatePicker`'s close), and it overrides the chosen tone's fill. Prefer the class on the button itself.
+  - One rule now paints a button's fill and label colour, at (0,2,0), the weight of the old variant rules; the tone and hover rules set only the defaults it paints. The disabled inverse primary still paints at (0,5,0), as before, so its dimming holds.
+  - New stories: `DangerViaHooks` and `RowViaHooks`.
+
+  **Migration.** A rule that sets `background` or `color` on a `Button` at (0,2,0) or more, loaded after the library, now applies in every state, including hover and the inverse and selected tones, where the accent hover (0,5,0) or a tone (0,3,0) used to beat it. A rest-only override therefore loses the library's hover colour. A rule under (0,2,0) still loses, as before. Prefer the hooks: `.x { --button-fill: …; --button-fill-hover: …; --button-label-color: …; }`.
+
+  A `[data-tone]` workaround keeps working unchanged and can move to the hooks when convenient. WhosBringingWhat's danger button, for example:
+
+  ```css
+  /* before */
+  button.dangerButton[data-variant='primary'],
+  button.dangerButton[data-variant='primary'][data-tone]:hover:not([data-disabled]) {
+    background: var(--wbw-danger-fill);
+    color: var(--color-text-inverse);
+  }
+
+  /* after */
+  .dangerButton {
+    --button-fill: var(--wbw-danger-fill);
+    --button-label-color: var(--color-text-inverse);
+  }
+  ```
+
+- b462b8a: `Select` takes a `startIcon`: content inside the trigger, before the value, such as an icon from your own set or an `<Avatar size="xs" />` for the person the value names. It is the name `TextInput`, `TimePicker` and `Button` already use for leading content, and an `<svg>` in it is sized and coloured as on `TextInput`. The slot sits right before the value at the same 8 px gap, and the chevron stays at the end; in a right-to-left page the row mirrors.
+
+  The slot is decorative: it is `aria-hidden`, so the trigger's accessible name stays its label and nothing in the slot is read with the value. When the content carries meaning the value text does not, put it in the option's `label` or the field's `description`. A press on the slot opens the select, keyboard handling is unchanged, and the trigger keeps its 44 px floor (a 24 px avatar fits inside it). Without the prop the trigger renders exactly as before. A new `WithStartIcon` story shows an avatar that follows the chosen value.
+
+- e2e18f4: `Switch` gains two unchecked-track hooks, and `ToggleChip` and `ToggleChipGroup` gain a smaller size and a choice of where the check goes. Existing chips look the same as before, though every chip now carries a `data-size` attribute (`md` by default), as `Segmented` does. An unchecked switch's border is now darker (below).
+
+  - `--switch-track-unchecked-background` and `--switch-track-unchecked-border-color` set an unchecked switch's track fill and border colour. Set them from a class on any ancestor (they inherit). They default to today's `--color-surface-3` fill and the control border colour. A checked switch is the accent whatever they say. The border hook takes a colour, not a shorthand, so the track keeps its 1 px border and the thumb's travel. To draw no visible edge, set it to the fill or to `transparent`; forced colours still paint it. A consumer that sets either hook is responsible for 3:1 against its own surface (WCAG 1.4.11).
+  - An unchecked switch's default border is now `--color-border-control`, the opaque colour the checkbox and radio already use, in place of the `--color-border-strong` hairline. The hairline measured 1.44 to 1.78:1 on the five surfaces, under the 3:1 that WCAG 1.4.11 asks of a control known by its boundary. The control colour measures 3.26:1 or more in both modes. A tokens sheet older than 0.4.0 still gets the hairline.
+  - In forced colours a switch now keeps its thumb and track apart. Before, the thumb was the Canvas of the track and could not be seen. Unchecked, the track is Canvas with a ButtonText edge and a ButtonText thumb. Checked, it is Highlight with a HighlightText thumb. Disabled is GrayText, and not dimmed as well. The focus ring is CanvasText. Normal mode is unchanged.
+  - `size` (new type `ToggleChipSize`) on `ToggleChip` and `ToggleChipGroup`: `'md'`, the default, is today's chip, 32 px tall in the 14 px type (42 px with an icon). `'sm'` is 28 px in the 12 px type (36 px with an icon). Both are past WCAG 2.5.8's 24 px minimum target.
+  - `checkPosition` (new type `ToggleChipCheckPosition`) on a multiple `ToggleChipGroup`: `'end'`, the default, draws a pressed chip's check after its label, as today. `'start'` draws it before the label, after any icon. Both follow the reading direction, so a right-to-left page mirrors them.
+  - New stories: `Switch` `UncheckedTrack`; `ToggleChip` `Small`, `CheckAtStart` and `CheckAtStartRightToLeft`.
+
+### Patch Changes
+
+- ff33e0e: Under forced colours (Windows High Contrast), a hovered `Button`, `LinkButton`, `IconButton` or `LinkIconButton` now thickens its edge to 3 px as well as turning it `Highlight`. The colour change alone was faint in High Contrast White, where the link and button text colours sit close to `Highlight`. The thicker edge is drawn inside the control, so nothing moves, and it stays clear of the focus ring, which is drawn outside it. A focused control keeps its focus ring on hover, in place of the thicker edge. A chosen `Button` or pressed `IconButton` keeps its fill alone, and a disabled one shows no hover cue, as before. The default look is unchanged.
+- 9e5edc1: Under forced colours (Windows High Contrast), every `Spinner` now draws its track dotted under its solid head, including the ones `Button` (`loading`, `pending`), `IconButton` (`loading`) and `DataGrid` draw themselves. The track was already a thin `GrayText` ring; the dots are new. Where one colour paints both head and track, they were told apart by weight alone: in a loading `IconButton` both are `GrayText`, and a `Spinner` you put inside a chosen `Button`, `LinkButton` or `Segmented` option, or a pressed `ToggleChip` or `IconButton`, takes the control's ink all round. The dots now show where the head is there too. The default look is unchanged.
+
+  A pressed `IconButton`, whatever its variant, now draws its edge in `Highlight`, the colour of its fill, as a chosen `Button` does; a pressed secondary one no longer keeps its faint token border.
+
 ## 0.12.0
 
 ### Minor Changes
