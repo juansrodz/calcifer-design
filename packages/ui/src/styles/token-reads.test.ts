@@ -1533,22 +1533,31 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
   },
   // `Button`'s elevation hook, `--button-shadow`: a consumer's class gives any variant a shadow (a
-  // comma list, so an inset ring can ride with it). Each rule that draws a shadow reads the hook
-  // first, at the weight it had: the base `none` on `.root`, the primary's `--shadow-action` and
-  // the inverse primary's `--shadow-action-inverse`. Nothing declares the hook, so a class that sets
-  // it wins in every state. Forced colours drop every shadow, and the chosen opt-out clears it.
+  // comma list, so an inset ring can ride with it). The base read is `:where(.root)`, at (0,0,0);
+  // the primary and the inverse primary read it first over `--shadow-action` and
+  // `--shadow-action-inverse`, at the weight they had. Nothing declares the hook, so a class that
+  // sets it wins in every state. Forced colours drop every shadow, and the chosen opt-out clears it.
   {
     file: 'components/Button/Button.module.css',
-    contains: ['var(--button-shadow, '],
+    contains: [' var(--button-shadow, '],
     lacks: [/--button-shadow\s*:/],
   },
   {
-    // At rest every variant reads the hook, with today's `none` under it, so a secondary, ghost or
-    // row with no hook set draws no shadow, as before.
+    // Every variant reads the hook, with today's `none` under it, at zero weight: a secondary,
+    // ghost or row that sets no hook draws no shadow, and a consumer's own `box-shadow` on one, at
+    // any weight and in any order, still wins, as when nothing was declared.
     file: 'components/Button/Button.module.css',
-    rule: /^\.root \{([^}]*)\}/m,
+    rule: /^:where\(\.root\) \{([^}]*)\}/m,
     contains: [' box-shadow: var(--button-shadow, none);'],
     lacks: [],
+  },
+  {
+    // `.root` itself declares no shadow, so the base read cannot drift back to (0,1,0), where a
+    // consumer's element selector or an equal-weight rule loaded first would lose to it.
+    file: 'components/Button/Button.module.css',
+    rule: /^\.root \{([^}]*)\}/m,
+    contains: [],
+    lacks: [' box-shadow'],
   },
   {
     // Before the forced-colours block every `box-shadow` reads the hook, so no state or tone draws
@@ -2976,7 +2985,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // state sets a size of its own over a consumer's.
   {
     file: 'components/ToggleChip/ToggleChip.module.css',
-    contains: ['var(--toggle-chip-font-size, '],
+    contains: [' var(--toggle-chip-font-size, '],
     lacks: [
       /--toggle-chip-font-size\s*:/,
       /(?:^|[\s{;])font-size\s*:(?!\s*var\(--toggle-chip-font-size, )/m,
