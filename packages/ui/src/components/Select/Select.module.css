@@ -81,7 +81,8 @@
    row draws the focus ring, and an opacity on it dimmed the ring with the text (1.87:1 in light,
    2.49:1 in dark against the popup). The two never overlap, so dimming each paints what dimming the
    row did, and the highlight's tint, which the row's opacity dimmed as well, is mixed down to the
-   same 45%. */
+   same 45%. `color-mix()` is Baseline 2023 (the floor `Button.module.css` cites); a browser without
+   it leaves a focused disabled option untinted, its ring and dim unchanged, so no `@supports`. */
 .option[data-disabled] {
   --select-option-disabled-tint: color-mix(in srgb, var(--color-surface-2) 45%, transparent);
 
