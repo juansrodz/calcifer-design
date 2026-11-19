@@ -113,16 +113,23 @@
     }
 
     /* The option under the pointer takes the platform's list highlight, a `Highlight` fill with
-       `HighlightText` ink, as `Menu`'s items do, and no edge as well. Not on a focused option,
-       which keyboard focus marks with its ring, nor on a disabled one, nor on the chosen one,
-       which keeps its check mark alone. Out of forced colours, as `Menu`'s item says why. */
-    .option[data-highlighted]:not([data-disabled], [data-selected], :focus-visible) {
+       `HighlightText` ink, as `Menu`'s items do, and no edge as well. The chosen one too, which
+       showed no hover cue when it kept its check mark alone. Not on a focused option, which
+       keyboard focus marks with its ring, nor on a disabled one. Out of forced colours, as
+       `Menu`'s item says why. */
+    .option[data-highlighted]:not([data-disabled], :focus-visible) {
       forced-color-adjust: none;
 
       /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
       background: Highlight;
       color: HighlightText;
       /* stylelint-enable scale-unlimited/declaration-strict-value */
+    }
+
+    /* The chosen option's check mark stays on the fill, in the option's ink: inside the opt-out its
+       accent token would come back and sit on `Highlight`. */
+    .option[data-highlighted]:not([data-disabled], :focus-visible) .indicator {
+      color: inherit;
     }
   }
 }
