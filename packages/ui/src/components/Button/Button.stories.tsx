@@ -294,8 +294,8 @@ export const ElevationViaHook: Story = {
   parameters: {
     controls: { disable: true },
     // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
-    // pointer: the fill pair under the shadow holds on hover. The hook reads colours only, so the
-    // play below checks the shadow.
+    // pointer: the fill pair under the shadow holds on hover. A paint check reads colours only, so
+    // the play below checks the shadow.
     paintChecks: [
       { target: '.button-card-shadow-ring', interaction: 'hover', expected: suggestionsPaint },
     ],

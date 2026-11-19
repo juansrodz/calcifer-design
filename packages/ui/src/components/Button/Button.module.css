@@ -22,9 +22,9 @@
    primary and the inverse primary read it first over `--shadow-action` and
    `--shadow-action-inverse`, at the weight they had. No state rule touches the shadow, so a class
    that sets the hook keeps it on hover, pressed, focused, disabled and busy. Its value is a
-   `box-shadow` list, so an inset ring rides with a drop shadow after a comma; an inset ring is
-   drawn inside the 1 px border. The keyboard ring is `base.css`'s outline, outside the box, so a
-   shadow never replaces it, and forced colours drop the shadow (the chosen opt-out clears it). */
+   `box-shadow` list, so an inset ring rides with a drop shadow after a comma, drawn inside the 1 px
+   border. The keyboard ring is `base.css`'s outline, outside the box, so a shadow never replaces
+   it, and forced colours drop the shadow (the chosen opt-out clears it). */
 .root {
   --button-state-fill: var(--button-fill);
   --button-state-label-color: var(--button-label-color);
@@ -52,8 +52,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* The base shadow read sits at (0,0,0), so any consumer `box-shadow` still wins over it, and a
-   button that sets no hook draws none, as before. */
+/* The base shadow read, at (0,0,0) on purpose: the `--button-shadow` paragraph above says why. */
 :where(.root) {
   box-shadow: var(--button-shadow, none);
 }
