@@ -1557,7 +1557,8 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Button/Button.module.css',
     rule: /^\.root \{([^}]*)\}/m,
     contains: [],
-    lacks: [' box-shadow'],
+    // A declaration, not the word: `transition-property` names `box-shadow` too.
+    lacks: [/(?:^|[\s{;])box-shadow\s*:/],
   },
   {
     // Before the forced-colours block every `box-shadow` reads the hook, so no state or tone draws

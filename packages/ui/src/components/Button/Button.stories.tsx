@@ -329,6 +329,10 @@ export const ElevationViaHook: Story = {
     const participants = canvas.getByRole('button', { name: 'Participants' });
     const suggestions = canvas.getByRole('button', { name: 'Suggestions 2' });
     const share = canvas.getByRole('link', { name: 'Share' });
+    // Forced colours drop every shadow, the probe's too, so there is nothing to compare.
+    if (window.matchMedia('(forced-colors: active)').matches) {
+      return;
+    }
     const probe = canvasElement.ownerDocument.createElement('span');
     canvasElement.append(probe);
     try {
