@@ -61,10 +61,11 @@ describe('the paint checks wiring', () => {
     // one that stops sizing it back runs every later story in the file at a phone's width.
     const hook = readCode('paint-checks.ts');
     expect(hook).toMatch(
-      /^setPreVisit\(async \(page, context\) => \{\s*const size = storyViewportSize\(await getStoryContext\(page, context\)\);[\s\S]*?await page\.setViewportSize\(size\);\s*\} else if \(runnerViewport !== null\) \{\s*await page\.setViewportSize\(runnerViewport\);/m,
+      /^setPreVisit\(async \(page, context\) => \{\s*const size = storyViewportSize\(await getStoryContext\(page, context\)\);[\s\S]*?await page\.setViewportSize\(size\);\s*\} else \{\s*await restoreRunnerViewport\(page\);/m,
     );
+    expect(hook).toMatch(/\} finally \{\s*await restoreRunnerViewport\(page\);/);
     expect(hook).toMatch(
-      /\} finally \{\s*if \(runnerViewport !== null\) \{\s*await page\.setViewportSize\(runnerViewport\);/,
+      /^async function restoreRunnerViewport\(page: Page\): Promise<void> \{\s*if \(runnerViewport !== null\) \{\s*await page\.setViewportSize\(runnerViewport\);/m,
     );
   });
 

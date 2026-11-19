@@ -152,6 +152,13 @@ async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
 // The runner's own window, while a story that names a viewport has the page at its size.
 let runnerViewport: ViewportSize | null = null;
 
+async function restoreRunnerViewport(page: Page): Promise<void> {
+  if (runnerViewport !== null) {
+    await page.setViewportSize(runnerViewport);
+    runnerViewport = null;
+  }
+}
+
 // A story that names a viewport (`globals: { viewport: { value: 'mobile' } }`, as the Storybook
 // toolbar reads it) renders, plays and is paint-checked in a window that size, not the runner's
 // 1280 px one with a stand-in width. Set before the story renders, so it lays out at that size
@@ -162,9 +169,8 @@ setPreVisit(async (page, context) => {
   if (size !== undefined) {
     runnerViewport ??= page.viewportSize();
     await page.setViewportSize(size);
-  } else if (runnerViewport !== null) {
-    await page.setViewportSize(runnerViewport);
-    runnerViewport = null;
+  } else {
+    await restoreRunnerViewport(page);
   }
 });
 
@@ -182,9 +188,6 @@ setPostVisit(async (page, context) => {
     }
   } finally {
     // The next story in the file renders on this page, so it starts at the runner's size again.
-    if (runnerViewport !== null) {
-      await page.setViewportSize(runnerViewport);
-      runnerViewport = null;
-    }
+    await restoreRunnerViewport(page);
   }
 });
