@@ -87,14 +87,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {};
-/**
- * The raised fill at rest, and `--color-surface-2` under a real pointer. Its two paint checks also
- * pin what the `rest` interaction means: the pointer is away, so a reading that took the hover fill
- * would fail the first.
- */
+/** The raised fill at rest, and `--color-surface-2` under a real pointer. */
 export const Secondary: Story = {
   args: { variant: 'secondary' },
   parameters: {
+    // The first check also pins what `rest` means: the pointer is away, so a reading that took the
+    // hover fill would fail it.
     paintChecks: [
       {
         target: 'button',
@@ -311,6 +309,17 @@ const cardShadow = 'var(--shadow-soft)';
 const ringShadow = 'var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected)';
 const ringPaint = { ...suggestionsPaint, boxShadow: ringShadow };
 
+// A check at rest and one on hover for each target, expecting the same shadow.
+function restAndHoverShadowChecks(boxShadow: string, ...targets: string[]): PaintCheck[] {
+  return targets.flatMap((target) =>
+    (['rest', 'hover'] as const).map((interaction) => ({
+      target,
+      interaction,
+      expected: { boxShadow },
+    })),
+  );
+}
+
 // Forced colours drop every shadow, the hook's included, so each target paints `none` at rest and on
 // hover. The probe a check compares against keeps its shadow there (`forced-color-adjust: none`), so
 // a shadow that survives shows up as a difference.
@@ -342,13 +351,7 @@ export const ElevationViaHook: Story = {
     paintChecks: [
       { target: '.button-card-shadow-ring', interaction: 'rest', expected: ringPaint },
       { target: '.button-card-shadow-ring', interaction: 'hover', expected: ringPaint },
-      ...['button.button-card-shadow', 'a.button-card-shadow'].flatMap((target) =>
-        (['rest', 'hover'] as const).map((interaction) => ({
-          target,
-          interaction,
-          expected: { boxShadow: cardShadow },
-        })),
-      ),
+      ...restAndHoverShadowChecks(cardShadow, 'button.button-card-shadow', 'a.button-card-shadow'),
       ...forcedShadowChecks(
         '.button-card-shadow-ring',
         'button.button-card-shadow',
@@ -431,13 +434,7 @@ export const ElevationOnChosenViaHook: Story = {
     // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
     // pointer: the shadow at rest and on hover, and none under forced colours.
     paintChecks: [
-      ...(['rest', 'hover'] as const).flatMap((interaction) =>
-        ['.button-chosen-primary', '.button-chosen-secondary'].map((target) => ({
-          target,
-          interaction,
-          expected: { boxShadow: cardShadow },
-        })),
-      ),
+      ...restAndHoverShadowChecks(cardShadow, '.button-chosen-primary', '.button-chosen-secondary'),
       ...forcedShadowChecks('.button-chosen-primary', '.button-chosen-secondary'),
     ] satisfies readonly PaintCheck[],
   },
