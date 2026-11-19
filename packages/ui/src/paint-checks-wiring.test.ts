@@ -13,6 +13,12 @@ import * as buttonStories from './components/Button/Button.stories';
 // under Vitest; the stories are imported.
 const storybookDirectory = join(import.meta.dirname, '..', '.storybook');
 
+function declaredChecks(): readonly PaintCheck[] {
+  return Object.values(composeStories(buttonStories)).flatMap(
+    (story) => (story.parameters['paintChecks'] ?? []) as readonly PaintCheck[],
+  );
+}
+
 function readCode(fileName: string): string {
   return readFileSync(join(storybookDirectory, fileName), 'utf-8').replace(/^\s*\/\/.*$/gm, '');
 }
@@ -32,17 +38,41 @@ describe('the paint checks wiring', () => {
     expect(hook).toContain("storyContext.parameters['paintChecks']");
   });
 
+  it('has paint-checks.ts read the box shadow from the element and from its probe', () => {
+    // A property the helper does not read leaves every check that expects it comparing nothing, so
+    // each reading is pinned: the list the mismatches loop over, the element's, and the probe's.
+    const hook = readCode('paint-checks.ts');
+    expect(hook).toMatch(/paintProperties[^=]*=\s*\[[^\]]*'boxShadow'/);
+    expect(hook).toContain('painted.boxShadow');
+    expect(hook).toContain('probe.style.boxShadow');
+    expect(hook).toContain('probed.boxShadow');
+  });
+
   it('has a story declare paintChecks that the hook can run', () => {
-    const checks = Object.values(composeStories(buttonStories)).flatMap(
-      (story) => (story.parameters['paintChecks'] ?? []) as readonly PaintCheck[],
-    );
+    const checks = declaredChecks();
     expect(checks.length).toBeGreaterThan(0);
     for (const check of checks) {
       expect(check.target).toEqual(expect.any(String));
       // Any other value would fall through to the press branch.
-      expect(['hover', 'press']).toContain(check.interaction);
+      expect(['rest', 'hover', 'press']).toContain(check.interaction);
       // A check with nothing to compare passes whatever the element paints.
-      expect(check.expected.backgroundColor ?? check.expected.color).toEqual(expect.any(String));
+      expect(
+        check.expected.backgroundColor ?? check.expected.color ?? check.expected.boxShadow,
+      ).toEqual(expect.any(String));
+    }
+  });
+
+  it('has stories check a box shadow, at rest and on hover, and its absence under forced colours', () => {
+    const shadowChecks = declaredChecks().filter((check) => check.expected.boxShadow !== undefined);
+    const shadowStates = (forcedColors: boolean) =>
+      shadowChecks
+        .filter((check) => Boolean(check.forcedColors) === forcedColors)
+        .map((check) => check.interaction);
+    expect(shadowStates(false)).toEqual(expect.arrayContaining(['rest', 'hover']));
+    // Forced colours drop a shadow, the hook's too: `none`, at rest and on hover.
+    expect(shadowStates(true)).toEqual(expect.arrayContaining(['rest', 'hover']));
+    for (const check of shadowChecks.filter((candidate) => candidate.forcedColors)) {
+      expect(check.expected.boxShadow).toBe('none');
     }
   });
 });
