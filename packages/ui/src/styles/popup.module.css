@@ -155,8 +155,8 @@
    those edges stay square and the panel rounds its free leading corners with the dialog radius.
    `Dialog` sets `data-side` on the popup only when the variant is `sheet`, so these never reach a
    centred dialog. The slide is on the x axis and `translateX` is physical, and so is the radius
-   below: under `dir="rtl"` the panel would slide in from the wrong side and round the wrong
-   corners. The library has no RTL story yet, and this is the first rule that would need one. */
+   below. `Dialog.module.css` corrects both for right-to-left: it rounds the inline-start corners
+   logically and turns the slide under a `[dir='rtl']` ancestor (its SideSheetRightToLeft story). */
 .surface[data-popup='sheet'][data-side='end'] {
   --dialog-surface-padding-inline: var(--drawer-padding-inline, var(--space-5));
 
