@@ -219,10 +219,11 @@ export const HeadingHooks: Story = {
 
 /**
  * The hooks as a consumer sets them: from a class on a `ThemeScope`, whose portal host holds the
- * popup, so they inherit into it. These are the WBW mock's container metrics (11b, 11a), each a
- * pixel under the mock's figure for the popup's 1 px border: the bottom sheet's content 20 px in
- * from its sides and its handle 10 px down, 12 px between the handle and the header, and the end
- * drawer's content 28 px in from its sides. Every edge left unset stays 24 px.
+ * popup, so they inherit into it. These are the WBW mock's container metrics (11b, 11a). The three
+ * paddings are a pixel under the mock's figures for the popup's 1 px border: the bottom sheet's
+ * handle 10 px down and its content 20 px in, the drawer's content 28 px in. The handle gap is the
+ * mock's 12 px as it stands. The scope sets the sheet's hooks and the drawer's together, as an app
+ * that switches placement by width would.
  */
 const paddingHooksCss = `.dialog-padding-hooks {
   --sheet-padding-block-start: 9px;
@@ -243,6 +244,7 @@ const playPaddingHooks: Story['play'] = async () => {
   const popup = await settledDialog();
   const popupStyle = getComputedStyle(popup);
   if (popup.dataset['side'] === 'end') {
+    // The drawer reads its own hook alone: the sheet's block-start hook does not reach it.
     await expect(popupStyle.paddingInlineStart).toBe('27px');
     await expect(popupStyle.paddingInlineEnd).toBe('27px');
     await expect(popupStyle.paddingBlockStart).toBe('24px');
@@ -289,50 +291,68 @@ export const DrawerPaddingHooks: Story = {
 };
 
 /**
- * Every edge at a bare `0`. The close's 44 px touch target reaches 4 px past its 36 px circle, and
- * the popup clips what passes its padding edge and its rounded corner, so the header pads the reach
- * and the corner's inset at the top and the inline end. The play presses the target's outer
- * corner, past the circle and in the popup's rounded corner, and finds the close; and the popup
- * does not scroll sideways.
+ * The hooks at their floor: the inline paddings at `0px`, and the bottom sheet's top padding at
+ * `0px` with a 4 px handle gap, the least that keeps the close clear of the corner at the default
+ * radius. The close's 44 px target reaches 4 px past its 36 px circle and the popup clips at its
+ * rounded corner, so the header insets the close. The play presses each corner of the target, past
+ * the circle, and checks that the popup does not scroll sideways.
  */
-export const ZeroPadding: Story = {
-  args: { defaultOpen: true },
+const floorCss = `.dialog-padding-floor {
+  --sheet-padding-block-start: 0px;
+  --sheet-padding-inline: 0px;
+  --sheet-handle-gap: 4px;
+  --drawer-padding-inline: 0px;
+}`;
+
+const playAtTheFloor: Story['play'] = async () => {
+  const popup = await settledDialog();
+  await expect(getComputedStyle(popup).paddingInlineEnd).toBe('0px');
+  const close = within(popup).getByRole('button', { name: 'Close' });
+  const closeBox = close.getBoundingClientRect();
+  const reach = (44 - closeBox.width) / 2;
+  const target = {
+    left: closeBox.left - reach,
+    right: closeBox.right + reach,
+    top: closeBox.top - reach,
+    bottom: closeBox.bottom + reach,
+  };
+  const popupBox = popup.getBoundingClientRect();
+  // The target's box sits inside the popup's padding box, inside the 1 px border.
+  await expect(target.top).toBeGreaterThanOrEqual(popupBox.top + popup.clientTop);
+  await expect(target.right).toBeLessThanOrEqual(
+    popupBox.left + popup.clientLeft + popup.clientWidth,
+  );
+  // Half a pixel inside each corner of the target: the press still lands on the close.
+  for (const [horizontal, vertical] of [
+    [target.left + 0.5, target.top + 0.5],
+    [target.right - 0.5, target.top + 0.5],
+    [target.left + 0.5, target.bottom - 0.5],
+    [target.right - 0.5, target.bottom - 0.5],
+  ] as const) {
+    await expect(close.contains(document.elementFromPoint(horizontal, vertical))).toBe(true);
+  }
+  await expect(popup.scrollWidth).toBe(popup.clientWidth);
+};
+
+/** The bottom sheet at the floor. */
+export const SheetAtTheFloor: Story = {
+  args: { variant: 'sheet', defaultOpen: true },
   decorators: [
     (Story) => (
       <>
-        <style>
-          {`${demoThemeCss}
-.dialog-zero-padding {
-  --dialog-padding-block-start: 0;
-  --dialog-padding-block-end: 0;
-  --dialog-padding-inline: 0;
-}`}
-        </style>
-        <ThemeScope theme={demoTheme} className="dialog-zero-padding">
+        <style>{`${demoThemeCss}\n${floorCss}`}</style>
+        <ThemeScope theme={demoTheme} className="dialog-padding-floor">
           <Story />
         </ThemeScope>
       </>
     ),
   ],
-  play: async () => {
-    const popup = await settledDialog();
-    await expect(getComputedStyle(popup).paddingBlockStart).toBe('0px');
-    await expect(getComputedStyle(popup).paddingInlineEnd).toBe('0px');
-    const close = within(popup).getByRole('button', { name: 'Close' });
-    const closeBox = close.getBoundingClientRect();
-    const reach = (44 - closeBox.width) / 2;
-    const popupBox = popup.getBoundingClientRect();
-    // The target's box sits inside the popup's padding box, inside the 1 px border.
-    await expect(closeBox.top - reach).toBeGreaterThanOrEqual(popupBox.top + popup.clientTop);
-    await expect(closeBox.right + reach).toBeLessThanOrEqual(
-      popupBox.left + popup.clientLeft + popup.clientWidth,
-    );
-    // Half a pixel inside the target's outer corner, past the circle: the press still lands on it.
-    const cornerTarget = document.elementFromPoint(
-      closeBox.right + reach - 0.5,
-      closeBox.top - reach + 0.5,
-    );
-    await expect(close.contains(cornerTarget)).toBe(true);
-    await expect(popup.scrollWidth).toBe(popup.clientWidth);
-  },
+  play: playAtTheFloor,
+};
+
+/** The end drawer at the floor, its close in the drawer's square end corner. */
+export const DrawerAtTheFloor: Story = {
+  ...SheetAtTheFloor,
+  args: { ...SheetAtTheFloor.args, side: 'end' },
+  play: playAtTheFloor,
 };
