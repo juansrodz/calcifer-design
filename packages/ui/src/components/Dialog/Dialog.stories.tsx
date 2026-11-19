@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
@@ -370,6 +370,73 @@ export const QuietPointerOpen: Story = {
     await expect(close).toHaveAttribute('data-quiet-focus');
     await expect(getComputedStyle(close).outlineStyle).toBe('none');
     await userEvent.keyboard('{Shift}');
+    await expect(close).not.toHaveAttribute('data-quiet-focus');
+    await waitFor(() => expect(getComputedStyle(close).outlineStyle).toBe('solid'));
+  },
+};
+
+/** The window event `QuietReopenMidClose`'s play sends to stand in for the app's own state. */
+const APP_STATE_EVENT = 'dialog-story-app-state';
+
+interface AppDialogState {
+  open: boolean;
+  quietFocus: boolean;
+}
+
+function sendAppState(state: AppDialogState): void {
+  window.dispatchEvent(new CustomEvent<AppDialogState>(APP_STATE_EVENT, { detail: state }));
+}
+
+/**
+ * A dialog the app reopens from its own state while it is still closing, as a live update can:
+ * opened quietly (`quietFocus`, no trigger), closed, then reopened mid-close with the ring wanted
+ * (`quietFocus={false}`). Nothing moves focus in between, so the close keeps it, still marked
+ * quiet, and Base UI keeps the same popup: the reopen ends the earlier quiet mark before it places
+ * the opening focus, so the ring draws.
+ *
+ * The `play` stands in for the app, setting `open` and `quietFocus` through a window event (an
+ * args update would end the test runner's play early), and holds the closing transition still so
+ * the reopen lands mid-close however busy the machine is.
+ */
+export const QuietReopenMidClose: Story = {
+  args: { trigger: undefined },
+  render: function QuietReopenMidCloseRender(args) {
+    const [state, setState] = useState<AppDialogState>({ open: true, quietFocus: true });
+    useEffect(() => {
+      const takeState = (event: Event) => setState((event as CustomEvent<AppDialogState>).detail);
+      window.addEventListener(APP_STATE_EVENT, takeState);
+      return () => window.removeEventListener(APP_STATE_EVENT, takeState);
+    }, []);
+    return (
+      <Dialog
+        {...args}
+        open={state.open}
+        quietFocus={state.quietFocus}
+        onOpenChange={(nextOpen) => setState((current) => ({ ...current, open: nextOpen }))}
+      />
+    );
+  },
+  play: async () => {
+    const popup = await settledDialog();
+    const close = within(popup).getByRole('button', { name: 'Close' });
+    await waitFor(() => expect(close).toHaveFocus());
+    await expect(close).toHaveAttribute('data-quiet-focus');
+
+    sendAppState({ open: false, quietFocus: true });
+    await waitFor(() => expect(popup).toHaveAttribute('data-ending-style'));
+    for (const animation of popup.getAnimations()) {
+      animation.pause();
+    }
+    // Mid-close: the popup is still there and the close still holds focus, marked quiet.
+    await expect(popup.isConnected).toBe(true);
+    await expect(close).toHaveFocus();
+    await expect(close).toHaveAttribute('data-quiet-focus');
+
+    sendAppState({ open: true, quietFocus: false });
+    await waitFor(() => expect(popup).not.toHaveAttribute('data-ending-style'));
+    // The same popup, reopened, not a fresh one mounted after the close finished.
+    await expect(screen.getByRole('dialog')).toBe(popup);
+    await waitFor(() => expect(close).toHaveFocus());
     await expect(close).not.toHaveAttribute('data-quiet-focus');
     await waitFor(() => expect(getComputedStyle(close).outlineStyle).toBe('solid'));
   },
