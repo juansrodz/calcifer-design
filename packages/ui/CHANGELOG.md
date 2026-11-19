@@ -1,5 +1,14 @@
 # @calcifer-design/ui
 
+## 0.15.1
+
+### Patch Changes
+
+- 889de19: `Dialog`: a body that overflows as the dialog opens is a Tab stop from the first commit, before the browser paints it. It waited for its first resize report, a frame later, and for that frame it was a scroller with no keyboard access, which an accessibility check run as the dialog opens reported as `scrollable-region-focusable`.
+- 0826d10: `Dialog`: under forced colours, a hovered close whose opening ring is held back (`quietFocus`) shows the same 3 px `Highlight` edge as any hovered close. When Chromium also marked that close `:focus-visible` (a quiet open with no trigger, or a mouse reopen from a keyboard-focused trigger), it showed only the browser's 1 px `Highlight` border on hover. Normal mode is unchanged.
+- e1855ee: Under forced colours, the content of a hovered `Menu` or `NavMenu` item drops its shadows and draws its outlines in the item's `HighlightText`, as the browser does everywhere outside the item's opt-out. An `AvatarGroup` in a `Menu` item's `startIcon` painted its ring in a theme colour on the `Highlight` fill (2.0 to 2.4:1 when the system scheme and the app's theme differ), and an avatar's edge disappeared; the avatars and the `+N` chip now keep a 1 px `HighlightText` edge, matching their `CanvasText` edge at rest. Normal mode is unchanged.
+- ed60b73: `Select`: a keyboard-focused disabled option draws its focus ring at full strength, 4.63:1 against the popup in light and 7.45:1 in dark (it was 1.87:1 and 2.49:1, dimmed with the option). The 45% dim now falls on the option's text and check mark instead of the row that draws the ring, and the highlight's tint behind a focused disabled option is mixed down to the same 45%, so nothing else changes in normal mode (glyph pixels on that tint move by at most 5/255). Under forced colours the check mark of a chosen, disabled option is `GrayText` like the rest of the option, not `CanvasText`.
+
 ## 0.15.0
 
 ### Minor Changes
