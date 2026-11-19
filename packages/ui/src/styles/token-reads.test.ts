@@ -441,10 +441,11 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
-  // The select trigger had no painted hover cue: Chromium reports its border as `Highlight` on
-  // hover but keeps painting it in `ButtonText`. Its edge turns 3 px of `Highlight` as `Button`'s
-  // does: the 1 px border, said explicitly, and a 2 px outline inside it. Not on a disabled or a
-  // focused trigger.
+  // The select trigger had no painted hover cue: Chromium computes the browser's own hover border
+  // as `Highlight` but, on its own, does not repaint it. Its edge turns 3 px of `Highlight` as
+  // `Button`'s does: a 2 px outline inside the 1 px border, and the border said `Highlight` too, as
+  // on `Button` and `IconButton`, so the band does not rely on the browser's own hover border. Not
+  // on a disabled or a focused trigger.
   {
     file: 'components/Select/Select.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,

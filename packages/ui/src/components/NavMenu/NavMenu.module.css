@@ -104,10 +104,11 @@
    after it wins the cascade back. */
 @media (forced-colors: active) {
   @media (hover: hover) {
-    /* A wide-layout link gains a 2 px underline, the link's own hover idiom (as `Breadcrumb`'s
-       underline and a ghost `LinkButton`'s), at the width of the library's hover edge. Not an edge
-       inside the box: the link has no inline padding, so one would cross its first and last
-       letters. Not on the current link, nor on a focused one, which keeps its ring. */
+    /* A wide-layout link gains a 2 px underline, the link's own hover idiom (a ghost `LinkButton`
+       underlines on hover; `Breadcrumb` toggles its underline), at the width of the library's
+       hover edge. Not an edge inside the box: the link has no inline padding, so one would cross
+       its first and last letters. Not on the current link, nor on a focused one, which keeps its
+       ring. */
     .list .link:hover:not([aria-current='page'], :focus-visible) {
       text-decoration-line: underline;
       text-decoration-thickness: var(--border-width-emphasis);
