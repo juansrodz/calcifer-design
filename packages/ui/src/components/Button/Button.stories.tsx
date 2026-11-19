@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ReactNode } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
+import type { PaintCheck } from '../../../.storybook/paint-checks';
 import { CheckIcon } from '../../icons/CheckIcon';
 import { ChevronRightIcon } from '../../icons/ChevronRightIcon';
 import { Button } from './Button';
@@ -86,7 +87,26 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {};
-export const Secondary: Story = { args: { variant: 'secondary' } };
+/** The raised fill at rest, and `--color-surface-2` under a real pointer. */
+export const Secondary: Story = {
+  args: { variant: 'secondary' },
+  parameters: {
+    // The first check also pins what `rest` means: the pointer is away, so a reading that took the
+    // hover fill would fail it.
+    paintChecks: [
+      {
+        target: 'button',
+        interaction: 'rest',
+        expected: { backgroundColor: 'var(--color-surface-raised)' },
+      },
+      {
+        target: 'button',
+        interaction: 'hover',
+        expected: { backgroundColor: 'var(--color-surface-2)' },
+      },
+    ] satisfies readonly PaintCheck[],
+  },
+};
 export const Ghost: Story = { args: { variant: 'ghost' } };
 export const Small: Story = { args: { size: 'sm' } };
 export const Disabled: Story = { args: { disabled: true } };
@@ -199,7 +219,7 @@ export const DangerViaHooks: Story = {
         forcedColors: true,
         expected: { backgroundColor: 'ButtonFace', color: 'ButtonText' },
       },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
@@ -259,7 +279,7 @@ export const RowViaHooks: Story = {
     paintChecks: [
       { target: 'button', interaction: 'press', expected: rowHoverPaint },
       { target: 'button', interaction: 'hover', expected: rowHoverPaint },
-    ],
+    ] satisfies readonly PaintCheck[],
   },
   decorators: inRowBox,
   render: () => (
@@ -276,12 +296,43 @@ export const RowViaHooks: Story = {
   ),
 };
 
-// What ElevationViaHook's Suggestions pill paints on hover: its fill pair, which sets no hover pair,
-// so the rest pair holds on hover in place of the secondary's surface-2 hover.
+// What ElevationViaHook's Suggestions pill paints at rest and on hover: its fill pair, which sets no
+// hover pair, so the rest pair holds on hover in place of the secondary's surface-2 hover.
 const suggestionsPaint = {
   backgroundColor: 'var(--color-selected-soft)',
   color: 'var(--color-selected-soft-text)',
 };
+
+// The shadows ElevationViaHook's two classes set (the second is a comma list: the soft shadow, then
+// an inset ring), and what the ring pill paints with its fill pair on top.
+const cardShadow = 'var(--shadow-soft)';
+const ringShadow = 'var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected)';
+const ringPaint = { ...suggestionsPaint, boxShadow: ringShadow };
+
+// A check at rest and one on hover for each target, expecting the same shadow.
+function restAndHoverShadowChecks(boxShadow: string, ...targets: string[]): PaintCheck[] {
+  return targets.flatMap((target) =>
+    (['rest', 'hover'] as const).map((interaction) => ({
+      target,
+      interaction,
+      expected: { boxShadow },
+    })),
+  );
+}
+
+// Forced colours drop every shadow, the hook's included, so each target paints `none` at rest and on
+// hover. The probe a check compares against keeps its shadow there (`forced-color-adjust: none`), so
+// a shadow that survives shows up as a difference.
+function forcedShadowChecks(...targets: string[]): PaintCheck[] {
+  return targets.flatMap((target) =>
+    (['rest', 'hover'] as const).map((interaction) => ({
+      target,
+      interaction,
+      forcedColors: true,
+      expected: { boxShadow: 'none' },
+    })),
+  );
+}
 
 /**
  * A soft card shadow on two secondary pills, from `--button-shadow` alone (the WBW mock's 4a,
@@ -294,11 +345,19 @@ export const ElevationViaHook: Story = {
   parameters: {
     controls: { disable: true },
     // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
-    // pointer: the fill pair under the shadow holds on hover. A paint check reads colours only, so
-    // the play below checks the shadow.
+    // pointer, in the states a play cannot put a button in: the shadow and the fill pair hold at
+    // rest and on hover, on both elements, and forced colours drop the shadow, the hook's too. The
+    // play below reads the same shadows from the page, and adds the keyboard focus ring.
     paintChecks: [
-      { target: '.button-card-shadow-ring', interaction: 'hover', expected: suggestionsPaint },
-    ],
+      { target: '.button-card-shadow-ring', interaction: 'rest', expected: ringPaint },
+      { target: '.button-card-shadow-ring', interaction: 'hover', expected: ringPaint },
+      ...restAndHoverShadowChecks(cardShadow, 'button.button-card-shadow', 'a.button-card-shadow'),
+      ...forcedShadowChecks(
+        '.button-card-shadow-ring',
+        'button.button-card-shadow',
+        'a.button-card-shadow',
+      ),
+    ] satisfies readonly PaintCheck[],
   },
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
@@ -329,24 +388,25 @@ export const ElevationViaHook: Story = {
     const participants = canvas.getByRole('button', { name: 'Participants' });
     const suggestions = canvas.getByRole('button', { name: 'Suggestions 2' });
     const share = canvas.getByRole('link', { name: 'Share' });
-    // Forced colours drop every shadow, the probe's too, so there is nothing to compare.
+    // Forced colours drop every shadow, and this play's own probe has no opt-out (a paint check's
+    // does), so there is nothing to compare here: the paint checks pin the forced reading.
     if (window.matchMedia('(forced-colors: active)').matches) {
       return;
     }
     const probe = canvasElement.ownerDocument.createElement('span');
     canvasElement.append(probe);
     try {
-      probe.style.boxShadow = 'var(--shadow-soft)';
-      const cardShadow = getComputedStyle(probe).boxShadow;
-      probe.style.boxShadow = 'var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected)';
-      const ringShadow = getComputedStyle(probe).boxShadow;
+      probe.style.boxShadow = cardShadow;
+      const resolvedCardShadow = getComputedStyle(probe).boxShadow;
+      probe.style.boxShadow = ringShadow;
+      const resolvedRingShadow = getComputedStyle(probe).boxShadow;
       probe.style.background = suggestionsPaint.backgroundColor;
       probe.style.color = suggestionsPaint.color;
       const { backgroundColor: ringFill, color: ringInk } = getComputedStyle(probe);
-      await expect(cardShadow).not.toBe('none');
-      await expect(getComputedStyle(participants).boxShadow).toBe(cardShadow);
-      await expect(getComputedStyle(share).boxShadow).toBe(cardShadow);
-      await expect(getComputedStyle(suggestions).boxShadow).toBe(ringShadow);
+      await expect(resolvedCardShadow).not.toBe('none');
+      await expect(getComputedStyle(participants).boxShadow).toBe(resolvedCardShadow);
+      await expect(getComputedStyle(share).boxShadow).toBe(resolvedCardShadow);
+      await expect(getComputedStyle(suggestions).boxShadow).toBe(resolvedRingShadow);
       await expect(getComputedStyle(suggestions).backgroundColor).toBe(ringFill);
       await expect(getComputedStyle(suggestions).color).toBe(ringInk);
 
@@ -354,10 +414,42 @@ export const ElevationViaHook: Story = {
       await expect(participants).toHaveFocus();
       await expect(participants.matches(':focus-visible')).toBe(true);
       await expect(getComputedStyle(participants).outlineStyle).not.toBe('none');
-      await expect(getComputedStyle(participants).boxShadow).toBe(cardShadow);
+      await expect(getComputedStyle(participants).boxShadow).toBe(resolvedCardShadow);
       participants.blur();
     } finally {
       probe.remove();
     }
   },
+};
+
+/**
+ * A chosen button (`tone="selected"`, primary or secondary) opts out of forced colours to paint its
+ * `Highlight` fill, and the opt-out would keep a shadow the browser no longer drops, the hook's
+ * included, so the forced-colours rule clears it. Here two chosen buttons take the soft card shadow
+ * from `--button-shadow`, and under forced colours they draw none.
+ */
+export const ElevationOnChosenViaHook: Story = {
+  parameters: {
+    controls: { disable: true },
+    // Run by `.storybook/paint-checks.ts` (installed from `test-runner-jest.config.js`) with a real
+    // pointer: the shadow at rest and on hover, and none under forced colours.
+    paintChecks: [
+      ...restAndHoverShadowChecks(cardShadow, '.button-chosen-primary', '.button-chosen-secondary'),
+      ...forcedShadowChecks('.button-chosen-primary', '.button-chosen-secondary'),
+    ] satisfies readonly PaintCheck[],
+  },
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+      <style>{`.button-chosen-primary,
+.button-chosen-secondary {
+  --button-shadow: var(--shadow-soft);
+}`}</style>
+      <Button tone="selected" className="button-chosen-primary">
+        Going
+      </Button>
+      <Button variant="secondary" tone="selected" className="button-chosen-secondary">
+        Maybe
+      </Button>
+    </div>
+  ),
 };
