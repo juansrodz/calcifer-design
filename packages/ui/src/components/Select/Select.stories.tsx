@@ -243,6 +243,8 @@ export const ChosenHighlighted: Story = {
     await userEvent.click(within(canvasElement).getByRole('combobox', { name: 'Category' }));
     const sides = await screen.findByRole('option', { name: 'Sides' });
     await waitFor(() => expect(sides).toHaveAttribute('data-highlighted'));
+    // Base UI moves focus there about 118 ms after it highlights the option; blur only once it has.
+    await waitFor(() => expect(sides).toHaveFocus());
     sides.blur();
     await waitFor(() => expect(sides).not.toHaveFocus());
     await expect(sides).toHaveAttribute('data-highlighted');
