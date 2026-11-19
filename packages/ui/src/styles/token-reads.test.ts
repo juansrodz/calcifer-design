@@ -437,6 +437,51 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' text-align: start;'],
     lacks: [blockSizing, physicalSide],
   },
+  // A highlighted menu item or select option takes the platform's `Highlight` fill and
+  // `HighlightText` ink under forced colours, and no edge as well; `Menu.module.css` says why the
+  // rule opts out of forced colours. A disabled row gets none, nor a chosen option, nor a focused
+  // row, which keyboard focus marks with its ring. These rows find the rule before the hover gate's
+  // closing brace, so a rule moved out of the gate fails them.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
+    lacks: [' outline'],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], \[data-selected\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
+    lacks: [' outline'],
+  },
+  // The select trigger's edge turns 3 px of `Highlight` as `Button`'s does: a 2 px outline inside
+  // the 1 px border, and the border says `Highlight` too, as on `Button` and `IconButton`, so the
+  // band does not rely on the browser's own hover border. Not on a disabled or a focused trigger.
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' border-color: Highlight;',
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Nothing follows either forced block: a normal-mode rule appended after one would win the
+  // cascade back. Every rule inside a block is indented, so the first `}` at the start of a line
+  // closes it.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
 
   // The purpose radii (R4) and the control floors (R17). A control reads `--radius-control` and
   // `--size-control` (`--size-control-sm` for the `sm` step), an option inside a track
@@ -1227,6 +1272,63 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^ {2}\.link:hover:not\(\[aria-current='page'\]\) \{([^}]*)\}/m,
     contains: ['color: var(--color-text);'],
     lacks: ['--color-nav-selected'],
+  },
+  // Forced colours keep a nav link in `LinkText` on hover, so the colour change above is gone and
+  // a hovered link showed no change at all. A wide-layout link gains a 2 px underline instead: it
+  // has no inline padding, so an edge inside its box would cross its first and last letters. Not
+  // on the current link nor a focused one, which keeps its ring. As for `Menu` and `Select`, these
+  // rows find each rule before the hover gate's closing brace.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.list \.link:hover:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' text-decoration-line: underline;',
+      ' text-decoration-thickness: var(--border-width-emphasis);',
+    ],
+    lacks: [' outline'],
+  },
+  // The menu button below `md` showed no hover cue either: the browser turns its border `Highlight`,
+  // but the border is 0 px. It draws the 3 px edge a hovered ghost `IconButton` shows, all of it
+  // outline, flush inside the box. Not on a focused button.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(:focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: calc(1px + var(--border-width-emphasis)) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // The menu's items take `Menu`'s forced highlight: a `Highlight` fill with `HighlightText` ink,
+  // not on the current page's item nor a focused one.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
+    lacks: [' outline'],
+  },
+  // The opt-out is inherited, and an item's content is the consumer's (`renderLink`), so its colours
+  // would come back on the fill. Everything inside takes the item's ink, its edges included, with
+  // `!important` so a consumer's inline colour cannot beat it, as in `IconButton`'s pressed rule,
+  // and it keeps its border styles as the sibling consumer-content rows require.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \* \{([^}]*)\}/m,
+    contains: [
+      '--nav-menu-content-edge: currentcolor;',
+      ' border-color: var(--nav-menu-content-edge) !important;',
+      ' background-color: transparent !important;',
+      ' color: inherit !important;',
+    ],
+    lacks: consumerContentKeepsStyles,
+  },
+  importantOnlyInForcedBlock('components/NavMenu/NavMenu.module.css'),
+  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
 
   // The sheet's scrim has its own hook. The centred dialog and the end drawer keep `--color-scrim`.
