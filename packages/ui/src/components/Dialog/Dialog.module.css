@@ -25,11 +25,41 @@
 /* The header row centres its children on the cross axis, as the mock's close-circle rows all do: a
    one-line heading, a `headerStart` tag and the end group (a 44 px "More" button, the 36 px close)
    share one centre line. A heading that wraps to three lines or more takes the end group to the
-   middle of the block with it; the mock has no such case. */
+   middle of the block with it; the mock has no such case.
+
+   The close's 44 px touch target reaches past its 36 px circle by half the difference, on every
+   side, and the popup clips what passes its padding edge (it scrolls). An edge whose padding hook
+   (`popup.module.css`) is set under that reach would clip the target, so the header pads the rest
+   on that edge: at the inline end always, at the block start when the header comes first (a
+   centred dialog, an end drawer; the bottom sheet's handle sits above its header), and at the
+   block end when nothing follows it. At the default 24 px each room is `0px`. */
 .header {
+  --dialog-close-reach: calc((var(--size-touch) - var(--size-close)) / 2);
+  --dialog-header-room-inline-end: max(
+    0px,
+    calc(var(--dialog-close-reach) - var(--dialog-surface-padding-inline))
+  );
+  --dialog-header-room-block-start: max(
+    0px,
+    calc(var(--dialog-close-reach) - var(--dialog-surface-padding-block-start))
+  );
+  --dialog-header-room-block-end: max(
+    0px,
+    calc(var(--dialog-close-reach) - var(--dialog-surface-padding-block-end))
+  );
+
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  padding-inline-end: var(--dialog-header-room-inline-end);
+}
+
+.header:first-child {
+  padding-block-start: var(--dialog-header-room-block-start);
+}
+
+.header:last-child {
+  padding-block-end: var(--dialog-header-room-block-end);
 }
 
 /* The three `--dialog-heading-*` hooks are set by a consumer on a `ThemeScope` (whose portal host
@@ -66,12 +96,25 @@ h4.heading {
 }
 
 /* The sheet's grab handle: a bottom sheet's first child, drawn only for that placement. Its size is
-   a consumer hook; the colour is the theme's. */
+   a consumer hook; the colour is the theme's. Its distance from the sheet's top edge is the
+   sheet's block-start padding (`--sheet-padding-block-start`), and the space under it is
+   `--sheet-handle-gap`, which defaults to the sheet's `--space-4` gap: the end margin is the hook
+   less that gap, `0px` by default. The private length is registered so a bare `0` still computes. */
+@property --dialog-handle-gap {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0;
+}
+
 .handle {
+  --dialog-handle-gap: var(--sheet-handle-gap, var(--space-4));
+  --dialog-handle-gap-shift: calc(var(--dialog-handle-gap) - var(--space-4));
+
   width: var(--sheet-handle-width, 2.5rem);
   height: var(--sheet-handle-height, 0.3125rem);
   align-self: center;
   flex: none;
+  margin-block-end: var(--dialog-handle-gap-shift);
   border-radius: var(--radius-full);
   background: var(--color-sheet-handle);
 }

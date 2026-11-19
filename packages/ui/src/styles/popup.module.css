@@ -81,23 +81,69 @@
 /* The dialog and the sheets size in percentages of their grid area, never in viewport units: the
    area belongs to `Dialog.module.css`'s `.viewport` (`position: fixed; inset: 0`), whose
    containing block is the browser viewport standalone and the nearest transformed ancestor when
-   the scope is embedded, which is meant to let an embedded scope's overlays follow its box. */
+   the scope is embedded, which is meant to let an embedded scope's overlays follow its box.
+
+   Each placement pads its three edges from consumer hooks, set on a `ThemeScope` (whose portal
+   host holds the popup) or another ancestor and never declared here: `--dialog-padding-block-start`,
+   `--dialog-padding-block-end` and `--dialog-padding-inline` for every placement, and the bottom
+   sheet's `--sheet-padding-*` and the end drawer's `--drawer-padding-*` over them. Every one
+   defaults to `--space-5`, the padding all three drew before the hooks. The padding sits inside
+   the surface's 1px border. The resolved values are the private `--dialog-surface-padding-*`
+   lengths, which `Dialog.module.css`'s header reads to keep the close's touch target inside the
+   popup; they are registered so a consumer's bare `0` is still a length there. */
+@property --dialog-surface-padding-block-start {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --dialog-surface-padding-block-end {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --dialog-surface-padding-inline {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 0;
+}
+
 .surface[data-popup='dialog'] {
+  --dialog-surface-padding-block-start: var(--dialog-padding-block-start, var(--space-5));
+  --dialog-surface-padding-block-end: var(--dialog-padding-block-end, var(--space-5));
+  --dialog-surface-padding-inline: var(--dialog-padding-inline, var(--space-5));
+
   gap: var(--space-4);
   width: min(32rem, 100%);
   max-width: 100%;
   max-height: 85%;
-  padding: var(--space-5);
+  padding-block: var(--dialog-surface-padding-block-start) var(--dialog-surface-padding-block-end);
+  padding-inline: var(--dialog-surface-padding-inline);
   border-radius: var(--radius-dialog);
   box-shadow: var(--shadow-dialog);
 }
 
 .surface[data-popup='sheet'] {
+  --dialog-surface-padding-block-start: var(
+    --sheet-padding-block-start,
+    var(--dialog-padding-block-start, var(--space-5))
+  );
+  --dialog-surface-padding-block-end: var(
+    --sheet-padding-block-end,
+    var(--dialog-padding-block-end, var(--space-5))
+  );
+  --dialog-surface-padding-inline: var(
+    --sheet-padding-inline,
+    var(--dialog-padding-inline, var(--space-5))
+  );
+
   gap: var(--space-4);
   width: 100%;
   max-width: 100%;
   max-height: 85%;
-  padding: var(--space-5);
+  padding-block: var(--dialog-surface-padding-block-start) var(--dialog-surface-padding-block-end);
+  padding-inline: var(--dialog-surface-padding-inline);
   border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
   box-shadow: var(--shadow-sheet);
 }
@@ -138,8 +184,23 @@
    `Dialog` sets `data-side` on the popup only when the variant is `sheet`, so these never reach a
    centred dialog. The slide is on the x axis and `translateX` is physical, and so is the radius
    below: under `dir="rtl"` the panel would slide in from the wrong side and round the wrong
-   corners. The library has no RTL story yet, and this is the first rule that would need one. */
+   corners. The library has no RTL story yet, and this is the first rule that would need one.
+   The drawer reads its own `--drawer-padding-*` hooks: it redeclares the three lengths, and the
+   sheet rule's padding declarations read them, so a `--sheet-padding-*` hook never reaches it. */
 .surface[data-popup='sheet'][data-side='end'] {
+  --dialog-surface-padding-block-start: var(
+    --drawer-padding-block-start,
+    var(--dialog-padding-block-start, var(--space-5))
+  );
+  --dialog-surface-padding-block-end: var(
+    --drawer-padding-block-end,
+    var(--dialog-padding-block-end, var(--space-5))
+  );
+  --dialog-surface-padding-inline: var(
+    --drawer-padding-inline,
+    var(--dialog-padding-inline, var(--space-5))
+  );
+
   width: min(var(--size-drawer), 100%);
   height: 100%;
   max-height: 100%;
