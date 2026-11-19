@@ -2,7 +2,14 @@ import { composeStories } from '@storybook/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { PaintCheck } from '../.storybook/paint-checks';
+import {
+  assertColoursResolved,
+  assertShadowResolved,
+  findMismatches,
+  unresolvedShades,
+  type PaintCheck,
+  type PaintReading,
+} from '../.storybook/paint-compare';
 import * as buttonStories from './components/Button/Button.stories';
 
 // A story's `paintChecks` (rest, hover, press and forced colours, which jsdom cannot show) run in the
@@ -46,20 +53,94 @@ describe('the paint checks wiring', () => {
     expect(hook).toContain("storyContext.parameters['paintChecks']");
   });
 
-  it('has paint-checks.ts list the box shadow among the properties it compares', () => {
-    // A property left out of this list leaves every check that expects it comparing nothing, and
-    // `storybook:test` stays green: the one failure here with no other signal. A reading of it
-    // missing from the element or the probe fails `tsc` or the shadow checks themselves.
-    expect(readCode('paint-checks.ts')).toMatch(/paintProperties[^=]*=\s*\[[^\]]*'boxShadow'/);
+  it('has paint-checks.ts run both resolution guards on every reading before comparing it', () => {
+    // A guard the hook stops calling leaves every check on a mistyped token comparing nothing, and
+    // `storybook:test` stays green: the failure here with no other signal.
+    expect(readCode('paint-checks.ts')).toMatch(
+      /assertColoursResolved\(check, reading\);\s*assertShadowResolved\(check, reading\);\s*const mismatches = findMismatches\(check, reading\);/,
+    );
+  });
+});
+
+/** A reading where the element paints what the probe resolved, every expected colour resolved. */
+function agreeingReading(overrides: Partial<PaintReading> = {}): PaintReading {
+  const paint = { backgroundColor: 'rgb(10, 20, 30)', color: 'rgb(40, 50, 60)', boxShadow: 'none' };
+  return {
+    painted: { ...paint },
+    probed: { ...paint },
+    colourResolutions: {
+      backgroundColor: ['rgb(10, 20, 30)', 'rgb(10, 20, 30)'],
+      color: ['rgb(40, 50, 60)', 'rgb(40, 50, 60)'],
+    },
+    ...overrides,
+  };
+}
+
+const colourCheck: PaintCheck = {
+  target: '.thing',
+  interaction: 'hover',
+  expected: { backgroundColor: 'var(--color-surface-1)', color: 'var(--color-text)' },
+};
+
+describe('the paint comparison', () => {
+  // A property left out of the list leaves every check that expects it comparing nothing, and
+  // `storybook:test` stays green.
+  // Listed here, not read from `paintProperties`: a property dropped from that list must drop no case.
+  it.each(['backgroundColor', 'color', 'boxShadow'] as const)(
+    'reports a %s that differs from the probe',
+    (property) => {
+      const reading = agreeingReading();
+      reading.painted[property] = 'rgb(255, 0, 0)';
+      const check: PaintCheck = {
+        target: '.thing',
+        interaction: 'rest',
+        expected: { [property]: 'x' },
+      };
+      expect(findMismatches(check, reading)).toEqual([expect.stringContaining(property)]);
+      expect(findMismatches(check, agreeingReading())).toEqual([]);
+    },
+  );
+
+  it('refuses an expected shadow that its probe resolves to none', () => {
+    // A missing token or a typo makes the probe `none`, equal to an element with no shadow.
+    const check: PaintCheck = {
+      target: '.thing',
+      interaction: 'hover',
+      expected: { boxShadow: 'var(--shadow-sofft)' },
+    };
+    expect(() => assertShadowResolved(check, agreeingReading())).toThrow(/resolved to none/);
+    const expectsNone: PaintCheck = { ...check, expected: { boxShadow: 'none' } };
+    expect(() => assertShadowResolved(expectsNone, agreeingReading())).not.toThrow();
   });
 
-  it('has paint-checks.ts refuse an expected shadow that its probe resolves to none', () => {
-    // A missing token or a typo makes the probe `none`, equal to an element with no shadow, so a
-    // check on it would compare nothing and pass. With the guard deleted every story stays green:
-    // the failure here with no other signal.
-    expect(readCode('paint-checks.ts')).toMatch(/probed\.boxShadow === 'none'/);
+  it.each(['backgroundColor', 'color'] as const)(
+    'refuses an expected %s that reads as each inherited shade in turn',
+    (property) => {
+      // A missing token falls back to the initial or inherited colour: `transparent` on the probe
+      // for a background, which an element painting nothing would match.
+      const reading = agreeingReading();
+      reading.colourResolutions[property] = [...unresolvedShades];
+      expect(() => assertColoursResolved(colourCheck, reading)).toThrow(
+        new RegExp(`expected ${property} \\(var\\(--[\\w-]+\\)\\) does not resolve`),
+      );
+    },
+  );
+
+  it('accepts an expected colour that resolves, even to one of the shades', () => {
+    expect(() => assertColoursResolved(colourCheck, agreeingReading())).not.toThrow();
+    const matchesOneShade = agreeingReading();
+    matchesOneShade.colourResolutions.color = [unresolvedShades[0], unresolvedShades[0]];
+    expect(() => assertColoursResolved(colourCheck, matchesOneShade)).not.toThrow();
   });
 
+  it('refuses a reading that lacks an expected colour, rather than skipping it', () => {
+    expect(() =>
+      assertColoursResolved(colourCheck, agreeingReading({ colourResolutions: {} })),
+    ).toThrow(/did not resolve/);
+  });
+});
+
+describe('the stories that declare paint checks', () => {
   it('has a story declare paintChecks that the hook can run', () => {
     const checks = declaredChecks();
     expect(checks.length).toBeGreaterThan(0);
