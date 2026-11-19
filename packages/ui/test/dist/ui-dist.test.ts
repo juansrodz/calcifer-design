@@ -75,6 +75,9 @@ const UI_CONSUMER_HOOK_PROPERTIES = [
   '--empty-state-heading-size',
   '--switch-track-unchecked-background',
   '--switch-track-unchecked-border-color',
+  '--switch-track-checked-background',
+  '--switch-track-checked-border-color',
+  '--switch-thumb-background',
   '--toggle-chip-pressed-ring',
   '--progress-bar-track-size',
 ] as const;
