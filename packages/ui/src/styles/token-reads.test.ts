@@ -1104,6 +1104,52 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [],
     lacks: [/^\.gridSlot \{[^}]*min-height/m],
   },
+  // Forced colours drop a hovered day's tint, so a hovered day showed no change at all. It gains a
+  // 2 px `Highlight` edge, an outline inside the cell, so nothing moves and no neighbour is
+  // covered; today's sits inside its 1 px border, as on `Button`. Not on an unavailable or chosen
+  // day, nor on a focused one, whose ring is the outline too.
+  {
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.day:hover:not\(\[aria-disabled='true'\], \[aria-selected='true'\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1 * var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  {
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.day\[aria-current='date'\]:hover:not\(\s*\[aria-disabled='true'\],\s*\[aria-selected='true'\],\s*:focus-visible\s*\) \{([^}]*)\}/m,
+    contains: [' outline-offset: calc(-1px - var(--border-width-emphasis));'],
+    lacks: [' outline:'],
+  },
+  // Nothing follows the block: a normal-mode rule appended after it would win the cascade back.
+  // Every rule inside the block is indented, so the first `}` at the start of a line closes it.
+  {
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
+  // `FilterBar`'s remove control has no border, so the browser's hover swap of the border colour
+  // draws nothing, and its tint is dropped: no cue at all. It gains the same 2 px inset edge, not on
+  // a focused control nor on one a disabled fieldset disables.
+  {
+    file: 'components/FilterBar/FilterBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.remove:hover:not\(:disabled, :focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1 * var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Likewise nothing follows `FilterBar`'s block.
+  {
+    file: 'components/FilterBar/FilterBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
 
   // The checkbox's box and the radio's dot are known by their boundary alone, so it reads the
   // opaque control border, which the tokens hold to 3:1 (WCAG 1.4.11), not the translucent hairline.

@@ -112,8 +112,15 @@
   text-decoration: line-through;
 }
 
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Forced colours erase the accent fill and so the selection; system colours survive, as in
-   `Segmented.module.css`, where `forced-color-adjust: none` is explained. */
+   `Segmented.module.css`, where `forced-color-adjust: none` is explained. Forced colours drop the
+   hover tint too, so a hovered day gains an edge instead; its rule says why. Last in the file, so
+   no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
   .day[aria-selected='true'] {
     forced-color-adjust: none;
@@ -131,9 +138,28 @@
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     color: GrayText;
   }
-}
 
-.footer {
-  display: flex;
-  justify-content: flex-end;
+  @media (hover: hover) {
+    /* With the tint gone a hovered day showed no change at all, so it gains a `Highlight` edge, as
+       `Button` does: an outline drawn inside the cell, so nothing moves and no neighbouring day is
+       covered. It is 2 px, `Button`'s outline width; `Button`'s 3 px edge counts its 1 px border,
+       and a plain day has none. The cells are dense, and 2 px still differs from today's resting
+       1 px border, where a 1 px edge would make any hovered day look like today. Today's sits
+       inside that border, its offset the border plus the edge's own width. Not on an unavailable
+       or chosen day, nor on a focused one, whose ring is the outline too.
+       A hovered plain day and a focused one look alike, differing in ring size and position only. */
+    .day:hover:not([aria-disabled='true'], [aria-selected='true'], :focus-visible) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: var(--border-width-emphasis) solid Highlight;
+      outline-offset: calc(-1 * var(--border-width-emphasis));
+    }
+
+    .day[aria-current='date']:hover:not(
+        [aria-disabled='true'],
+        [aria-selected='true'],
+        :focus-visible
+      ) {
+      outline-offset: calc(-1px - var(--border-width-emphasis));
+    }
+  }
 }
