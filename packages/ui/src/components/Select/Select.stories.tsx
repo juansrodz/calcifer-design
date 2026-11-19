@@ -1,10 +1,10 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import type { PaintCheck } from '../../../.storybook/paint-checks';
+import { PortalInStoryRoot } from '../../../.storybook/PortalInStoryRoot';
 import fieldStyles from '../../styles/field.module.css';
 import { Avatar } from '../Avatar/Avatar';
-import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
 import { Select } from './Select';
 import styles from './Select.module.css';
 
@@ -185,20 +185,6 @@ export const KeyboardOpen: Story = {
     await waitFor(() => expect(firstOption).toHaveFocus());
   },
 };
-
-/**
- * Holds the select's portal inside the story root, where the test runner's paint checks look; Base
- * UI would otherwise portal the popup to `<body>`. (`Menu.stories.tsx` has the same wrapper.)
- */
-function PortalInStoryRoot({ children }: { children: ReactNode }) {
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
-  return (
-    <PortalContainerContext.Provider value={host}>
-      {children}
-      <div ref={setHost} />
-    </PortalContainerContext.Provider>
-  );
-}
 
 /**
  * `Chosen`, open, with the chosen option highlighted and not focused, as a pointer leaves it after

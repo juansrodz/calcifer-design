@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState, type ReactNode } from 'react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import type { PaintCheck } from '../../../.storybook/paint-checks';
+import { PortalInStoryRoot } from '../../../.storybook/PortalInStoryRoot';
 import { Avatar } from '../Avatar/Avatar';
 import { AvatarGroup } from '../AvatarGroup/AvatarGroup';
 import { Button } from '../Button/Button';
-import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
 import { Menu } from './Menu';
 
 const meta = {
@@ -127,20 +126,6 @@ export const WithStartIcons: Story = {
   },
   parameters: openMenuA11y,
 };
-
-/**
- * Holds the menu's portal inside the story root, where the test runner's paint checks look; Base
- * UI would otherwise portal the popup to `<body>`.
- */
-function PortalInStoryRoot({ children }: { children: ReactNode }) {
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
-  return (
-    <PortalContainerContext.Provider value={host}>
-      {children}
-      <div ref={setHost} />
-    </PortalContainerContext.Provider>
-  );
-}
 
 /**
  * `WithStartIcons` with "Ask again" highlighted and not focused, as a pointer leaves it after the

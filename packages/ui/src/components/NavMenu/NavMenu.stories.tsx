@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState, type ReactNode } from 'react';
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
 import type { PaintCheck } from '../../../.storybook/paint-checks';
-import { PortalContainerContext } from '../ThemeScope/PortalContainerContext';
+import { PortalInStoryRoot } from '../../../.storybook/PortalInStoryRoot';
 import { NavMenu, defaultRenderLink } from './NavMenu';
 
 const items = [
@@ -49,20 +48,6 @@ export const FocusVisible: Story = {
     await expect(canvas.getByRole('link', { name: 'Home' })).toHaveFocus();
   },
 };
-
-/**
- * Holds the menu's portal inside the story root, where the test runner's paint checks look; Base
- * UI would otherwise portal the popup to `<body>`. (`Menu.stories.tsx` has the same wrapper.)
- */
-function PortalInStoryRoot({ children }: { children: ReactNode }) {
-  const [host, setHost] = useState<HTMLDivElement | null>(null);
-  return (
-    <PortalContainerContext.Provider value={host}>
-      {children}
-      <div ref={setHost} />
-    </PortalContainerContext.Provider>
-  );
-}
 
 /** The badge `renderLink` puts in the highlighted item, which carries a shadow and an outline. */
 const highlightedBadge = '[role="menuitem"][data-highlighted] [data-badge]';
