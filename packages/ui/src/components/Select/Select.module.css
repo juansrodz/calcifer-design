@@ -95,8 +95,17 @@
 
 /* Forced colours drop the option highlight's tint, and the trigger showed no hover cue either:
    Chromium computes the browser's own hover border as `Highlight` but, on its own, does not repaint
-   it. Last in the file, so no normal-mode rule after it wins the cascade back. */
+   it. A disabled option is `GrayText` and not dimmed as well, as a disabled `IconButton` is: the
+   0.45 dim left its text at 3.4:1 and its focus ring at 2.5:1, in the enabled options' ink. Last in
+   the file, so no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
+  .option[data-disabled] {
+    opacity: 1;
+
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+    color: GrayText;
+  }
+
   @media (hover: hover) {
     /* The hovered trigger's edge turns 3 px of `Highlight`, as `Button`'s does: an outline drawn
        inside the border (forced colours drop `box-shadow`), its offset the 1 px border plus the
