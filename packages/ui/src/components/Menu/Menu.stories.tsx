@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
+import { Avatar } from '../Avatar/Avatar';
 import { Button } from '../Button/Button';
 import { Menu } from './Menu';
 
@@ -53,4 +54,68 @@ export const KeyboardOpen: Story = {
     // Base UI moves focus to the item after the popup mounts, a moment after it is in the DOM.
     await waitFor(() => expect(firstItem).toHaveFocus());
   },
+};
+
+/** A 16x16 stroke glyph in the text colour, as a consumer's icon set draws one. */
+function RefreshGlyph() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3" />
+    </svg>
+  );
+}
+
+/**
+ * Items with a start icon: a consumer's glyph, one tinted with the accent through an inline style,
+ * two avatars (initials on a seeded fill) and a disabled item with a glyph. The slot is
+ * decorative, so each item is still named by its label. Under forced colours the item under the
+ * pointer is filled `Highlight`, and everything in the slot (the tinted glyph, the avatar's fill and
+ * initials) takes its `HighlightText` ink, so nothing on the fill is left in a token colour.
+ */
+export const WithStartIcons: Story = {
+  args: {
+    defaultOpen: true,
+    trigger: <Button variant="secondary">Who is bringing</Button>,
+    items: [
+      { id: 'reload', label: 'Reload the list', onSelect: fn(), startIcon: <RefreshGlyph /> },
+      {
+        id: 'tinted',
+        label: 'Ask again',
+        onSelect: fn(),
+        startIcon: (
+          <span style={{ display: 'inline-flex', color: 'var(--color-accent)' }}>
+            <RefreshGlyph />
+          </span>
+        ),
+      },
+      {
+        id: 'sebastian',
+        label: 'Sebastian',
+        onSelect: fn(),
+        separatorBefore: true,
+        startIcon: <Avatar name="Juan Sebastian Rodriguez" size="xs" colorSeed="sebastian" />,
+      },
+      {
+        id: 'christian',
+        label: 'Christian',
+        onSelect: fn(),
+        startIcon: <Avatar name="Christian Ocampo" size="xs" colorSeed="christian" />,
+      },
+      {
+        id: 'nobody',
+        label: 'Nobody yet',
+        onSelect: fn(),
+        disabled: true,
+        startIcon: <RefreshGlyph />,
+      },
+    ],
+  },
+  parameters: openMenuA11y,
 };

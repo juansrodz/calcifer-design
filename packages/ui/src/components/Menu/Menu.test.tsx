@@ -7,13 +7,14 @@ import { Button } from '../Button/Button';
 import { Menu } from './Menu';
 import * as stories from './Menu.stories';
 
-const { Default, AlignedToTheStart, OpenOnLoad } = composeStories(stories);
+const { Default, AlignedToTheStart, OpenOnLoad, WithStartIcons } = composeStories(stories);
 
 describe('Menu', () => {
   it.each([
     ['Default', Default],
     ['AlignedToTheStart', AlignedToTheStart],
     ['OpenOnLoad', OpenOnLoad],
+    ['WithStartIcons', WithStartIcons],
   ])('%s has no axe violations', async (_name, Story) => {
     render(<Story />);
     expect(await axeDocument()).toHaveNoViolations();
