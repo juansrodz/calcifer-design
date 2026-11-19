@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { PaintCheck } from '../.storybook/paint-checks';
 import * as buttonStories from './components/Button/Button.stories';
 
-// A story's `paintChecks` (hover, press and forced colours, which jsdom cannot show) run in the
+// A story's `paintChecks` (rest, hover, press and forced colours, which jsdom cannot show) run in the
 // Storybook test runner, and every link between a story and the runner fails silently: a config
 // file the runner no longer discovers, a setup line that drops the hook, a hook that reads another
 // parameter, a story that misspells it. Each leaves `storybook:test` green with no check run. The

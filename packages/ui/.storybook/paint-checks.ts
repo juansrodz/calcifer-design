@@ -4,29 +4,32 @@
 import { getStoryContext, setPostVisit } from '@storybook/test-runner';
 import type { CDPSession, Page } from 'playwright';
 
-type PaintProperty = 'backgroundColor' | 'color';
-const paintProperties: readonly PaintProperty[] = ['backgroundColor', 'color'];
+type PaintProperty = 'backgroundColor' | 'color' | 'boxShadow';
+const paintProperties: readonly PaintProperty[] = ['backgroundColor', 'color', 'boxShadow'];
 
 /**
  * A paint check a story asks for in `parameters.paintChecks`. A play function cannot test these:
  * the synthetic events `userEvent.hover` sends never apply `:hover`, so the test runner puts the
- * element in the state itself, then compares its computed colours with probes of the expected
- * values.
+ * element in the state itself, then compares its computed colours and shadow with a probe of the
+ * expected values.
  */
 export interface PaintCheck {
   /** A selector for the element, inside the story root. */
   target: string;
   /**
-   * `hover` moves a real pointer over the element. `press` forces `:active` with no pointer over
-   * it, as a touch press is: no hover rule runs.
+   * `rest` leaves the element alone, with the pointer away from it: the state forced colours need
+   * a reading in too. `hover` moves a real pointer over the element. `press` forces `:active` with
+   * no pointer over it, as a touch press is: no hover rule runs.
    */
-  interaction: 'hover' | 'press';
+  interaction: 'rest' | 'hover' | 'press';
   /** Runs the check under forced colours (`forced-colors: active`). */
   forcedColors?: boolean;
   /**
-   * The expected colours, as any CSS colour value (a `var()`, a system colour). Each one is
-   * resolved on a probe in the story, with `forced-color-adjust: none`, so a system colour stays
-   * itself under forced colours.
+   * The expected colours, as any CSS colour value (a `var()`, a system colour), and the expected
+   * `box-shadow`, as any shadow list (`none`, a `var()`, a comma list). Each one is resolved on a
+   * probe in the story, with `forced-color-adjust: none`, so a system colour stays itself under
+   * forced colours. The probe keeps its shadow there as well, and the element does not (forced
+   * colours drop it): a check that runs under forced colours expects `none`.
    */
   expected: Partial<Record<PaintProperty, string>>;
 }
@@ -53,13 +56,22 @@ async function readPaint(
       probe.style.setProperty('forced-color-adjust', 'none');
       probe.style.backgroundColor = expectedValues.backgroundColor ?? 'transparent';
       probe.style.color = expectedValues.color ?? 'inherit';
+      probe.style.boxShadow = expectedValues.boxShadow ?? 'none';
       document.querySelector('#storybook-root')?.append(probe);
       try {
         const painted = getComputedStyle(element);
         const probed = getComputedStyle(probe);
         return {
-          painted: { backgroundColor: painted.backgroundColor, color: painted.color },
-          probed: { backgroundColor: probed.backgroundColor, color: probed.color },
+          painted: {
+            backgroundColor: painted.backgroundColor,
+            color: painted.color,
+            boxShadow: painted.boxShadow,
+          },
+          probed: {
+            backgroundColor: probed.backgroundColor,
+            color: probed.color,
+            boxShadow: probed.boxShadow,
+          },
         };
       } finally {
         probe.remove();
@@ -106,8 +118,10 @@ async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
       await page.hover(selector);
     } else {
       await page.mouse.move(0, 0);
-      forcedNode = await findNodeId(session, selector);
-      await forceActive(session, forcedNode, true);
+      if (check.interaction === 'press') {
+        forcedNode = await findNodeId(session, selector);
+        await forceActive(session, forcedNode, true);
+      }
     }
     const mismatches = findMismatches(check, await readPaint(page, selector, check.expected));
     if (mismatches.length > 0) {
