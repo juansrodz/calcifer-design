@@ -1182,7 +1182,8 @@ describe('Dialog', () => {
       ).toContain(' outline-style: none;');
     });
 
-    it('arms nothing when focus is already inside at open, so the first Tab rings', async () => {
+    // A pointer opens a dialog whose field focuses itself at open: Base UI places no opening focus.
+    async function openWithAutoFocusField(): Promise<void> {
       render(
         <Dialog
           heading="Rename"
@@ -1199,6 +1200,10 @@ describe('Dialog', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
       const field = await screen.findByRole('textbox', { name: 'Name' });
       await waitFor(() => expect(field).toHaveFocus());
+    }
+
+    it('arms nothing when focus is already inside at open, so the first Tab rings', async () => {
+      await openWithAutoFocusField();
       await userEvent.tab();
       const save = screen.getByRole('button', { name: 'Save' });
       expect(save).toHaveFocus();
@@ -1206,35 +1211,17 @@ describe('Dialog', () => {
     });
 
     it('arms nothing when focus is already inside at open, so a later focus is not held back', async () => {
-      render(
-        <Dialog
-          heading="Rename"
-          trigger={<Button variant="secondary">Rename</Button>}
-          footer={<Button size="sm">Save</Button>}
-          closeHidden
-        >
-          <Field label="Name">
-            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the case under test: a field that focuses itself at open */}
-            <TextInput autoFocus defaultValue="Showcase" />
-          </Field>
-        </Dialog>,
-      );
-      await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
-      const field = await screen.findByRole('textbox', { name: 'Name' });
-      await waitFor(() => expect(field).toHaveFocus());
+      await openWithAutoFocusField();
       const save = screen.getByRole('button', { name: 'Save' });
       act(() => save.focus());
       expect(save).not.toHaveAttribute('data-quiet-focus');
     });
 
     it('lifts the mark when the dialog closes while still quiet', async () => {
-      function Harness({ open }: { open: boolean }) {
-        return <Dialog heading="Pasta night" open={open} quietFocus />;
-      }
-      const { rerender } = render(<Harness open />);
+      const { rerender } = render(<Dialog heading="Pasta night" open quietFocus />);
       const close = await screen.findByRole('button', { name: 'Close' });
       await waitFor(() => expect(close).toHaveAttribute('data-quiet-focus'));
-      rerender(<Harness open={false} />);
+      rerender(<Dialog heading="Pasta night" open={false} quietFocus />);
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(close).not.toHaveAttribute('data-quiet-focus');
     });
@@ -1351,9 +1338,9 @@ describe('Dialog', () => {
     });
   });
 
-  // 200% text on a 390 px phone: the heading takes what the end group leaves, breaks a word too
-  // wide for that, and wraps the row when less than three ems are left. Measured in a browser by
-  // the `HeadingAtDoubleText` story's play.
+  // 200% text on a 390 px phone: the heading takes what the end group leaves, the header wraps
+  // before a word breaks, and only a word wider than the row breaks. Measured in a browser by the
+  // `HeadingAtDoubleText` story's play.
   describe('the heading beside the close', () => {
     it('grows from nothing, never narrower than its longest word nor wider than the row', () => {
       const body = ruleBody(/^\.heading \{([^}]*)\}/m);

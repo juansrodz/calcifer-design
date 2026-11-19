@@ -437,9 +437,9 @@ const doubleTextOnAPhone = `html { font-size: 200%; }
 
 /**
  * The play for the 200% text stories: the end group and the heading stay inside the popup's
- * padding box, the heading holds its text (nothing runs past its box), no line of it crosses the end group, a word
- * breaks only when it is wider than the whole header row, and the close stays the 36 px circle
- * (twice that here, as the text is twice its size).
+ * padding box, the heading holds its text (nothing runs past its box), no line of it crosses the
+ * end group, a word breaks only when it is wider than the whole header row, and the close stays
+ * the 36 px circle (twice that here, as the text is twice its size).
  */
 const playHeadingAtDoubleText: Story['play'] = async () => {
   const popup = await settledDialog();
