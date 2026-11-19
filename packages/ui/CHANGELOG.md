@@ -1,5 +1,44 @@
 # @calcifer-design/ui
 
+## 0.14.0
+
+### Minor Changes
+
+- e684315: `ToggleChip` and `Button` each take a new consumer hook, a custom property the library reads and never declares. Nothing changes for a chip or a button that does not set one: every default is today's value, and an unlayered consumer rule that already sets a `box-shadow` (above zero weight) or a `font-size` on one keeps the outcome it had.
+
+  - `--toggle-chip-font-size` sets a chip's label size, on the chip or on any wrapper (it inherits, so a class on a `ToggleChipGroup`'s wrapper reaches every chip in it). Without it, each size keeps its own step: `--text-sm` at `md` and `--text-xs` at `sm`. An app whose type scale moves those steps (WBW sets `--text-xs` to 10 px) can now give its chips their own size without re-scoping a global type token around them. At `sm` the 28 and 36 px heights are floors and hold for a label size up to about 17 px; at `md` the height follows the size.
+  - `--button-shadow` sets a `Button`'s or a `LinkButton`'s shadow, in any variant, in place of the variant's own: none, or the primary's `--shadow-action` (`--shadow-action-inverse` on the inverse primary). It holds in every state (rest, hover, pressed, focused, disabled, busy, chosen) and composes with the fill hooks (`--button-fill`, `--button-label-color` and their hover pair) and with the keyboard focus ring, which is an outline. Its value is any `box-shadow` list, so an inset ring rides with a drop shadow after a comma, as in `var(--shadow-soft), inset 0 0 0 1.5px var(--color-selected)`; the ring is drawn inside the button's 1 px border. Under forced colours every shadow is dropped, the hook's included. As with the fill hooks, prefer the class on the button itself: a hook set on a wrapper also reaches the buttons the library renders inside it.
+  - The secondary, ghost and row variants read the hook at zero weight (`:where()`), and the primary and inverse primary at the weight their shadow already had, so a consumer rule that sets `box-shadow` directly wins exactly where it did before, at any weight and in any order among unlayered rules. Two such rules lose on those three variants that won before: a rule in a cascade layer, such as a Tailwind v4 utility (`shadow-md`), as the library's CSS is unlayered, and one that ties at zero weight (`* {}`, `:where(.x) {}`) and loads first; set the hook from the class instead. One more consequence: on a secondary, ghost or row button an element-selector `box-shadow` (a global `button { box-shadow: none }` reset, say) also beats the hook, where on a primary the hook beats it. Scope such a reset, or set the hook from a class on the button.
+  - New stories: `Button` `ElevationViaHook` and `ToggleChip` `FontSizeViaHook`.
+
+- 6c7c55a: `Dialog` takes four padding hooks, set on a `ThemeScope` (whose portal host holds the popup) or another ancestor, as its heading hooks are:
+
+  - `--sheet-padding-block-start`, the space above the bottom sheet's grab handle;
+  - `--sheet-handle-gap`, the space between the handle and the header;
+  - `--sheet-padding-inline`, the bottom sheet's inline padding;
+  - `--drawer-padding-inline`, the end drawer's inline padding.
+
+  The gap defaults to `--space-4` and the paddings to `--space-5`, which is what each placement drew before, so no dialog changes until a hook is set, in any theme whose `--radius-dialog` is under about 68 px. Each hook takes a length with a unit: `0px`, not `0`, and no percentage. The padding sits inside the popup's 1 px border.
+
+  The space above a bottom sheet's first content was not a bug. It is the sheet's 24 px padding and 16 px gap around the handle, which these hooks now expose.
+
+  Under a thin inline padding, the header insets the close so that its 44 px touch target stays inside the popup's rounded corner. The body's focus-ring margin no longer scrolls the popup sideways. In the bottom sheet, keep `--sheet-padding-block-start` plus `--sheet-handle-gap` at 4 px or more at the default radius.
+
+- 83fc17a: `Switch` gains three more colour hooks, for its checked track and its thumb, and `Avatar` keeps an edge in forced colours. Every default looks the same as before.
+
+  - `--switch-track-checked-background` and `--switch-track-checked-border-color` set a checked switch's track fill and border colour. Both default to `--color-accent`, today's checked look. They apply to the checked track only, as the two unchecked-track hooks apply to the unchecked one. Set the checked pair together: a fill set alone keeps the accent edge. The border hook takes a colour, not a shorthand, so the track keeps its 1 px border and the thumb's travel. This supersedes 0.13.0's "A checked switch is the accent whatever they say": a checked switch is the accent by default, and these hooks move it.
+  - `--switch-thumb-background` sets the thumb's fill, checked and unchecked. It defaults to `--color-surface-raised`, as today.
+  - Set them from a class on any ancestor (they inherit). A consumer that sets any of them is responsible for the track's 3:1 against its own surface (WCAG 1.4.11) and for the thumb's ratio against the track. The default thumb is not held to one, since the track's edge says the switch is there. Forced colours ignore all five switch hooks and keep painting system colours.
+  - In forced colours an `Avatar` now draws a 1 px edge in the system text colour, inside its box, so an initials disc keeps its shape where the browser drops its fill. It takes no layout, and normal mode is unchanged.
+  - New stories: `Switch` `TrackAndThumbHooks` and `TrackAndThumbHooksDark`.
+
+### Patch Changes
+
+- fc18315: Under forced colours (Windows High Contrast), a hovered `ToggleChip` now thickens its edge to 3 px as well as turning it `Highlight`, as `Button` and `IconButton` do. The colour change alone was faint in High Contrast White. The thicker edge is drawn inside the chip, so nothing moves, and it stays clear of the focus ring outside it. A focused chip keeps its focus ring on hover, in place of the thicker edge. A pressed chip keeps its fill alone, and a disabled one shows no hover cue, as before. `AvatarGroup`'s `+N` chip also gets a 1 px edge in the system text colour there, since forced colours drop its fill and ring. The default look is unchanged.
+- 1ab7879: Under forced colours (Windows High Contrast), a hovered `DatePicker` day and a hovered `FilterBar` remove control now draw a 2 px `Highlight` edge. Before, forced colours dropped their hover tint and left no hover cue at all. The edge is drawn inside the cell or the circle, so nothing moves and no neighbouring day is covered; today's edge sits inside its 1 px border. A focused day or control keeps its focus ring in place of the edge, and an unavailable or chosen day, or a remove control a disabled fieldset disables, shows no hover edge. The default look is unchanged.
+- 079e3ac: Under forced colours (Windows High Contrast), the item under the pointer in a `Menu`, a `Select` popup or `NavMenu`'s small-screen menu now takes the system highlight, a `Highlight` fill with `HighlightText` text, as the platform's own menus do. Before, forced colours dropped the highlight's tint and left no hover cue at all. A hovered `Select` trigger draws a 3 px `Highlight` edge, as `Button` does, and `NavMenu`'s menu button the same edge, where neither showed any change; and a hovered `NavMenu` link gains a 2 px underline. The edges are drawn inside the box, so nothing moves. A focused item or control keeps its focus ring in place of the cue, and a disabled item, the chosen option and the current page's link or item show none. `Breadcrumb` is unchanged: its links already drop their underline on hover. The default look is unchanged.
+- cdae400: Under forced colours (Windows High Contrast), a hovered interactive `Card`, toast action, `Upload` drop zone and `Tree` row now draw a `Highlight` edge. Before, forced colours dropped their hover tint or shadow: a `Tree` row and the `Upload` zone showed no hover cue at all, an interactive `Card` only moved 2 px, and a toast action only recoloured its 1 px border. The edge is an outline drawn inside the box, so nothing moves: 3 px with the border on the card, the action and the zone, as on `Button`, and 2 px on a `Tree` row. A focused control keeps its focus ring in place of the edge; a disabled or selected row, a disabled zone and a plain `Card` show none. An `IconButton` marked `aria-disabled`, such as the `DatePicker`'s month button at the end of its range, no longer shows a hover cue. The default look is unchanged.
+
 ## 0.13.0
 
 ### Minor Changes
