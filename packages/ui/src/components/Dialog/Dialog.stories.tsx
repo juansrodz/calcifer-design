@@ -494,13 +494,12 @@ export const SideSheetRightToLeft: Story = {
 };
 
 /**
- * The runner's window is 1280 px wide, so the 200% text stories pin the centred popup at the
- * width a 390 px phone gives it, and the root at twice the size. The viewport's gutter is
- * `--space-4`, which doubles with the text: the popup is 326 px, not the 358 px a 16 px gutter
- * would leave.
+ * The 200% text stories run in a real 390 px phone window (the `mobile` viewport, which the test
+ * runner sizes its page to as the Storybook toolbar does) with the root at twice the size. The
+ * viewport's gutter is `--space-4`, which doubles with the text: the popup is 326 px, not the
+ * 358 px a 16 px gutter would leave.
  */
-const doubleTextOnAPhone = `html { font-size: 200%; }
-[data-popup='dialog'] { width: min(32rem, calc(390px - 2 * var(--space-4))) !important; }`;
+const doubleText = 'html { font-size: 200%; }';
 
 /**
  * The play for the 200% text stories: the end group and the heading stay inside the popup's
@@ -509,6 +508,8 @@ const doubleTextOnAPhone = `html { font-size: 200%; }
  * the 36 px circle (twice that here, as the text is twice its size).
  */
 const playHeadingAtDoubleText: Story['play'] = async () => {
+  // The phone's own window, not a wider one with the popup pinned to a phone's width.
+  await expect(window.innerWidth).toBe(390);
   const popup = await settledDialog();
   const heading = within(popup).getByRole('heading');
   const close = within(popup).getByRole('button', { name: 'Close' });
@@ -568,8 +569,7 @@ const playHeadingAtDoubleText: Story['play'] = async () => {
 export const HeadingAtDoubleText: Story = {
   args: {
     defaultOpen: true,
-    // The header is the subject: at twice the text a body would scroll, and the axe smoke check
-    // can run before the scrolling body becomes a Tab stop.
+    // The header is the subject; at twice the text a body would scroll.
     description: undefined,
     children: undefined,
     heading: 'Grandmother’s extravagant lasagne',
@@ -580,10 +580,11 @@ export const HeadingAtDoubleText: Story = {
       </IconButton>
     ),
   },
+  globals: { viewport: { value: 'mobile' } },
   decorators: [
     (Story) => (
       <>
-        <style>{doubleTextOnAPhone}</style>
+        <style>{doubleText}</style>
         <Story />
       </>
     ),
@@ -594,6 +595,7 @@ export const HeadingAtDoubleText: Story = {
 /** The default dialog at 200% text on a 390 px phone: the heading reads in whole words. */
 export const DefaultAtDoubleText: Story = {
   args: { defaultOpen: true, description: undefined, children: undefined },
+  globals: HeadingAtDoubleText.globals,
   decorators: HeadingAtDoubleText.decorators,
   play: playHeadingAtDoubleText,
 };

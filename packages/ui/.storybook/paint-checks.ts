@@ -1,7 +1,9 @@
-// The test runner's post-visit hook, installed from `test-runner-jest.config.js` as a Jest setup
-// file. A `.storybook/test-runner.ts` would be the documented place, but Storybook 10 loads that
-// file through `module.register()`, which Jest 30 refuses, so every suite would fail to run.
-import { getStoryContext, setPostVisit } from '@storybook/test-runner';
+// The test runner's pre- and post-visit hooks, installed from `test-runner-jest.config.js` as a
+// Jest setup file. A `.storybook/test-runner.ts` would be the documented place, but Storybook 10
+// loads that file through `module.register()`, which Jest 30 refuses, so every suite would fail to
+// run. The pre-visit hook sizes the page to the viewport a story names; the post-visit hook runs
+// the story's paint checks at that size, then puts the page back.
+import { getStoryContext, setPostVisit, setPreVisit } from '@storybook/test-runner';
 import type { CDPSession, Page } from 'playwright';
 import {
   assertColoursResolved,
@@ -13,6 +15,7 @@ import {
   type PaintCheck,
   type PaintReading,
 } from './paint-compare';
+import { storyViewportSize, type ViewportSize } from './story-viewport';
 
 export type { PaintCheck } from './paint-compare';
 
@@ -146,15 +149,38 @@ async function runPaintCheck(page: Page, check: PaintCheck): Promise<void> {
   }
 }
 
-setPostVisit(async (page, context) => {
-  // After a failed play the runner calls this hook and then rethrows the play's own error, so a
-  // check that threw here would replace it. The runner names the flag `hasFailure`.
-  if (context.hasFailure) {
-    return;
+// The runner's own window, while a story that names a viewport has the page at its size.
+let runnerViewport: ViewportSize | null = null;
+
+// A story that names a viewport (`globals: { viewport: { value: 'mobile' } }`, as the Storybook
+// toolbar reads it) renders, plays and is paint-checked in a window that size, not the runner's
+// 1280 px one with a stand-in width. Set before the story renders, so it lays out at that size
+// from the start.
+setPreVisit(async (page, context) => {
+  const size = storyViewportSize(await getStoryContext(page, context));
+  if (size !== undefined) {
+    runnerViewport ??= page.viewportSize();
+    await page.setViewportSize(size);
   }
-  const storyContext = await getStoryContext(page, context);
-  const checks = storyContext.parameters['paintChecks'] as readonly PaintCheck[] | undefined;
-  for (const check of checks ?? []) {
-    await runPaintCheck(page, check);
+});
+
+setPostVisit(async (page, context) => {
+  try {
+    // After a failed play the runner calls this hook and then rethrows the play's own error, so a
+    // check that threw here would replace it. The runner names the flag `hasFailure`.
+    if (context.hasFailure) {
+      return;
+    }
+    const storyContext = await getStoryContext(page, context);
+    const checks = storyContext.parameters['paintChecks'] as readonly PaintCheck[] | undefined;
+    for (const check of checks ?? []) {
+      await runPaintCheck(page, check);
+    }
+  } finally {
+    // The next story in the file renders on this page, so it starts at the runner's size again.
+    if (runnerViewport !== null) {
+      await page.setViewportSize(runnerViewport);
+      runnerViewport = null;
+    }
   }
 });

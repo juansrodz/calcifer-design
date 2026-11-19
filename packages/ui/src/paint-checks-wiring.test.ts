@@ -10,7 +10,10 @@ import {
   type PaintCheck,
   type PaintReading,
 } from '../.storybook/paint-compare';
+import { storyViewportSize } from '../.storybook/story-viewport';
+import preview from '../.storybook/preview';
 import * as buttonStories from './components/Button/Button.stories';
+import * as dialogStories from './components/Dialog/Dialog.stories';
 
 // A story's `paintChecks` (rest, hover, press and forced colours, which jsdom cannot show) run in the
 // Storybook test runner, and every link between a story and the runner fails silently: a config
@@ -51,6 +54,18 @@ describe('the paint checks wiring', () => {
     const hook = readCode('paint-checks.ts');
     expect(hook).toMatch(/^setPostVisit\(/m);
     expect(hook).toContain("storyContext.parameters['paintChecks']");
+  });
+
+  it('has paint-checks.ts size the page to the story’s viewport first, and size it back after', () => {
+    // A hook that stops sizing the page leaves a phone story measuring the runner's 1280 px window;
+    // one that stops sizing it back runs every later story in the file at a phone's width.
+    const hook = readCode('paint-checks.ts');
+    expect(hook).toMatch(
+      /^setPreVisit\(async \(page, context\) => \{\s*const size = storyViewportSize\(await getStoryContext\(page, context\)\);[\s\S]*?await page\.setViewportSize\(size\);/m,
+    );
+    expect(hook).toMatch(
+      /\} finally \{\s*if \(runnerViewport !== null\) \{\s*await page\.setViewportSize\(runnerViewport\);/,
+    );
   });
 
   it('has paint-checks.ts run both resolution guards on every reading before comparing it', () => {
@@ -190,6 +205,54 @@ describe('the stories that declare paint checks', () => {
       for (const check of forcedChecks) {
         expect(check.expected.boxShadow).toBe('none');
       }
+    },
+  );
+});
+
+describe('the viewport a story names', () => {
+  const parameters = {
+    viewport: {
+      options: {
+        mobile: { styles: { width: '390px', height: '844px' } },
+        percent: { styles: { width: '100%', height: '100%' } },
+      },
+    },
+  };
+
+  it('is the named option’s size, turned when rotated, and none when no viewport is named', () => {
+    const mobile = { viewport: { value: 'mobile' } };
+    expect(storyViewportSize({ storyGlobals: mobile, parameters })).toEqual({
+      width: 390,
+      height: 844,
+    });
+    const rotated = { viewport: { value: 'mobile', isRotated: true } };
+    expect(storyViewportSize({ storyGlobals: rotated, parameters })).toEqual({
+      width: 844,
+      height: 390,
+    });
+    expect(storyViewportSize({ storyGlobals: {}, parameters })).toBeUndefined();
+    expect(storyViewportSize({ parameters })).toBeUndefined();
+  });
+
+  it('throws for a name with no option, or an option not sized in px', () => {
+    // Either would leave the story in the runner's own window, measuring what it did not mean to.
+    expect(() =>
+      storyViewportSize({ storyGlobals: { viewport: { value: 'mobil' } }, parameters }),
+    ).toThrow(/"mobil" is not a viewport option/);
+    expect(() =>
+      storyViewportSize({ storyGlobals: { viewport: { value: 'percent' } }, parameters }),
+    ).toThrow(/"percent" is not a viewport option/);
+  });
+
+  it.each(['HeadingAtDoubleText', 'DefaultAtDoubleText'] as const)(
+    'has %s run in the preview’s 390 px phone window',
+    (storyName) => {
+      expect(
+        storyViewportSize({
+          storyGlobals: dialogStories[storyName].globals,
+          parameters: preview.parameters,
+        }),
+      ).toEqual({ width: 390, height: 844 });
     },
   );
 });
