@@ -10,10 +10,9 @@ import { useLayoutEffect, useState } from 'react';
  * The element is measured as it mounts, in a layout effect, so one that overflows then is a Tab
  * stop before the browser paints it. A ResizeObserver then watches the element and each of its
  * children, so the answer follows both the box (a resized viewport) and the content (a paragraph
- * that grows); a MutationObserver measures
- * again when text or children change, watching the children that arrive and letting go of the
- * ones that leave. Where there is no ResizeObserver the answer stays `false`, and the element is
- * left as it was.
+ * that grows); a MutationObserver measures again when text or children change, watching the
+ * children that arrive and letting go of the ones that leave. Where there is no ResizeObserver the
+ * answer stays `false`, and the element is left as it was.
  */
 export function useOverflowFocusable<Target extends HTMLElement>(): [
   (element: Target | null) => void,

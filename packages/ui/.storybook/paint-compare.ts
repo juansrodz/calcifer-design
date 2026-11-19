@@ -44,12 +44,12 @@ export interface PaintCheck {
   forcedColors?: boolean;
   /**
    * The expected colours (the background, the text and the outline, whether or not an outline is
-   * drawn), as any CSS colour value (a `var()`, a system colour), and the expected
-   * `box-shadow`, as any shadow list (`none`, a `var()`, a comma list). Each one is resolved on a
-   * probe in the story, with `forced-color-adjust: none`, so a system colour stays itself under
-   * forced colours. The probe keeps its shadow there as well, and an element under
-   * `forced-color-adjust: auto` does not (forced colours drop it), so a check on one expects
-   * `none`; an element that opts out expects what its own CSS paints.
+   * drawn), as any CSS colour value (a `var()`, a system colour), and the expected `box-shadow`, as
+   * any shadow list (`none`, a `var()`, a comma list). Each one is resolved on a probe in the
+   * story, with `forced-color-adjust: none`, so a system colour stays itself under forced colours.
+   * The probe keeps its shadow there as well, and an element under `forced-color-adjust: auto` does
+   * not (forced colours drop it), so a check on one expects `none`; an element that opts out
+   * expects what its own CSS paints.
    *
    * A value that does not resolve throws, as it would compare nothing: a colour that falls back
    * (a missing or misspelt token, a token that is no colour, a typo in a keyword) would probe as

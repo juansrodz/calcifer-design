@@ -19,8 +19,9 @@ import * as dialogStories from './components/Dialog/Dialog.stories';
 // Storybook test runner, and every link between a story and the runner fails silently: a config
 // file the runner no longer discovers, a setup line that drops the hook, a hook that reads another
 // parameter, a story that misspells it. Each leaves `storybook:test` green with no check run. The
-// two `.storybook` files are read as text, code only, because the runner's Jest config cannot load
-// under Vitest; the stories are imported.
+// runner's config and its hook (`paint-checks.ts`) are read as text, code only, because the
+// runner's Jest config cannot load under Vitest; the stories and the hook's pure parts
+// (`paint-compare.ts`, `story-viewport.ts`) are imported.
 const storybookDirectory = join(import.meta.dirname, '..', '.storybook');
 
 const composedStories = composeStories(buttonStories);
