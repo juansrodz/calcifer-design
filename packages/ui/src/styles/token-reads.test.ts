@@ -3354,7 +3354,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // to the thumb) and names system colours: unchecked, a Canvas track with a ButtonText edge and a
   // solid ButtonText thumb; checked, a Highlight track with a HighlightText thumb; disabled,
   // GrayText and not dimmed as well; the focus ring CanvasText, not the token the opt-out lets
-  // through. The block overrides the unchecked-track hooks too.
+  // through. The block overrides all five hooks too.
   {
     file: 'components/Switch/Switch.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.track \{([^}]*)\}/m,

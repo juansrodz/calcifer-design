@@ -10,12 +10,15 @@ import styles from './Switch.module.css';
  *   unchecked track's fill and edge. They default to `--color-surface-3` and the control border
  *   colour.
  * - `--switch-track-checked-background` and `--switch-track-checked-border-color`: the checked
- *   track's fill and edge. Both default to `--color-accent`.
+ *   track's fill and edge. Both default to `--color-accent`. Set the checked pair together: a fill
+ *   set alone keeps the accent edge.
  * - `--switch-thumb-background`: the thumb, in both states. It defaults to `--color-surface-raised`.
  *
  * Each pair applies to its own state only. The border hooks take a colour, not a border shorthand.
- * A consumer that sets any of them owns the 3:1 the track needs against its surface, and the
- * thumb against the track (WCAG 1.4.11). Forced colours ignore all five.
+ * A consumer that sets any of them owns the 3:1 the track needs against its surface (WCAG 1.4.11).
+ * The default thumb is not held to a ratio against the track, since the track's edge says the
+ * switch is there, so a consumer that recolours the thumb owns the ratio it needs. Forced colours
+ * ignore all five.
  */
 export interface SwitchProps extends FieldFrameProps {
   /** The text beside the track, and the switch's accessible name. */
