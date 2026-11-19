@@ -1267,9 +1267,10 @@ const expectations: ReadonlyArray<Expectation> = [
     lacks: [],
   },
   // In High Contrast White the hover border's change is faint: `ButtonText` or `LinkText` to
-  // `Highlight`, about 1.9:1 or 1.2:1. So a hovered button's edge thickens as well, by an outline
-  // drawn inside its border: nothing moves, and it stays clear of the focus ring outside the box. A
-  // focused button keeps its ring instead, as both are the outline; a chosen one keeps its fill.
+  // `Highlight` is under 2:1, in Chromium's emulated palette and on Windows alike. So a hovered
+  // button's edge thickens as well, by an outline drawn inside its border: nothing moves, and it
+  // stays clear of the focus ring outside the box. A focused button keeps its ring instead, as both
+  // are the outline; a chosen one keeps its fill.
   {
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\s*\[data-disabled\],\s*:focus-visible,\s*\[data-tone='selected'\]:is\(\[data-variant='primary'\], \[data-variant='secondary'\]\)\s*\) \{([^}]*)\}/m,

@@ -282,7 +282,8 @@
 
    The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
    rule gives a `LinkButton` the cue a `Button` has. A ghost `Button`'s hovered border was painted
-   in the text colour, with the underline its only cue; it turns `Highlight` too. */
+   in the text colour, with the underline its only cue; it turns `Highlight` too. The hovered edge
+   also thickens to 3 px, as an outline inside the border; the rule for it says why. */
 @media (forced-colors: active) {
   .root[data-tone='selected'][data-variant]:is(
       [data-variant='primary'],
@@ -306,10 +307,12 @@
     }
 
     /* That colour change alone is faint in High Contrast White (`ButtonText` or `LinkText` to
-       `Highlight`, 1.9:1 and 1.2:1), so the hovered edge also thickens to 3 px: an outline inside
-       the border, which moves nothing and stays clear of the focus ring outside the box. Forced
-       colours drop `box-shadow`, so it cannot be one. A focused button keeps its ring, both being
-       the outline; a chosen one keeps its fill alone, as on hover in the default look. */
+       `Highlight` is under 2:1, in Chromium's emulated palette and on Windows alike), so the
+       hovered edge also thickens to 3 px. It is an outline, as forced colours drop `box-shadow`,
+       drawn inside the border: it moves nothing and stays clear of the focus ring outside the box.
+       The offset is the 1 px border plus the outline's own width, so the band sits flush inside the
+       border. A focused button keeps its ring, both being the outline; a chosen one keeps its fill
+       alone, as on hover in the default look. */
     .root:hover:not(
         [data-disabled],
         :focus-visible,

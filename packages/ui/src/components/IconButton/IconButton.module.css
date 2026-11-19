@@ -169,7 +169,8 @@
 
    The browser paints a hovered button's border `Highlight` and a link's not at all, so the hover
    rule gives a `LinkIconButton` the cue an `IconButton` already has, as `Button.module.css` does for
-   `LinkButton`. */
+   `LinkButton`. The hovered edge also thickens to 3 px, as an outline inside the border; the rule
+   for it says why. */
 @media (forced-colors: active) {
   .root[data-pressed],
   .root[data-pressed]:hover:not([data-disabled]) {
@@ -213,9 +214,10 @@
       border-color: Highlight;
     }
 
-    /* The hovered edge also thickens to 3 px inside the border, as on `Button`: the colour change
-       alone is faint in High Contrast White. Not on a focused button, whose ring is the outline
-       too, nor on a pressed one, which keeps its fill alone. */
+    /* The hovered edge also thickens to 3 px, as on `Button`: the colour change alone is faint in
+       High Contrast White. It is an outline drawn inside the border, its offset the 1 px border
+       plus the outline's own width, so the band sits flush inside it. Not on a focused button,
+       whose ring is the outline too, nor on a pressed one, which keeps its fill alone. */
     .root:hover:not([data-disabled], [data-pressed], :focus-visible) {
       /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
       outline: var(--border-width-emphasis) solid Highlight;
