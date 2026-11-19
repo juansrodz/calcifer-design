@@ -426,17 +426,18 @@ const expectations: ReadonlyArray<Expectation> = [
   // no change at all under the pointer. It takes the platform's `Highlight` fill and
   // `HighlightText` ink instead, and no edge as well. A disabled row gets none, nor a chosen option,
   // nor a focused row, which keyboard focus marks with its ring. The rule sits in the forced
-  // block's hover gate.
+  // block's hover gate, and opts out of forced colours: Chromium otherwise paints its `Canvas`
+  // backplate behind the text, and `HighlightText` on it was measured white on white.
   {
     file: 'components/Menu/Menu.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
-    contains: [' background: Highlight;', ' color: HighlightText;'],
+    contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
   {
     file: 'components/Select/Select.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], \[data-selected\], :focus-visible\) \{([^}]*)\}/m,
-    contains: [' background: Highlight;', ' color: HighlightText;'],
+    contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
   // The select trigger's border turned `Highlight` on hover, the browser's own cue, which is under
@@ -1241,9 +1242,19 @@ const expectations: ReadonlyArray<Expectation> = [
   {
     file: 'components/NavMenu/NavMenu.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
-    contains: [' background: Highlight;', ' color: HighlightText;'],
+    contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
+  // The opt-out is inherited, and an item's content is the consumer's (`renderLink`), so its colours
+  // would come back on the fill. Everything inside takes the item's ink, with `!important` so a
+  // consumer's inline colour cannot beat it, as in `IconButton`'s pressed rule.
+  {
+    file: 'components/NavMenu/NavMenu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \* \{([^}]*)\}/m,
+    contains: [' background-color: transparent !important;', ' color: inherit !important;'],
+    lacks: [],
+  },
+  importantOnlyInForcedBlock('components/NavMenu/NavMenu.module.css'),
   // Nothing follows the block: a normal-mode rule appended after it would win the cascade back.
   {
     file: 'components/NavMenu/NavMenu.module.css',
