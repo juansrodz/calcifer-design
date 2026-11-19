@@ -17,11 +17,11 @@ interface PortraitColors {
 function portrait({ backgroundTop, backgroundBottom, skin, clothing }: PortraitColors): string {
   const drawing =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">` +
-    `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">` +
+    `<defs><linearGradient id="background" x1="0" y1="0" x2="0" y2="1">` +
     `<stop offset="0" stop-color="${backgroundTop}"/>` +
     `<stop offset="1" stop-color="${backgroundBottom}"/>` +
     `</linearGradient></defs>` +
-    `<rect width="96" height="96" fill="url(#g)"/>` +
+    `<rect width="96" height="96" fill="url(#background)"/>` +
     `<ellipse cx="48" cy="100" rx="38" ry="30" fill="${clothing}"/>` +
     `<circle cx="48" cy="40" r="17" fill="${skin}"/>` +
     `</svg>`;

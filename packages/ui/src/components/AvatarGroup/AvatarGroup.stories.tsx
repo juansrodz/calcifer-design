@@ -53,9 +53,9 @@ export const Overflow: Story = {
 
 const sizes: readonly AvatarSize[] = ['xs', 'sm', 'md', 'lg', 'xl'];
 
-// How many avatars each row shows before its chip. A row is its avatars and the chip, each tucked
-// 8px under the one before it, so at `xl` (96px) two avatars and the chip are 272px, where three
-// would be 360px and run past the 358px a 390px phone leaves. The sizes below it fit at four.
+// How many avatars each row shows before its chip. At `xl` (96px) each item is tucked 8px under
+// the one before it, so two avatars and the chip are 272px, where three would be 360px and run
+// past the 358px a 390px phone leaves. The sizes below it fit at four.
 const maxBySize: Readonly<Record<AvatarSize, number>> = { xs: 4, sm: 4, md: 4, lg: 4, xl: 2 };
 
 const column = { display: 'flex', flexDirection: 'column', gap: '1rem' } as const;
@@ -91,13 +91,12 @@ function clearanceFromNeighbour(avatar: Element, neighbour: Element): number {
   return neighbourEdge - initialsBox.right;
 }
 
-// The least clearance each row's play accepts. `xs` and `sm` are the two sizes whose overlap was
-// cut to keep the letters whole; their initials read about 1.4px clear in Arial's widths, so a
-// floor of 1px fails an overlap one pixel larger (which reads about 0.5px). The other three only
-// have to stay uncut: `md` reads 1.1px, too little to hold 1px against the rounding of a glyph's
-// advance on another platform. The play is the coarse net for the overlap's geometry in that one
-// face; `AvatarGroup.test.tsx` pins the overlap itself, and a consumer's own font has its own
-// clearance.
+// The least clearance, in css px, the `Sizes` play accepts at each size. `xs` and `sm` are the two
+// sizes whose overlap was cut to keep the letters whole; their initials read about 1.4px clear in
+// Arial's widths, so a floor of 1px fails an overlap one pixel larger (about 0.5px). The other
+// three only have to stay uncut: `md` reads 1.1px, too little to hold 1px against the rounding of
+// a glyph's advance on another platform. The play is the coarse net, in that one face;
+// `AvatarGroup.test.tsx` pins the overlap itself.
 const minimumClearanceBySize: Readonly<Record<AvatarSize, number>> = {
   xs: 1,
   sm: 1,
@@ -110,14 +109,14 @@ const minimumClearanceBySize: Readonly<Record<AvatarSize, number>> = {
  * Each of the five sizes, the chip drawn to the same height as the avatars beside it and its count
  * at their initials size. The largest size shows fewer avatars so that every row fits a phone. The
  * play checks the gap from each avatar's initials to the avatar or the chip after it, in Arial's
- * widths (the wrapper's font): at `xs` and `sm` the stack overlaps less than at the larger sizes,
- * which is what keeps the letters whole, and those two rows must keep 1px of clearance.
+ * widths (the wrapper's font), against `minimumClearanceBySize`.
  */
 export const Sizes: Story = {
   parameters: { controls: { disable: true } },
   play: async ({ canvasElement }) => {
     await document.fonts.ready;
     for (const list of within(canvasElement).getAllByRole('list')) {
+      const size = list.dataset['size'] as AvatarSize;
       const items = Array.from(list.children);
       for (const [index, item] of items.slice(0, -1).entries()) {
         const avatar = item.firstElementChild;
@@ -125,7 +124,6 @@ export const Sizes: Story = {
         if (!avatar || !neighbour) {
           throw new Error('the row has an item with nothing in it');
         }
-        const size = list.dataset['size'] as AvatarSize;
         await expect(
           clearanceFromNeighbour(avatar, neighbour),
           `size ${size}, avatar ${index + 1}`,

@@ -4,13 +4,13 @@
    each `data-size` sets to the same two values `Avatar`'s preset for that size draws, so the chip
    is as tall as the avatars beside it and its count reads at the avatars' initials size.
 
-   Two space steps is the overlap for the sizes from `md` up. A pair of initials fills most of the
-   width of an `xs` or an `sm` disc, so at two steps the next avatar's edge, and the ring round
-   it, ran across the second letter (its box by up to 4.5px at `xs` and 2.5px at `sm`), and under
-   forced colours the cut letter fused with the neighbour's outline. Those two sizes tuck less:
-   half a step at `xs` and one step at `sm`, the most each can overlap with the pair of letters
-   in the stories, and the ring, still clear of the neighbour. The stack keeps a proportion near
-   `lg`'s and `xl`'s: 8% of the avatar's width at `xs` and 14% at `sm`, against 12% and 8%. */
+   Two space steps is the overlap from `md` up. A pair of initials fills most of an `xs` or an `sm`
+   disc, so at two steps the next avatar's edge, and the ring round it, ran across the second
+   letter (its box by up to 4.5px at `xs` and 2.5px at `sm`), and under forced colours the cut
+   letter fused with the neighbour's outline. Those two sizes tuck less: half a step at `xs` and
+   one step at `sm`, the most whole-pixel overlap that keeps the stories' letters clear of the
+   neighbour's edge and ring in Arial and Helvetica widths. That is 8% of the avatar's width at
+   `xs` and 14% at `sm`, against `lg`'s 12% and `xl`'s 8%. */
 .list {
   --avatar-group-overlap: calc(-1 * var(--space-2));
 
