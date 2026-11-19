@@ -427,16 +427,17 @@ const expectations: ReadonlyArray<Expectation> = [
   // `HighlightText` ink instead, and no edge as well. A disabled row gets none, nor a chosen option,
   // nor a focused row, which keyboard focus marks with its ring. The rule sits in the forced
   // block's hover gate, and opts out of forced colours: Chromium otherwise paints its `Canvas`
-  // backplate behind the text, and `HighlightText` on it was measured white on white.
+  // backplate behind the text, and `HighlightText` on it was measured white on white. These rows
+  // find the rule before the gate's closing brace, so a rule moved out of the gate fails them.
   {
     file: 'components/Menu/Menu.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
   {
     file: 'components/Select/Select.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], \[data-selected\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], \[data-selected\], :focus-visible\) \{([^}]*)\}/m,
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
@@ -445,7 +446,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // inside the 1 px border. Not on a disabled or a focused trigger.
   {
     file: 'components/Select/Select.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.trigger:hover:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
     contains: [
       ' outline: var(--border-width-emphasis) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
@@ -1215,10 +1216,11 @@ const expectations: ReadonlyArray<Expectation> = [
   // Forced colours keep a nav link in `LinkText` on hover, so the colour change above is gone and
   // a hovered link showed no change at all. A wide-layout link gains a 2 px underline instead: it
   // has no inline padding, so an edge inside its box would cross its first and last letters. Not
-  // on the current link nor a focused one, which keeps its ring.
+  // on the current link nor a focused one, which keeps its ring. As for `Menu` and `Select`, these
+  // rows find each rule before the hover gate's closing brace.
   {
     file: 'components/NavMenu/NavMenu.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.list \.link:hover:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.list \.link:hover:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
     contains: [
       ' text-decoration-line: underline;',
       ' text-decoration-thickness: var(--border-width-emphasis);',
@@ -1230,7 +1232,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // outline, flush inside the box. Not on a focused button.
   {
     file: 'components/NavMenu/NavMenu.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.trigger:hover:not\(:focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.trigger:hover:not\(:focus-visible\) \{([^}]*)\}/m,
     contains: [
       ' outline: calc(1px + var(--border-width-emphasis)) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
@@ -1241,7 +1243,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // not on the current page's item nor a focused one.
   {
     file: 'components/NavMenu/NavMenu.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \{([^}]*)\}/m,
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
@@ -1250,7 +1252,7 @@ const expectations: ReadonlyArray<Expectation> = [
   // consumer's inline colour cannot beat it, as in `IconButton`'s pressed rule.
   {
     file: 'components/NavMenu/NavMenu.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \* \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[aria-current='page'\], :focus-visible\) \* \{([^}]*)\}/m,
     contains: [' background-color: transparent !important;', ' color: inherit !important;'],
     lacks: [],
   },
