@@ -62,12 +62,11 @@
   margin-top: auto;
 }
 
-/* Forced colours drop the lift's shadow, and the lift alone only moves the card 2 px, so a hovered
-   card looked the same as a resting one. It gains a 2 px `Highlight` edge inside its 1 px border,
-   as `Button` does, for a 3 px edge in all: an outline, its offset the border plus the outline's
-   own width, so the box does not change. A card is never focused itself (the link inside it is),
-   and a plain card has no hover rule, so it gains none. Last in the file, so no normal-mode rule
-   after it wins the cascade back. */
+/* Forced colours drop the lift's shadow, so a hovered card showed only a 2 px lift. It gains a
+   2 px `Highlight` edge inside its 1 px border, as `Button` does, for a 3 px edge in all: an
+   outline, its offset the border plus the outline's own width, so the box does not change. A card
+   is never focused itself (the link inside it is), and a plain card has no hover rule, so it gains
+   none. Last in the file, so no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
   @media (hover: hover) {
     .root[data-interactive]:hover {
