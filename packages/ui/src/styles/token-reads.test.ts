@@ -852,6 +852,18 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['border-color: Highlight;'],
     lacks: [],
   },
+  // The same thicker edge on a hovered `IconButton` or `LinkIconButton`, as on `Button`: the
+  // `Highlight` border alone barely moves from `ButtonText` or `LinkText` in High Contrast White. Not
+  // on a focused button, whose ring is the outline, nor on a pressed one, which keeps its fill.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\[data-disabled\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
   // `GrayText`: the dim took the glyph, the edge and a focused loading button's ring under 3:1.
   // The bare `color:` entries here and below carry a leading space: `contains` is a substring test,
@@ -1310,6 +1322,20 @@ const expectations: ReadonlyArray<Expectation> = [
     file: 'components/Button/Button.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\]\) \{([^}]*)\}/m,
     contains: ['border-color: Highlight;'],
+    lacks: [],
+  },
+  // In High Contrast White the hover border's change is faint: `ButtonText` or `LinkText` to
+  // `Highlight` is under 2:1, in Chromium's emulated palette and on Windows alike. So a hovered
+  // button's edge thickens as well, by an outline drawn inside its border: nothing moves, and it
+  // stays clear of the focus ring outside the box. A focused button keeps its ring instead, as both
+  // are the outline; a chosen one keeps its fill.
+  {
+    file: 'components/Button/Button.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\s*\[data-disabled\],\s*:focus-visible,\s*\[data-tone='selected'\]:is\(\[data-variant='primary'\], \[data-variant='secondary'\]\)\s*\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
     lacks: [],
   },
   // The loading label's own 70% dim would take the `GrayText` label under 7:1. A pending button is
