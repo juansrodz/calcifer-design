@@ -2607,6 +2607,29 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [anyWeightLiteral, 'font-size: var(--text-'],
   },
+  // Forced colours drop the chip's fill to Canvas and its ring with every other shadow, so the
+  // `+N` had no edge on a Canvas page. The transparent 1 px outline `Avatar`'s disc takes, drawn
+  // inside the box (`outline-offset: -1px`) so it takes no layout, is painted in the system text
+  // colour. It is declared in the forced block only; the top-level chip keeps no outline.
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}\.overflow \{([^}]*)\}/m,
+    contains: [' outline: 1px solid transparent;', ' outline-offset: -1px;'],
+    lacks: [' border', 'forced-color-adjust'],
+  },
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^\.overflow \{([^}]*)\}/m,
+    contains: [],
+    lacks: [' outline'],
+  },
+  // Nothing follows the block: its rule ties the top-level `.overflow` and would lose to a later one.
+  {
+    file: 'components/AvatarGroup/AvatarGroup.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
 
   // `ChoiceCard`: a radio group drawn as cards. The grid's column count is a local property set per
   // `data-columns`; the card's outline and the ring's hollow circle are inset shadows held in local
@@ -3000,6 +3023,27 @@ const expectations: ReadonlyArray<Expectation> = [
       ' color: inherit !important;',
     ],
     lacks: consumerContentKeepsStyles,
+  },
+  // A hovered chip under forced colours had only the browser's swap of its edge from `ButtonText`
+  // to `Highlight`, under 2:1 in High Contrast White. As on `IconButton`, the hover rule turns the
+  // 1 px border `Highlight` itself, and a 2 px outline inside it makes the hovered edge 3 px: no
+  // border width, padding or margin changes, so the box does not move. A disabled chip keeps its
+  // `GrayText` edge and a pressed one its fill alone; a focused one keeps its ring, both being
+  // the outline.
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.chip:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    contains: [' border-color: Highlight;'],
+    lacks: [' border:', ' border-width', ' padding', ' margin', ' outline'],
+  },
+  {
+    file: 'components/ToggleChip/ToggleChip.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.chip:hover:not\(\[data-disabled\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [' border', ' padding', ' margin'],
   },
   importantOnlyInForcedBlock('components/ToggleChip/ToggleChip.module.css'),
   {
