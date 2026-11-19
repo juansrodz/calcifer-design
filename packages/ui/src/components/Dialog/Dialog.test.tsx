@@ -812,6 +812,17 @@ describe('Dialog', () => {
       expect(await axeDocument()).toHaveNoViolations();
     });
 
+    // Measured as it mounts, not at the observer's first report a frame later: in between, an
+    // overflowing body was a scroller with no Tab stop, which the test runner's axe check, run as
+    // the story mounts, caught as `scrollable-region-focusable` whenever that frame ran long.
+    it('is a Tab stop as it mounts, before the observer first reports, when it overflows then', async () => {
+      contentHeight = 600;
+      const { body } = await openSheet();
+      expect(bodyObservers()).toHaveLength(1);
+      expect(body).toHaveAttribute('tabindex', '0');
+      expect(body).toHaveAttribute('role', 'region');
+    });
+
     it('adds no Tab stop, role or name while its content fits', async () => {
       const { body } = await openSheet();
       reportResize(bodyHeight);

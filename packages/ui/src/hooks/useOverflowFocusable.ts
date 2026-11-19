@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 /**
  * Internal, not exported from `src/index.ts`. Reports whether an element's content overflows its
@@ -7,8 +7,10 @@ import { useEffect, useState } from 'react';
  * it scrolls (WCAG 2.1.1: Safari does not make a scroller focusable on its own). Returns a
  * callback ref for the element and the current answer.
  *
- * A ResizeObserver watches the element and each of its children, so the answer follows both the
- * box (a resized viewport) and the content (a paragraph that grows); a MutationObserver measures
+ * The element is measured as it mounts, in a layout effect, so one that overflows then is a Tab
+ * stop before the browser paints it. A ResizeObserver then watches the element and each of its
+ * children, so the answer follows both the box (a resized viewport) and the content (a paragraph
+ * that grows); a MutationObserver measures
  * again when text or children change, watching the children that arrive and letting go of the
  * ones that leave. Where there is no ResizeObserver the answer stays `false`, and the element is
  * left as it was.
@@ -19,13 +21,16 @@ export function useOverflowFocusable<Target extends HTMLElement>(): [
 ] {
   const [element, setElement] = useState<Target | null>(null);
   const [overflowing, setOverflowing] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (element === null || typeof ResizeObserver === 'undefined') return undefined;
     const measure = () =>
       setOverflowing(
         element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth,
       );
-    // The observer reports each target once on `observe`, so the first measure needs no call here.
+    // Measured now, not at the observer's first report, which comes a frame later: in between, an
+    // overflowing element was a scroller with no Tab stop (an axe check run as a dialog mounts
+    // caught it as `scrollable-region-focusable`). The first report measures again, unchanged.
+    measure();
     const resizeObserver = new ResizeObserver(measure);
     resizeObserver.observe(element);
     for (const child of Array.from(element.children)) resizeObserver.observe(child);
