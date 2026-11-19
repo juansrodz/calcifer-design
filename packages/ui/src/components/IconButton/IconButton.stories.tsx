@@ -51,3 +51,48 @@ export const PressedAndBadge: Story = {
     </div>
   ),
 };
+
+const unavailablePaint = {
+  ghost: { backgroundColor: 'transparent', color: 'var(--color-text-muted)' },
+  secondary: { backgroundColor: 'var(--color-surface-raised)', color: 'var(--color-text)' },
+  primary: { backgroundColor: 'var(--color-accent)', color: 'var(--color-accent-text)' },
+  soft: { backgroundColor: 'var(--color-surface-2)', color: 'var(--color-text)' },
+} as const;
+
+/**
+ * Each variant marked `aria-disabled`: focusable and announced, but unavailable, as the
+ * `DatePicker`'s month button is at the end of its range. Under the pointer each one looks as it
+ * does at rest, with no hover tint; the test runner hovers each with a real pointer and compares
+ * its colours with the variant's resting ones. The loading button after them (Base UI marks it
+ * `aria-disabled` and `data-disabled`) keeps its own look.
+ */
+export const Unavailable: Story = {
+  parameters: {
+    paintChecks: [
+      ...Object.entries(unavailablePaint).map(([variant, expected]) => ({
+        target: `button[aria-disabled='true'][data-variant='${variant}']:not([data-loading])`,
+        interaction: 'hover' as const,
+        expected,
+      })),
+      {
+        target: 'button[data-loading]',
+        interaction: 'hover' as const,
+        expected: unavailablePaint.ghost,
+      },
+    ],
+  },
+  render: (args) => (
+    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+      {(['ghost', 'secondary', 'primary', 'soft'] as const).map((variant) => (
+        <IconButton
+          key={variant}
+          {...args}
+          variant={variant}
+          label={`Delete remote (${variant}, unavailable)`}
+          aria-disabled
+        />
+      ))}
+      <IconButton {...args} label="Deleting remote" loading />
+    </div>
+  ),
+};

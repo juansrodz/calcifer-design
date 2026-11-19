@@ -448,11 +448,58 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
   },
+  // A disabled menu item reads disabled under forced colours: `GrayText`, where the browser had
+  // replaced its subtle token with `CanvasText`, the enabled items' ink. Outside the hover gate, so it
+  // holds at rest and under the pointer, and the hover fill above leaves it out.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.item\[data-disabled\] \{([^}]*)\}/m,
+    contains: [' color: GrayText;'],
+    lacks: [' opacity', ' background'],
+  },
+  // The opt-out is inherited, and an item's start icon is the consumer's (an icon, an avatar), so
+  // its token colours would come back on the fill. Everything inside takes the item's ink, its
+  // edges included, with `!important` so a consumer's inline colour cannot beat it, as `NavMenu`'s
+  // item content does; it keeps its border styles as the sibling consumer-content rows require.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.item\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \* \{([^}]*)\}/m,
+    contains: [
+      '--menu-content-edge: currentcolor;',
+      ' border-color: var(--menu-content-edge) !important;',
+      ' background-color: transparent !important;',
+      ' color: inherit !important;',
+    ],
+    lacks: consumerContentKeepsStyles,
+  },
+  importantOnlyInForcedBlock('components/Menu/Menu.module.css'),
+  // The start icon's slot sits before the label at the affix gap, logical so a right-to-left menu
+  // mirrors it, and sizes a bare `<svg>` as `Select`'s slot does.
+  {
+    file: 'components/Menu/Menu.module.css',
+    rule: /^\.startIcon \{([^}]*)\}/m,
+    contains: [' display: inline-flex;', ' flex: none;', ' margin-inline-end: var(--space-2);'],
+    lacks: [physicalSide],
+  },
+  // The chosen option takes the same fill under the pointer as the others (before, it kept its check
+  // mark alone and showed no hover cue). Its check mark stays: the indicator takes the option's ink,
+  // as its token colour would come back inside the opt-out and sit on the fill.
   {
     file: 'components/Select/Select.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], \[data-selected\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \{([^}]*)\}/m,
     contains: [' forced-color-adjust: none;', ' background: Highlight;', ' color: HighlightText;'],
     lacks: [' outline'],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{(?:(?!^ {2}\})[\s\S])*?^ {4}\.option\[data-highlighted\]:not\(\[data-disabled\], :focus-visible\) \.indicator \{([^}]*)\}/m,
+    contains: [' color: inherit;'],
+    lacks: [],
+  },
+  {
+    file: 'components/Select/Select.module.css',
+    contains: [],
+    lacks: ['[data-selected], :focus-visible)'],
   },
   // The select trigger's edge turns 3 px of `Highlight` as `Button`'s does: a 2 px outline inside
   // the 1 px border, and the border says `Highlight` too, as on `Button` and `IconButton`, so the
@@ -889,6 +936,34 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: ['--color-accent'],
   },
+  // A button marked `aria-disabled` (focusable but unavailable, as the `DatePicker`'s month button at
+  // the end of its range) takes no hover tint in any variant: under the pointer it looks as it does
+  // at rest. A loading button is `data-disabled` too and was already left out. The rows find each
+  // rule in the first, normal-mode hover gate, so a rule moved out of it fails them.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(hover: hover\) \{(?:(?!^\})[\s\S])*?^ {2}\.root\[data-variant='ghost'\]:hover:not\(\[data-disabled\], \[aria-disabled='true'\]\) \{([^}]*)\}/m,
+    contains: [' background: var(--color-surface-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(hover: hover\) \{(?:(?!^\})[\s\S])*?^ {2}\.root\[data-variant='secondary'\]:hover:not\(\[data-disabled\], \[aria-disabled='true'\]\) \{([^}]*)\}/m,
+    contains: [' background: var(--color-surface-2);'],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(hover: hover\) \{(?:(?!^\})[\s\S])*?^ {2}\.root\[data-variant='primary'\]:hover:not\(\[data-disabled\], \[aria-disabled='true'\]\) \{([^}]*)\}/m,
+    contains: [' background: var(--color-accent-hover);'],
+    lacks: [],
+  },
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(hover: hover\) \{(?:(?!^\})[\s\S])*?^ {2}\.root\[data-variant='soft'\]:hover:not\(\[data-disabled\], \[aria-disabled='true'\]\) \{([^}]*)\}/m,
+    contains: [' background: var(--color-surface-3);'],
+    lacks: [],
+  },
   // Forced colours on `IconButton` and `LinkIconButton`. They erase the selected tint, so a pressed
   // button is filled `Highlight` and drawn outside the browser's own recolouring, with a `Highlight`
   // edge as on a chosen `Button`: inside the opt-out a secondary button's token border was a faint
@@ -1232,6 +1307,25 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.day\[aria-current='date'\]:hover:not\(\s*\[aria-disabled='true'\],\s*\[aria-selected='true'\],\s*:focus-visible\s*\) \{([^}]*)\}/m,
     contains: [' outline-offset: calc(-1px - var(--border-width-emphasis));'],
     lacks: [' outline:'],
+  },
+  // The month button at the end of the range (`aria-disabled`, so it stays focusable) reads as
+  // `IconButton`'s disabled one does under forced colours: `GrayText` glyph and edge, not dimmed
+  // (`opacity: 1`). The 0.45 dim left the glyph at 3.4:1 and the focus ring at 2.5:1 in High
+  // Contrast White. Outside the hover gate, so it holds at rest, under the pointer and in focus.
+  {
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^@media \(forced-colors: active\) \{(?:(?!^ {2}@media)[\s\S])*?^ {2}\.previous\[aria-disabled='true'\],\n {2}\.next\[aria-disabled='true'\] \{([^}]*)\}/m,
+    contains: [' opacity: 1;', ' border-color: GrayText;', ' color: GrayText;'],
+    lacks: [],
+  },
+  // Under the pointer `IconButton` holds an `aria-disabled` button's border at `ButtonText`, a rule
+  // that weighs four classes; this one weighs five, so the month button's edge stays `GrayText`. A
+  // focused one is left to the rule above, as `IconButton`'s is.
+  {
+    file: 'components/DatePicker/DatePicker.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.header \.previous\[aria-disabled='true'\]:hover:not\(:focus-visible\),\n {4}\.header \.next\[aria-disabled='true'\]:hover:not\(:focus-visible\) \{([^}]*)\}/m,
+    contains: [' border-color: GrayText;'],
+    lacks: [' outline'],
   },
   // Nothing follows the block: a normal-mode rule appended after it would win the cascade back.
   // Every rule inside the block is indented, so the first `}` at the start of a line closes it.

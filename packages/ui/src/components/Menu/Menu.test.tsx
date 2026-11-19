@@ -106,4 +106,48 @@ describe('Menu', () => {
     render(<OpenOnLoad />);
     expect(await screen.findByRole('menu')).toHaveAttribute('data-popup', 'menu');
   });
+  it('draws a start icon in a hidden slot before the label, and keeps the label as the name', async () => {
+    render(
+      <Menu
+        trigger={<Button variant="secondary">People</Button>}
+        defaultOpen
+        items={[
+          {
+            id: 'sebastian',
+            label: 'Sebastian',
+            startIcon: <span data-testid="initials">JS</span>,
+          },
+          { id: 'christian', label: 'Christian' },
+        ]}
+      />,
+    );
+    const sebastian = await screen.findByRole('menuitem', { name: 'Sebastian' });
+    const slot = screen.getByTestId('initials').parentElement;
+    expect(slot).toHaveAttribute('aria-hidden', 'true');
+    expect(slot?.parentElement).toBe(sebastian);
+    expect(sebastian.firstElementChild).toBe(slot);
+    // Without a start icon the item holds its label alone, as before the prop.
+    const christian = screen.getByRole('menuitem', { name: 'Christian' });
+    expect(christian.children).toHaveLength(0);
+    expect(christian).toHaveTextContent(/^Christian$/);
+  });
+
+  it('matches typeahead against the label, not the start icon’s text', async () => {
+    render(
+      <Menu
+        trigger={<Button variant="secondary">People</Button>}
+        items={[
+          { id: 'christian', label: 'Christian', startIcon: <span>S</span> },
+          { id: 'sebastian', label: 'Sebastian', startIcon: <span>C</span> },
+        ]}
+      />,
+    );
+    screen.getByRole('button', { name: 'People' }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    const christian = await screen.findByRole('menuitem', { name: 'Christian' });
+    await waitFor(() => expect(christian).toHaveFocus());
+    // The first item's text content starts with "S", its icon's; the label says "Christian".
+    await userEvent.keyboard('s');
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Sebastian' })).toHaveFocus());
+  });
 });
