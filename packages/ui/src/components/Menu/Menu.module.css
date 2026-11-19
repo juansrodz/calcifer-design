@@ -31,3 +31,24 @@
   margin-block: var(--space-1);
   background: var(--color-border);
 }
+
+/* Forced colours drop the highlight's tint, so the item under the pointer showed no change at all.
+   It takes the platform's own menu highlight instead, a `Highlight` fill with `HighlightText` ink:
+   a fill, not an edge, as the whole row is the target, and no edge as well. Not on a focused item,
+   which keyboard focus marks with its ring (a fill too would be two cues for one state), nor on a
+   disabled one, which Base UI still highlights. `forced-color-adjust: none` because Chromium
+   otherwise paints its `Canvas` backplate behind the text, and `HighlightText` on it was measured
+   white on white (as in `Segmented.module.css`). Last in the file, so no normal-mode rule after it
+   wins the cascade back. */
+@media (forced-colors: active) {
+  @media (hover: hover) {
+    .item[data-highlighted]:not([data-disabled], :focus-visible) {
+      forced-color-adjust: none;
+
+      /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+      background: Highlight;
+      color: HighlightText;
+      /* stylelint-enable scale-unlimited/declaration-strict-value */
+    }
+  }
+}

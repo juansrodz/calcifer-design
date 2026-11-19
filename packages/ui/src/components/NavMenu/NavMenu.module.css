@@ -98,3 +98,50 @@
   background: var(--color-surface-2);
   color: var(--color-text);
 }
+
+/* Forced colours keep every link in `LinkText` and drop the menu highlight's tint, so a hovered
+   link, menu item or menu button showed no change at all. Last in the file, so no normal-mode rule
+   after it wins the cascade back. */
+@media (forced-colors: active) {
+  @media (hover: hover) {
+    /* A wide-layout link gains a 2 px underline, the link's own hover idiom (as `Breadcrumb`'s
+       underline and a ghost `LinkButton`'s), at the width of the library's hover edge. Not an edge
+       inside the box: the link has no inline padding, so one would cross its first and last
+       letters. Not on the current link, nor on a focused one, which keeps its ring. */
+    .list .link:hover:not([aria-current='page'], :focus-visible) {
+      text-decoration-line: underline;
+      text-decoration-thickness: var(--border-width-emphasis);
+    }
+
+    /* The menu button's border is 0 px, so the browser's `Highlight` border shows nothing. It
+       draws the 3 px edge a hovered ghost `IconButton` shows (there a 1 px border and a 2 px
+       outline), all of it outline here, flush inside the box, so nothing moves; the glyph keeps
+       10 px clear. Not on a focused button, whose ring is the outline too. */
+    .trigger:hover:not(:focus-visible) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: calc(1px + var(--border-width-emphasis)) solid Highlight;
+      outline-offset: calc(-1px - var(--border-width-emphasis));
+    }
+
+    /* The menu's items take `Menu`'s forced highlight, a `Highlight` fill with `HighlightText` ink,
+       out of forced colours as `Menu`'s item says why. Not on the current page's item, nor on a
+       focused one, which keeps its ring. */
+    .item[data-highlighted]:not([aria-current='page'], :focus-visible) {
+      forced-color-adjust: none;
+
+      /* stylelint-disable scale-unlimited/declaration-strict-value -- only a system colour is kept here; no token can be one */
+      background: Highlight;
+      color: HighlightText;
+      /* stylelint-enable scale-unlimited/declaration-strict-value */
+    }
+
+    /* The opt-out is inherited, and an item's content is the consumer's (`renderLink`), so its
+       token colours would come back on the fill. Everything inside takes the item's ink;
+       `!important` so a consumer's inline colour cannot beat it, as in `IconButton`'s pressed
+       rule. */
+    .item[data-highlighted]:not([aria-current='page'], :focus-visible) * {
+      background-color: transparent !important;
+      color: inherit !important;
+    }
+  }
+}
