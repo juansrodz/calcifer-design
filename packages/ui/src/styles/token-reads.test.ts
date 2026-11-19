@@ -732,6 +732,25 @@ const expectations: ReadonlyArray<Expectation> = [
     contains: ['box-shadow: var(--elevation-2);'],
     lacks: ['--shadow-'],
   },
+  // Forced colours drop the lift's shadow, and the lift alone only moves the card 2 px: a hovered
+  // card looked the same as a resting one. It gains a 2 px `Highlight` edge inside its 1 px border,
+  // as on `Button`, so nothing moves further. A plain card has no hover rule, so it gains none.
+  {
+    file: 'components/Card/Card.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root\[data-interactive\]:hover \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Nothing follows `Card`'s block, so no normal-mode rule after it wins the cascade back.
+  {
+    file: 'components/Card/Card.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
   {
     file: 'styles/popup.module.css',
     contains: [
@@ -776,6 +795,25 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.toast \{([^}]*)\}/m,
     contains: ['box-shadow: var(--shadow-raised);'],
     lacks: ['--elevation'],
+  },
+  // A toast's action lost its hover tint to forced colours and kept only the browser's swap of its
+  // 1 px border to `Highlight`, under 3:1 from `ButtonText`. It gains the 2 px edge inside that
+  // border, as on `Button`; not while focused, whose ring is the outline too.
+  {
+    file: 'components/ToastRegion/ToastRegion.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.action:hover:not\(:focus-visible\) \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Likewise nothing follows `ToastRegion`'s block.
+  {
+    file: 'components/ToastRegion/ToastRegion.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
   {
     file: 'components/Segmented/Segmented.module.css',
@@ -905,23 +943,35 @@ const expectations: ReadonlyArray<Expectation> = [
   // The browser paints a hovered button's border `Highlight` and a link's not at all, so a
   // `LinkIconButton` had no hover cue under forced colours. The rule gives it the one an
   // `IconButton`, a `Button` and a `LinkButton` have; a disabled button keeps its `GrayText` edge,
-  // and a pressed one, as on `Segmented`, its fill alone.
+  // and a pressed one, as on `Segmented`, its fill alone. A button marked `aria-disabled` (the
+  // `DatePicker`'s month buttons at the end of the range) is left out too: it is unavailable.
   {
     file: 'components/IconButton/IconButton.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\], \[data-pressed\]\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{\n {4}\.root:hover:not\(\[data-disabled\], \[aria-disabled='true'\], \[data-pressed\]\) \{([^}]*)\}/m,
     contains: ['border-color: Highlight;'],
     lacks: [],
   },
   // The same thicker edge on a hovered `IconButton` or `LinkIconButton`, as on `Button`: the
   // `Highlight` border alone barely moves from `ButtonText` or `LinkText` in High Contrast White. Not
-  // on a focused button, whose ring is the outline, nor on a pressed one, which keeps its fill.
+  // on a focused button, whose ring is the outline, nor on a pressed one, which keeps its fill, nor
+  // on one marked `aria-disabled`, as the rule above.
   {
     file: 'components/IconButton/IconButton.module.css',
-    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\[data-disabled\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root:hover:not\(\[data-disabled\], \[aria-disabled='true'\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
     contains: [
       ' outline: var(--border-width-emphasis) solid Highlight;',
       ' outline-offset: calc(-1px - var(--border-width-emphasis));',
     ],
+    lacks: [],
+  },
+  // The browser turns a hovered button's border `Highlight` on its own, and paints it even on a
+  // dimmed one, so a button marked `aria-disabled` keeps its resting `ButtonText` there. Not one
+  // that is `data-disabled` too (a loading button keeps its `GrayText`), nor a pressed one, nor a
+  // focused one, whose border the browser turns `Highlight` with its ring.
+  {
+    file: 'components/IconButton/IconButton.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.root\[aria-disabled='true'\]:hover:not\(\[data-disabled\], \[data-pressed\], :focus-visible\) \{([^}]*)\}/m,
+    contains: [' border-color: ButtonText;'],
     lacks: [],
   },
   // A disabled or loading button (`data-disabled` is set on both) is not dimmed on top of
@@ -1206,6 +1256,26 @@ const expectations: ReadonlyArray<Expectation> = [
   // Likewise nothing follows `FilterBar`'s block.
   {
     file: 'components/FilterBar/FilterBar.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
+  },
+  // `Upload`'s zone is one control, the file input laid over the whole of it, so the pictured
+  // button under the input is never hovered itself. Forced colours drop the zone's hover tint, so a
+  // hovered zone showed no change at all. It gains the 2 px edge inside the face's 1 px border, as
+  // on `Button`; not on a disabled zone, nor while the input is focused, whose ring is the outline.
+  {
+    file: 'components/Upload/Upload.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.zone:not\(\[data-disabled\]\):hover \.input:not\(:focus-visible\) \+ \.face \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1px - var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Likewise nothing follows `Upload`'s block.
+  {
+    file: 'components/Upload/Upload.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
     contains: [],
     lacks: [/\{/],
@@ -2573,6 +2643,25 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.root\[data-direction-changing\] \.toggle > svg \{([^}]*)\}/m,
     contains: ['transition: none;'],
     lacks: [],
+  },
+  // Forced colours drop a hovered row's tint, so it showed no change at all. It gains a 2 px
+  // `Highlight` edge, an outline inside the row, so nothing moves. Not on a disabled or selected
+  // row, nor on a focused one, whose ring is the outline too.
+  {
+    file: 'components/Tree/Tree.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^ {2}@media \(hover: hover\) \{[\s\S]*?^ {4}\.item:not\(\[aria-disabled='true'\], \[aria-selected='true'\], :focus-visible\) > \.row:hover \{([^}]*)\}/m,
+    contains: [
+      ' outline: var(--border-width-emphasis) solid Highlight;',
+      ' outline-offset: calc(-1 * var(--border-width-emphasis));',
+    ],
+    lacks: [],
+  },
+  // Nothing follows `Tree`'s block.
+  {
+    file: 'components/Tree/Tree.module.css',
+    rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
+    contains: [],
+    lacks: [/\{/],
   },
 
   // `NavMenu`'s sidebar form. `flex: 1 1 auto` is what makes the list span the sidebar: `.root` is

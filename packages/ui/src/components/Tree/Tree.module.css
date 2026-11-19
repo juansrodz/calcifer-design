@@ -126,7 +126,9 @@
 }
 
 /* Forced colours erase the accent fill and so the selection; system colours survive, as in
-   `Segmented.module.css`, where `forced-color-adjust: none` is explained. */
+   `Segmented.module.css`, where `forced-color-adjust: none` is explained. Forced colours drop the
+   hover tint too, so a hovered row gains an edge instead; its rule says why. Last in the file, so
+   no normal-mode rule after it wins the cascade back. */
 @media (forced-colors: active) {
   .item[aria-selected='true'] > .row,
   .item[aria-selected='true'] > .row:hover {
@@ -146,5 +148,21 @@
   .item[aria-disabled='true']:not([aria-selected='true']) > .row {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
     color: GrayText;
+  }
+
+  @media (hover: hover) {
+    /* With the tint gone a hovered row showed no change at all, so it gains a `Highlight` edge, as
+       `Button` does: an outline drawn inside the row, so nothing moves. It is 2 px, `Button`'s
+       outline width; `Button`'s 3 px edge counts its 1 px border, and a row has none. The rows are
+       dense, and 2 px stays clear of the label inside its 8 px of block padding. Not on a disabled
+       or selected row, nor on a focused one, whose ring is the outline too. The state is read off
+       the item, which holds the focus and the attributes, while the row draws the edge.
+       Accepted: in High Contrast White a focused row's ring and a hovered neighbour's band touch
+       and read as one dark band; position still tells them apart. */
+    .item:not([aria-disabled='true'], [aria-selected='true'], :focus-visible) > .row:hover {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      outline: var(--border-width-emphasis) solid Highlight;
+      outline-offset: calc(-1 * var(--border-width-emphasis));
+    }
   }
 }

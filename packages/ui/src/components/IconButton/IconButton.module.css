@@ -212,7 +212,7 @@
   }
 
   @media (hover: hover) {
-    .root:hover:not([data-disabled], [data-pressed]) {
+    .root:hover:not([data-disabled], [aria-disabled='true'], [data-pressed]) {
       /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
       border-color: Highlight;
     }
@@ -220,11 +220,23 @@
     /* The hovered edge also thickens to 3 px, as on `Button`: the colour change alone is faint in
        High Contrast White. It is an outline drawn inside the border, its offset the 1 px border
        plus the outline's own width, so the band sits flush inside it. Not on a focused button,
-       whose ring is the outline too, nor on a pressed one, which keeps its fill alone. */
-    .root:hover:not([data-disabled], [data-pressed], :focus-visible) {
+       whose ring is the outline too, nor on a pressed one, which keeps its fill alone. Neither
+       rule takes a button marked `aria-disabled` (the `DatePicker`'s month button at the end of
+       its range), which stays focusable but is unavailable; with the rule below holding its
+       border, it shows no hover cue at all. */
+    .root:hover:not([data-disabled], [aria-disabled='true'], [data-pressed], :focus-visible) {
       /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
       outline: var(--border-width-emphasis) solid Highlight;
       outline-offset: calc(-1px - var(--border-width-emphasis));
+    }
+
+    /* The browser also turns a hovered `<button>`'s border `Highlight` on its own and paints it,
+       even dimmed, so a button marked `aria-disabled` keeps its resting colour. Not one that is
+       `data-disabled` too (a loading button, `GrayText` above) nor a pressed one, which keep their
+       own rules, nor a focused one, whose border the browser turns `Highlight` with its ring. */
+    .root[aria-disabled='true']:hover:not([data-disabled], [data-pressed], :focus-visible) {
+      /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- a system colour; no token can be one */
+      border-color: ButtonText;
     }
   }
 
