@@ -1143,6 +1143,7 @@ const expectations: ReadonlyArray<Expectation> = [
     ],
     lacks: [],
   },
+  // Likewise nothing follows `FilterBar`'s block.
   {
     file: 'components/FilterBar/FilterBar.module.css',
     rule: /^@media \(forced-colors: active\) \{[\s\S]*?^\}\n([\s\S]*)/m,
