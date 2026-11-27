@@ -9,6 +9,7 @@ import { installManualAnimationFrames } from '../../../test/animationFrames';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
+import popupStyles from '../../styles/popup.module.css';
 import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
 import { Popover } from '../Popover/Popover';
@@ -1441,6 +1442,45 @@ describe('Dialog', () => {
       } finally {
         vi.unstubAllEnvs();
       }
+    });
+  });
+
+  describe('the sheet on Drawer', () => {
+    it('renders the sheet popup with Drawer’s swipe direction attribute', async () => {
+      render(<Sheet />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup).toHaveAttribute('data-popup', 'sheet');
+      expect(popup).toHaveAttribute('data-swipe-direction', 'down');
+    });
+
+    // Today's scrim catches presses until it unmounts; Drawer's lets them through as it closes.
+    it.each(['center', 'sheet'] as const)(
+      'keeps the %s scrim taking presses while it closes',
+      async (variant) => {
+        // A closing transition that never ends holds the dialog in its ending state (jsdom has none).
+        const pendingClose = { finished: new Promise(() => undefined) } as Animation;
+        Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+          configurable: true,
+          value: () => [pendingClose],
+        });
+        try {
+          const { rerender } = render(<Dialog heading="Pasta night" variant={variant} open />);
+          const popup = await screen.findByRole('dialog');
+          rerender(<Dialog heading="Pasta night" variant={variant} open={false} />);
+          await waitFor(() => expect(popup).toHaveAttribute('data-ending-style'));
+          const scrim = document.querySelector<HTMLElement>(`.${popupStyles.scrim}`);
+          expect(scrim).not.toBeNull();
+          expect(scrim?.style.pointerEvents).not.toBe('none');
+        } finally {
+          Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations');
+        }
+      },
+    );
+
+    it('keeps the centred dialog off Drawer', async () => {
+      render(<OpenOnLoad />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup).not.toHaveAttribute('data-swipe-direction');
     });
   });
 });
