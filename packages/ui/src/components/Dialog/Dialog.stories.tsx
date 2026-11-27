@@ -836,3 +836,106 @@ export const SheetSwipeReducedMotion: Story = {
     await playSwipeToDismiss?.(context);
   },
 };
+
+/** A side panel in the demo theme: the 1280 px `desktop` window is wide enough to show it as one. */
+const sideSwipeStory = {
+  ...swipeStory,
+  globals: { viewport: { value: 'desktop' } },
+} satisfies Story;
+
+/** A side sheet open on load, with its own `onOpenChange` spy. */
+function sideSwipeArgs(): Story['args'] {
+  return { variant: 'sheet', side: 'end', defaultOpen: true, onOpenChange: fn() };
+}
+
+/** A horizontal travel of 60% of the popup's width, toward `direction`. */
+function sideTravel(popup: HTMLElement, direction: 'right' | 'left'): { deltaX: number } {
+  return { deltaX: popup.offsetWidth * (direction === 'right' ? 0.6 : -0.6) };
+}
+
+/** Swiping a side sheet toward its edge, right in a left-to-right page, closes it. */
+export const SideSheetSwipeRight: Story = {
+  ...sideSwipeStory,
+  args: sideSwipeArgs(),
+  play: async ({ args }) => {
+    const popup = await settledDialog();
+    const restLeft = popup.getBoundingClientRect().left;
+    // Away from the edge it springs back and closes nothing.
+    await swipe(popup, { ...sideTravel(popup, 'left'), durationMs: 300 });
+    await waitFor(() => expect(popup.getBoundingClientRect().left).toBeCloseTo(restLeft, 0));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await swipe(popup, { ...sideTravel(popup, 'right'), durationMs: 300 });
+    await waitFor(() =>
+      expect(args.onOpenChange).toHaveBeenCalledWith(
+        false,
+        expect.objectContaining({ reason: 'swipe' }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  },
+};
+
+/** In a right-to-left page the side sheet docks on the left, so it closes on a swipe left. */
+export const SideSheetRightToLeftSwipesLeft: Story = {
+  ...SideSheetRightToLeft,
+  args: { ...SideSheetRightToLeft.args, onOpenChange: fn() },
+  globals: sideSwipeStory.globals,
+  play: async ({ args }) => {
+    const popup = await settledDialog();
+    const restLeft = popup.getBoundingClientRect().left;
+    // A swipe right of the same length is away from the edge: it springs back and closes nothing.
+    await swipe(popup, { ...sideTravel(popup, 'right'), durationMs: 300 });
+    await waitFor(() => expect(popup.getBoundingClientRect().left).toBeCloseTo(restLeft, 0));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await swipe(popup, { ...sideTravel(popup, 'left'), durationMs: 300 });
+    await waitFor(() =>
+      expect(args.onOpenChange).toHaveBeenCalledWith(
+        false,
+        expect.objectContaining({ reason: 'swipe' }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  },
+};
+
+/**
+ * A mouse or pen press on the sheet starts no swipe: held 60% of the way, the popup has not moved
+ * and is not swiping, and letting go closes nothing.
+ */
+function playIgnoresDrag(kind: 'mouse' | 'pen', side: 'bottom' | 'end'): Story['play'] {
+  return async ({ args }) => {
+    const popup = await settledDialog();
+    const restBox = popup.getBoundingClientRect();
+    const travel =
+      side === 'bottom' ? { deltaY: restBox.height * 0.6 } : { deltaX: restBox.width * 0.6 };
+    const drag = await swipeStage(popup, { ...travel, durationMs: 300, kind });
+    const draggedBox = popup.getBoundingClientRect();
+    await expect(popup).not.toHaveAttribute('data-swiping');
+    await expect(draggedBox.top).toBeCloseTo(restBox.top, 0);
+    await expect(draggedBox.left).toBeCloseTo(restBox.left, 0);
+    await drag.release();
+    await expect(screen.getByRole('dialog')).toBe(popup);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  };
+}
+
+/** Swiping is for touch: a mouse drag does not move the bottom sheet. */
+export const SheetIgnoresMouseDrag: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playIgnoresDrag('mouse', 'bottom'),
+};
+
+/** A pen drag does not move the bottom sheet either. */
+export const SheetIgnoresPenDrag: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playIgnoresDrag('pen', 'bottom'),
+};
+
+/** A mouse drag does not move the side sheet. */
+export const SideSheetIgnoresMouseDrag: Story = {
+  ...sideSwipeStory,
+  args: sideSwipeArgs(),
+  play: playIgnoresDrag('mouse', 'end'),
+};

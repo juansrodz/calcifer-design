@@ -12,6 +12,7 @@ import { useOverflowFocusable } from '../../hooks/useOverflowFocusable';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
 import popupStyles from '../../styles/popup.module.css';
 import { DialogContent } from './DialogContent';
+import { sheetSwipeDirection } from './swipeDirection';
 import styles from './Dialog.module.css';
 
 // The package's `types` carry no Node globals, so the declaration build does not know `process`.
@@ -380,19 +381,26 @@ export function Dialog({
     onFocus: holdOpeningRingBack,
   };
   if (variant === 'sheet') {
+    // The direction is read where the popup lands: the scope's portal host, or `<body>` with no
+    // scope. `data-drawer-content` makes Drawer skip a mouse or pen press inside the popup, so
+    // only a touch starts a swipe.
+    const swipeDirection = sheetSwipeDirection(
+      side,
+      container ?? (typeof document === 'undefined' ? null : document.body),
+    );
     return (
       <Drawer.Root
         open={open}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         disablePointerDismissal={!dismissOnOutsidePress}
-        swipeDirection="down"
+        swipeDirection={swipeDirection}
       >
         {trigger === undefined ? null : <Drawer.Trigger render={trigger} />}
         <Drawer.Portal container={container}>
           <Drawer.Backdrop {...backdropProps} style={SCRIM_TAKES_PRESSES} />
           <Drawer.Viewport {...viewportProps}>
-            <Drawer.Popup {...popupProps}>
+            <Drawer.Popup {...popupProps} data-drawer-content="">
               <DialogContent parts={DRAWER_PARTS} {...contentProps} />
             </Drawer.Popup>
           </Drawer.Viewport>
