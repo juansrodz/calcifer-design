@@ -2420,7 +2420,9 @@ const expectations: ReadonlyArray<Expectation> = [
       ' --dialog-surface-padding-inline: var(--sheet-padding-inline, var(--space-5));',
       // The block-end padding adds Drawer's on-screen keyboard height, `0px` with no keyboard up.
       ' --dialog-sheet-padding-block-end: calc(var(--space-5) + var(--drawer-keyboard-inset, 0px));',
-      ' padding-block: var(--sheet-padding-block-start, var(--space-5))\n    var(--dialog-sheet-padding-block-end);',
+      // The two values of `padding-block`, which Prettier breaks across lines.
+      ' padding-block: var(--sheet-padding-block-start, var(--space-5))',
+      'var(--dialog-sheet-padding-block-end);',
     ],
     lacks: [' padding:', ' padding-block-', ' padding-inline', '--drawer-padding'],
   },

@@ -165,7 +165,8 @@ async function restoreRunnerViewport(page: Page): Promise<void> {
 // from the start. A story that names none gets the runner's size back here too, should a story
 // before it have stopped (a hard timeout) before the post-visit hook could size the page back.
 setPreVisit(async (page, context) => {
-  const size = storyViewportSize(await getStoryContext(page, context));
+  const storyContext = await getStoryContext(page, context);
+  const size = storyViewportSize(storyContext);
   if (size !== undefined) {
     runnerViewport ??= page.viewportSize();
     await page.setViewportSize(size);
@@ -173,10 +174,9 @@ setPreVisit(async (page, context) => {
     await restoreRunnerViewport(page);
   }
   // A story with `parameters.reducedMotion` plays with `prefers-reduced-motion: reduce` emulated.
-  const { parameters } = await getStoryContext(page, context);
-  if (parameters['reducedMotion'] === true) {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-  }
+  // Any other sets it back, so a story that timed out cannot leave it on for the next.
+  const reducedMotion = storyContext.parameters['reducedMotion'] === true ? 'reduce' : null;
+  await page.emulateMedia({ reducedMotion });
 });
 
 setPostVisit(async (page, context) => {

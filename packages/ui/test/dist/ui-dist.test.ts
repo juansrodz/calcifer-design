@@ -327,10 +327,13 @@ describe('@calcifer-design/ui dist', () => {
     expect(unprefixed).toEqual([]);
   });
 
-  // Stories, tests and the sample data they share are for this repository, not for consumers.
+  // Stories, tests, the sample data they share and the swipe helper the stories drive are for this
+  // repository, not for consumers.
   it('ships no story, test or fixture modules', async () => {
     const entries = await readdir(distRoot, { recursive: true });
-    const devOnly = entries.filter((entry) => /(\.stories|\.test|(^|\/)fixtures)\./.test(entry));
+    const devOnly = entries.filter((entry) =>
+      /(\.stories|\.test|(^|\/)fixtures|(^|\/)swipeGesture)\./.test(entry),
+    );
     expect(devOnly).toEqual([]);
   });
 

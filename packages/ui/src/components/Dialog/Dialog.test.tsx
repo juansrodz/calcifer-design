@@ -1454,6 +1454,18 @@ describe('Dialog', () => {
       expect(popup).toHaveAttribute('data-swipe-direction', 'down');
     });
 
+    // With no scope the popup lands in `<body>`, so the swipe direction reads `dir` from there.
+    it('swipes an end sheet left under a right-to-left body when it has no container', async () => {
+      document.body.setAttribute('dir', 'rtl');
+      try {
+        render(<Dialog heading="Pasta night" variant="sheet" side="end" open />);
+        const popup = await screen.findByRole('dialog');
+        expect(popup).toHaveAttribute('data-swipe-direction', 'left');
+      } finally {
+        document.body.removeAttribute('dir');
+      }
+    });
+
     // Today's scrim catches presses until it unmounts; Drawer's lets them through as it closes.
     it.each(['center', 'sheet'] as const)(
       'keeps the %s scrim taking presses while it closes',
@@ -1508,6 +1520,7 @@ describe('Dialog', () => {
       );
       const popup = await screen.findByRole('dialog');
       act(() => within(popup).getByRole('textbox', { name: 'Dish' }).focus());
+      // A negative check: the wait lets a write that was going to come show up first.
       await act(async () => {
         await new Promise((resume) => setTimeout(resume, 50));
       });
