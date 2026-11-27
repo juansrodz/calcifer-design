@@ -554,6 +554,9 @@ Using the shared emulator lock and the seeded data:
 - Item and Event with unsaved changes: the swipe springs back and the discard question opens.
 - Participants and the emoji library: scrolling the list does not move the sheet.
 - Typing works in the comment field, the emoji search and the Item form.
+- Typing in a sheet on a short screen (iPhone SE size) keeps the focused field reachable.
+- Android back closes a sheet; on Item or Event with unsaved changes it asks (needs a real
+  Android device or Chrome on Android).
 - 1280 and 390 px screenshots, light and dark, match today apart from the gesture.
 - The portfolio-embedded app at 390 px: a sheet swipes closed.
 

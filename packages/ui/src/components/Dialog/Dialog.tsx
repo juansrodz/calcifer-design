@@ -95,14 +95,17 @@ export interface DialogProps {
   closeVariant?: 'ghost' | 'soft';
   /**
    * Draws no close control. The caller renders its own visible way out (a "Cancel" in the footer);
-   * Escape and a press on the scrim still close the dialog, and `headerEnd` still renders. With no
-   * close control the opening focus goes to the first tabbable control in the popup.
+   * Escape and a press on the scrim still close the dialog, and `headerEnd` still renders. On a
+   * sheet a touch swipe toward its edge (and Android's back gesture) closes it too; only a
+   * controlled `open` can refuse that. With no close control the opening focus goes to the first
+   * tabbable control in the popup.
    */
   closeHidden?: boolean;
   /**
    * Whether a press outside the popup closes it. Escape always does: Base UI has no prop for
    * that, and vetoing it means cancelling the event inside `onOpenChange`, which this wrapper
-   * deliberately does not expose.
+   * deliberately does not expose. On a sheet a touch swipe toward its edge (and Android's back
+   * gesture) closes it too, whatever this says; only a controlled `open` can refuse that.
    */
   dismissOnOutsidePress?: boolean;
   /**
@@ -381,9 +384,7 @@ export function Dialog({
     onFocus: holdOpeningRingBack,
   };
   if (variant === 'sheet') {
-    // The direction is read where the popup lands: the scope's portal host, or `<body>` with no
-    // scope. `data-drawer-content` makes Drawer skip a mouse or pen press inside the popup, so
-    // only a touch starts a swipe.
+    // The direction is read where the popup lands: the scope's portal host, or `<body>`.
     const swipeDirection = sheetSwipeDirection(
       side,
       container ?? (typeof document === 'undefined' ? null : document.body),
@@ -402,6 +403,7 @@ export function Dialog({
           <Drawer.Portal container={container}>
             <Drawer.Backdrop {...backdropProps} style={SCRIM_TAKES_PRESSES} />
             <Drawer.Viewport {...viewportProps}>
+              {/* `data-drawer-content`: Drawer skips mouse and pen drags, so only touch swipes. */}
               <Drawer.Popup {...popupProps} data-drawer-content="">
                 <DialogContent parts={DRAWER_PARTS} {...contentProps} />
               </Drawer.Popup>
