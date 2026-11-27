@@ -172,6 +172,27 @@
   transform: translateX(100%);
 }
 
+/* A dragged sheet follows Drawer's inline transform with no lag. A swipe close slides on from where
+   the finger let go, over Drawer's `--drawer-swipe-strength` share of the slide's time. */
+.surface[data-popup='sheet'][data-swiping] {
+  transition-property: none;
+}
+
+.surface[data-popup='sheet'][data-swipe-dismiss][data-ending-style] {
+  --sheet-swipe-close-duration: calc(var(--motion-duration-2) * var(--drawer-swipe-strength, 1));
+
+  transition-duration: var(--sheet-swipe-close-duration);
+}
+
+/* Under reduced motion the sheet still tracks the finger, but the spring back and the swipe close
+   jump. Other closes keep the skin's own. */
+@media (prefers-reduced-motion: reduce) {
+  .surface[data-popup='sheet']:not([data-ending-style]),
+  .surface[data-popup='sheet'][data-swipe-dismiss] {
+    transition-property: none;
+  }
+}
+
 /* Base UI sets `data-instant` when a transition would be wrong: a second trigger taking over the
    same popup, or a dismissal that must feel immediate. Its value differs per component, so this
    matches on the attribute's presence alone. `transition-property: none` is the way to honour
@@ -202,4 +223,11 @@
 .scrim[data-starting-style],
 .scrim[data-ending-style] {
   opacity: 0;
+}
+
+/* A drawer's scrim lightens with the share of the sheet dragged away (`--drawer-swipe-progress`,
+   which Drawer sets on the backdrop), with no lag. */
+.scrim[data-swiping] {
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  transition-property: none;
 }

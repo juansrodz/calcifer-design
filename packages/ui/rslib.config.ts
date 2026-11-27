@@ -32,6 +32,8 @@ export default defineConfig({
         '!./src/**/*.stories.{ts,tsx}',
         // Sample data for stories and tests only.
         '!./src/**/fixtures.ts',
+        // The swipe stories' gesture helper.
+        '!./src/**/swipeGesture.ts',
         '!./src/styles/base.css',
       ],
     },

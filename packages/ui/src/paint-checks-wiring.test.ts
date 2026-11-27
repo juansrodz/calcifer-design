@@ -70,6 +70,18 @@ describe('the paint checks wiring', () => {
     );
   });
 
+  it('has paint-checks.ts emulate reduced motion for a story that asks, and stop after', () => {
+    // A hook that stops resetting it runs every later story in the file under reduced motion.
+    const hook = readCode('paint-checks.ts');
+    expect(hook).toMatch(
+      /if \(parameters\['reducedMotion'\] === true\) \{\s*await page\.emulateMedia\(\{ reducedMotion: 'reduce' \}\);/,
+    );
+    expect(hook).toMatch(
+      /\} finally \{[\s\S]*?await page\.emulateMedia\(\{ reducedMotion: null \}\);\s*\}\s*\}\);/,
+    );
+    expect(dialogStories.SheetSwipeReducedMotion.parameters).toEqual({ reducedMotion: true });
+  });
+
   it('has paint-checks.ts run both resolution guards on every reading before comparing it', () => {
     // A guard the hook stops calling leaves every check on a mistyped token comparing nothing, and
     // `storybook:test` stays green: the failure here with no other signal.

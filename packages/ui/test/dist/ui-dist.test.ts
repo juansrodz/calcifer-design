@@ -74,9 +74,9 @@ async function collectCssFiles(directory: string): Promise<string[]> {
 
 // Custom properties the package reads but never declares, on purpose. Base UI sets the first set
 // on the elements it positions or animates (the positioner's anchor and available box, the toast
-// stack's index and offset, the tab list's active-tab box); the second set are the ones a
-// component's own code writes into an inline `style` (the DataGrid's from its resize observer), so
-// no stylesheet declares them.
+// stack's index and offset, the tab list's active-tab box, the drawer's swipe progress and release
+// strength); the second set are the ones a component's own code writes into an inline `style` (the
+// DataGrid's from its resize observer), so no stylesheet declares them.
 const BASE_UI_RUNTIME_PROPERTIES = [
   '--anchor-width',
   '--available-width',
@@ -86,6 +86,8 @@ const BASE_UI_RUNTIME_PROPERTIES = [
   '--toast-offset-y',
   '--active-tab-left',
   '--active-tab-width',
+  '--drawer-swipe-progress',
+  '--drawer-swipe-strength',
 ] as const;
 
 const UI_INLINE_PROPERTIES = [
