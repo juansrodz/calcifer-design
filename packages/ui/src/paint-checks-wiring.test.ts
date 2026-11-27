@@ -62,12 +62,25 @@ describe('the paint checks wiring', () => {
     // one that stops sizing it back runs every later story in the file at a phone's width.
     const hook = readCode('paint-checks.ts');
     expect(hook).toMatch(
-      /^setPreVisit\(async \(page, context\) => \{\s*const size = storyViewportSize\(await getStoryContext\(page, context\)\);[\s\S]*?await page\.setViewportSize\(size\);\s*\} else \{\s*await restoreRunnerViewport\(page\);/m,
+      /^setPreVisit\(async \(page, context\) => \{\s*const storyContext = await getStoryContext\(page, context\);\s*const size = storyViewportSize\(storyContext\);[\s\S]*?await page\.setViewportSize\(size\);\s*\} else \{\s*await restoreRunnerViewport\(page\);/m,
     );
     expect(hook).toMatch(/\} finally \{\s*await restoreRunnerViewport\(page\);/);
     expect(hook).toMatch(
       /^async function restoreRunnerViewport\(page: Page\): Promise<void> \{\s*if \(runnerViewport !== null\) \{\s*await page\.setViewportSize\(runnerViewport\);/m,
     );
+  });
+
+  it('has paint-checks.ts emulate reduced motion for a story that asks, and stop after', () => {
+    // A hook that stops resetting it runs every later story in the file under reduced motion.
+    const hook = readCode('paint-checks.ts');
+    // The pre-visit hook sets it either way, so a story that timed out cannot leak it to the next.
+    expect(hook).toMatch(
+      /const reducedMotion = storyContext\.parameters\['reducedMotion'\] === true \? 'reduce' : null;\s*await page\.emulateMedia\(\{ reducedMotion \}\);/,
+    );
+    expect(hook).toMatch(
+      /\} finally \{[\s\S]*?await page\.emulateMedia\(\{ reducedMotion: null \}\);\s*\}\s*\}\);/,
+    );
+    expect(dialogStories.SheetSwipeReducedMotion.parameters).toEqual({ reducedMotion: true });
   });
 
   it('has paint-checks.ts run both resolution guards on every reading before comparing it', () => {

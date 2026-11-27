@@ -9,6 +9,7 @@ import { installManualAnimationFrames } from '../../../test/animationFrames';
 import { axeDocument } from '../../../test/axe';
 import a11yStyles from '../../styles/a11y.module.css';
 import closeCircleStyles from '../../styles/closeCircle.module.css';
+import popupStyles from '../../styles/popup.module.css';
 import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
 import { Popover } from '../Popover/Popover';
@@ -52,6 +53,7 @@ const {
   SideSheetRightToLeft,
   HeadingAtDoubleText,
   DefaultAtDoubleText,
+  SheetWithForm,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -1441,6 +1443,88 @@ describe('Dialog', () => {
       } finally {
         vi.unstubAllEnvs();
       }
+    });
+  });
+
+  describe('the sheet on Drawer', () => {
+    it('renders the sheet popup with Drawer’s swipe direction attribute', async () => {
+      render(<Sheet />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup).toHaveAttribute('data-popup', 'sheet');
+      expect(popup).toHaveAttribute('data-swipe-direction', 'down');
+    });
+
+    // With no scope the popup lands in `<body>`, so the swipe direction reads `dir` from there.
+    it('swipes an end sheet left under a right-to-left body when it has no container', async () => {
+      document.body.setAttribute('dir', 'rtl');
+      try {
+        render(<Dialog heading="Pasta night" variant="sheet" side="end" open />);
+        const popup = await screen.findByRole('dialog');
+        expect(popup).toHaveAttribute('data-swipe-direction', 'left');
+      } finally {
+        document.body.removeAttribute('dir');
+      }
+    });
+
+    // Today's scrim catches presses until it unmounts; Drawer's lets them through as it closes.
+    it.each(['center', 'sheet'] as const)(
+      'keeps the %s scrim taking presses while it closes',
+      async (variant) => {
+        // A closing transition that never ends holds the dialog in its ending state (jsdom has none).
+        const pendingClose = { finished: new Promise(() => undefined) } as Animation;
+        Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+          configurable: true,
+          value: () => [pendingClose],
+        });
+        try {
+          const { rerender } = render(<Dialog heading="Pasta night" variant={variant} open />);
+          const popup = await screen.findByRole('dialog');
+          rerender(<Dialog heading="Pasta night" variant={variant} open={false} />);
+          await waitFor(() => expect(popup).toHaveAttribute('data-ending-style'));
+          const scrim = document.querySelector<HTMLElement>(`.${popupStyles.scrim}`);
+          expect(scrim).not.toBeNull();
+          expect(scrim?.style.pointerEvents).not.toBe('none');
+        } finally {
+          Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations');
+        }
+      },
+    );
+
+    it('keeps the centred dialog off Drawer', async () => {
+      render(<OpenOnLoad />);
+      const popup = await screen.findByRole('dialog');
+      expect(popup).not.toHaveAttribute('data-swipe-direction');
+    });
+  });
+
+  // jsdom applies no stylesheet, so the padding the inset adds is checked in the SheetWithForm story
+  // (Chromium) and pinned in `token-reads.test.ts`; here, that Drawer writes it where the skin reads.
+  describe('the keyboard inset', () => {
+    it('is written by Drawer on the sheet popup’s parent, the viewport', async () => {
+      render(<SheetWithForm />);
+      const popup = await screen.findByRole('dialog');
+      const field = within(popup).getByRole('textbox', { name: 'Dish' });
+      act(() => field.focus());
+      await waitFor(() =>
+        expect(popup.parentElement?.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px'),
+      );
+    });
+
+    it('is not written for a centred dialog', async () => {
+      render(
+        <Dialog heading="Bring a dish" defaultOpen>
+          <Field label="Dish">
+            <TextInput />
+          </Field>
+        </Dialog>,
+      );
+      const popup = await screen.findByRole('dialog');
+      act(() => within(popup).getByRole('textbox', { name: 'Dish' }).focus());
+      // A negative check: the wait lets a write that was going to come show up first.
+      await act(async () => {
+        await new Promise((resume) => setTimeout(resume, 50));
+      });
+      expect(popup.parentElement?.style.getPropertyValue('--drawer-keyboard-inset')).toBe('');
     });
   });
 });

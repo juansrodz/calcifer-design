@@ -74,9 +74,10 @@ async function collectCssFiles(directory: string): Promise<string[]> {
 
 // Custom properties the package reads but never declares, on purpose. Base UI sets the first set
 // on the elements it positions or animates (the positioner's anchor and available box, the toast
-// stack's index and offset, the tab list's active-tab box); the second set are the ones a
-// component's own code writes into an inline `style` (the DataGrid's from its resize observer), so
-// no stylesheet declares them.
+// stack's index and offset, the tab list's active-tab box, the drawer's swipe progress and release
+// strength, and the on-screen keyboard's height on the drawer's viewport); the second set are the
+// ones a component's own code writes into an inline `style` (the DataGrid's from its resize
+// observer), so no stylesheet declares them.
 const BASE_UI_RUNTIME_PROPERTIES = [
   '--anchor-width',
   '--available-width',
@@ -86,6 +87,9 @@ const BASE_UI_RUNTIME_PROPERTIES = [
   '--toast-offset-y',
   '--active-tab-left',
   '--active-tab-width',
+  '--drawer-swipe-progress',
+  '--drawer-swipe-strength',
+  '--drawer-keyboard-inset',
 ] as const;
 
 const UI_INLINE_PROPERTIES = [
@@ -323,10 +327,13 @@ describe('@calcifer-design/ui dist', () => {
     expect(unprefixed).toEqual([]);
   });
 
-  // Stories, tests and the sample data they share are for this repository, not for consumers.
+  // Stories, tests, the sample data they share and the swipe helper the stories drive are for this
+  // repository, not for consumers.
   it('ships no story, test or fixture modules', async () => {
     const entries = await readdir(distRoot, { recursive: true });
-    const devOnly = entries.filter((entry) => /(\.stories|\.test|(^|\/)fixtures)\./.test(entry));
+    const devOnly = entries.filter((entry) =>
+      /(\.stories|\.test|(^|\/)fixtures|(^|\/)swipeGesture)\./.test(entry),
+    );
     expect(devOnly).toEqual([]);
   });
 

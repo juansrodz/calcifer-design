@@ -1,4 +1,5 @@
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
+import { Drawer } from '@base-ui/react/drawer';
 import {
   useCallback,
   useId,
@@ -7,14 +8,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { CloseIcon } from '../../icons/CloseIcon';
 import { useOverflowFocusable } from '../../hooks/useOverflowFocusable';
-import { IconButton } from '../IconButton/IconButton';
 import { usePortalContainer } from '../ThemeScope/PortalContainerContext';
-import a11yStyles from '../../styles/a11y.module.css';
-import closeCircleStyles from '../../styles/closeCircle.module.css';
 import popupStyles from '../../styles/popup.module.css';
-import { hasContent } from '../../utils/hasContent';
+import { DialogContent } from './DialogContent';
+import { sheetSwipeDirection } from './swipeDirection';
 import styles from './Dialog.module.css';
 
 // The package's `types` carry no Node globals, so the declaration build does not know `process`.
@@ -97,14 +95,17 @@ export interface DialogProps {
   closeVariant?: 'ghost' | 'soft';
   /**
    * Draws no close control. The caller renders its own visible way out (a "Cancel" in the footer);
-   * Escape and a press on the scrim still close the dialog, and `headerEnd` still renders. With no
-   * close control the opening focus goes to the first tabbable control in the popup.
+   * Escape and a press on the scrim still close the dialog, and `headerEnd` still renders. On a
+   * sheet a touch swipe toward its edge (and Android's back gesture) closes it too; only a
+   * controlled `open` can refuse that. With no close control the opening focus goes to the first
+   * tabbable control in the popup.
    */
   closeHidden?: boolean;
   /**
    * Whether a press outside the popup closes it. Escape always does: Base UI has no prop for
    * that, and vetoing it means cancelling the event inside `onOpenChange`, which this wrapper
-   * deliberately does not expose.
+   * deliberately does not expose. On a sheet a touch swipe toward its edge (and Android's back
+   * gesture) closes it too, whatever this says; only a controlled `open` can refuse that.
    */
   dismissOnOutsidePress?: boolean;
   /**
@@ -164,7 +165,15 @@ export interface DialogProps {
   onOpenChange?: (open: boolean, eventDetails: unknown) => void;
 }
 
-const headingTags = { 2: 'h2', 3: 'h3', 4: 'h4' } as const;
+const DIALOG_PARTS = {
+  Title: BaseDialog.Title,
+  Description: BaseDialog.Description,
+  Close: BaseDialog.Close,
+};
+const DRAWER_PARTS = { Title: Drawer.Title, Description: Drawer.Description, Close: Drawer.Close };
+// Drawer's scrim lets presses through while it closes; the sheet's has always caught them until
+// it unmounts, as the centred dialog's still does.
+const SCRIM_TAKES_PRESSES = { pointerEvents: 'auto' } as const;
 
 /** The opens Base UI reports for a pointer: its `initialFocus` function receives one of these. */
 const POINTER_OPENS = new Set(['mouse', 'touch', 'pen']);
@@ -249,10 +258,6 @@ export function Dialog({
   // `side` reaches the DOM only for a sheet, so the skin's `[data-side='end']` rules can never
   // touch a centred dialog and the centred test can assert the attribute's absence.
   const sheetSide = variant === 'sheet' ? side : undefined;
-  // The `?? 'h2'` is for JavaScript callers, who are not held to the `2 | 3 | 4` union: an
-  // out-of-range level would otherwise resolve to `undefined` and throw in React as an invalid
-  // element type. `@calcifer-design/ui` is consumed from JavaScript apps.
-  const Heading = headingTags[headingLevel] ?? 'h2';
   const container = usePortalContainer();
   const popupRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -331,12 +336,83 @@ export function Dialog({
     },
     [endQuiet, sheetSide],
   );
-  const showEndGroup = hasContent(headerEnd) || !closeHidden;
   // A body that scrolls is a Tab stop while it overflows, named by the heading, so a keyboard can
   // scroll text that holds no control of its own (Safari makes no scroller focusable). A body that
   // fits adds no stop. The heading's id is ours so the body can point at it.
   const titleId = useId();
   const [bodyRef, bodyOverflows] = useOverflowFocusable<HTMLDivElement>();
+  const contentProps = {
+    showHandle: sheetSide === 'bottom',
+    heading,
+    headingLevel,
+    headingHidden,
+    headerStart,
+    headerEnd,
+    description,
+    children,
+    footer,
+    closeLabel,
+    closeVariant,
+    closeHidden,
+    closeRef,
+    titleId,
+    bodyRef,
+    bodyOverflows,
+  };
+  const backdropProps = {
+    className: [popupStyles.dialogLayer, popupStyles.scrim].join(' '),
+    'data-variant': variant,
+    'data-side': sheetSide,
+  };
+  const viewportProps = {
+    className: [popupStyles.dialogLayer, styles.viewport].join(' '),
+    'data-variant': variant,
+    'data-side': sheetSide,
+    onFocus: holdFocusInTrap,
+  };
+  const popupProps = {
+    ref: attachPopup,
+    className: [popupStyles.surface, styles.popup].join(' '),
+    'data-popup': variant === 'sheet' ? 'sheet' : 'dialog',
+    'data-side': sheetSide,
+    // Modal (Base UI's default, which this wrapper never changes): focus is trapped and Base UI
+    // hides the rest of the page with `aria-hidden` while open. Base UI does not write
+    // `aria-modal`, so the popup says it here, as the DatePicker's calendar does.
+    'aria-modal': 'true' as const,
+    initialFocus,
+    finalFocus,
+    onFocus: holdOpeningRingBack,
+  };
+  if (variant === 'sheet') {
+    // The direction is read where the popup lands: the scope's portal host, or `<body>`.
+    const swipeDirection = sheetSwipeDirection(
+      side,
+      container ?? (typeof document === 'undefined' ? null : document.body),
+    );
+    return (
+      <Drawer.Root
+        open={open}
+        defaultOpen={defaultOpen}
+        onOpenChange={onOpenChange}
+        disablePointerDismissal={!dismissOnOutsidePress}
+        swipeDirection={swipeDirection}
+      >
+        {trigger === undefined ? null : <Drawer.Trigger render={trigger} />}
+        {/* Measures the on-screen keyboard onto the viewport and takes over taps on text fields. */}
+        <Drawer.VirtualKeyboardProvider>
+          <Drawer.Portal container={container}>
+            <Drawer.Backdrop {...backdropProps} style={SCRIM_TAKES_PRESSES} />
+            <Drawer.Viewport {...viewportProps}>
+              {/* `data-drawer-content`: Drawer skips mouse and pen drags, so only touch swipes. */}
+              <Drawer.Popup {...popupProps} data-drawer-content="">
+                <DialogContent parts={DRAWER_PARTS} {...contentProps} />
+              </Drawer.Popup>
+            </Drawer.Viewport>
+          </Drawer.Portal>
+        </Drawer.VirtualKeyboardProvider>
+      </Drawer.Root>
+    );
+  }
   return (
     <BaseDialog.Root
       open={open}
@@ -346,80 +422,10 @@ export function Dialog({
     >
       {trigger === undefined ? null : <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>
-        <BaseDialog.Backdrop
-          className={[popupStyles.dialogLayer, popupStyles.scrim].join(' ')}
-          data-variant={variant}
-          data-side={sheetSide}
-        />
-        <BaseDialog.Viewport
-          className={[popupStyles.dialogLayer, styles.viewport].join(' ')}
-          data-variant={variant}
-          data-side={sheetSide}
-          onFocus={holdFocusInTrap}
-        >
-          <BaseDialog.Popup
-            ref={attachPopup}
-            className={[popupStyles.surface, styles.popup].join(' ')}
-            data-popup={variant === 'sheet' ? 'sheet' : 'dialog'}
-            data-side={sheetSide}
-            // Modal (Base UI's default, which this wrapper never changes): focus is trapped and
-            // Base UI hides the rest of the page with `aria-hidden` while open. Base UI does not
-            // write `aria-modal`, so the popup says it here, as the DatePicker's calendar does.
-            aria-modal="true"
-            initialFocus={initialFocus}
-            finalFocus={finalFocus}
-            onFocus={holdOpeningRingBack}
-          >
-            {sheetSide === 'bottom' ? <div className={styles.handle} aria-hidden="true" /> : null}
-            <div className={styles.header}>
-              {headerStart}
-              <BaseDialog.Title
-                id={titleId}
-                className={[styles.heading, headingHidden ? a11yStyles.visuallyHidden : undefined]
-                  .filter(Boolean)
-                  .join(' ')}
-                render={<Heading />}
-              >
-                {heading}
-              </BaseDialog.Title>
-              {showEndGroup ? (
-                <div className={styles.headerEnd}>
-                  {headerEnd}
-                  {closeHidden ? null : (
-                    <BaseDialog.Close
-                      ref={closeRef}
-                      render={
-                        <IconButton
-                          label={closeLabel}
-                          variant={closeVariant}
-                          size="sm"
-                          className={[closeCircleStyles.close, styles.closeButton].join(' ')}
-                        >
-                          <CloseIcon />
-                        </IconButton>
-                      }
-                    />
-                  )}
-                </div>
-              ) : null}
-            </div>
-            {description === undefined ? null : (
-              <BaseDialog.Description className={styles.description}>
-                {description}
-              </BaseDialog.Description>
-            )}
-            {children === undefined ? null : (
-              <div
-                ref={bodyRef}
-                className={styles.body}
-                {...(bodyOverflows
-                  ? { tabIndex: 0, role: 'region', 'aria-labelledby': titleId }
-                  : undefined)}
-              >
-                {children}
-              </div>
-            )}
-            {footer === undefined ? null : <div className={styles.footer}>{footer}</div>}
+        <BaseDialog.Backdrop {...backdropProps} />
+        <BaseDialog.Viewport {...viewportProps}>
+          <BaseDialog.Popup {...popupProps}>
+            <DialogContent parts={DIALOG_PARTS} {...contentProps} />
           </BaseDialog.Popup>
         </BaseDialog.Viewport>
       </BaseDialog.Portal>

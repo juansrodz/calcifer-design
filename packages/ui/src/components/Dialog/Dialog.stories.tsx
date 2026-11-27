@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect, useRef, useState } from 'react';
-import { expect, screen, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test';
 import { Button } from '../Button/Button';
 import { Field } from '../Field/Field';
 import { IconButton } from '../IconButton/IconButton';
@@ -8,7 +8,8 @@ import { Tag } from '../Tag/Tag';
 import { TextInput } from '../TextInput/TextInput';
 import { demoTheme, demoThemeCss } from '../ThemeScope/fixtures';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
-import { Dialog } from './Dialog';
+import { Dialog, type DialogProps } from './Dialog';
+import { swipe, swipeStage, tap, type SwipeOptions } from './swipeGesture';
 
 /** A three-dot glyph for the header's "More" button; the library ships no such icon. */
 function MoreGlyph() {
@@ -232,11 +233,23 @@ const paddingHooksCss = `.dialog-padding-hooks {
   --drawer-padding-inline: 27px;
 }`;
 
+/** Waits for the popup's running transitions, then a frame, so a reset that follows has landed. */
+async function transitionsFinished(popup: HTMLElement): Promise<void> {
+  // A transition cancelled as it ends rejects `finished`; the wait is for it to be over.
+  await Promise.allSettled(popup.getAnimations().map((animation) => animation.finished));
+  await new Promise((resume) => requestAnimationFrame(resume));
+}
+
 /** Waits for the popup's opening transition, which moves it (and scales a centred one). */
+async function settledPopup(popup: HTMLElement): Promise<void> {
+  await waitFor(() => expect(popup).not.toHaveAttribute('data-starting-style'));
+  await transitionsFinished(popup);
+}
+
+/** The one open dialog, once its opening transition is over. */
 async function settledDialog(): Promise<HTMLElement> {
   const popup = await screen.findByRole('dialog');
-  await waitFor(() => expect(popup).not.toHaveAttribute('data-starting-style'));
-  await Promise.all(popup.getAnimations().map((animation) => animation.finished));
+  await settledPopup(popup);
   return popup;
 }
 
@@ -598,4 +611,660 @@ export const DefaultAtDoubleText: Story = {
   globals: HeadingAtDoubleText.globals,
   decorators: HeadingAtDoubleText.decorators,
   play: playHeadingAtDoubleText,
+};
+
+/** A phone sheet in the demo theme: the swipe stories run in the 390 px `mobile` window. */
+const swipeStory = {
+  globals: { viewport: { value: 'mobile' } },
+  decorators: [
+    (Story) => (
+      <>
+        <style>{demoThemeCss}</style>
+        <ThemeScope theme={demoTheme}>
+          <Story />
+        </ThemeScope>
+      </>
+    ),
+  ],
+} satisfies Story;
+
+/** A bottom sheet open on load, with its own `onOpenChange` spy. */
+function swipeArgs(): Story['args'] {
+  return { variant: 'sheet', defaultOpen: true, onOpenChange: fn() };
+}
+
+/** The open bottom sheet's scrim, which Drawer renders as a presentation `div`. */
+function sheetScrim(): HTMLElement {
+  const scrim = document.querySelector<HTMLElement>('[role="presentation"][data-variant="sheet"]');
+  if (scrim === null) {
+    throw new Error('the sheet has no scrim');
+  }
+  return scrim;
+}
+
+/** The transform transitions running on the element. */
+function transformTransitions(element: Element): Animation[] {
+  return element
+    .getAnimations()
+    .filter(
+      (animation) =>
+        animation instanceof CSSTransition && animation.transitionProperty === 'transform',
+    );
+}
+
+/** Waits for `onOpenChange` to report a close the swipe caused. */
+async function waitForSwipeClose(onOpenChange: DialogProps['onOpenChange']): Promise<void> {
+  await waitFor(() =>
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: 'swipe' })),
+  );
+}
+
+/** A drag of this share of a popup's size is past the half that closes it. */
+const PAST_HALF = 0.6;
+
+/** A slow drag down past half the popup's height. */
+function downDrag(popup: HTMLElement): SwipeOptions {
+  return { deltaY: popup.offsetHeight * PAST_HALF, durationMs: 300 };
+}
+
+/** A slow drag past half the popup's width, toward `direction`. */
+function sideDrag(popup: HTMLElement, direction: 'right' | 'left'): SwipeOptions {
+  const sign = direction === 'right' ? 1 : -1;
+  return { deltaX: popup.offsetWidth * PAST_HALF * sign, durationMs: 300 };
+}
+
+/** Too short and slow to close the sheet. */
+const SHORT_SWIPE: SwipeOptions = { deltaY: 40, durationMs: 800 };
+
+/** Short but fast enough to close the sheet. */
+const FLICK: SwipeOptions = { deltaY: 60, durationMs: 60, steps: 4 };
+
+const playSwipeToDismiss: Story['play'] = async ({ args }) => {
+  const popup = await settledDialog();
+  await swipe(popup, downDrag(popup));
+  await waitForSwipeClose(args.onOpenChange);
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+};
+
+const playShortSwipeReturns: Story['play'] = async ({ args }) => {
+  const popup = await settledDialog();
+  const restTop = popup.getBoundingClientRect().top;
+  await swipe(popup, SHORT_SWIPE);
+  await waitFor(() => expect(popup.getBoundingClientRect().top).toBeCloseTo(restTop, 0));
+  await expect(args.onOpenChange).not.toHaveBeenCalled();
+};
+
+const playFlickCloses: Story['play'] = async ({ args }) => {
+  const popup = await settledDialog();
+  await swipe(popup, FLICK);
+  await waitForSwipeClose(args.onOpenChange);
+};
+
+/** Swiping down past half the sheet's height closes it with the swipe reason. */
+export const SheetSwipeToDismiss: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playSwipeToDismiss,
+};
+
+/** Mid-drag the popup is translated by the drag, with no transition running on transform. */
+export const SheetFollowsTheFinger: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: async () => {
+    const popup = await settledDialog();
+    const restTop = popup.getBoundingClientRect().top;
+    const drag = await swipeStage(popup, { deltaY: 80 });
+    await expect(popup.getBoundingClientRect().top - restTop).toBeCloseTo(80, -1);
+    await expect(
+      popup.getAnimations().filter((animation) => animation instanceof CSSTransition),
+    ).toHaveLength(0);
+    // The scrim lightens with the share of the sheet dragged away.
+    const scrim = sheetScrim();
+    await expect(Number(getComputedStyle(scrim).opacity)).toBeCloseTo(
+      1 - 80 / popup.offsetHeight,
+      2,
+    );
+    await drag.release();
+  },
+};
+
+/**
+ * A swipe close slides on from where the finger let go, and quicker than a close from rest; the
+ * scrim fades quicker too, as the popup can finish before a full fade does and takes it along.
+ */
+export const SheetSwipeCloseKeepsTheDrag: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: async () => {
+    const popup = await settledDialog();
+    const scrim = sheetScrim();
+    const restDurationMs = parseFloat(getComputedStyle(popup).transitionDuration) * 1000;
+    const restFadeMs = parseFloat(getComputedStyle(scrim).transitionDuration) * 1000;
+    const drag = await swipeStage(popup, downDrag(popup));
+    const releasedTop = popup.getBoundingClientRect().top;
+    await drag.release();
+    const [slide] = transformTransitions(popup);
+    if (slide === undefined) {
+      throw new Error('the sheet runs no transform transition as it closes');
+    }
+    // Held in place, so the sheet stays mounted while its scrim is read.
+    slide.pause();
+    slide.currentTime = 0;
+    await expect(popup.getBoundingClientRect().top).toBeCloseTo(releasedTop, 0);
+    await expect(scrim).toHaveAttribute('data-swipe-dismiss');
+    const fadeMs = parseFloat(getComputedStyle(scrim).transitionDuration) * 1000;
+    const slideDurationMs = Number(slide.effect?.getComputedTiming().duration ?? 0);
+    slide.finish();
+    await expect(slideDurationMs).toBeGreaterThan(0);
+    await expect(slideDurationMs).toBeLessThan(restDurationMs);
+    await expect(fadeMs).toBeGreaterThan(0);
+    await expect(fadeMs).toBeLessThan(restFadeMs);
+  },
+};
+
+/** A slow drag of 40 px springs back and never calls `onOpenChange`. */
+export const SheetShortSwipeReturns: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playShortSwipeReturns,
+};
+
+/** A fast 60 px flick closes even though it is short of half the height. */
+export const SheetFlickCloses: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playFlickCloses,
+};
+
+/**
+ * With the body scrolled to 300 px, a downward drag on the body: every move reaches the body
+ * uncancelled, so the browser is free to scroll it; the sheet does not move and `onOpenChange` is
+ * not called. The browser's scroll itself is not checked.
+ */
+export const SheetScrollsBeforeSwipe: Story = {
+  ...swipeStory,
+  args: { ...swipeArgs(), children: longBody },
+  play: async ({ args }) => {
+    const popup = await settledDialog();
+    const body = within(popup).getByRole('region');
+    body.scrollTop = 300;
+    await expect(body.scrollTop).toBe(300);
+    const restTop = popup.getBoundingClientRect().top;
+    // The drawer claims a move by stopping it before the body sees it and cancelling it.
+    const movesCancelled: boolean[] = [];
+    const recordMove = (event: Event) => movesCancelled.push(event.defaultPrevented);
+    body.addEventListener('touchmove', recordMove);
+    try {
+      await swipe(body, { deltaY: 120 });
+    } finally {
+      body.removeEventListener('touchmove', recordMove);
+    }
+    await expect(movesCancelled).toEqual(Array.from({ length: 10 }, () => false));
+    await expect(popup).not.toHaveAttribute('data-swiping');
+    await expect(popup.getBoundingClientRect().top).toBeCloseTo(restTop, 0);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+/** The footer button's own handler, which the tap story counts. */
+const registerClick = fn();
+
+/**
+ * A touch tap (no move) on the footer button: its touchstart and touchend go through uncancelled,
+ * the sheet does not move and `onOpenChange` is not called. The click is sent by hand.
+ */
+export const SheetTapIsNotASwipe: Story = {
+  ...swipeStory,
+  args: { ...swipeArgs(), footer: <Button onClick={registerClick}>Register the remote</Button> },
+  play: async ({ args }) => {
+    registerClick.mockClear();
+    const popup = await settledDialog();
+    const button = within(popup).getByRole('button', { name: 'Register the remote' });
+    // Caught at the window on the way down, so no handler can hide an event by stopping it. The
+    // browser sends no click after a tap whose touchstart or touchend was cancelled.
+    const touches: Event[] = [];
+    const recordTouch = (event: Event) => touches.push(event);
+    window.addEventListener('touchstart', recordTouch, { capture: true });
+    window.addEventListener('touchend', recordTouch, { capture: true });
+    try {
+      await tap(button);
+    } finally {
+      window.removeEventListener('touchstart', recordTouch, { capture: true });
+      window.removeEventListener('touchend', recordTouch, { capture: true });
+    }
+    await expect(touches.map((touch) => touch.type)).toEqual(['touchstart', 'touchend']);
+    await expect(touches.filter((touch) => touch.defaultPrevented)).toEqual([]);
+    // A stand-in for the click the browser sends after an uncancelled tap.
+    button.click();
+    await expect(registerClick).toHaveBeenCalledTimes(1);
+    await expect(popup).not.toHaveAttribute('data-swiping');
+    await expect(screen.getByRole('dialog')).toBe(popup);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  },
+};
+
+/**
+ * The short swipe, the flick and the long swipe under reduced motion, which the test runner
+ * emulates for this story (`parameters.reducedMotion`). The snap back runs no transform transition.
+ */
+export const SheetSwipeReducedMotion: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  parameters: { reducedMotion: true },
+  play: async (context) => {
+    await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    const onOpenChange = context.args.onOpenChange as ReturnType<typeof fn>;
+    const popup = await settledDialog();
+    const restTop = popup.getBoundingClientRect().top;
+    await swipe(popup, SHORT_SWIPE);
+    // Read straight after the release: the snap back is already over.
+    await expect(transformTransitions(popup)).toHaveLength(0);
+    await expect(popup.getBoundingClientRect().top).toBeCloseTo(restTop, 0);
+    await expect(onOpenChange).not.toHaveBeenCalled();
+    // The flick closes with no slide either.
+    await swipe(popup, FLICK);
+    await expect(transformTransitions(popup)).toHaveLength(0);
+    await waitForSwipeClose(onOpenChange);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    within(context.canvasElement).getByRole('button', { name: 'Remove remote' }).click();
+    onOpenChange.mockClear();
+    await playSwipeToDismiss?.(context);
+  },
+};
+
+/** A side panel in the demo theme: the 1280 px `desktop` window is wide enough to show it as one. */
+const sideSwipeStory = {
+  ...swipeStory,
+  globals: { viewport: { value: 'desktop' } },
+} satisfies Story;
+
+/** A side sheet open on load, with its own `onOpenChange` spy. */
+function sideSwipeArgs(): Story['args'] {
+  return { variant: 'sheet', side: 'end', defaultOpen: true, onOpenChange: fn() };
+}
+
+/** A drag away from the edge springs the side sheet back; one toward it closes it. */
+function playSideSwipe(toward: 'right' | 'left'): Story['play'] {
+  const away = toward === 'right' ? 'left' : 'right';
+  return async ({ args }) => {
+    const popup = await settledDialog();
+    const restLeft = popup.getBoundingClientRect().left;
+    await swipe(popup, sideDrag(popup, away));
+    await waitFor(() => expect(popup.getBoundingClientRect().left).toBeCloseTo(restLeft, 0));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await swipe(popup, sideDrag(popup, toward));
+    await waitForSwipeClose(args.onOpenChange);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  };
+}
+
+/** Swiping a side sheet toward its edge, right in a left-to-right page, closes it. */
+export const SideSheetSwipeRight: Story = {
+  ...sideSwipeStory,
+  args: sideSwipeArgs(),
+  play: playSideSwipe('right'),
+};
+
+/** In a right-to-left page the side sheet docks on the left, so it closes on a swipe left. */
+export const SideSheetRightToLeftSwipesLeft: Story = {
+  ...SideSheetRightToLeft,
+  args: { ...SideSheetRightToLeft.args, onOpenChange: fn() },
+  globals: sideSwipeStory.globals,
+  play: playSideSwipe('left'),
+};
+
+/**
+ * A mouse or pen press on the sheet starts no swipe: held 60% of the way, the popup has not moved
+ * and is not swiping, and letting go closes nothing.
+ */
+function playIgnoresDrag(kind: 'mouse' | 'pen', side: 'bottom' | 'end'): Story['play'] {
+  return async ({ args }) => {
+    const popup = await settledDialog();
+    const restBox = popup.getBoundingClientRect();
+    const travel =
+      side === 'bottom'
+        ? { deltaY: restBox.height * PAST_HALF }
+        : { deltaX: restBox.width * PAST_HALF };
+    const drag = await swipeStage(popup, { ...travel, durationMs: 300, kind });
+    const draggedBox = popup.getBoundingClientRect();
+    await expect(popup).not.toHaveAttribute('data-swiping');
+    await expect(draggedBox.top).toBeCloseTo(restBox.top, 0);
+    await expect(draggedBox.left).toBeCloseTo(restBox.left, 0);
+    await drag.release();
+    await expect(screen.getByRole('dialog')).toBe(popup);
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+  };
+}
+
+/** Swiping is for touch: a mouse drag does not move the bottom sheet. */
+export const SheetIgnoresMouseDrag: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playIgnoresDrag('mouse', 'bottom'),
+};
+
+/** A pen drag does not move the bottom sheet either. */
+export const SheetIgnoresPenDrag: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  play: playIgnoresDrag('pen', 'bottom'),
+};
+
+/** A mouse drag does not move the side sheet. */
+export const SideSheetIgnoresMouseDrag: Story = {
+  ...sideSwipeStory,
+  args: sideSwipeArgs(),
+  play: playIgnoresDrag('mouse', 'end'),
+};
+
+const GUARDED_HEADING = 'Edit the potluck item';
+const DISCARD_HEADING = 'Discard changes?';
+
+/** A sheet holding unsaved changes: any close asks first, through a centred confirm of its own. */
+function GuardedSheet(args: DialogProps) {
+  const [open, setOpen] = useState(true);
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <Dialog
+      {...args}
+      heading={GUARDED_HEADING}
+      description="Change the dish or its note, then save."
+      footer={<Button>Save</Button>}
+      open={open}
+      onOpenChange={(nextOpen, eventDetails) => {
+        args.onOpenChange?.(nextOpen, eventDetails);
+        // The close is refused: the sheet stays open and the confirm asks.
+        setConfirming(true);
+      }}
+    >
+      <p>The dish name and the note are not saved yet.</p>
+      <Dialog
+        heading={DISCARD_HEADING}
+        description="The changes to this item are lost."
+        open={confirming}
+        onOpenChange={setConfirming}
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
+              Keep editing
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setConfirming(false);
+                setOpen(false);
+              }}
+            >
+              Discard
+            </Button>
+          </>
+        }
+      />
+    </Dialog>
+  );
+}
+
+/** The guarded sheet, open on load, with its own `onOpenChange` spy. */
+function guardedArgs(): Story['args'] {
+  return { variant: 'sheet', trigger: undefined, onOpenChange: fn() };
+}
+
+interface FrameSample {
+  top: number;
+  scrimOpacity: number;
+}
+
+/**
+ * Samples the sheet's top and its scrim's opacity on every frame until `stop()`, which is safe to
+ * call twice.
+ */
+function recordFrames(popup: HTMLElement, scrim: HTMLElement): { stop(): FrameSample[] } {
+  const frames: FrameSample[] = [];
+  let recording = true;
+  const sample = () => {
+    if (!recording) {
+      return;
+    }
+    frames.push({
+      top: popup.getBoundingClientRect().top,
+      scrimOpacity: Number(getComputedStyle(scrim).opacity),
+    });
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+  return {
+    stop() {
+      recording = false;
+      return frames;
+    },
+  };
+}
+
+/**
+ * A swipe close the caller refuses, as WBW's dirty guard does: the sheet stays open and returns to
+ * rest from where the finger let go, never further down, and the discard confirm opens with focus.
+ */
+export const SheetRefusesSwipeClose: Story = {
+  ...swipeStory,
+  args: guardedArgs(),
+  render: GuardedSheet,
+  play: async ({ args }) => {
+    const sheet = await settledDialog();
+    const restTop = sheet.getBoundingClientRect().top;
+    const scrim = sheetScrim();
+    const drag = await swipeStage(sheet, downDrag(sheet));
+    const releasedTop = sheet.getBoundingClientRect().top;
+    const releasedScrimOpacity = Number(getComputedStyle(scrim).opacity);
+    const frames = recordFrames(sheet, scrim);
+    try {
+      await drag.release();
+      await waitForSwipeClose(args.onOpenChange);
+      const confirm = await screen.findByRole('dialog', { name: DISCARD_HEADING });
+      await waitFor(() => expect(sheet.getBoundingClientRect().top).toBeLessThan(releasedTop - 1));
+      await transitionsFinished(sheet);
+      await settledPopup(confirm);
+      await expect(confirm).toBeVisible();
+      await expect(confirm.contains(document.activeElement)).toBe(true);
+    } finally {
+      // A failed wait must not leave the frame loop running.
+      frames.stop();
+    }
+    const samples = frames.stop();
+    await expect(samples.length).toBeGreaterThan(1);
+    await expect(sheet.isConnected).toBe(true);
+    await expect(sheet).not.toHaveAttribute('data-ending-style');
+    await expect(Math.abs(sheet.getBoundingClientRect().top - restTop)).toBeLessThanOrEqual(1);
+    // No jump toward closed on the way back, and the scrim never lightens past the release.
+    await expect(Math.max(...samples.map((sample) => sample.top))).toBeLessThanOrEqual(
+      releasedTop + 1,
+    );
+    await expect(Math.min(...samples.map((sample) => sample.scrimOpacity))).toBeGreaterThanOrEqual(
+      releasedScrimOpacity - 0.01,
+    );
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * With the discard confirm over the sheet, a touch drag across the sheet (from the confirm, and from
+ * the confirm's layer over the sheet's handle) moves nothing, and the confirm stays open.
+ */
+export const SheetUnderConfirm: Story = {
+  ...swipeStory,
+  args: guardedArgs(),
+  render: GuardedSheet,
+  play: async ({ args }) => {
+    const sheet = await settledDialog();
+    within(sheet).getByRole('button', { name: 'Close' }).click();
+    const confirm = await screen.findByRole('dialog', { name: DISCARD_HEADING });
+    await settledPopup(confirm);
+    const restTop = sheet.getBoundingClientRect().top;
+    const handle = sheet.firstElementChild;
+    if (handle === null) {
+      throw new Error('the bottom sheet has no handle');
+    }
+    for (const startAt of [sheet, handle]) {
+      // The point is under the confirm's layer: the press does not land inside the sheet.
+      const startBox = startAt.getBoundingClientRect();
+      const pressed = document.elementFromPoint(
+        startBox.left + startBox.width / 2,
+        startBox.top + startBox.height / 2,
+      );
+      await expect(sheet.contains(pressed)).toBe(false);
+      const drag = await swipeStage(sheet, { ...downDrag(sheet), startAt });
+      await expect(sheet).not.toHaveAttribute('data-swiping');
+      await expect(sheet.getBoundingClientRect().top).toBeCloseTo(restTop, 0);
+      await drag.release();
+      await transitionsFinished(sheet);
+      await expect(sheet.getBoundingClientRect().top).toBeCloseTo(restTop, 0);
+      await expect(confirm.isConnected).toBe(true);
+      await expect(confirm).not.toHaveAttribute('data-ending-style');
+    }
+    // The one close is the X that opened the confirm.
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+const PARENT_HEADING = 'Edit the potluck';
+const CHILD_HEADING = 'Switch to Request?';
+
+/** The story's args: the sheet's own, and a spy for the child sheet's `onOpenChange`. */
+type SheetOnSheetArgs = DialogProps & {
+  onChildOpenChange: NonNullable<DialogProps['onOpenChange']>;
+};
+
+/** A sheet that opens a second sheet over itself, as WBW's who-can-join switch confirm does. */
+function SheetWithChildSheet({ onChildOpenChange, ...args }: SheetOnSheetArgs) {
+  const [childOpen, setChildOpen] = useState(false);
+  return (
+    <Dialog
+      {...args}
+      heading={PARENT_HEADING}
+      description="Set who can join and what the potluck needs."
+      footer={<Button>Save</Button>}
+    >
+      <p>Who can join decides who sees the event and who has to ask.</p>
+      <Button variant="secondary" onClick={() => setChildOpen(true)}>
+        Change who can join
+      </Button>
+      <Dialog
+        variant="sheet"
+        heading={CHILD_HEADING}
+        description="People who are not friends of a host have to ask to join."
+        open={childOpen}
+        onOpenChange={(nextOpen, eventDetails) => {
+          onChildOpenChange(nextOpen, eventDetails);
+          setChildOpen(nextOpen);
+        }}
+        footer={<Button size="sm">Switch</Button>}
+      />
+    </Dialog>
+  );
+}
+
+/** What a parent sheet looks like: where it is, and how it is transformed and rounded. */
+function sheetLook(popup: HTMLElement) {
+  const { top, left, width, height } = popup.getBoundingClientRect();
+  const computed = getComputedStyle(popup);
+  return { top, left, width, height, transform: computed.transform, radius: computed.borderRadius };
+}
+
+/**
+ * A sheet on a sheet: the parent keeps its look while the child is open, the child swipes closed
+ * on its own, and the parent then swipes closed too.
+ */
+export const SheetOnSheet: StoryObj<SheetOnSheetArgs> = {
+  ...swipeStory,
+  args: { ...swipeArgs(), trigger: undefined, onChildOpenChange: fn() },
+  render: SheetWithChildSheet,
+  play: async ({ args }) => {
+    const parent = await settledDialog();
+    const restLook = sheetLook(parent);
+    within(parent).getByRole('button', { name: 'Change who can join' }).click();
+    const child = await screen.findByRole('dialog', { name: CHILD_HEADING });
+    await settledPopup(child);
+    // Drawer's nested state is on, and the skin draws nothing for it.
+    await expect(parent).toHaveAttribute('data-nested-drawer-open');
+    await expect(sheetLook(parent)).toEqual(restLook);
+    const parentScrim = sheetScrim();
+    const parentScrimOpacity = getComputedStyle(parentScrim).opacity;
+    // Mid-drag the child moves, and the parent and its scrim stay as they are.
+    const childRestTop = child.getBoundingClientRect().top;
+    const drag = await swipeStage(child, downDrag(child));
+    await expect(child.getBoundingClientRect().top).toBeGreaterThan(childRestTop + 1);
+    await expect(sheetLook(parent)).toEqual(restLook);
+    await expect(getComputedStyle(parentScrim).opacity).toBe(parentScrimOpacity);
+    await drag.release();
+    await waitForSwipeClose(args.onChildOpenChange);
+    await waitFor(() => expect(child.isConnected).toBe(false));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expect(parent.isConnected).toBe(true);
+    await expect(parent).not.toHaveAttribute('data-ending-style');
+    await transitionsFinished(parent);
+    await expect(sheetLook(parent)).toEqual(restLook);
+    await swipe(parent, downDrag(parent));
+    await waitForSwipeClose(args.onOpenChange);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  },
+};
+
+/** The keyboard height the form stories stand in for, as Drawer would measure it on a phone. */
+const KEYBOARD_INSET = 300;
+
+/**
+ * A bottom sheet holding a text field, with its action pinned in the footer. While the on-screen
+ * keyboard is up, the sheet pads its foot by the keyboard's height so the footer rides above it.
+ */
+export const SheetWithForm: Story = {
+  ...swipeStory,
+  args: {
+    ...swipeArgs(),
+    heading: 'Bring a dish',
+    description: undefined,
+    children: (
+      <Field label="Dish">
+        <TextInput />
+      </Field>
+    ),
+    footer: <Button>Add the dish</Button>,
+  },
+  play: async () => {
+    const popup = await settledDialog();
+    // Drawer writes the keyboard's height on the viewport, the popup's parent.
+    const viewport = popup.parentElement;
+    if (viewport === null) {
+      throw new Error('the sheet has no viewport');
+    }
+    const footerButton = within(popup).getByRole('button', { name: 'Add the dish' });
+    const restBottom = footerButton.getBoundingClientRect().bottom;
+    const restPaddingEnd = parseFloat(getComputedStyle(popup).paddingBlockEnd);
+    await expect(restPaddingEnd).toBeGreaterThan(0);
+    viewport.style.setProperty('--drawer-keyboard-inset', `${KEYBOARD_INSET}px`);
+    try {
+      await expect(getComputedStyle(popup).paddingBlockEnd).toBe(
+        `${restPaddingEnd + KEYBOARD_INSET}px`,
+      );
+      await expect(footerButton.getBoundingClientRect().bottom).toBeCloseTo(
+        restBottom - KEYBOARD_INSET,
+        0,
+      );
+    } finally {
+      viewport.style.removeProperty('--drawer-keyboard-inset');
+    }
+  },
+};
+
+/** A touch tap on the field focuses it, and typing lands in it. */
+export const SheetWithFormTyping: Story = {
+  ...SheetWithForm,
+  play: async () => {
+    const popup = await settledDialog();
+    const field = within(popup).getByRole('textbox', { name: 'Dish' });
+    await tap(field);
+    await waitFor(() => expect(field).toHaveFocus());
+    await userEvent.keyboard('Tamales');
+    await expect(field).toHaveValue('Tamales');
+    await expect(field).toHaveFocus();
+  },
 };
