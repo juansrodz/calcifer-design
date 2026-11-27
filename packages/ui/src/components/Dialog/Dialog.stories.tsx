@@ -8,7 +8,7 @@ import { Tag } from '../Tag/Tag';
 import { TextInput } from '../TextInput/TextInput';
 import { demoTheme, demoThemeCss } from '../ThemeScope/fixtures';
 import { ThemeScope } from '../ThemeScope/ThemeScope';
-import { Dialog } from './Dialog';
+import { Dialog, type DialogProps } from './Dialog';
 import { swipe, swipeStage } from './swipeGesture';
 
 /** A three-dot glyph for the header's "More" button; the library ships no such icon. */
@@ -938,4 +938,269 @@ export const SideSheetIgnoresMouseDrag: Story = {
   ...sideSwipeStory,
   args: sideSwipeArgs(),
   play: playIgnoresDrag('mouse', 'end'),
+};
+
+const GUARDED_HEADING = 'Edit the potluck item';
+const DISCARD_HEADING = 'Discard changes?';
+
+/** A sheet holding unsaved changes: any close asks first, through a centred confirm of its own. */
+function GuardedSheet(args: DialogProps) {
+  const [open, setOpen] = useState(true);
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <Dialog
+      {...args}
+      heading={GUARDED_HEADING}
+      open={open}
+      onOpenChange={(nextOpen, eventDetails) => {
+        args.onOpenChange?.(nextOpen, eventDetails);
+        // The close is refused: the sheet stays open and the confirm asks.
+        if (nextOpen) {
+          setOpen(true);
+        } else {
+          setConfirming(true);
+        }
+      }}
+    >
+      <p>The dish name and the note are not saved yet.</p>
+      <Dialog
+        heading={DISCARD_HEADING}
+        description="The changes to this item are lost."
+        open={confirming}
+        onOpenChange={setConfirming}
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
+              Keep editing
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setConfirming(false);
+                setOpen(false);
+              }}
+            >
+              Discard
+            </Button>
+          </>
+        }
+      />
+    </Dialog>
+  );
+}
+
+/** The guarded sheet, open on load, with its own `onOpenChange` spy. */
+function guardedArgs(): Story['args'] {
+  return { variant: 'sheet', trigger: undefined, onOpenChange: fn() };
+}
+
+interface FrameSample {
+  top: number;
+  scrimOpacity: number;
+}
+
+/** Samples the sheet's top and its scrim's opacity on every frame until `stop()`. */
+function recordFrames(popup: HTMLElement, scrim: HTMLElement): { stop(): FrameSample[] } {
+  const frames: FrameSample[] = [];
+  let recording = true;
+  const sample = () => {
+    if (!recording) {
+      return;
+    }
+    frames.push({
+      top: popup.getBoundingClientRect().top,
+      scrimOpacity: Number(getComputedStyle(scrim).opacity),
+    });
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+  return {
+    stop() {
+      recording = false;
+      return frames;
+    },
+  };
+}
+
+/** Waits for the popup's running transitions, then a frame, so a reset that follows has landed. */
+async function transitionsFinished(popup: HTMLElement): Promise<void> {
+  await Promise.all(popup.getAnimations().map((animation) => animation.finished));
+  await new Promise((resume) => requestAnimationFrame(resume));
+}
+
+/**
+ * A swipe close the caller refuses, as WBW's dirty guard does: the sheet stays open and returns to
+ * rest from where the finger let go, never further down, and the discard confirm opens with focus.
+ */
+export const SheetRefusesSwipeClose: Story = {
+  ...swipeStory,
+  args: guardedArgs(),
+  render: GuardedSheet,
+  play: async ({ args }) => {
+    const sheet = await settledDialog();
+    const restTop = sheet.getBoundingClientRect().top;
+    const drag = await swipeStage(sheet, { deltaY: sheet.offsetHeight * 0.6, durationMs: 300 });
+    const releasedTop = sheet.getBoundingClientRect().top;
+    const releasedScrimOpacity = Number(getComputedStyle(sheetScrim()).opacity);
+    const frames = recordFrames(sheet, sheetScrim());
+    await drag.release();
+    await waitFor(() =>
+      expect(args.onOpenChange).toHaveBeenCalledWith(
+        false,
+        expect.objectContaining({ reason: 'swipe' }),
+      ),
+    );
+    const confirm = await screen.findByRole('dialog', { name: DISCARD_HEADING });
+    await waitFor(() => expect(sheet.getBoundingClientRect().top).toBeLessThan(releasedTop - 1));
+    await transitionsFinished(sheet);
+    await waitFor(() => expect(confirm).not.toHaveAttribute('data-starting-style'));
+    await transitionsFinished(confirm);
+    await expect(confirm).toBeVisible();
+    await expect(confirm.contains(document.activeElement)).toBe(true);
+    const samples = frames.stop();
+    await expect(samples.length).toBeGreaterThan(1);
+    await expect(sheet.isConnected).toBe(true);
+    await expect(sheet).not.toHaveAttribute('data-ending-style');
+    await expect(Math.abs(sheet.getBoundingClientRect().top - restTop)).toBeLessThanOrEqual(1);
+    // No jump toward closed on the way back, and the scrim never lightens past the release.
+    await expect(Math.max(...samples.map((sample) => sample.top))).toBeLessThanOrEqual(
+      releasedTop + 1,
+    );
+    await expect(Math.min(...samples.map((sample) => sample.scrimOpacity))).toBeGreaterThanOrEqual(
+      releasedScrimOpacity - 0.01,
+    );
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * With the discard confirm over the sheet, a touch drag across the sheet (from the confirm, and from
+ * the confirm's layer over the sheet's handle) moves nothing, and the confirm stays open.
+ */
+export const SheetUnderConfirm: Story = {
+  ...swipeStory,
+  args: guardedArgs(),
+  render: GuardedSheet,
+  play: async ({ args }) => {
+    const sheet = await settledDialog();
+    within(sheet).getByRole('button', { name: 'Close' }).click();
+    const confirm = await screen.findByRole('dialog', { name: DISCARD_HEADING });
+    await waitFor(() => expect(confirm).not.toHaveAttribute('data-starting-style'));
+    await transitionsFinished(confirm);
+    const restTop = sheet.getBoundingClientRect().top;
+    const handle = sheet.firstElementChild;
+    if (handle === null) {
+      throw new Error('the bottom sheet has no handle');
+    }
+    for (const startAt of [sheet, handle]) {
+      // The press lands on the confirm's layer, which covers the whole sheet.
+      const startBox = startAt.getBoundingClientRect();
+      const pressed = document.elementFromPoint(
+        startBox.left + startBox.width / 2,
+        startBox.top + startBox.height / 2,
+      );
+      await expect(sheet.contains(pressed)).toBe(false);
+      const drag = await swipeStage(sheet, {
+        deltaY: sheet.offsetHeight * 0.6,
+        durationMs: 300,
+        startAt,
+      });
+      await expect(sheet).not.toHaveAttribute('data-swiping');
+      await expect(sheet.getBoundingClientRect().top).toBeCloseTo(restTop, 0);
+      await drag.release();
+      await transitionsFinished(sheet);
+      await expect(sheet.getBoundingClientRect().top).toBeCloseTo(restTop, 0);
+      await expect(confirm.isConnected).toBe(true);
+      await expect(confirm).not.toHaveAttribute('data-ending-style');
+    }
+    // The one close is the X that opened the confirm.
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+const PARENT_HEADING = 'Edit the potluck';
+const CHILD_HEADING = 'Switch to Request?';
+
+/** The child sheet's own `onOpenChange` spy. */
+const childOpenChange = fn();
+
+/** A sheet that opens a second sheet over itself, as WBW's who-can-join switch confirm does. */
+function SheetWithChildSheet(args: DialogProps) {
+  const [childOpen, setChildOpen] = useState(false);
+  return (
+    <Dialog {...args} heading={PARENT_HEADING}>
+      <p>Who can join decides who sees the event and who has to ask.</p>
+      <Button variant="secondary" onClick={() => setChildOpen(true)}>
+        Change who can join
+      </Button>
+      <Dialog
+        variant="sheet"
+        heading={CHILD_HEADING}
+        description="People who are not friends of a host have to ask to join."
+        open={childOpen}
+        onOpenChange={(nextOpen, eventDetails) => {
+          childOpenChange(nextOpen, eventDetails);
+          setChildOpen(nextOpen);
+        }}
+        footer={<Button size="sm">Switch</Button>}
+      />
+    </Dialog>
+  );
+}
+
+/** What a parent sheet looks like: where it is, and how it is transformed and rounded. */
+function sheetLook(popup: HTMLElement) {
+  const { top, left, width, height } = popup.getBoundingClientRect();
+  const computed = getComputedStyle(popup);
+  return { top, left, width, height, transform: computed.transform, radius: computed.borderRadius };
+}
+
+/**
+ * A sheet on a sheet: the parent keeps its look while the child is open, the child swipes closed
+ * on its own, and the parent then swipes closed too.
+ */
+export const SheetOnSheet: Story = {
+  ...swipeStory,
+  args: swipeArgs(),
+  render: SheetWithChildSheet,
+  play: async ({ args }) => {
+    childOpenChange.mockClear();
+    const parent = await settledDialog();
+    const restLook = sheetLook(parent);
+    within(parent).getByRole('button', { name: 'Change who can join' }).click();
+    const child = await screen.findByRole('dialog', { name: CHILD_HEADING });
+    await waitFor(() => expect(child).not.toHaveAttribute('data-starting-style'));
+    await transitionsFinished(child);
+    // Drawer's nested state is on, and the skin draws nothing for it.
+    await expect(parent).toHaveAttribute('data-nested-drawer-open');
+    await expect(sheetLook(parent)).toEqual(restLook);
+    const parentScrim = sheetScrim();
+    const parentScrimOpacity = getComputedStyle(parentScrim).opacity;
+    // Mid-drag the child moves, and the parent and its scrim stay as they are.
+    const childRestTop = child.getBoundingClientRect().top;
+    const drag = await swipeStage(child, { deltaY: child.offsetHeight * 0.6, durationMs: 300 });
+    await expect(child.getBoundingClientRect().top).toBeGreaterThan(childRestTop + 1);
+    await expect(sheetLook(parent)).toEqual(restLook);
+    await expect(getComputedStyle(parentScrim).opacity).toBe(parentScrimOpacity);
+    await drag.release();
+    await waitFor(() =>
+      expect(childOpenChange).toHaveBeenCalledWith(
+        false,
+        expect.objectContaining({ reason: 'swipe' }),
+      ),
+    );
+    await waitFor(() => expect(child.isConnected).toBe(false));
+    await expect(args.onOpenChange).not.toHaveBeenCalled();
+    await expect(parent).not.toHaveAttribute('data-ending-style');
+    await transitionsFinished(parent);
+    await expect(sheetLook(parent)).toEqual(restLook);
+    await swipe(parent, { deltaY: parent.offsetHeight * 0.6, durationMs: 300 });
+    await waitFor(() =>
+      expect(args.onOpenChange).toHaveBeenCalledWith(
+        false,
+        expect.objectContaining({ reason: 'swipe' }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  },
 };
