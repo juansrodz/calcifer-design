@@ -10,7 +10,10 @@ export interface SwipeOptions {
   deltaY?: number;
   /** The time the moves take, in ms. */
   durationMs?: number;
-  /** How many move events carry the travel. */
+  /**
+   * How many move events carry the travel. A drag takes at least 2, as Drawer reads the first move
+   * as the drag's origin; 0 sends none, which is a tap.
+   */
   steps?: number;
   kind?: PointerKind;
   /** The element whose centre the drag starts on; the target's own centre when left out. */
@@ -29,6 +32,7 @@ interface Gesture {
 }
 
 const POINTER_IDS: Record<Exclude<PointerKind, 'touch'>, number> = { mouse: 1, pen: 2 };
+const MIN_DRAG_MOVES = 2;
 
 function pause(durationMs: number): Promise<void> {
   return new Promise((resume) => setTimeout(resume, durationMs));
@@ -99,8 +103,8 @@ function pointerGesture(target: Element, start: Point, kind: 'mouse' | 'pen'): G
 }
 
 /**
- * Presses and makes the moves across `durationMs`, then holds the drag until `release()`. Drawer
- * takes the first move as the drag's origin, so it lands on the start point and the last on the end.
+ * Presses and makes the moves across `durationMs`, then holds the drag until `release()`. The first
+ * move lands on the start point, which Drawer takes as the drag's origin, and the last on the end.
  */
 export async function swipeStage(
   target: Element,
@@ -119,13 +123,14 @@ export async function swipeStage(
   const gesture =
     kind === 'touch' ? touchGesture(pressed, start) : pointerGesture(pressed, start, kind);
   const end = { clientX: start.clientX + deltaX, clientY: start.clientY + deltaY };
-  const moveCount = Math.max(0, Math.round(steps));
+  const requestedMoves = Math.round(steps);
+  const moveCount = requestedMoves <= 0 ? 0 : Math.max(MIN_DRAG_MOVES, requestedMoves);
   if (moveCount === 0) {
     await pause(durationMs);
   }
   for (let moveIndex = 0; moveIndex < moveCount; moveIndex += 1) {
     await pause(durationMs / moveCount);
-    const share = moveCount === 1 ? 1 : moveIndex / (moveCount - 1);
+    const share = moveIndex / (moveCount - 1);
     gesture.move({
       clientX: start.clientX + deltaX * share,
       clientY: start.clientY + deltaY * share,
@@ -144,4 +149,9 @@ export async function swipeStage(
 export async function swipe(target: Element, options: SwipeOptions): Promise<void> {
   const drag = await swipeStage(target, options);
   await drag.release();
+}
+
+/** A press and lift with no move between, as a finger's tap. */
+export function tap(target: Element): Promise<void> {
+  return swipe(target, { steps: 0, durationMs: 80 });
 }
