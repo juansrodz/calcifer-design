@@ -188,8 +188,8 @@
   transition-duration: var(--sheet-swipe-close-duration);
 }
 
-/* Under reduced motion the sheet still tracks the finger, but the spring back and the swipe close
-   jump. Other closes keep the skin's own. */
+/* Under reduced motion the sheet still tracks the finger, but its opening slide, the spring back
+   and a swipe close jump. A close by another route keeps the skin's own transition. */
 @media (prefers-reduced-motion: reduce) {
   .surface[data-popup='sheet']:not([data-ending-style]),
   .surface[data-popup='sheet'][data-swipe-dismiss] {
@@ -234,4 +234,10 @@
 .scrim[data-swiping] {
   opacity: calc(1 - var(--drawer-swipe-progress, 0));
   transition-property: none;
+}
+
+/* A hard flick slides the popup off in a fraction of the scrim's fade, and the scrim unmounts with
+   it, so the fade is shortened. Drawer gives the scrim no swipe strength to scale it by. */
+.scrim[data-swipe-dismiss][data-ending-style] {
+  transition-duration: var(--motion-duration-1);
 }

@@ -25,6 +25,10 @@ describe('sheetSwipeDirection', () => {
     expect(sheetSwipeDirection('end', elementUnder('rtl'))).toBe('left');
   });
 
+  it('reads dir without regard to case', () => {
+    expect(sheetSwipeDirection('end', elementUnder('RTL'))).toBe('left');
+  });
+
   it('swipes an end sheet left when the element itself says right-to-left', () => {
     const host = document.createElement('div');
     host.setAttribute('dir', 'rtl');

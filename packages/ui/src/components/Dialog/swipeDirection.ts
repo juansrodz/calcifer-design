@@ -11,5 +11,5 @@ export function sheetSwipeDirection(side: SheetSide, element: Element | null): S
   if (side === 'bottom') {
     return 'down';
   }
-  return element?.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'left' : 'right';
+  return element?.closest('[dir]')?.getAttribute('dir')?.toLowerCase() === 'rtl' ? 'left' : 'right';
 }
