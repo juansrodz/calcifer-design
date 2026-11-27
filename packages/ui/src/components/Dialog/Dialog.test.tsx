@@ -53,6 +53,7 @@ const {
   SideSheetRightToLeft,
   HeadingAtDoubleText,
   DefaultAtDoubleText,
+  SheetWithForm,
 } = composeStories(stories);
 
 describe('Dialog', () => {
@@ -1481,6 +1482,36 @@ describe('Dialog', () => {
       render(<OpenOnLoad />);
       const popup = await screen.findByRole('dialog');
       expect(popup).not.toHaveAttribute('data-swipe-direction');
+    });
+  });
+
+  // jsdom applies no stylesheet, so the padding the inset adds is checked in the SheetWithForm story
+  // (Chromium) and pinned in `token-reads.test.ts`; here, that Drawer writes it where the skin reads.
+  describe('the keyboard inset', () => {
+    it('is written by Drawer on the sheet popup’s parent, the viewport', async () => {
+      render(<SheetWithForm />);
+      const popup = await screen.findByRole('dialog');
+      const field = within(popup).getByRole('textbox', { name: 'Dish' });
+      act(() => field.focus());
+      await waitFor(() =>
+        expect(popup.parentElement?.style.getPropertyValue('--drawer-keyboard-inset')).toBe('0px'),
+      );
+    });
+
+    it('is not written for a centred dialog', async () => {
+      render(
+        <Dialog heading="Bring a dish" defaultOpen>
+          <Field label="Dish">
+            <TextInput />
+          </Field>
+        </Dialog>,
+      );
+      const popup = await screen.findByRole('dialog');
+      act(() => within(popup).getByRole('textbox', { name: 'Dish' }).focus());
+      await act(async () => {
+        await new Promise((resume) => setTimeout(resume, 50));
+      });
+      expect(popup.parentElement?.style.getPropertyValue('--drawer-keyboard-inset')).toBe('');
     });
   });
 });

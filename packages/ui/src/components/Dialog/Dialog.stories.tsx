@@ -1204,3 +1204,60 @@ export const SheetOnSheet: Story = {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   },
 };
+
+/** The keyboard height the form stories stand in for, as Drawer would measure it on a phone. */
+const KEYBOARD_INSET = 300;
+
+/**
+ * A bottom sheet holding a text field, with its action pinned in the footer. While the on-screen
+ * keyboard is up, the sheet pads its foot by the keyboard's height so the footer rides above it.
+ */
+export const SheetWithForm: Story = {
+  ...swipeStory,
+  args: {
+    ...swipeArgs(),
+    heading: 'Bring a dish',
+    description: undefined,
+    children: (
+      <Field label="Dish">
+        <TextInput />
+      </Field>
+    ),
+    footer: <Button>Add the dish</Button>,
+  },
+  play: async () => {
+    const popup = await settledDialog();
+    // Drawer writes the keyboard's height on the viewport, the popup's parent.
+    const viewport = popup.parentElement;
+    if (viewport === null) {
+      throw new Error('the sheet has no viewport');
+    }
+    const footerButton = within(popup).getByRole('button', { name: 'Add the dish' });
+    const restBottom = footerButton.getBoundingClientRect().bottom;
+    await expect(getComputedStyle(popup).paddingBlockEnd).toBe('24px');
+    viewport.style.setProperty('--drawer-keyboard-inset', `${KEYBOARD_INSET}px`);
+    try {
+      await expect(getComputedStyle(popup).paddingBlockEnd).toBe(`${24 + KEYBOARD_INSET}px`);
+      await expect(footerButton.getBoundingClientRect().bottom).toBeCloseTo(
+        restBottom - KEYBOARD_INSET,
+        0,
+      );
+    } finally {
+      viewport.style.removeProperty('--drawer-keyboard-inset');
+    }
+  },
+};
+
+/** A touch tap on the field focuses it, and typing lands in it. */
+export const SheetWithFormTyping: Story = {
+  ...SheetWithForm,
+  play: async () => {
+    const popup = await settledDialog();
+    const field = within(popup).getByRole('textbox', { name: 'Dish' });
+    await swipe(field, { steps: 0, durationMs: 80 });
+    await waitFor(() => expect(field).toHaveFocus());
+    await userEvent.keyboard('Tamales');
+    await expect(field).toHaveValue('Tamales');
+    await expect(field).toHaveFocus();
+  },
+};

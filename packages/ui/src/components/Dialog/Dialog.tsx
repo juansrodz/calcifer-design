@@ -397,14 +397,17 @@ export function Dialog({
         swipeDirection={swipeDirection}
       >
         {trigger === undefined ? null : <Drawer.Trigger render={trigger} />}
-        <Drawer.Portal container={container}>
-          <Drawer.Backdrop {...backdropProps} style={SCRIM_TAKES_PRESSES} />
-          <Drawer.Viewport {...viewportProps}>
-            <Drawer.Popup {...popupProps} data-drawer-content="">
-              <DialogContent parts={DRAWER_PARTS} {...contentProps} />
-            </Drawer.Popup>
-          </Drawer.Viewport>
-        </Drawer.Portal>
+        {/* Measures the on-screen keyboard onto the viewport and takes over taps on text fields. */}
+        <Drawer.VirtualKeyboardProvider>
+          <Drawer.Portal container={container}>
+            <Drawer.Backdrop {...backdropProps} style={SCRIM_TAKES_PRESSES} />
+            <Drawer.Viewport {...viewportProps}>
+              <Drawer.Popup {...popupProps} data-drawer-content="">
+                <DialogContent parts={DRAWER_PARTS} {...contentProps} />
+              </Drawer.Popup>
+            </Drawer.Viewport>
+          </Drawer.Portal>
+        </Drawer.VirtualKeyboardProvider>
       </Drawer.Root>
     );
   }

@@ -117,7 +117,11 @@
 .surface[data-popup='sheet'][data-side='bottom'] {
   --dialog-surface-padding-inline: var(--sheet-padding-inline, var(--space-5));
 
-  padding-block-start: var(--sheet-padding-block-start, var(--space-5));
+  /* Grows by Drawer's on-screen keyboard height (`0px` with none up), so the footer rides above it. */
+  --dialog-sheet-padding-block-end: calc(var(--space-5) + var(--drawer-keyboard-inset, 0px));
+
+  padding-block: var(--sheet-padding-block-start, var(--space-5))
+    var(--dialog-sheet-padding-block-end);
 }
 
 /* A select's width is its trigger's rather than a fixed dropdown width, and that is the one

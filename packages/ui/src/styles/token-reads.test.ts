@@ -2418,15 +2418,17 @@ const expectations: ReadonlyArray<Expectation> = [
     rule: /^\.surface\[data-popup='sheet'\]\[data-side='bottom'\] \{([^}]*)\}/m,
     contains: [
       ' --dialog-surface-padding-inline: var(--sheet-padding-inline, var(--space-5));',
-      ' padding-block-start: var(--sheet-padding-block-start, var(--space-5));',
+      // The block-end padding adds Drawer's on-screen keyboard height, `0px` with no keyboard up.
+      ' --dialog-sheet-padding-block-end: calc(var(--space-5) + var(--drawer-keyboard-inset, 0px));',
+      ' padding-block: var(--sheet-padding-block-start, var(--space-5))\n    var(--dialog-sheet-padding-block-end);',
     ],
-    lacks: [' padding:', ' padding-block:', ' padding-inline', '--drawer-padding'],
+    lacks: [' padding:', ' padding-block-', ' padding-inline', '--drawer-padding'],
   },
   {
     file: 'styles/popup.module.css',
     rule: /^\.surface\[data-popup='sheet'\]\[data-side='end'\] \{([^}]*)\}/m,
     contains: [' --dialog-surface-padding-inline: var(--drawer-padding-inline, var(--space-5));'],
-    lacks: [' padding', '--sheet-padding'],
+    lacks: [' padding', '--sheet-padding', '--drawer-keyboard-inset'],
   },
   {
     // No registered custom properties: the hooks take a length with a unit.
