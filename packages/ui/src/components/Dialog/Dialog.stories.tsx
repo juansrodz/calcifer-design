@@ -777,6 +777,43 @@ export const SheetFlickCloses: Story = {
   play: playFlickCloses,
 };
 
+/** Hidden text past the fold, like a list's live region; absolutely placed, as screen-reader-only text is. */
+const HIDDEN_TEXT_STYLE = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clipPath: 'inset(50%)',
+  whiteSpace: 'nowrap',
+} as const;
+
+/**
+ * A long body ending in hidden text still swipes closed from the handle: the drag's transform must
+ * not let that text stretch the popup into a scroller that takes the gesture.
+ */
+export const SheetSwipesPastHiddenText: Story = {
+  ...swipeStory,
+  args: {
+    ...swipeArgs(),
+    children: (
+      <>
+        {longBody}
+        <span style={HIDDEN_TEXT_STYLE}>24 lines loaded</span>
+      </>
+    ),
+  },
+  play: async ({ args }) => {
+    const popup = await settledDialog();
+    const handle = popup.firstElementChild;
+    if (handle === null) {
+      throw new Error('the bottom sheet has no handle');
+    }
+    await swipe(popup, { ...downDrag(popup), startAt: handle });
+    await waitForSwipeClose(args.onOpenChange);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  },
+};
+
 /**
  * With the body scrolled to 300 px, a downward drag on the body: every move reaches the body
  * uncancelled, so the browser is free to scroll it; the sheet does not move and `onOpenChange` is
